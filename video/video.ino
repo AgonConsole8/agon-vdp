@@ -87,30 +87,28 @@ void setup() {
 // The main loop
 //
 void loop() {
-	uint32_t count = 0;						// Generic counter, incremented every loop iteration
-	bool cursorVisible = false;
-	bool cursorState = false;
+	bool drawCursor = false;
+	auto cursorTime = millis();
 
 	while (true) {
 		if (terminalMode) {
 			do_keyboard_terminal();
 			continue;
 		}
-		cursorVisible = ((count & 0xFFFF) == 0);
-		if (cursorVisible) {
-			cursorState = !cursorState;
+		if (millis() - cursorTime > CURSOR_PHASE) {
+			cursorTime = millis();
+			drawCursor = !drawCursor;
 			do_cursor();
 		}
 		do_keyboard();
 		if (byteAvailable()) {
-			if (cursorState) {
- 				cursorState = false;
+			if (drawCursor) {
+ 				drawCursor = false;
 				do_cursor();
 			}
 			auto c = readByte();
 			vdu(c);
 		}
-		count++;
 	}
 }
 
