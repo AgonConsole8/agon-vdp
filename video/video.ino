@@ -109,7 +109,7 @@ void loop() {
 				drawCursor = false;
 				do_cursor();
 			}
-			processor->processAllAvailable();
+			processor->processNext();
 		}
 	}
 }
