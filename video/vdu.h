@@ -185,13 +185,8 @@ void VDUStreamProcessor::vdu_plot() {
 			// move to modes
 			moveTo();
 			break;
-		case 2:
-		case 6:
-			// draw inverse logical colour not supported
-			debug_log("plot inverse logical colour not implemented\n\r");
-			break;
 		default:
-			// 1, 3, 5, 7 are all draw modes
+			// 1, 2, 3, 5, 6, 7 are all draw modes
 			switch (operation) {
 				case 0x00: 	// line
 					plotLine();

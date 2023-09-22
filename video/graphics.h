@@ -245,22 +245,27 @@ Point * getGraphicsCursor() {
 //
 void setGraphicsOptions(uint8_t mode) {
 	auto colourMode = mode & 0x03;
+	fabgl::PaintOptions p = gpo;
+
 	canvas->setClippingRect(graphicsViewport);
 	switch (colourMode) {
 		case 0: break;	// move command
 		case 1: {
 			// use fg colour
 			canvas->setPenColor(gfg);
-			canvas->setBrushColor(gfg);
 		} break;
-		case 2: break;	// logical inverse colour (not suported)
+		case 2: {
+			// logical inverse colour (not suported for all operations)
+			p.NOT = 1;
+			// fallback to use fg colour
+			canvas->setPenColor(gfg);
+		} break;
 		case 3: {
 			// use bg colour
 			canvas->setPenColor(gbg);
-			canvas->setBrushColor(gbg);
 		} break;
 	}
-	canvas->setPaintOptions(gpo);
+	canvas->setPaintOptions(p);
 }
 
 // Set up canvas for drawing filled graphics
