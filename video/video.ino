@@ -40,7 +40,7 @@
 // 30/05/2023:					+ Added VDU 23,16 (cursor movement control)
 // 28/06/2023:					+ Improved get_screen_char, fixed vdu_textViewport, cursorHome, changed modeline for Mode 2
 // 30/06/2023:					+ Fixed vdu_sys_sprites to correctly discard serial input if bitmap allocation fails
-// 13/08/2023:					+ New video modes, mode change resets page mode
+// 13/08/2023:				RC2	+ New video modes, mode change resets page mode
 // 05/09/2023:					+ New audio enhancements, improved mode change code
 // 12/09/2023:					+ Refactored
 
@@ -49,10 +49,11 @@
 
 #define VERSION			1
 #define REVISION		4
-#define RC				1
+#define RC				2
 
 #define	DEBUG			0						// Serial Debug Mode: 1 = enable
 #define SERIALKB		0						// Serial Keyboard: 1 = enable (Experimental)
+#define SERIALBAUDRATE	115200
 
 #include "agon.h"								// Configuration file
 #include "agon_keyboard.h"						// Keyboard support
@@ -61,21 +62,18 @@
 #include "cursor.h"								// Cursor support
 #include "vdp_protocol.h"						// VDP Protocol
 #include "vdu_stream_processor.h"
+#include "hexload.h"
 
 bool					terminalMode = false;	// Terminal mode
 fabgl::Terminal			Terminal;				// Used for CP/M mode
 VDUStreamProcessor *	processor;				// VDU Stream Processor
 
-#if DEBUG == 1 || SERIALKB == 1
 HardwareSerial DBGSerial(0);
-#endif 
 
 void setup() {
 	disableCore0WDT(); delay(200);				// Disable the watchdog timers
 	disableCore1WDT(); delay(200);
-	#if DEBUG == 1 || SERIALKB == 1
-	DBGSerial.begin(500000, SERIAL_8N1, 3, 1);
-	#endif 
+	DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
 	processor->wait_eZ80();
