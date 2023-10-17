@@ -67,7 +67,6 @@
 
 #define AUDIO_CHANNELS			3		// Default number of audio channels
 #define MAX_AUDIO_CHANNELS		32		// Maximum number of audio channels
-#define MAX_AUDIO_SAMPLES		128		// Maximum number of audio samples
 #define PLAY_SOUND_PRIORITY		3		// Sound driver task priority with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest
 
 // Audio command definitions
@@ -91,12 +90,16 @@
 #define AUDIO_WAVE_SINE			3		// Sine wave
 #define AUDIO_WAVE_NOISE		4		// Noise (simple, no frequency support)
 #define AUDIO_WAVE_VICNOISE		5		// VIC-style noise (supports frequency)
-#define AUDIO_WAVE_SAMPLE		8		// Sample playback (internally used, can't be passed as a parameter)
+#define AUDIO_WAVE_SAMPLE		8		// Sample playback, explicit buffer ID sent in following 2 bytes
 // negative values for waveforms indicate a sample number
 
 #define AUDIO_SAMPLE_LOAD		0		// Send a sample to the VDP
 #define AUDIO_SAMPLE_CLEAR		1		// Clear/delete a sample
-#define AUDIO_SAMPLE_DEBUG_INFO 2		// Get debug info about a sample
+#define AUDIO_SAMPLE_FROM_BUFFER	2	// Load a sample from a buffer
+#define AUDIO_SAMPLE_DEBUG_INFO 0x10	// Get debug info about a sample
+
+#define AUDIO_FORMAT_8BIT_SIGNED	0	// 8-bit signed sample
+#define AUDIO_FORMAT_8BIT_UNSIGNED	1	// 8-bit unsigned sample
 
 #define AUDIO_ENVELOPE_NONE		0		// No envelope
 #define AUDIO_ENVELOPE_ADSR		1		// Simple ADSR volume envelope
@@ -127,8 +130,27 @@
 #define BUFFERED_CREATE			0x03	// Create a new empty buffer
 #define BUFFERED_SET_OUTPUT		0x04	// Set the output buffer
 #define BUFFERED_ADJUST			0x05	// Adjust buffered commands
-#define BUFFERED_CONDITIONAL	0x06	// Conditionally call a buffer
-#define BUFFERED_DEBUG_INFO		0x10	// Get debug info about a buffer
+#define BUFFERED_COND_CALL		0x06	// Conditionally call a buffer
+#define BUFFERED_JUMP			0x07	// Jump to a buffer
+#define BUFFERED_COND_JUMP		0x08	// Conditionally jump to a buffer
+#define BUFFERED_OFFSET_JUMP	0x09	// Jump to a buffer with an offset
+#define BUFFERED_OFFSET_COND_JUMP	0x0A	// Conditionally jump to a buffer with an offset
+#define BUFFERED_OFFSET_CALL	0x0B	// Call a buffer with an offset
+#define BUFFERED_OFFSET_COND_CALL	0x0C	// Conditionally call a buffer with an offset
+#define BUFFERED_COPY			0x0D	// Copy blocks from multiple buffers into one buffer
+#define BUFFERED_CONSOLIDATE	0x0E	// Consolidate blocks inside a buffer into one
+#define BUFFERED_SPLIT			0x0F	// Split a buffer into multiple blocks
+#define BUFFERED_SPLIT_INTO		0x10	// Split a buffer into multiple blocks to new buffer(s)
+#define BUFFERED_SPLIT_FROM		0x11	// Split to new buffers from a target bufferId onwards
+#define BUFFERED_SPLIT_BY		0x12	// Split a buffer into multiple blocks by width (columns)
+#define BUFFERED_SPLIT_BY_INTO	0x13	// Split by width into new buffer(s)
+#define BUFFERED_SPLIT_BY_FROM	0x14	// Split by width to new buffers from a target bufferId onwards
+#define BUFFERED_SPREAD_INTO	0x15	// Spread blocks from a buffer to multiple target buffers
+#define BUFFERED_SPREAD_FROM	0x16	// Spread blocks from target buffer ID onwards
+#define BUFFERED_REVERSE_BLOCKS	0x17	// Reverse the order of blocks in a buffer
+#define BUFFERED_REVERSE		0x18	// Reverse the order of data in a buffer
+
+#define BUFFERED_DEBUG_INFO		0x20	// Get debug info about a buffer
 
 // Adjust operation codes
 #define ADJUST_NOT				0x00	// Adjust: NOT
@@ -142,7 +164,7 @@
 
 // Adjust operation flags
 #define ADJUST_OP_MASK			0x0F	// operation code mask
-#define ADJUST_24BIT_OFFSETS	0x10	// offset values are 24-bit
+#define ADJUST_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
 #define ADJUST_BUFFER_VALUE		0x20	// operand is a buffer fetched value
 #define ADJUST_MULTI_TARGET		0x40	// multiple target values will be adjusted
 #define ADJUST_MULTI_OPERAND	0x80	// multiple operand values used for adjustments
@@ -161,8 +183,20 @@
 
 // Conditional operation flags
 #define COND_OP_MASK			0x0F	// conditional operation code mask
-#define COND_24BIT_OFFSETS		0x10	// offset values are 24-bit
+#define COND_ADVANCED_OFFSETS	0x10	// advanced offset values
 #define COND_BUFFER_VALUE		0x20	// value to compare is a buffer-fetched value
+
+// Reverse operation flags
+#define REVERSE_16BIT			0x01	// 16-bit value length
+#define REVERSE_32BIT			0x02	// 32-bit value length
+#define REVERSE_SIZE			0x03	// when both length flags are set, a 16-bit length value follows
+#define REVERSE_CHUNKED			0x04	// chunked reverse, 16-bit size value follows
+#define REVERSE_BLOCK			0x08	// reverse block order
+#define REVERSE_UNUSED_BITS		0xF0	// unused bits
+
+// Buffered bitmap and sample info
+#define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
+#define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples
 
 // Viewport definitions
 #define VIEWPORT_TEXT			0		// Text viewport

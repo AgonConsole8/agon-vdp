@@ -5,36 +5,10 @@
 #include <Stream.h>
 
 #include "agon.h"
+#include "buffer_stream.h"
 #include "types.h"
 
 class VDUStreamProcessor {
-	public:
-		VDUStreamProcessor(std::shared_ptr<Stream> inputStream, std::shared_ptr<Stream> outputStream, uint16_t bufferId) :
-			inputStream(inputStream), outputStream(outputStream), originalOutputStream(outputStream), id(bufferId) {}
-		VDUStreamProcessor(Stream *input) :
-			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {}
-		inline bool byteAvailable() {
-			return inputStream->available() > 0;
-		}
-		inline uint8_t readByte() {
-			return inputStream->read();
-		}
-		inline void writeByte(uint8_t b) {
-			if (outputStream) {
-				outputStream->write(b);
-			}
-		}
-		void send_packet(uint8_t code, uint16_t len, uint8_t data[]);
-
-		void processAllAvailable();
-		void processNext();
-
-		void vdu(uint8_t c);
-
-		void wait_eZ80();
-		void sendModeInformation();
-
-		uint16_t id = 65535;
 	private:
 		std::shared_ptr<Stream> inputStream;
 		std::shared_ptr<Stream> outputStream;
@@ -75,26 +49,67 @@ class VDUStreamProcessor {
 
 		void vdu_sys_audio();
 		void sendAudioStatus(uint8_t channel, uint8_t status);
-		uint8_t loadSample(uint8_t sampleIndex, uint32_t length);
+		uint8_t loadSample(uint16_t bufferId, uint32_t length);
+		uint8_t createSampleFromBuffer(uint16_t bufferId, uint8_t format);
 		void setVolumeEnvelope(uint8_t channel, uint8_t type);
 		void setFrequencyEnvelope(uint8_t channel, uint8_t type);
 
 		void vdu_sys_sprites(void);
 		void receiveBitmap(uint8_t cmd, uint16_t width, uint16_t height);
+		void createBitmapFromBuffer(uint16_t bufferId, uint8_t format, uint16_t width, uint16_t height);
 
 		void vdu_sys_hexload(void);
 		void sendKeycodeByte(uint8_t b, bool waitack);
 
 		void vdu_sys_buffered();
-		void bufferWrite(uint16_t bufferId);
-		void bufferCall(uint16_t bufferId);
+		uint32_t bufferWrite(uint16_t bufferId, uint32_t size);
+		void bufferCall(uint16_t bufferId, uint32_t offset);
 		void bufferClear(uint16_t bufferId);
-		void bufferCreate(uint16_t bufferId);
+		std::shared_ptr<WritableBufferStream> bufferCreate(uint16_t bufferId, uint32_t size);
 		void setOutputStream(uint16_t bufferId);
+		uint32_t getOffsetFromStream(uint16_t bufferId, bool isAdvanced);
+		std::vector<uint16_t> getBufferIdsFromStream();
 		int16_t getBufferByte(uint16_t bufferId, uint32_t offset);
 		bool setBufferByte(uint8_t value, uint16_t bufferId, uint32_t offset);
 		void bufferAdjust(uint16_t bufferId);
-		void bufferConditionalCall(uint16_t bufferId);
+		bool bufferConditional();
+		void bufferJump(uint16_t bufferId, uint32_t offset);
+		void bufferCopy(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
+		void bufferConsolidate(uint16_t bufferId);
+		void bufferSplitInto(uint16_t bufferId, uint16_t length, std::vector<uint16_t> newBufferIds, bool iterate);
+		void bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, std::vector<uint16_t> newBufferIds, bool iterate);
+		void bufferSpreadInto(uint16_t bufferId, std::vector<uint16_t> newBufferIds, bool iterate);
+		void bufferReverseBlocks(uint16_t bufferId);
+		void bufferReverse(uint16_t bufferId, uint8_t options);
+
+	public:
+		uint16_t id = 65535;
+
+		VDUStreamProcessor(std::shared_ptr<Stream> input, std::shared_ptr<Stream> output, uint16_t bufferId) :
+			inputStream(input), outputStream(output), originalOutputStream(output), id(bufferId) {}
+		VDUStreamProcessor(Stream *input) :
+			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {}
+
+		inline bool byteAvailable() {
+			return inputStream->available() > 0;
+		}
+		inline uint8_t readByte() {
+			return inputStream->read();
+		}
+		inline void writeByte(uint8_t b) {
+			if (outputStream) {
+				outputStream->write(b);
+			}
+		}
+		void send_packet(uint8_t code, uint16_t len, uint8_t data[]);
+
+		void processAllAvailable();
+		void processNext();
+
+		void vdu(uint8_t c);
+
+		void wait_eZ80();
+		void sendModeInformation();
 };
 
 // Read an unsigned byte from the serial port, with a timeout
@@ -159,6 +174,10 @@ uint8_t VDUStreamProcessor::readByte_b() {
 //
 uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout = COMMS_TIMEOUT) {
 	uint32_t remaining = length;
+	if (buffer == nullptr) {
+		debug_log("readIntoBuffer: buffer is null\n\r");
+		return remaining;
+	}
 	auto t = xTaskGetTickCountFromISR();
 	auto now = t;
 	auto timeCheck = pdMS_TO_TICKS(timeout);
