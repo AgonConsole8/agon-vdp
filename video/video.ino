@@ -47,16 +47,13 @@
 #include <HardwareSerial.h>
 #include <fabgl.h>
 
-#define VERSION			1
-#define REVISION		4
-#define RC				2
-
 #define	DEBUG			0						// Serial Debug Mode: 1 = enable
 #define SERIALKB		0						// Serial Keyboard: 1 = enable (Experimental)
 #define SERIALBAUDRATE	115200
 
 #include "agon.h"								// Configuration file
-#include "agon_ps2.h"						// Keyboard support
+#include "version.h"							// Version information
+#include "agon_ps2.h"							// Keyboard support
 #include "agon_audio.h"							// Audio support
 #include "graphics.h"							// Graphics support
 #include "cursor.h"								// Cursor support
@@ -173,9 +170,13 @@ void do_mouse() {
 // The boot screen
 //
 void boot_screen() {
-	printFmt("Agon Quark VDP Version %d.%02d", VERSION, REVISION);
-	#if RC > 0
-		printFmt(" RC%d", RC);
+	printFmt("Agon %s VDP Version %d.%d.%d", VERSION_VARIANT, VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+	#if VERSION_CANDIDATE > 0
+		printFmt(" %s%d", VERSION_TYPE, VERSION_CANDIDATE);
+	#endif
+	// Show build if defined (intended to be auto-generated string from build script from git commit hash)
+	#ifdef VERSION_BUILD
+		printFmt(" Build %s", VERSION_BUILD);
 	#endif
 	printFmt("\n\r");
 }
