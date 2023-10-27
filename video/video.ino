@@ -97,7 +97,7 @@ void loop() {
 		if (millis() - cursorTime > CURSOR_PHASE) {
 			cursorTime = millis();
 			drawCursor = !drawCursor;
-			if (ttxMode) {
+			if (ttxtMode) {
 				ttxt_instance.flash(drawCursor);
 			}
 			do_cursor();
