@@ -63,25 +63,28 @@ char getScreenChar(uint16_t px, uint16_t py) {
 	if (px >= canvasW - 8 || py >= canvasH - 8) {
 		return 0;
 	}
-
-	// Now scan the screen and get the 8 byte pixel representation in charData
-	//
-	for (uint8_t y = 0; y < 8; y++) {
-		charRow = 0;
-		for (uint8_t x = 0; x < 8; x++) {
-			pixel = canvas->getPixel(px + x, py + y);
-			if (!(pixel.R == R && pixel.G == G && pixel.B == B)) {
-				charRow |= (0x80 >> x);
-			}
+	if (ttxtMode) {
+		return ttxt_instance.get_screen_char(px,py);
+	} else {
+		// Now scan the screen and get the 8 byte pixel representation in charData
+		//
+		for (uint8_t y = 0; y < 8; y++) {
+	    	charRow = 0;
+	    	for (uint8_t x = 0; x < 8; x++) {
+	      		pixel = canvas->getPixel(px + x, py + y);
+	      		if (!(pixel.R == R && pixel.G == G && pixel.B == B)) {
+					charRow |= (0x80 >> x);
+	    		}
+	    	}
+	    	charData[y] = charRow;
 		}
-		charData[y] = charRow;
-	}
-	//
-	// Finally try and match with the character set array
-	//
-	for (auto i = 32; i <= 255; i++) {
-		if (cmpChar(charData, &fabgl::FONT_AGON_DATA[i * 8], 8)) {	
-			return i;		
+		//
+		// Finally try and match with the character set array
+		//
+		for (auto i = 32; i <= 255; i++) {
+	    	if (cmpChar(charData, &fabgl::FONT_AGON_DATA[i * 8], 8)) {	
+	    		return i;		
+			}
 		}
 	}
 	return 0;
@@ -142,6 +145,7 @@ void setPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b) {
 // - sizeOfArray: Size of passed colours array
 //
 void resetPalette(const uint8_t colours[]) {
+	if (ttxtMode) return;
 	for (uint8_t i = 0; i < 64; i++) {
 		uint8_t c = colours[i % getVGAColourDepth()];
 		palette[i] = c;
@@ -165,6 +169,8 @@ fabgl::PaintOptions getPaintOptions(uint8_t mode, fabgl::PaintOptions priorPaint
 // Set text colour (handles COLOUR / VDU 17)
 //
 void setTextColour(uint8_t colour) {
+	if (ttxtMode) return;
+
 	uint8_t c = palette[colour % getVGAColourDepth()];
 
 	if (colour < 64) {
@@ -183,6 +189,8 @@ void setTextColour(uint8_t colour) {
 // Set graphics colour (handles GCOL / VDU 18)
 //
 void setGraphicsColour(uint8_t mode, uint8_t colour) {
+	if (ttxtMode) return;
+	
 	uint8_t c = palette[colour % getVGAColourDepth()];
 
 	if (mode <= 6) {
@@ -207,13 +215,17 @@ void setGraphicsColour(uint8_t mode, uint8_t colour) {
 // Clear a viewport
 //
 void clearViewport(Rect * viewport) {
-	if (canvas) {
-		if (useViewports) {
-			canvas->fillRectangle(*viewport);
-		}
-		else {
-			canvas->clear();
-		}
+	if (ttxtMode) {
+		ttxt_instance.cls();
+	} else {       
+  		if (canvas) {
+	  		if (useViewports) {
+		  		canvas->fillRectangle(*viewport);
+		  	}
+		  	else {
+			  canvas->clear();
+			}
+	  	}
 	}
 }
 
@@ -410,18 +422,21 @@ void plotCopyMove(uint8_t mode) {
 // Character plot
 //
 void plotCharacter(char c) {
-	if (textCursorActive()) {
-		canvas->setClippingRect(defaultViewport);
-		canvas->setPenColor(tfg);
-		canvas->setBrushColor(tbg);
-		canvas->setPaintOptions(tpo);
-	}
-	else {
-		canvas->setClippingRect(graphicsViewport);
-		canvas->setPenColor(gfg);
-		canvas->setPaintOptions(gpo);
-	}
-	canvas->drawChar(activeCursor->X, activeCursor->Y, c);
+	if (ttxtMode) {
+    	ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, c);
+  	} else {
+  		if (textCursorActive()) {
+	  		canvas->setClippingRect(defaultViewport);
+			canvas->setPenColor(tfg);
+			canvas->setBrushColor(tbg);
+			canvas->setPaintOptions(tpo);
+	  	} else {
+		  canvas->setClippingRect(graphicsViewport);
+		  canvas->setPenColor(gfg);
+		  canvas->setPaintOptions(gpo);
+		}
+		canvas->drawChar(activeCursor->X, activeCursor->Y, c);
+  	}
 	cursorRight();
 }
 
@@ -429,8 +444,12 @@ void plotCharacter(char c) {
 //
 void plotBackspace() {
 	cursorLeft();
-	canvas->setBrushColor(textCursorActive() ? tbg : gbg);
-	canvas->fillRectangle(activeCursor->X, activeCursor->Y, activeCursor->X + fontW - 1, activeCursor->Y + fontH - 1);
+	if (ttxtMode) {
+		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, ' ');
+	} else {
+		canvas->setBrushColor(textCursorActive() ? tbg : gbg);
+		canvas->fillRectangle(activeCursor->X, activeCursor->Y, activeCursor->X + fontW - 1, activeCursor->Y + fontH - 1);
+	}
 }
 
 // Set character overwrite mode (background fill)
@@ -456,6 +475,9 @@ void drawCursor(Point p) {
 // 
 void cls(bool resetViewports) {
 	if (resetViewports) {
+    	if (ttxtMode) {
+    		ttxt_instance.set_window(0,24,39,0);
+		}
 		viewportReset();
 	}
 	if (canvas) {
@@ -497,6 +519,7 @@ int8_t change_mode(uint8_t mode) {
 	int8_t errVal = -1;
 
 	cls(true);
+	ttxtMode = false;
 	switch (mode) {
 		case 0:
 			if (legacyModes == true) {
@@ -535,6 +558,13 @@ int8_t change_mode(uint8_t mode) {
 		case 6:
 			errVal = change_resolution(2, VGA_640x240_60Hz);
 			break;
+		case 7:
+	    	errVal = change_resolution(16, VGA_640x480_60Hz);
+	    	if (errVal == 0) {
+	      		errVal = ttxt_instance.init();
+	    		if (errVal == 0) ttxtMode = true; 
+	    	}
+	    	break;
 		case 8:
 			errVal = change_resolution(64, QVGA_320x240_60Hz);		// VGA "Mode X"
 			break;
@@ -624,7 +654,9 @@ int8_t change_mode(uint8_t mode) {
 	gbg = colourLookup[0x00];
 	tfg = colourLookup[0x3F];
 	tbg = colourLookup[0x00];
-	canvas->selectFont(&fabgl::FONT_AGON);
+	if (!ttxtMode) {
+		canvas->selectFont(&fabgl::FONT_AGON);
+	}
 	setCharacterOverwrite(true);
 	canvas->setPenWidth(1);
 	setCanvasWH(canvas->getWidth(), canvas->getHeight());
@@ -676,21 +708,24 @@ void setLegacyModes(bool legacy) {
 
 void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 	canvas->setScrollingRegion(region->X1, region->Y1, region->X2, region->Y2);
-
-	switch (direction) {
-		case 0:	// Right
-			canvas->scroll(movement, 0);
-			break;
-		case 1: // Left
-			canvas->scroll(-movement, 0);
-			break;
-		case 2: // Down
-			canvas->scroll(0, movement);
-			break;
-		case 3: // Up
-			canvas->scroll(0, -movement);
-			break;
-	}
+	if (ttxtMode) {
+    	if (direction == 3) ttxt_instance.scroll();
+  	} else {
+		switch (direction) {
+			case 0:	// Right
+				canvas->scroll(movement, 0);
+		  		break;
+			case 1: // Left
+				canvas->scroll(-movement, 0);
+				break;
+			case 2: // Down
+				canvas->scroll(0, movement);
+				break;
+			case 3: // Up
+				canvas->scroll(0, -movement);
+				break;
+  		}
+  	} 
 	waitPlotCompletion();
 }
 

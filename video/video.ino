@@ -55,6 +55,7 @@
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support
 #include "agon_audio.h"							// Audio support
+#include "agon_ttxt.h"
 #include "graphics.h"							// Graphics support
 #include "cursor.h"								// Cursor support
 #include "vdp_protocol.h"						// VDP Protocol
@@ -96,6 +97,9 @@ void loop() {
 		if (millis() - cursorTime > CURSOR_PHASE) {
 			cursorTime = millis();
 			drawCursor = !drawCursor;
+			if (ttxMode) {
+				ttxt_instance.flash(drawCursor);
+			}
 			do_cursor();
 		}
 		do_keyboard();
