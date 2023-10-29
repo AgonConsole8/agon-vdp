@@ -2,6 +2,7 @@
 #define AGON_PS2_H
 
 #include <vector>
+#include <algorithm>
 
 #include <fabgl.h>
 
