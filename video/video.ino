@@ -87,10 +87,14 @@ void setup() {
 // The main loop
 //
 void loop() {
+	uint32_t count = 0;						// Generic counter, incremented every loop iteration
 	bool drawCursor = false;
 	auto cursorTime = millis();
 
 	while (true) {
+ 		if ((count & 0x7f) == 0) delay(1 /* -TM- ms */);
+ 		count++;
+
 		if (terminalMode) {
 			do_keyboard_terminal();
 			continue;
