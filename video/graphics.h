@@ -420,6 +420,12 @@ void plotCopyMove(uint8_t mode) {
 	}
 }
 
+// Plot bitmap
+//
+void plotBitmap() {
+	drawBitmap(p1.X, p1.Y);
+}
+
 // Character plot
 //
 void plotCharacter(char c) {
