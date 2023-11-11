@@ -16,6 +16,7 @@
 #include "updater.h"
 
 extern void switchTerminalMode();				// Switch to terminal mode
+extern void setConsoleMode(bool mode);			// Set console mode
 
 bool			initialised = false;			// Is the system initialised yet?
 ESP32Time		rtc(0);							// The RTC
@@ -167,6 +168,10 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_SWITCHBUFFER: {		// VDU 23, 0, &C3
 			switchBuffer();
 		}	break;
+		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
+			auto b = readByte_t();
+			setConsoleMode((bool) b);
+		}	break;
 		case VDP_TERMINALMODE: {		// VDU 23, 0, &FF
 			switchTerminalMode(); 		// Switch to terminal mode
 		}	break;
@@ -199,8 +204,8 @@ void VDUStreamProcessor::vdu_sys_video_kblayout() {
 //
 void VDUStreamProcessor::sendCursorPosition() {
 	uint8_t packet[] = {
-		(uint8_t) (textCursor.X / fontW),
-		(uint8_t) (textCursor.Y / fontH),
+		(uint8_t) ((textCursor.X - textViewport.X1)/ fontW),
+		(uint8_t) ((textCursor.Y - textViewport.Y1)/ fontH),
 	};
 	send_packet(PACKET_CURSOR, sizeof packet, packet);	
 }

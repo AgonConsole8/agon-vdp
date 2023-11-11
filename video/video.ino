@@ -43,14 +43,19 @@
 // 13/08/2023:				RC2	+ New video modes, mode change resets page mode
 // 05/09/2023:					+ New audio enhancements, improved mode change code
 // 12/09/2023:					+ Refactored
+// 17/09/2023:					+ Added ZDI mode
 
 #include <WiFi.h>
 #include <HardwareSerial.h>
 #include <fabgl.h>
 
 #define	DEBUG			0						// Serial Debug Mode: 1 = enable
-#define SERIALKB		0						// Serial Keyboard: 1 = enable (Experimental)
 #define SERIALBAUDRATE	115200
+
+HardwareSerial	DBGSerial(0);
+
+bool			terminalMode = false;			// Terminal mode (for CP/M)
+bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabled)
 
 #include "agon.h"								// Configuration file
 #include "version.h"							// Version information
@@ -63,11 +68,10 @@
 #include "vdu_stream_processor.h"
 #include "hexload.h"
 
-bool					terminalMode = false;	// Terminal mode
 fabgl::Terminal			Terminal;				// Used for CP/M mode
 VDUStreamProcessor *	processor;				// VDU Stream Processor
 
-HardwareSerial DBGSerial(0);
+#include "zdi.h"								// ZDI debugging console
 
 void setup() {
 	disableCore0WDT(); delay(200);				// Disable the watchdog timers
@@ -202,6 +206,14 @@ void debug_log(const char *format, ...) {
 	}
 	va_end(ap);
 	#endif
+}
+
+// Set console mode
+// Parameters:
+// - mode: 0 = off, 1 = on
+//
+void setConsoleMode(bool mode) {
+	consoleMode = mode;
 }
 
 // Switch to terminal mode
