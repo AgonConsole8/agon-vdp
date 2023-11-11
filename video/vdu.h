@@ -265,10 +265,9 @@ void VDUStreamProcessor::vdu_plot() {
 					plotBitmap();
 					break;
 			}
+			moveTo();
 			break;
 	}
-
-	waitPlotCompletion();
 }
 
 // VDU 26 Reset graphics and text viewports
