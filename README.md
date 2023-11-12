@@ -40,7 +40,7 @@ In the Additional Board Manager URLs text box, enter the following URL:
 
 `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
 
-In the Board Manager (from the Tools menu), select the esp32 board. Advice for the original Quark firmware was to make sure version 2.0.4 is installed, however for the Agon Console8 development has been conducted with version 2.0.14.
+In the Board Manager (from the Tools menu), select the esp32 board. Advice for the original Quark firmware was to make sure version 2.0.4 is installed, however for the Agon Console8 development has been conducted with version 2.0.11.
 
 Now the board can be selected and configured:
 
@@ -64,7 +64,7 @@ And for the Port, you will need to determine the Com port that the Agon Light is
 
 Now the third party libraries will need to be installed from the Library Manager in the Tools menu
 
-* vdp-gl version 1.0.4 (Official fork of FabGL 1.0.8 for Agon)
+* vdp-gl version 1.0.3 (Official fork of FabGL 1.0.8 for Agon)
 * ESP32Time version 2.0.4
 
 Original Quark firmware advice was to use ESP32Time version 2.0.0, however for the Agon Console8 development has been conducted with version 2.0.4.  There are no guarantees that the code will work correctly with other versions, however if the major version number matches it is likely that it will.
