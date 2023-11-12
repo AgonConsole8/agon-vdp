@@ -54,7 +54,7 @@ void setupKeyboardAndMouse() {
 //
 void setKeyboardLayout(uint8_t region) {
 	auto kb = getKeyboard();
-	switch (region) {
+	switch(region) {
 		case 1:	kb->setLayout(&fabgl::USLayout); break;
 		case 2:	kb->setLayout(&fabgl::GermanLayout); break;
 		case 3:	kb->setLayout(&fabgl::ItalianLayout); break;
@@ -62,14 +62,7 @@ void setKeyboardLayout(uint8_t region) {
 		case 5:	kb->setLayout(&fabgl::FrenchLayout); break;
 		case 6:	kb->setLayout(&fabgl::BelgianLayout); break;
 		case 7:	kb->setLayout(&fabgl::NorwegianLayout); break;
-		case 8:	kb->setLayout(&fabgl::JapaneseLayout); break;
-		case 9: kb->setLayout(&fabgl::USInternationalLayout); break;
-		case 10: kb->setLayout(&fabgl::USInternationalAltLayout); break;
-		case 11: kb->setLayout(&fabgl::SwissGLayout); break;
-		case 12: kb->setLayout(&fabgl::SwissFLayout); break;
-		case 13: kb->setLayout(&fabgl::DanishLayout); break;
-		case 14: kb->setLayout(&fabgl::SwedishLayout); break;
-		case 15: kb->setLayout(&fabgl::PortugueseLayout); break;
+		case 8:	kb->setLayout(&fabgl::JapaneseLayout);break;
 		default:
 			kb->setLayout(&fabgl::UKLayout);
 			break;
@@ -83,15 +76,16 @@ bool getKeyboardKey(uint8_t *keycode, uint8_t *modifiers, uint8_t *vk, uint8_t *
 	auto kb = getKeyboard();
 	fabgl::VirtualKeyItem item;
 
-	if (consoleMode) {
+	if(consoleMode) {
 		if (DBGSerial.available()) {
 			_keycode = DBGSerial.read();			
-			if (!zdi_mode()) {
-				if (_keycode == 0x1A) {
+			if(!zdi_mode()) {
+				if(_keycode == 0x1A) {
 					zdi_enter();
 					return false;
 				}
-			} else {
+			}
+			else {
 				zdi_process_cmd(_keycode);
 				return false;
 
@@ -204,8 +198,8 @@ void getKeyboardState(uint16_t *repeatDelay, uint16_t *repeatRate, uint8_t *ledS
 	bool scrollLock;
 	getKeyboard()->getLEDs(&numLock, &capsLock, &scrollLock);
 	*ledState = scrollLock | (capsLock << 1) | (numLock << 2);
-	*repeatDelay = kbRepeatDelay;
-	*repeatRate = kbRepeatRate;
+    *repeatDelay = kbRepeatDelay;
+    *repeatRate = kbRepeatRate;
 }
 
 void setKeyboardState(uint16_t delay, uint16_t rate, uint8_t ledState) {
@@ -215,7 +209,7 @@ void setKeyboardState(uint16_t delay, uint16_t rate, uint8_t ledState) {
 	if (ledState != 255) {
 		kb->setLEDs(ledState & 4, ledState & 2, ledState & 1);
 	}
-	kb->setTypematicRateAndDelay(kbRepeatRate, kbRepeatDelay);
+    kb->setTypematicRateAndDelay(kbRepeatRate, kbRepeatDelay);
 }
 
 bool updateMouseEnabled() {
