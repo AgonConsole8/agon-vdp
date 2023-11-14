@@ -93,7 +93,7 @@ char getScreenChar(uint16_t px, uint16_t py) {
 // Get pixel value at screen coordinates
 //
 RGB888 getPixel(uint16_t x, uint16_t y) {
-	Point p = translateViewport(scale(x, y));
+	Point p = translateCanvas(scale(x, y));
 	if (p.X >= 0 && p.Y >= 0 && p.X < canvasW && p.Y < canvasH) {
 		return canvas->getPixel(p.X, p.Y);
 	}
@@ -132,7 +132,6 @@ void setPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b) {
 			return;
 		}
 		setPaletteItem(l, col);
-		waitPlotCompletion();
 		debug_log("vdu_palette: %d,%d,%d,%d,%d\n\r", l, p, r, g, b);
 	} else {
 		debug_log("vdu_palette: not supported in this mode\n\r");
@@ -242,7 +241,7 @@ void pushPoint(Point p) {
 	p1 = p;
 }
 void pushPoint(uint16_t x, uint16_t y) {
-	pushPoint(translateViewport(scale(x, y)));
+	pushPoint(translateCanvas(scale(x, y)));
 }
 void pushPointRelative(int16_t x, int16_t y) {
 	auto scaledPoint = scale(x, y);
@@ -333,6 +332,7 @@ void plotTriangle() {
 		p2,
 		p1, 
 	};
+	canvas->drawPath(p, 3);
 	canvas->fillPath(p, 3);
 }
 
@@ -351,6 +351,7 @@ void plotParallelogram() {
 		p1,
 		Point(p1.X + (p3.X - p2.X), p1.Y + (p3.Y - p2.Y)),
 	};
+	canvas->drawPath(p, 4);
 	canvas->fillPath(p, 4);
 }
 
@@ -417,6 +418,12 @@ void plotCopyMove(uint8_t mode) {
 			canvas->fillRectangle(sourceRect);
 		}
 	}
+}
+
+// Plot bitmap
+//
+void plotBitmap() {
+	drawBitmap(p1.X, p1.Y);
 }
 
 // Character plot
@@ -726,7 +733,6 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 				break;
   		}
   	} 
-	waitPlotCompletion();
 }
 
 #endif

@@ -22,12 +22,20 @@ uint8_t			mScaling = MOUSE_DEFAULT_SCALING;	// Mouse scaling
 uint16_t		mAcceleration = MOUSE_DEFAULT_ACCELERATION;	// Mouse acceleration
 uint32_t		mWheelAcc = MOUSE_DEFAULT_WHEELACC;	// Mouse wheel acceleration
 
+// Forward declarations
+//
+bool zdi_mode ();
+void zdi_enter ();
+void zdi_process_cmd (uint8_t key);
+
 // Get keyboard instance
+//
 inline fabgl::Keyboard* getKeyboard() {
 	return _PS2Controller.keyboard();
 }
 
 // Get mouse instance
+//
 inline fabgl::Mouse* getMouse() {
 	return _PS2Controller.mouse();
 }
@@ -68,16 +76,27 @@ bool getKeyboardKey(uint8_t *keycode, uint8_t *modifiers, uint8_t *vk, uint8_t *
 	auto kb = getKeyboard();
 	fabgl::VirtualKeyItem item;
 
-	#if SERIALKB == 1
-	if (DBGSerial.available()) {
-		_keycode = DBGSerial.read();
-		*keycode = _keycode;
-		*modifiers = 0;
-		*vk = 0;
-		*down = 0;
-		return true;
+	if(consoleMode) {
+		if (DBGSerial.available()) {
+			_keycode = DBGSerial.read();			
+			if(!zdi_mode()) {
+				if(_keycode == 0x1A) {
+					zdi_enter();
+					return false;
+				}
+			}
+			else {
+				zdi_process_cmd(_keycode);
+				return false;
+
+			}
+			*keycode = _keycode;
+			*modifiers = 0;
+			*vk = 0;
+			*down = 1;
+			return true;			
+		}
 	}
-	#endif
 	
 	if (kb->getNextVirtualKey(&item, 0)) {
 		if (item.down) {

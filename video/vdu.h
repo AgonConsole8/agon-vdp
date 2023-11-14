@@ -10,6 +10,15 @@
 // Handle VDU commands
 //
 void VDUStreamProcessor::vdu(uint8_t c) {
+
+	// We want to send raw chars back to the debugger
+	// this allows binary (faster) data transfer in ZDI mode
+	// to inspect memory and register values
+	//
+	if(consoleMode) {
+		DBGSerial.write (c);
+	}
+	
 	switch(c) {
 		case 0x04:	
 			// enable text cursor
@@ -261,11 +270,13 @@ void VDUStreamProcessor::vdu_plot() {
 					// fab-gl's ellipse isn't compatible with BBC BASIC
 					debug_log("plot ellipse not implemented\n\r");
 					break;
+				case 0xE8:	// Bitmap plot
+					plotBitmap();
+					break;
 			}
+			moveTo();
 			break;
 	}
-
-	waitPlotCompletion();
 }
 
 // VDU 26 Reset graphics and text viewports
