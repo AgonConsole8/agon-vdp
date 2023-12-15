@@ -30,7 +30,7 @@
 // 29/03/2023:					+ Typo in boot screen fixed
 // 01/04/2023:					+ Added resetPalette to MODE, timeouts to VDU commands
 // 08/04/2023:				RC4 + Removed delay in readbyte_t, fixed VDP_SCRCHAR, VDP_SCRPIXEL
-// 12/04/2023:					+ Fixed bug in play_note
+// 12/04/2023:					+ Fixed bug in playNote
 // 13/04/2023:					+ Fixed bootup fail with no keyboard
 // 17/04/2023:				RC5 + Moved wait_completion in vdu so that it only executes after graphical operations
 // 18/04/2023:					+ Minor tweaks to wait completion logic
@@ -54,10 +54,11 @@
 
 HardwareSerial	DBGSerial(0);
 
-bool			terminalMode = false;			// Terminal mode (for CP/M)
+#include "agon.h"								// Configuration file
+
+TerminalState	terminalState = TerminalState::Disabled;		// Terminal state (for CP/M, etc)
 bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabled)
 
-#include "agon.h"								// Configuration file
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support
 #include "agon_audio.h"							// Audio support
@@ -68,7 +69,7 @@ bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabl
 #include "vdu_stream_processor.h"
 #include "hexload.h"
 
-fabgl::Terminal			Terminal;				// Used for CP/M mode
+std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
 VDUStreamProcessor *	processor;				// VDU Stream Processor
 
 #include "zdi.h"								// ZDI debugging console
@@ -81,7 +82,7 @@ void setup() {
 	processor = new VDUStreamProcessor(&VDPSerial);
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
-	init_audio();
+	initAudio();
 	copy_font();
 	set_mode(1);
 	processor->sendModeInformation();
@@ -99,8 +100,7 @@ void loop() {
  		if ((count & 0x7f) == 0) delay(1 /* -TM- ms */);
  		count++;
 
-		if (terminalMode) {
-			do_keyboard_terminal();
+		if (processTerminal()) {
 			continue;
 		}
 		if (millis() - cursorTime > CURSOR_PHASE) {
@@ -159,12 +159,6 @@ void do_keyboard_terminal() {
 		// send raw byte straight to z80
 		processor->writeByte(ascii);
 	}
-
-	// Write anything read from z80 to the screen
-	//
-	while (processor->byteAvailable()) {
-		Terminal.write(processor->readByte());
-	}
 }
 
 // Handle the mouse
@@ -221,15 +215,126 @@ void setConsoleMode(bool mode) {
 	consoleMode = mode;
 }
 
-// Switch to terminal mode
+// Terminal mode state machine transition calls
 //
-void switchTerminalMode() {
-	cls(true);
-	canvas.reset();
-	Terminal.begin(_VGAController.get());	
-	Terminal.connectSerialPort(VDPSerial);
-	Terminal.enableCursor(true);
-	terminalMode = true;
+void startTerminal() {
+	switch (terminalState) {
+		case TerminalState::Disabled: {
+			terminalState = TerminalState::Enabling;
+		} break;
+		case TerminalState::Suspending: {
+			terminalState = TerminalState::Enabled;
+		} break;
+		case TerminalState::Suspended: {
+			terminalState = TerminalState::Resuming;
+		} break;
+	}
+}
+
+void stopTerminal() {
+	switch (terminalState) {
+		case TerminalState::Enabled:
+		case TerminalState::Resuming: 
+		case TerminalState::Suspended:
+		case TerminalState::Suspending: {
+			terminalState = TerminalState::Disabling;
+		} break;
+		case TerminalState::Enabling: {
+			terminalState = TerminalState::Disabled;
+		} break;
+	}
+}
+
+void suspendTerminal() {
+	switch (terminalState) {
+		case TerminalState::Enabled:
+		case TerminalState::Resuming: {
+			terminalState = TerminalState::Suspending;
+			processTerminal();
+		} break;
+		case TerminalState::Enabling: {
+			// Finish enabling, then suspend
+			processTerminal();
+			terminalState = TerminalState::Suspending;
+		} break;
+	}
+}
+
+// Process terminal state machine
+//
+bool processTerminal() {
+	switch (terminalState) {
+		case TerminalState::Disabled: {
+			// Terminal is not currently active, so pass on to VDU system
+			return false;
+		} break;
+		case TerminalState::Suspended: {
+			// Terminal temporarily deactivated, so pass on to VDU system
+			// but keep processing keyboard input
+			do_keyboard_terminal();
+			return false;
+		} break;
+		case TerminalState::Enabling: {
+			// Turn on the terminal
+			Terminal = std::unique_ptr<fabgl::Terminal>(new fabgl::Terminal());
+			Terminal->begin(_VGAController.get());	
+			Terminal->connectSerialPort(VDPSerial);
+			Terminal->enableCursor(true);
+			// onVirtualKey is triggered whenever a key is pressed or released
+			Terminal->onVirtualKeyItem = [&](VirtualKeyItem * vkItem) {
+				if (vkItem->vk == VirtualKey::VK_F12) {
+					if (vkItem->CTRL && (vkItem->LALT || vkItem->RALT)) {
+						// CTRL + ALT + F12: emergency exit terminal mode
+						stopTerminal();
+					}
+				}
+			};
+
+			// onUserSequence is triggered whenever a User Sequence has been received (ESC + '_#' ... '$'), where '...' is sent here
+			Terminal->onUserSequence = [&](char const * seq) {
+				// 'Q!': exit terminal mode
+				if (strcmp("Q!", seq) == 0) {
+					stopTerminal();
+				}
+				if (strcmp("S!", seq) == 0) {
+					suspendTerminal();
+				}
+			};
+			debug_log("Terminal enabled\n\r");
+			terminalState = TerminalState::Enabled;
+		} break;
+		case TerminalState::Enabled: {
+			do_keyboard_terminal();
+			// Write anything read from z80 to the screen
+			// but do this a byte at a time, as VDU commands after a "suspend" will get lost
+			if (processor->byteAvailable()) {
+				Terminal->write(processor->readByte());
+			}
+		} break;
+		case TerminalState::Disabling: {
+			Terminal->deactivate();
+			Terminal = nullptr;
+			set_mode(1);
+			processor->sendModeInformation();
+			debug_log("Terminal disabled\n\r");
+			terminalState = TerminalState::Disabled;
+		} break;
+		case TerminalState::Suspending: {
+			// No need to deactivate terminal here... we just stop sending it serial data
+			debug_log("Terminal suspended\n\r");
+			terminalState = TerminalState::Suspended;
+		} break;
+		case TerminalState::Resuming: {
+			// As we're not deactivating the terminal, we don't need to re-activate it here
+			debug_log("Terminal resumed\n\r");
+			terminalState = TerminalState::Enabled;
+		} break;
+		default: {
+			debug_log("processTerminal: unknown terminal state %d\n\r", terminalState);
+			return false;
+		} break;
+	}
+	return true;
 }
 
 void print(char const * text) {
