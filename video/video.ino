@@ -119,9 +119,9 @@ void loop() {
 		if (processor->byteAvailable()) {
 			if (drawCursor) {
 				drawCursor = false;
-				cursorTime = CURSOR_PHASE;
 				do_cursor();
 			}
+			cursorTime = 0;
 			processor->processNext();
 		}
 	}

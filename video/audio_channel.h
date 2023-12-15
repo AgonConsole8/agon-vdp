@@ -10,7 +10,7 @@
 #include "envelopes/volume.h"
 #include "envelopes/frequency.h"
 
-extern std::unique_ptr<fabgl::SoundGenerator> soundGenerator;	// audio handling sub-system
+extern fabgl::SoundGenerator *soundGenerator;	// audio handling sub-system
 extern void audioTaskAbortDelay(uint8_t channel);
 
 // The audio channel class

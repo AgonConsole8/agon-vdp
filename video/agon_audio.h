@@ -13,6 +13,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <mutex>
 #include <fabgl.h>
 
 #include "audio_channel.h"
@@ -25,7 +26,8 @@ std::vector<TaskHandle_t, psram_allocator<TaskHandle_t>> audioHandlers;
 
 std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage for the sample data
 
-std::unique_ptr<fabgl::SoundGenerator> soundGenerator;				// audio handling sub-system
+fabgl::SoundGenerator *soundGenerator;				// audio handling sub-system
+std::mutex soundGeneratorMutex;
 
 // Audio channel driver task
 //
@@ -73,6 +75,7 @@ void setSampleRate(uint16_t sampleRate) {
 	if (sampleRate == 65535) {
 		sampleRate = AUDIO_DEFAULT_SAMPLE_RATE;
 	}
+	auto lock = std::unique_lock<std::mutex>(soundGeneratorMutex);
 	// detatch the old sound generator
 	if (soundGenerator) {
 		soundGenerator->play(false);
@@ -80,10 +83,10 @@ void setSampleRate(uint16_t sampleRate) {
 			auto channel = channelPair.second;
 			soundGenerator->detach(channel->getWaveform());
 		}
+		delete soundGenerator;
 	}
 	// delete the old sound generator
-	soundGenerator = nullptr;
-	soundGenerator = std::unique_ptr<fabgl::SoundGenerator>(new fabgl::SoundGenerator(sampleRate));
+	soundGenerator = new fabgl::SoundGenerator(sampleRate);
 	for (auto channelPair : audioChannels) {
 		auto channel = channelPair.second;
 		channel->attachSoundGenerator();
