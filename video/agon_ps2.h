@@ -24,9 +24,15 @@ uint32_t		mWheelAcc = MOUSE_DEFAULT_WHEELACC;	// Mouse wheel acceleration
 
 // Forward declarations
 //
+#ifdef USERSPACE
+bool zdi_mode () { return false; }
+void zdi_enter () {}
+void zdi_process_cmd (uint8_t key) {}
+#else
 bool zdi_mode ();
 void zdi_enter ();
 void zdi_process_cmd (uint8_t key);
+#endif
 
 // Get keyboard instance
 //
