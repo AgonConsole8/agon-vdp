@@ -306,7 +306,7 @@ void VDUStreamProcessor::createBitmapFromBuffer(uint16_t bufferId, uint8_t forma
 		return;
 	}
 	auto data = stream->getBuffer();
-	if (bytesPerPixel == 2) {
+	if (bytesPerPixel < 1) {
 		bitmaps[bufferId] = make_shared_psram<Bitmap>(width, height, (uint8_t *)data, pixelFormat, gfg);
 	} else {
 		bitmaps[bufferId] = make_shared_psram<Bitmap>(width, height, (uint8_t *)data, pixelFormat);
