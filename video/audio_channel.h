@@ -2,8 +2,10 @@
 #define AUDIO_CHANNEL_H
 
 #include <memory>
+#include <atomic>
 #include <unordered_map>
 #include <fabgl.h>
+#include <esp_timer.h>
 
 #include "agon.h"
 #include "types.h"
@@ -34,20 +36,21 @@ class AudioChannel {
 		void		loop();
 		uint8_t		channel() { return _channel; }
 	private:
-		std::unique_ptr<fabgl::WaveformGenerator>	getSampleWaveform(uint16_t sampleId, std::shared_ptr<AudioChannel> channelRef);
+		std::shared_ptr<fabgl::WaveformGenerator>	getSampleWaveform(uint16_t sampleId, std::shared_ptr<AudioChannel> channelRef);
 		void		waitForAbort();
 		uint8_t		getVolume(uint32_t elapsed);
 		uint16_t	getFrequency(uint32_t elapsed);
 		bool		isReleasing(uint32_t elapsed);
 		bool		isFinished(uint32_t elapsed);
-		AudioState	_state;
-		uint8_t		_channel;
-		uint8_t		_volume;
-		uint16_t	_frequency;
-		int32_t		_duration;
-		uint32_t	_startTime;
-		uint8_t		_waveformType;
-		std::unique_ptr<WaveformGenerator>	_waveform;
+		std::atomic<AudioState>				_state;
+		std::atomic<std::uint8_t>			_channel;
+		std::atomic<std::uint8_t>			_volume;
+		std::atomic<std::uint16_t>			_frequency;
+		std::atomic<std::int32_t>			_duration;
+		// std::atomic<std::uint32_t>		_startTime;
+		std::atomic<std::uint64_t>			_startTime;
+		std::atomic<std::uint8_t>			_waveformType;
+		std::shared_ptr<WaveformGenerator>	_waveform;
 		std::unique_ptr<VolumeEnvelope>		_volumeEnvelope;
 		std::unique_ptr<FrequencyEnvelope>	_frequencyEnvelope;
 };
@@ -56,24 +59,19 @@ class AudioChannel {
 #include "enhanced_samples_generator.h"
 extern std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage for the sample data
 
-AudioChannel::AudioChannel(uint8_t channel) {
-	this->_channel = channel;
-	this->_state = AudioState::Idle;
-	this->_volume = 64;
-	this->_frequency = 750;
-	this->_duration = -1;
+AudioChannel::AudioChannel(uint8_t channel) : _channel(channel), _state(AudioState::Idle), _volume(64), _frequency(750), _duration(-1) {
 	setWaveform(AUDIO_WAVE_DEFAULT, nullptr);
-	debug_log("AudioChannel: init %d\n\r", this->_channel);
+	debug_log("AudioChannel: init %d\n\r", channel);
 	debug_log("free mem: %d\n\r", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 }
 
 AudioChannel::~AudioChannel() {
-	debug_log("AudioChannel: deiniting %d\n\r", this->_channel);
+	debug_log("AudioChannel: deiniting %d\n\r", this->_channel.load());
 	if (this->_waveform) {
 		this->_waveform->enable(false);
 		soundGenerator->detach(this->_waveform.get());
 	}
-	debug_log("AudioChannel: deinit %d\n\r", this->_channel);
+	debug_log("AudioChannel: deinit %d\n\r", this->_channel.load());
 }
 
 uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t duration) {
@@ -97,7 +95,7 @@ uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t durat
 				}
 			}
 			this->_state = AudioState::Pending;
-			debug_log("AudioChannel: playNote %d,%d,%d,%d\n\r", this->_channel, this->_volume, this->_frequency, this->_duration);
+			debug_log("AudioChannel: playNote %d,%d,%d,%d\n\r", this->_channel.load(), this->_volume.load(), this->_frequency.load(), this->_duration.load());
 			return 1;
 	}
 	return 0;
@@ -129,9 +127,20 @@ uint8_t AudioChannel::getStatus() {
 	return status;
 }
 
-std::unique_ptr<fabgl::WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t sampleId, std::shared_ptr<AudioChannel> channelRef) {
+std::shared_ptr<fabgl::WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t sampleId, std::shared_ptr<AudioChannel> channelRef) {
 	if (samples.find(sampleId) != samples.end()) {
 		auto sample = samples.at(sampleId);
+		if (sample->channels.find(_channel) != sample->channels.end()) {
+			// this channel is already playing this sample, so do nothing
+			return nullptr;
+		}
+		// if we're already a waveform, then swap sample
+		if (this->_waveformType == AUDIO_WAVE_SAMPLE) {
+			// swap sample
+			((EnhancedSamplesGenerator *)this->_waveform.get())->setSample(sample);
+			debug_log("AudioChannel: setSample %d\n\r", sampleId);
+			return nullptr;
+		}
 		// remove this channel from other samples
 		for (auto samplePair : samples) {
 			if (samplePair.second) {
@@ -140,32 +149,32 @@ std::unique_ptr<fabgl::WaveformGenerator> AudioChannel::getSampleWaveform(uint16
 		}
 		sample->channels[_channel] = channelRef;
 
-		return make_unique_psram<EnhancedSamplesGenerator>(sample);
+		return make_shared_psram<EnhancedSamplesGenerator>(sample);
 	}
 	return nullptr;
 }
 
 void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel> channelRef, uint16_t sampleId) {
-	std::unique_ptr<fabgl::WaveformGenerator> newWaveform = nullptr;
+	std::shared_ptr<fabgl::WaveformGenerator> newWaveform = nullptr;
 
 	switch (waveformType) {
 		case AUDIO_WAVE_SAWTOOTH:
-			newWaveform = make_unique_psram<SawtoothWaveformGenerator>();
+			newWaveform = make_shared_psram<SawtoothWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_SQUARE:
-			newWaveform = make_unique_psram<SquareWaveformGenerator>();
+			newWaveform = make_shared_psram<SquareWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_SINE:
-			newWaveform = make_unique_psram<SineWaveformGenerator>();
+			newWaveform = make_shared_psram<SineWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_TRIANGLE:
-			newWaveform = make_unique_psram<TriangleWaveformGenerator>();
+			newWaveform = make_shared_psram<TriangleWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_NOISE:
-			newWaveform = make_unique_psram<NoiseWaveformGenerator>();
+			newWaveform = make_shared_psram<NoiseWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_VICNOISE:
-			newWaveform = make_unique_psram<VICNoiseGenerator>();
+			newWaveform = make_shared_psram<VICNoiseGenerator>();
 			break;
 		case AUDIO_WAVE_SAMPLE:
 			// Buffer-based sample playback
@@ -224,7 +233,8 @@ void AudioChannel::setVolume(uint8_t volume) {
 				// we are looping, so an envelope may be active
 				if (volume == 0) {
 					// silence whilst looping always stops playback - curtail duration
-					this->_duration = millis() - this->_startTime;
+					// this->_duration = millis() - this->_startTime;
+					this->_duration = (esp_timer_get_time() / 1000) - this->_startTime;
 					// if there's a volume envelope, just allow release to happen, otherwise...
 					if (!this->_volumeEnvelope) {
 						this->_volume = 0;
@@ -375,9 +385,10 @@ bool AudioChannel::isFinished(uint32_t elapsed) {
 void AudioChannel::loop() {
 	switch (this->_state) {
 		case AudioState::Pending:
-			debug_log("AudioChannel: play %d,%d,%d,%d\n\r", this->_channel, this->_volume, this->_frequency, this->_duration);
+			debug_log("AudioChannel: play %d,%d,%d,%d\n\r", this->_channel.load(), this->_volume.load(), this->_frequency.load(), this->_duration.load());
 			// we have a new note to play
-			this->_startTime = millis();
+			// this->_startTime = millis();
+			this->_startTime = (esp_timer_get_time() / 1000);
 			// set our initial volume and frequency
 			this->_waveform->setVolume(this->getVolume(0));
 			this->seekTo(0);
@@ -395,7 +406,8 @@ void AudioChannel::loop() {
 		case AudioState::Playing:
 			if (this->_duration >= 0) {
 				// simple playback - delay until we have reached our duration
-				uint32_t elapsed = millis() - this->_startTime;
+				// uint32_t elapsed = millis() - this->_startTime;
+				uint32_t elapsed = (esp_timer_get_time() / 1000) - this->_startTime;
 				debug_log("AudioChannel: elapsed %d\n\r", elapsed);
 				if (elapsed >= this->_duration) {
 					this->_waveform->enable(false);
@@ -413,7 +425,8 @@ void AudioChannel::loop() {
 			break;
 		// loop and release states used for envelopes
 		case AudioState::PlayLoop: {
-			uint32_t elapsed = millis() - this->_startTime;
+			// uint32_t elapsed = millis() - this->_startTime;
+			uint32_t elapsed = (esp_timer_get_time() / 1000) - this->_startTime;
 			if (isReleasing(elapsed)) {
 				debug_log("AudioChannel: releasing...\n\r");
 				this->_state = AudioState::Release;
@@ -426,7 +439,8 @@ void AudioChannel::loop() {
 			break;
 		}
 		case AudioState::Release: {
-			uint32_t elapsed = millis() - this->_startTime;
+			// uint32_t elapsed = millis() - this->_startTime;
+			uint32_t elapsed = (esp_timer_get_time() / 1000) - this->_startTime;
 			// update volume and frequency as appropriate
 			if (this->_volumeEnvelope)
 				this->_waveform->setVolume(this->getVolume(elapsed));

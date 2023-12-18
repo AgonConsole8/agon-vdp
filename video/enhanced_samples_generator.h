@@ -2,6 +2,7 @@
 #define ENHANCED_SAMPLES_GENERATOR_H
 
 #include <memory>
+#include <atomic>
 #include <vector>
 #include <unordered_map>
 #include <fabgl.h>
@@ -18,6 +19,7 @@ class EnhancedSamplesGenerator : public WaveformGenerator {
 		void setFrequency(int value);
 		void setSampleRate(int value);
 		int getSample();
+		void setSample(std::shared_ptr<AudioSample> sample);
 
 		int getDuration(uint16_t frequency);
 
@@ -25,24 +27,24 @@ class EnhancedSamplesGenerator : public WaveformGenerator {
 	private:
 		std::weak_ptr<AudioSample> _sample;
 
-		uint32_t		index;				// Current index inside the current sample block
-		uint32_t		blockIndex;			// Current index into the sample data blocks
-		int32_t			repeatCount = 0;	// Sample count when repeating
+		uint32_t	index;				// Current index inside the current sample block
+		uint32_t	blockIndex;			// Current index into the sample data blocks
+		int32_t		repeatCount;		// Sample count when repeating
 		// TODO consider whether repeatStart and repeatLength may need to be here
 		// which would allow for per-channel repeat settings
 
-		int				frequency = 0;
-		int				previousSample = 0;
-		int				currentSample = 0;
-		double			samplesPerGet = 1.0;
-		double			fractionalSampleOffset = 0.0;
+		std::atomic<int>		frequency;
+		std::atomic<int>		previousSample;
+		std::atomic<int>		currentSample;
+		std::atomic<double>		samplesPerGet;
+		std::atomic<double>		fractionalSampleOffset;
 
 		double calculateSamplerate(uint16_t frequency);
 		int8_t getNextSample();
 };
 
 EnhancedSamplesGenerator::EnhancedSamplesGenerator(std::shared_ptr<AudioSample> sample)
-	: _sample(sample)
+	: _sample(sample), repeatCount(0), index(0), blockIndex(0), frequency(0), previousSample(0), currentSample(0), samplesPerGet(1.0), fractionalSampleOffset(0.0)
 {}
 
 void EnhancedSamplesGenerator::setFrequency(int value) {
@@ -64,15 +66,15 @@ int EnhancedSamplesGenerator::getSample() {
 
 	// if we've moved far enough along, read the next sample
 	while (fractionalSampleOffset >= 1.0) {
-		previousSample = currentSample;
+		previousSample = currentSample.load();
 		currentSample = getNextSample();
-		fractionalSampleOffset -= 1.0;
+		fractionalSampleOffset = fractionalSampleOffset - 1.0;
 	}
 
 	 // Interpolate between the samples to reduce aliasing
 	int sample = currentSample * fractionalSampleOffset + previousSample * (1.0-fractionalSampleOffset);
 
-	fractionalSampleOffset += samplesPerGet;
+	fractionalSampleOffset = fractionalSampleOffset + samplesPerGet;
 
 	// process volume
 	sample = sample * volume() / 127;
@@ -80,6 +82,11 @@ int EnhancedSamplesGenerator::getSample() {
 	decDuration();
 
 	return sample;
+}
+
+void EnhancedSamplesGenerator::setSample(std::shared_ptr<AudioSample> sample) {
+	_sample = sample;
+	seekTo(0);
 }
 
 int EnhancedSamplesGenerator::getDuration(uint16_t frequency) {
