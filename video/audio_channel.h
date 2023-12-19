@@ -178,7 +178,7 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 			break;
 		case AUDIO_WAVE_SAMPLE:
 			// Buffer-based sample playback
-			debug_log("AudioChannel: using sample buffer %d for waveform\n\r", sampleId);
+			debug_log("AudioChannel: using sample buffer %d for waveform on channel %d\n\r", sampleId, channel());
 			newWaveform = getSampleWaveform(sampleId, channelRef);
 			break;
 		default:
@@ -186,17 +186,17 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 			if (waveformType < 0) {
 				// convert our negative sample number to a positive sample number starting at our base buffer ID
 				int16_t sampleNum = BUFFERED_SAMPLE_BASEID + (-waveformType - 1);
-				debug_log("AudioChannel: using sample %d for waveform (%d)\n\r", waveformType, sampleNum);
+				debug_log("AudioChannel: using sample %d for waveform (%d) on channel %d\n\r", waveformType, sampleNum, channel());
 				newWaveform = getSampleWaveform(sampleNum, channelRef);
 				waveformType = AUDIO_WAVE_SAMPLE;
 			} else {
-				debug_log("AudioChannel: unknown waveform type %d\n\r", waveformType);
+				debug_log("AudioChannel: unknown waveform type %d on channel %d\n\r", waveformType, channel());
 			}
 			break;
 	}
 
 	if (newWaveform != nullptr) {
-		debug_log("AudioChannel: setWaveform %d\n\r", waveformType);
+		debug_log("AudioChannel: setWaveform %d on channel %d\n\r", waveformType, channel());
 		if (this->_state != AudioState::Idle) {
 			debug_log("AudioChannel: aborting current playback\n\r");
 			// some kind of playback is happening, so abort any current task delay to allow playback to end
@@ -211,12 +211,12 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 		this->_waveform = std::move(newWaveform);
 		_waveformType = waveformType;
 		attachSoundGenerator();
-		debug_log("AudioChannel: setWaveform %d done\n\r", waveformType);
+		debug_log("AudioChannel: setWaveform %d done on channel %d\n\r", waveformType, channel());
 	}
 }
 
 void AudioChannel::setVolume(uint8_t volume) {
-	debug_log("AudioChannel: setVolume %d\n\r", volume);
+	debug_log("AudioChannel: setVolume %d on channel %d\n\r", volume, channel());
 
 	if (this->_waveform) {
 		waitForAbort();
@@ -264,7 +264,7 @@ void AudioChannel::setVolume(uint8_t volume) {
 }
 
 void AudioChannel::setFrequency(uint16_t frequency) {
-	debug_log("AudioChannel: setFrequency %d\n\r", frequency);
+	debug_log("AudioChannel: setFrequency %d on channel %d\n\r", frequency, channel());
 	this->_frequency = frequency;
 
 	if (this->_waveform) {
@@ -282,7 +282,7 @@ void AudioChannel::setFrequency(uint16_t frequency) {
 }
 
 void AudioChannel::setDuration(int32_t duration) {
-	debug_log("AudioChannel: setDuration %d\n\r", duration);
+	debug_log("AudioChannel: setDuration %d on channel %d\n\r", duration, channel());
 	if (duration == 0xFFFFFF) {
 		duration = -1;
 	}
@@ -408,18 +408,18 @@ void AudioChannel::loop() {
 				// simple playback - delay until we have reached our duration
 				// uint32_t elapsed = millis() - this->_startTime;
 				uint32_t elapsed = (esp_timer_get_time() / 1000) - this->_startTime;
-				debug_log("AudioChannel: elapsed %d\n\r", elapsed);
+				debug_log("AudioChannel: %d elapsed %d\n\r", channel(), elapsed);
 				if (elapsed >= this->_duration) {
 					this->_waveform->enable(false);
-					debug_log("AudioChannel: end\n\r");
+					debug_log("AudioChannel: %d end\n\r", channel());
 					this->_state = AudioState::Idle;
 				} else {
-					debug_log("AudioChannel: loop (%d)\n\r", this->_duration - elapsed);
+					debug_log("AudioChannel: %d loop (%d)\n\r", channel(), this->_duration - elapsed);
 					vTaskDelay(pdMS_TO_TICKS(this->_duration - elapsed));
 				}
 			} else {
 				// our duration is indefinite, so delay for a long time
-				debug_log("AudioChannel: loop (indefinite playback)\n\r");
+				debug_log("AudioChannel: %d loop (indefinite playback)\n\r", channel());
 				vTaskDelay(pdMS_TO_TICKS(-1));
 			}
 			break;
@@ -428,7 +428,7 @@ void AudioChannel::loop() {
 			// uint32_t elapsed = millis() - this->_startTime;
 			uint32_t elapsed = (esp_timer_get_time() / 1000) - this->_startTime;
 			if (isReleasing(elapsed)) {
-				debug_log("AudioChannel: releasing...\n\r");
+				debug_log("AudioChannel: releasing %d...\n\r", channel());
 				this->_state = AudioState::Release;
 			}
 			// update volume and frequency as appropriate
@@ -449,14 +449,14 @@ void AudioChannel::loop() {
 
 			if (isFinished(elapsed)) {
 				this->_waveform->enable(false);
-				debug_log("AudioChannel: end (released)\n\r");
+				debug_log("AudioChannel: end (released %d)\n\r", channel());
 				this->_state = AudioState::Idle;
 			}
 			break;
 		}
 		case AudioState::Abort:
 			this->_waveform->enable(false);
-			debug_log("AudioChannel: abort\n\r");
+			debug_log("AudioChannel: abort %d\n\r", channel());
 			this->_state = AudioState::Idle;
 			break;
 	}
