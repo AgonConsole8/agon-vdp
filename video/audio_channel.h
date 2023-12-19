@@ -130,24 +130,26 @@ uint8_t AudioChannel::getStatus() {
 std::shared_ptr<fabgl::WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t sampleId, std::shared_ptr<AudioChannel> channelRef) {
 	if (samples.find(sampleId) != samples.end()) {
 		auto sample = samples.at(sampleId);
-		if (sample->channels.find(_channel) != sample->channels.end()) {
-			// this channel is already playing this sample, so do nothing
-			return nullptr;
-		}
+		// if (sample->channels.find(_channel) != sample->channels.end()) {
+		// 	// this channel is already playing this sample, so do nothing
+		// 	debug_log("AudioChannel: already playing sample %d on channel %d\n\r", sampleId, channel());
+		// 	return nullptr;
+		// }
 		// if we're already a waveform, then swap sample
 		if (this->_waveformType == AUDIO_WAVE_SAMPLE) {
 			// swap sample
 			((EnhancedSamplesGenerator *)this->_waveform.get())->setSample(sample);
-			debug_log("AudioChannel: setSample %d\n\r", sampleId);
+			debug_log("AudioChannel: setSample %d on channel %d\n\r", sampleId, channel());
 			return nullptr;
 		}
+		// TODO remove channel tracking??
 		// remove this channel from other samples
-		for (auto samplePair : samples) {
-			if (samplePair.second) {
-				samplePair.second->channels.erase(_channel);
-			}
-		}
-		sample->channels[_channel] = channelRef;
+		// for (auto samplePair : samples) {
+		// 	if (samplePair.second) {
+		// 		samplePair.second->channels.erase(_channel);
+		// 	}
+		// }
+		// sample->channels[_channel] = channelRef;
 
 		return make_shared_psram<EnhancedSamplesGenerator>(sample);
 	}

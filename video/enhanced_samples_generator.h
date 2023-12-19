@@ -25,7 +25,8 @@ class EnhancedSamplesGenerator : public WaveformGenerator {
 
 		void seekTo(uint32_t position);
 	private:
-		std::weak_ptr<AudioSample> _sample;
+		// std::weak_ptr<AudioSample> _sample;
+		std::shared_ptr<AudioSample> _sample;
 
 		uint32_t	index;				// Current index inside the current sample block
 		uint32_t	blockIndex;			// Current index into the sample data blocks
@@ -58,11 +59,13 @@ void EnhancedSamplesGenerator::setSampleRate(int value) {
 }
 
 int EnhancedSamplesGenerator::getSample() {
-	if (duration() == 0 || _sample.expired()) {
+	// if (duration() == 0 || _sample.expired()) {
+	if (duration() == 0) {
 		return 0;
 	}
 
-	auto samplePtr = _sample.lock();
+	// auto samplePtr = _sample.lock();
+	auto samplePtr = _sample;
 
 	// if we've moved far enough along, read the next sample
 	while (fractionalSampleOffset >= 1.0) {
@@ -93,12 +96,15 @@ int EnhancedSamplesGenerator::getDuration(uint16_t frequency) {
 	// TODO this will produce an incorrect duration if the sample rate for the channel has been
 	// adjusted to differ from the underlying audio system sample rate
 	// At this point it's not clear how to resolve this, so we'll assume it hasn't been adjusted
-	return _sample.expired() ? 0 : (_sample.lock()->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
+	// return _sample.expired() ? 0 : (_sample.lock()->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
+	return !_sample ? 0 : (_sample->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
 }
 
 void EnhancedSamplesGenerator::seekTo(uint32_t position) {
-	if (!_sample.expired()) {
-		auto samplePtr = _sample.lock();
+	// if (!_sample.expired()) {
+	if (_sample) {
+		// auto samplePtr = _sample.lock();
+		auto samplePtr = _sample;
 		samplePtr->seekTo(position, index, blockIndex, repeatCount);
 
 		// prepare our fractional sample data for playback
@@ -109,8 +115,10 @@ void EnhancedSamplesGenerator::seekTo(uint32_t position) {
 }
 
 double EnhancedSamplesGenerator::calculateSamplerate(uint16_t frequency) {
-	if (!_sample.expired()) {
-		auto samplePtr = _sample.lock();
+	// if (!_sample.expired()) {
+	if (_sample) {
+		// auto samplePtr = _sample.lock();
+		auto samplePtr = _sample;
 		auto baseFrequency = samplePtr->baseFrequency;
 		auto frequencyAdjust = baseFrequency > 0 ? (double)frequency / (double)baseFrequency : 1.0;
 		return frequencyAdjust * ((double)samplePtr->sampleRate / (double)(sampleRate()));
@@ -119,8 +127,10 @@ double EnhancedSamplesGenerator::calculateSamplerate(uint16_t frequency) {
 }
 
 int8_t EnhancedSamplesGenerator::getNextSample() {
-	if (!_sample.expired()) {
-		auto samplePtr = _sample.lock();
+	// if (!_sample.expired()) {
+	if (_sample) {
+		// auto samplePtr = _sample.lock();
+		auto samplePtr = _sample;
 		auto sample = samplePtr->getSample(index, blockIndex);
 		
 		// looping magic

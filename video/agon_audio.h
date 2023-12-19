@@ -11,6 +11,7 @@
 #define AGON_AUDIO_H
 
 #include <memory>
+#include <atomic>
 #include <vector>
 #include <unordered_map>
 #include <fabgl.h>
