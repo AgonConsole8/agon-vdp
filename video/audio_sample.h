@@ -24,21 +24,20 @@ struct AudioSample {
 	uint16_t		baseFrequency = 0;	// Base frequency of the sample
 	int32_t			repeatStart = 0;	// Start offset for repeat, in samples
 	int32_t			repeatLength = -1;	// Length of the repeat section in samples, -1 means to end of sample
-	std::unordered_map<uint8_t, std::weak_ptr<AudioChannel>> channels;	// Channels playing this sample
+	// std::unordered_map<uint8_t, std::weak_ptr<AudioChannel>> channels;	// Channels playing this sample
 };
 
 AudioSample::~AudioSample() {
 	// iterate over channels
-	for (auto channelPair : this->channels) {
-		auto channelRef = channelPair.second;
-		if (!channelRef.expired()) {
-			auto channel = channelRef.lock();
-			debug_log("AudioSample: removing sample %d from channel %d\n\r", id, channel->channel());
-			// Remove sample from channel
-			// TODO change so only removes if channel is definitely set to this sample
-			channel->setWaveform(AUDIO_WAVE_DEFAULT, nullptr);
-		}
-	}
+	// for (auto channelPair : this->channels) {
+	// 	auto channel = channelPair.second.lock();
+	// 	if (channel) {
+	// 		debug_log("AudioSample: removing sample %d from channel %d\n\r", id, channel->channel());
+	// 		// Remove sample from channel
+	// 		// TODO change so only removes if channel is definitely set to this sample
+	// 		channel->setWaveform(AUDIO_WAVE_DEFAULT, nullptr);
+	// 	}
+	// }
 	debug_log("AudioSample %d cleared\n\r", id);
 }
 

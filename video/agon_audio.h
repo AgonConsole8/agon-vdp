@@ -74,7 +74,7 @@ void setSampleRate(uint16_t sampleRate) {
 	if (sampleRate == 65535) {
 		sampleRate = AUDIO_DEFAULT_SAMPLE_RATE;
 	}
-	// detatch the old sound generator
+	// detach the old sound generator
 	if (soundGenerator) {
 		soundGenerator->play(false);
 		for (auto channelPair : audioChannels) {
