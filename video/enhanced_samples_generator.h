@@ -25,9 +25,9 @@ class EnhancedSamplesGenerator : public WaveformGenerator {
 
 		void seekTo(uint32_t position);
 	private:
-		// std::weak_ptr<AudioSample> _sample;
-		std::shared_ptr<AudioSample> _sample;
+		std::weak_ptr<AudioSample> _sample;
 
+		// TODO we may need to use a mutex to protect these values
 		uint32_t	index;				// Current index inside the current sample block
 		uint32_t	blockIndex;			// Current index into the sample data blocks
 		int32_t		repeatCount;		// Sample count when repeating
@@ -41,7 +41,7 @@ class EnhancedSamplesGenerator : public WaveformGenerator {
 		std::atomic<double>		fractionalSampleOffset;
 
 		double calculateSamplerate(uint16_t frequency);
-		int8_t getNextSample();
+		int8_t getNextSample(std::shared_ptr<AudioSample> sample);
 };
 
 EnhancedSamplesGenerator::EnhancedSamplesGenerator(std::shared_ptr<AudioSample> sample)
@@ -59,18 +59,19 @@ void EnhancedSamplesGenerator::setSampleRate(int value) {
 }
 
 int EnhancedSamplesGenerator::getSample() {
-	// if (duration() == 0 || _sample.expired()) {
-	if (duration() == 0) {
+	if (duration() == 0 || _sample.expired()) {
 		return 0;
 	}
 
-	// auto samplePtr = _sample.lock();
-	auto samplePtr = _sample;
+	auto samplePtr = _sample.lock();
+	if (!samplePtr) {
+		return 0;
+	}
 
 	// if we've moved far enough along, read the next sample
 	while (fractionalSampleOffset >= 1.0) {
 		previousSample = currentSample.load();
-		currentSample = getNextSample();
+		currentSample = getNextSample(samplePtr);
 		fractionalSampleOffset = fractionalSampleOffset - 1.0;
 	}
 
@@ -96,15 +97,16 @@ int EnhancedSamplesGenerator::getDuration(uint16_t frequency) {
 	// TODO this will produce an incorrect duration if the sample rate for the channel has been
 	// adjusted to differ from the underlying audio system sample rate
 	// At this point it's not clear how to resolve this, so we'll assume it hasn't been adjusted
-	// return _sample.expired() ? 0 : (_sample.lock()->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
-	return !_sample ? 0 : (_sample->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
+	auto samplePtr = _sample.lock();
+	if (!samplePtr) {
+		return 0;
+	}
+	return (samplePtr->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
 }
 
 void EnhancedSamplesGenerator::seekTo(uint32_t position) {
-	// if (!_sample.expired()) {
-	if (_sample) {
-		// auto samplePtr = _sample.lock();
-		auto samplePtr = _sample;
+	auto samplePtr = _sample.lock();
+	if (samplePtr) {
 		samplePtr->seekTo(position, index, blockIndex, repeatCount);
 
 		// prepare our fractional sample data for playback
@@ -115,10 +117,8 @@ void EnhancedSamplesGenerator::seekTo(uint32_t position) {
 }
 
 double EnhancedSamplesGenerator::calculateSamplerate(uint16_t frequency) {
-	// if (!_sample.expired()) {
-	if (_sample) {
-		// auto samplePtr = _sample.lock();
-		auto samplePtr = _sample;
+	auto samplePtr = _sample.lock();
+	if (samplePtr) {
 		auto baseFrequency = samplePtr->baseFrequency;
 		auto frequencyAdjust = baseFrequency > 0 ? (double)frequency / (double)baseFrequency : 1.0;
 		return frequencyAdjust * ((double)samplePtr->sampleRate / (double)(sampleRate()));
@@ -126,23 +126,17 @@ double EnhancedSamplesGenerator::calculateSamplerate(uint16_t frequency) {
 	return 1.0;
 }
 
-int8_t EnhancedSamplesGenerator::getNextSample() {
-	// if (!_sample.expired()) {
-	if (_sample) {
-		// auto samplePtr = _sample.lock();
-		auto samplePtr = _sample;
-		auto sample = samplePtr->getSample(index, blockIndex);
-		
-		// looping magic
-		repeatCount--;
-		if (repeatCount == 0) {
-			// we've reached the end of the repeat section, so loop back
-			seekTo(samplePtr->repeatStart);
-		}
-
-		return sample;
+int8_t EnhancedSamplesGenerator::getNextSample(std::shared_ptr<AudioSample> samplePtr) {
+	auto sample = samplePtr->getSample(index, blockIndex);
+	
+	// looping magic
+	repeatCount--;
+	if (repeatCount == 0) {
+		// we've reached the end of the repeat section, so loop back
+		seekTo(samplePtr->repeatStart);
 	}
-	return 0;
+
+	return sample;
 }
 
 #endif // ENHANCED_SAMPLES_GENERATOR_H

@@ -31,8 +31,8 @@ AudioSample::~AudioSample() {
 	// iterate over channels
 	for (auto channelPair : this->channels) {
 		auto channelRef = channelPair.second;
-		if (!channelRef.expired()) {
-			auto channel = channelRef.lock();
+		auto channel = channelRef.lock();
+		if (channel) {
 			debug_log("AudioSample: removing sample %d from channel %d\n\r", id, channel->channel());
 			// Remove sample from channel
 			// TODO change so only removes if channel is definitely set to this sample
