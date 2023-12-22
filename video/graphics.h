@@ -488,17 +488,22 @@ void plotCharacter(char c) {
 	if (ttxtMode) {
     	ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, c);
   	} else {
-  		if (textCursorActive()) {
-	  		canvas->setClippingRect(defaultViewport);
-			canvas->setPenColor(tfg);
-			canvas->setBrushColor(tbg);
-			canvas->setPaintOptions(tpo);
-	  	} else {
-		  canvas->setClippingRect(graphicsViewport);
-		  canvas->setPenColor(gfg);
-		  canvas->setPaintOptions(gpo);
+		bool isTextCursor = textCursorActive();
+		auto bitmap = getBitmapFromChar(c);
+		canvas->setClippingRect(isTextCursor ? defaultViewport : graphicsViewport);
+		if (bitmap) {
+			canvas->drawBitmap(activeCursor->X, activeCursor->Y + fontH - bitmap->height, bitmap.get());
+		} else {
+			if (isTextCursor) {
+				canvas->setPenColor(tfg);
+				canvas->setBrushColor(tbg);
+				canvas->setPaintOptions(tpo);
+			} else {
+				canvas->setPenColor(gfg);
+				canvas->setPaintOptions(gpo);
+			}
+			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
 		}
-		canvas->drawChar(activeCursor->X, activeCursor->Y, c);
   	}
 	cursorRight();
 }
