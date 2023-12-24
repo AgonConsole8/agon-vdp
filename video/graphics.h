@@ -791,4 +791,12 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
   	} 
 }
 
+void shrinkScreen(int8_t x, int8_t y) {
+	_VGAController->shrinkScreen(x, y);
+}
+
+void moveScreen(int8_t x, int8_t y) {
+	_VGAController->moveScreen(x, y);
+}
+
 #endif
