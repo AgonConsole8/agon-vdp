@@ -79,7 +79,7 @@ void setSampleRate(uint16_t sampleRate) {
 		soundGenerator->play(false);
 		for (auto channelPair : audioChannels) {
 			auto channel = channelPair.second;
-			soundGenerator->detach(channel->getWaveform());
+			channel->tempDetachSoundGenerator();
 		}
 	}
 	// delete the old sound generator

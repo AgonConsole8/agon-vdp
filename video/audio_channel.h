@@ -33,6 +33,7 @@ class AudioChannel {
 		void		setSampleRate(uint16_t sampleRate);
 		WaveformGenerator * getWaveform() { return this->_waveform; }
 		void		attachSoundGenerator();
+		void		tempDetachSoundGenerator();
 		void		seekTo(uint32_t position);
 		void		loop();
 		uint8_t		channel() { return _channel; }
@@ -211,7 +212,6 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 	}
 
 	if (newWaveform) {
-		newWaveform->setAutoDestroy(true);
 		debug_log("AudioChannel: setWaveform %d on channel %d\n\r", waveformType, channel());
 		if (this->_state != AudioState::Idle) {
 			debug_log("AudioChannel: aborting current playback\n\r");
@@ -352,7 +352,16 @@ void AudioChannel::setSampleRate(uint16_t sampleRate) {
 
 void AudioChannel::attachSoundGenerator() {
 	if (this->_waveform) {
+		this->_waveform->setAutoDestroy(true);
 		soundGenerator->attach(this->_waveform);
+	}
+}
+
+void AudioChannel::tempDetachSoundGenerator() {
+	if (this->_waveform) {
+		// this is a temp detach, so we don't want to destroy the waveform
+		this->_waveform->setAutoDestroy(false);
+		soundGenerator->detach(this->_waveform);
 	}
 }
 
