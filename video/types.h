@@ -169,3 +169,11 @@ std::shared_ptr<T> make_shared_psram_array(size_t size)
 	return std::allocate_shared<T>(allocator, size);
 }
 
+template<typename T, typename... Args>
+T * make_psram(Args&&... args)
+{
+	psram_allocator<T> allocator;
+	T* ptr = allocator.allocate(1);
+	allocator.construct(ptr, std::forward<Args>(args)...);
+	return ptr;
+}
