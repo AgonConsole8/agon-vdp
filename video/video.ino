@@ -44,6 +44,7 @@
 // 05/09/2023:					+ New audio enhancements, improved mode change code
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
+// 03/01/2024:    CW Support early version of OTF.
 
 #include <WiFi.h>
 #include <HardwareSerial.h>
@@ -68,6 +69,7 @@ bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabl
 #include "vdp_protocol.h"						// VDP Protocol
 #include "vdu_stream_processor.h"
 #include "hexload.h"
+#include "on_the_fly.h"							// Access to On-the-Fly (OTF mode)
 
 std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
 VDUStreamProcessor *	processor;				// VDU Stream Processor
@@ -118,6 +120,26 @@ void loop() {
 			processor->processNext();
 		}
 	}
+}
+
+// Determine whether stream data is available (for OTF)
+bool stream_byte_available() {
+	return processor->byteAvailable();
+}
+
+// Get a byte from the incoming stream (for OTF)
+uint8_t stream_read_byte() {
+	return processor->readByte();
+}
+
+// Send the keyboard state (for OTF)
+void stream_send_keyboard_state() {
+	processor->sendKeyboardState();
+}
+
+// Send the mode information (for OTF)
+void stream_send_mode_information() {
+	processor->sendModeInformation();
 }
 
 // Handle the keyboard: BBC VDU Mode

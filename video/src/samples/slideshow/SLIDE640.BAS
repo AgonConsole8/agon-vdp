@@ -1,0 +1,21 @@
+10 REM OTF Slideshow Demo
+20 REM This demo shows various images using On-the-Fly mode.
+30 REM MODE &44: REM OTF 640x480x64, with 80x60 Text Area
+40 CLS: VDU 23,1,0;0;0;0;
+50 FDFLT%=&000F
+60 OTF%=&1E17
+70 ID%=3
+75 VDU OTF%;3,1;
+80 VDU OTF%;120,ID%;0;FDFLT%;640;480;1: REM Use PSRAM
+90 infile=OPENIN "SLIDE01_640X480.BIN"
+100 IF infile=0 THEN END
+110 FOR Y%=0 TO 479
+120 VDU OTF%;132,ID%;0;Y%;640;
+130 FOR X%=0 TO 639
+140  temp%=BGET#infile
+150  VDU temp%+&C0
+160 NEXT X%
+170 NEXT Y%
+180 CLOSE#infile
+190 VDU OTF%;4,ID%;
+200 GOTO 210
