@@ -434,7 +434,7 @@ void DiManager::recompute_primitive(DiPrimitive* prim, uint16_t old_flags,
         int32_t end = MIN((new_max_group+1), old_min_group);
         for (int32_t g = new_min_group; g < end; g++) {
           std::vector<DiPrimitive*> * vp = &m_groups[g];
-          vp->push_back(prim);
+          insert_primitive_into_vertical_group(prim, vp);
         }
       }
 
@@ -443,7 +443,7 @@ void DiManager::recompute_primitive(DiPrimitive* prim, uint16_t old_flags,
         int32_t begin = MAX((old_max_group+1), new_min_group);
         for (int32_t g = begin; g <= new_max_group; g++) {
           std::vector<DiPrimitive*> * vp = &m_groups[g];
-          vp->push_back(prim);
+          insert_primitive_into_vertical_group(prim, vp);
         }
       }
       prim->add_flags(PRIM_FLAGS_CAN_DRAW);
@@ -463,13 +463,24 @@ void DiManager::recompute_primitive(DiPrimitive* prim, uint16_t old_flags,
       // Just place primitive into new groups
       for (int32_t g = new_min_group; g <= new_max_group; g++) {
         std::vector<DiPrimitive*> * vp = &m_groups[g];
-        vp->push_back(prim);
+        insert_primitive_into_vertical_group(prim, vp);
       }
       prim->add_flags(PRIM_FLAGS_CAN_DRAW);
     } else {
       prim->remove_flags(PRIM_FLAGS_CAN_DRAW);
     }
   }
+}
+
+void DiManager::insert_primitive_into_vertical_group(DiPrimitive* prim, std::vector<DiPrimitive*> * vp) {
+  auto prim_id = prim->get_id();
+  for (auto grouped_prim = vp->begin(); grouped_prim != vp->end(); grouped_prim++) {
+    if (prim_id < (*grouped_prim)->get_id()) {
+      vp->insert(grouped_prim, prim);
+      return;
+    }
+  }
+  vp->push_back(prim);
 }
 
 DiPrimitive* DiManager::finish_create(uint16_t id, DiPrimitive* prim, DiPrimitive* parent_prim) {

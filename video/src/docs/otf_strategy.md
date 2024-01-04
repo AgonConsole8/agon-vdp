@@ -8,6 +8,11 @@ is a child of primitive A, and A is moved (in X and/or Y), then B is moved along
 postion with respect to A does not change, but its physical position on the display does change. Thus, an entire array of enemy ships can
 be moved simply by moving a single "group" primitive that is the parent of all of the ships.
 
+The Z-order of drawing primitives is based on their primitive IDs, not on their order
+of creation, and not on their parent-child relationships. This means that if you want to
+guarantee that a child primitive is always drawn after (over) the parent primitive, you
+must create the child with an ID that is greater than the ID of the parent.
+
 Another important aspect of how the OTF mode works is that it must keep all primitives in internal RAM,
 so that it can draw them repeatedly, without being told to do so by the BASIC (EZ80) application. Since
 the ESP32 holds the primitives in RAM, they can easily be manipulated (e.g., moved), without sending
@@ -15,6 +20,9 @@ all of the information required to recreate them across the serial channel. VDP-
 similar with bitmaps and sprites, but as a Fab-GL derivative, not with simpler primitives such as lines and triangles. However,
 enhancements are in the works that allow VDP-GL to create buffered
 commands, so that it can replay them without a large data transfer.
+
+Bitmap primitives can have their pixel data stored in PSRAM (external SPI RAM), to save memory space
+in the internal DRAM; however, using PSRAM is slower, and can cause flicker at higher resolutions.
 
 When primitives are no longer needed by the BASIC application, they may be deleted. Deleting a group
 primitive will delete its children, too, reducing the number of serial commands required to delete

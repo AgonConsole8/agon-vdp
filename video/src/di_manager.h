@@ -217,6 +217,11 @@ class DiManager {
   // in the given string. The string is null-terminated.
   void process_string(const uint8_t* string);
 
+  // Insert a primitive into a vertical drawing group. This is unrelated to group primitives.
+  // The Z-order of drawing primitives is based on their primitive IDs, not on their order
+  // of creation, and not on their parent-child relationships.
+  void insert_primitive_into_vertical_group(DiPrimitive* prim, std::vector<DiPrimitive*> * vp);
+
   uint8_t get_param_8(uint32_t index);
   int16_t get_param_16(uint32_t index);
   bool handle_udg_sys_cmd();
