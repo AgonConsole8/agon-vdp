@@ -42,22 +42,22 @@ video modes are still in flux, and may need adjusting,
 after some experimentation,
 so be aware, when using any OTF modes.</i>
 
-32,48,64 (&20/&30/&40): 800x600 @ 60Hz, 100x75 (positive synchs)<br>
-33,49,65 (&21/&31/&41): 800x600 @ 60Hz, 100x75 (negative synchs)<br>
-34,50,66 (&22/&32/&42): 684x384 @ 60Hz, 85x48<br>
-35,51,67 (&23/&33/&43): 640x512 @ 60Hz, 80x64<br>
-36,52,68 (&24/&34/&44): 640x480 @ 60Hz, 80x60<br>
-37,53,69 (&25/&35/&45): 640x240 @ 60Hz, 80x30<br>
-38,54,70 (&26/&36/&46): 512x384 @ 60Hz, 64x48<br>
-39,55,71 (&27/&37/&47): 320x240 @ 60Hz, 40x30<br>
-40,56,72 (&28/&38/&48): 320x200 @ 75Hz, 40x25<br>
-41,57,73 (&29/&39/&49): 320x200 @ 70Hz, 40x25<br>
-42,58,74 (&2A/&3A/&4A): 1024x768 @ 60Hz, 128x96<br>
-43,59,75 (&2B/&3B/&4B): 1280x720 @ 60Hz, 160x90<br>
-44,60,76 (&2C/&3C/&4C): 1368x768 @ 60Hz, TBD<br>
-45,61,77 (&2D/&3D/&4D): reserved<br>
-46,62,78 (&2E/&3E/&4E): reserved<br>
-47,63,79 (&2F/&3F/&4F): reserved<br>
+32/48/64 (&20/&30/&40): 800x600 @ 60Hz, 100x75 (positive synchs)<br>
+33/49/65 (&21/&31/&41): 800x600 @ 60Hz, 100x75 (negative synchs)<br>
+34/50/66 (&22/&32/&42): 684x384 @ 60Hz, 85x48<br>
+35/51/67 (&23/&33/&43): 640x512 @ 60Hz, 80x64<br>
+36/52/68 (&24/&34/&44): 640x480 @ 60Hz, 80x60<br>
+37/53/69 (&25/&35/&45): 640x240 @ 60Hz, 80x30<br>
+38/54/70 (&26/&36/&46): 512x384 @ 60Hz, 64x48<br>
+39/55/71 (&27/&37/&47): 320x240 @ 60Hz, 40x30<br>
+40/56/72 (&28/&38/&48): 320x200 @ 75Hz, 40x25<br>
+41/57/73 (&29/&39/&49): 320x200 @ 70Hz, 40x25<br>
+42/58/74 (&2A/&3A/&4A): 1024x768 @ 60Hz, 128x96<br>
+43/59/75 (&2B/&3B/&4B): 1280x720 @ 60Hz, 160x90<br>
+44/60/76 (&2C/&3C/&4C): 1368x768 @ 60Hz, TBD<br>
+45/61/77 (&2D/&3D/&4D): reserved<br>
+46/62/78 (&2E/&3E/&4E): reserved<br>
+47/63/79 (&2F/&3F/&4F): reserved<br>
 
 <i><b>IMPORTANT: At present, once an application enters one
 of the OTF video modes, whether by program statement or by user
