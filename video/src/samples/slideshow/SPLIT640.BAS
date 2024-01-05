@@ -7,7 +7,7 @@
 62 width%=640/4: height%=480/4
 70 REM -- Load bitmaps
 80 FOR ID%=100 TO 115
-85 IF (ID% AND 3)=0 THEN usePSRAM%=1 ELSE usePSRAM%=0
+85 IF (ID% AND 3)=0 THEN usePSRAM%=0 ELSE usePSRAM%=0
 90 VDU OTF%;120,ID%;0;FDFLT%;width%;height%;usePSRAM%
 100 NEXT ID%
 110 READ filename$
