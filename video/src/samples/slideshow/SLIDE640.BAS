@@ -22,7 +22,7 @@
 180 CLOSE#infile
 182 X%=usePSRAM%*320
 184 Y%=(ID% AND 2)*120
-186 VDU OTF%;1,ID%;X%;Y%
+186 VDU OTF%;1,ID%;X%;Y%;
 190 VDU OTF%;4,ID%;
 200 NEXT ID%
 202 VDU OTF%;3,1;: REM Delete text area
