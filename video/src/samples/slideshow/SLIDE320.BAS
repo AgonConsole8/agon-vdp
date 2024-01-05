@@ -21,7 +21,7 @@
 180 CLOSE#infile
 190 VDU OTF%;4,ID%;
 200 NEXT ID%
-205 VDU OTF%;3,1;: REM Delete text area
+202 VDU OTF%;3,1;: REM Delete text area
 205 REM -- Cycle through loaded bitmaps
 210 FOR ID%=101 TO 116
 211 VDU OTF%;0,ID%;FDFLT%;
