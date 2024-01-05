@@ -253,9 +253,12 @@ uint8_t VDUStreamProcessor::createSampleFromBuffer(uint16_t bufferId, uint8_t fo
 		return 0;
 	}
 	clearSample(bufferId);
+	// auto sample = (format & AUDIO_FORMAT_WITH_RATE) ?
+	// 	make_shared_psram<AudioSample>(buffers[bufferId], bufferId, format & AUDIO_FORMAT_DATA_MASK, sampleRate)
+	// 	: make_shared_psram<AudioSample>(buffers[bufferId], bufferId, format & AUDIO_FORMAT_DATA_MASK);
 	auto sample = (format & AUDIO_FORMAT_WITH_RATE) ?
-		make_shared_psram<AudioSample>(buffers[bufferId], bufferId, format & AUDIO_FORMAT_DATA_MASK, sampleRate)
-		: make_shared_psram<AudioSample>(buffers[bufferId], bufferId, format & AUDIO_FORMAT_DATA_MASK);
+		std::make_shared<AudioSample>(buffers[bufferId], bufferId, format & AUDIO_FORMAT_DATA_MASK, sampleRate)
+		: std::make_shared<AudioSample>(buffers[bufferId], bufferId, format & AUDIO_FORMAT_DATA_MASK);
 	if (sample) {
 		if (format & AUDIO_FORMAT_TUNEABLE) {
 			sample->baseFrequency = AUDIO_DEFAULT_FREQUENCY;

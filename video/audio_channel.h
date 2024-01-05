@@ -168,7 +168,7 @@ std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t samp
 		// sample->channels[_channel] = channelRef;
 
 		// return make_shared_psram<EnhancedSamplesGenerator>(sample);
-		return make_shared_psram<EnhancedSamplesGenerator>(sample);
+		return std::make_shared<EnhancedSamplesGenerator>(sample);
 	}
 	return nullptr;
 }
@@ -178,22 +178,28 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 
 	switch (waveformType) {
 		case AUDIO_WAVE_SAWTOOTH:
-			newWaveform = make_shared_psram<SawtoothWaveformGenerator>();
+			// newWaveform = make_shared_psram<SawtoothWaveformGenerator>();
+			newWaveform = std::make_shared<SawtoothWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_SQUARE:
-			newWaveform = make_shared_psram<SquareWaveformGenerator>();
+			// newWaveform = make_shared_psram<SquareWaveformGenerator>();
+			newWaveform = std::make_shared<SquareWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_SINE:
-			newWaveform = make_shared_psram<SineWaveformGenerator>();
+			// newWaveform = make_shared_psram<SineWaveformGenerator>();
+			newWaveform = std::make_shared<SineWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_TRIANGLE:
-			newWaveform = make_shared_psram<TriangleWaveformGenerator>();
+			// newWaveform = make_shared_psram<TriangleWaveformGenerator>();
+			newWaveform = std::make_shared<TriangleWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_NOISE:
-			newWaveform = make_shared_psram<NoiseWaveformGenerator>();
+			// newWaveform = make_shared_psram<NoiseWaveformGenerator>();
+			newWaveform = std::make_shared<NoiseWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_VICNOISE:
-			newWaveform = make_shared_psram<VICNoiseGenerator>();
+			// newWaveform = make_shared_psram<VICNoiseGenerator>();
+			newWaveform = std::make_shared<VICNoiseGenerator>();
 			break;
 		case AUDIO_WAVE_SAMPLE:
 			// Buffer-based sample playback
