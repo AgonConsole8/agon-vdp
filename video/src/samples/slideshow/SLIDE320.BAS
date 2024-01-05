@@ -4,7 +4,7 @@
 40 CLS: VDU 23,1,0;0;0;0;
 50 FDFLT%=&000F: FHIDE%=&000E
 60 OTF%=&1E17
-70 REM -- Load bitmaps and show each one
+70 REM -- Load bitmaps
 76 FOR ID%=101 TO 116
 80 READ filename$
 82 PRINT "Loading ";filename$
