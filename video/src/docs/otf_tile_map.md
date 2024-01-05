@@ -28,7 +28,7 @@ Refer to the section on OTF Primitive Flags for information about
 certain flags that are useful for tile maps.
 
 ## Create Solid Bitmap for Tile Map
-<b>VDU 23, 30, 101, id; bmid;</b> : Create Solid Bitmap for Tile Map
+<b>VDU 23, 30, 101, id; bmid; psram</b> : Create Solid Bitmap for Tile Map
 
 This commmand creates a solid bitmap to be used within a tile map.
 Every pixel is fully opaque (though each pixel has its own color).
@@ -38,8 +38,13 @@ processing speed perspective. Bitmaps with any transparency may be slower, and t
 OTF mode will automatically set the PRIM_FLAGS_ALL_SAME flag
 when this command is used.
 
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
+
 ## Create Masked Bitmap for Tile Map
-<b>VDU 23, 30, 102, id; bmid; color</b> : Create Masked Bitmap for Tile Map
+<b>VDU 23, 30, 102, id; bmid; psram, color</b> : Create Masked Bitmap for Tile Map
 
 This commmand creates a masked bitmap to be used within a tile map.
 Every pixel is either fully opaque (though each pixel has its own color) or fully transparent.
@@ -52,8 +57,13 @@ visible color in the source bitmap. When setting the color of
 each pixel in the bitmap, use that given color for any pixels
 that must be invisible.
 
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
+
 ## Create Transparent Bitmap for Tile Map
-<b>VDU 23, 30, 103, id; bmid; color</b> : Create Transparent Bitmap for Tile Map
+<b>VDU 23, 30, 103, id; bmid; psram, color</b> : Create Transparent Bitmap for Tile Map
 
 This commmand creates a transparent bitmap to be used within a tile map.
 Each pixel has either 0%, 25%, 50%, 75%, or 100% opacity.
@@ -68,6 +78,11 @@ that must be invisible.
 
 OTF mode will automatically set the PRIM_FLAGS_BLENDED flag
 when this command is used.
+
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
 
 ## Set bitmap ID for tile in tile map
 <b>VDU 23, 30, 104, id; col; row; bmid;</b> : Set bitmap ID for tile in Tile Map

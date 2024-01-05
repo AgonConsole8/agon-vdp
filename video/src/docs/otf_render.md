@@ -98,7 +98,8 @@ A solid render has pixels that are all 100% opaque (0% transparent).
 
 If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
 rather than in DRAM. This should only be done in resolutions where the pixel clock
-rate is relatively slow; otherwise, flicker may occur.
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
 
 ## Create primitive: Masked Render
 <b>VDU 23, 30, 201, id; pid; flags; x; y; w; h; psram, color</b> :  Create primitive: Masked Render
@@ -116,7 +117,8 @@ opaque, then the color could be specified as 1 or &01 in BASIC (0x01 in C).
 
 If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
 rather than in DRAM. This should only be done in resolutions where the pixel clock
-rate is relatively slow; otherwise, flicker may occur.
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
 
 ## Create primitive: Transparent Render
 <b>VDU 23, 30, 202, id; pid; flags; x; y; w; h; psram, color</b> :  Create primitive: Transparent Render
@@ -135,7 +137,8 @@ opaque, then the color could be specified as 1 or &01 in BASIC (0x01 in C).
 
 If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
 rather than in DRAM. This should only be done in resolutions where the pixel clock
-rate is relatively slow; otherwise, flicker may occur.
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
 
 ## Define Mesh Vertices
 <b>VDU 23, 30, 203, id; mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices

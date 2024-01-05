@@ -32,7 +32,7 @@ the case with random-length text lines in the text area primitive,
 which is a tile array.
 
 ## Create Solid Bitmap for Tile Array
-<b>VDU 23, 30, 81, id; pid; flags; w; h;</b> : Create Solid Bitmap for Tile Array
+<b>VDU 23, 30, 81, id; pid; flags; w; h; psram</b> : Create Solid Bitmap for Tile Array
 
 This commmand creates a solid bitmap to be used within a tile array.
 Every pixel is fully opaque (though each pixel has its own color).
@@ -47,8 +47,13 @@ use the Define Text Area Character or Define Text Area Character
 Range command, then the required solid bitmap(s) is(are)
 created automatically.
 
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
+
 ## Create Masked Bitmap for Tile Array
-<b>VDU 23, 30, 82, id; pid; flags; w; h; color</b> : Create Masked Bitmap for Tile Array
+<b>VDU 23, 30, 82, id; pid; flags; w; h; psram, color</b> : Create Masked Bitmap for Tile Array
 
 <i>This command code is reserved for potential future use.
 The command is not presently implemented.</i>
@@ -64,8 +69,13 @@ visible color in the source bitmap. When setting the color of
 each pixel in the bitmap, use that given color for any pixels
 that must be invisible.
 
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
+
 ## Create Transparent Bitmap for Tile Array
-<b>VDU 23, 30, 83, id; pid; flags; w; h; color</b> : Create Transparent Bitmap for Tile Array
+<b>VDU 23, 30, 83, id; pid; flags; w; h; psram, color</b> : Create Transparent Bitmap for Tile Array
 
 <i>This command code is reserved for potential future use.
 The command is not presently implemented.</i>
@@ -83,6 +93,11 @@ that must be invisible.
 
 OTF mode will automatically set the PRIM_FLAGS_BLENDED flag
 when this command is used.
+
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
 
 ## Set bitmap ID for tile in tile array
 <b>VDU 23, 30, 84, id; column; row; bmid;</b> : Set bitmap ID for tile in Tile Array

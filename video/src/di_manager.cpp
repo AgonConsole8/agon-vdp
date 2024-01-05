@@ -2796,40 +2796,40 @@ DiBitmap* DiManager::create_reference_transparent_bitmap(OtfCmd_137_Create_primi
 
 DiBitmap* DiManager::create_solid_bitmap_for_tile_array(OtfCmd_81_Create_Solid_Bitmap_for_Tile_Array* cmd) {
     DiTileArray* prim; if (!(prim = (DiTileArray*)get_safe_primitive(cmd->m_id))) return NULL;
-    auto bitmap = prim->create_bitmap(cmd->m_bmid);
+    auto bitmap = prim->create_bitmap(cmd->m_bmid, (cmd->m_psram != 0));
     return bitmap;
 }
 
 DiBitmap* DiManager::create_masked_bitmap_for_tile_array(OtfCmd_82_Create_Masked_Bitmap_for_Tile_Array* cmd) {
     DiTileArray* prim; if (!(prim = (DiTileArray*)get_safe_primitive(cmd->m_id))) return NULL;
-    auto bitmap = prim->create_bitmap(cmd->m_bmid);
+    auto bitmap = prim->create_bitmap(cmd->m_bmid, (cmd->m_psram != 0));
     bitmap->set_transparent_color(cmd->m_color);
     return bitmap;
 }
 
 DiBitmap* DiManager::create_transparent_bitmap_for_tile_array(OtfCmd_83_Create_Transparent_Bitmap_for_Tile_Array* cmd) {
     DiTileArray* prim; if (!(prim = (DiTileArray*)get_safe_primitive(cmd->m_id))) return NULL;
-    auto bitmap = prim->create_bitmap(cmd->m_bmid);
+    auto bitmap = prim->create_bitmap(cmd->m_bmid, (cmd->m_psram != 0));
     bitmap->set_transparent_color(cmd->m_color);
     return bitmap;
 }
 
 DiBitmap* DiManager::create_solid_bitmap_for_tile_map(OtfCmd_101_Create_Solid_Bitmap_for_Tile_Map* cmd) {
     DiTileMap* prim; if (!(prim = (DiTileMap*)get_safe_primitive(cmd->m_id))) return NULL;
-    auto bitmap = prim->create_bitmap(cmd->m_bmid);
+    auto bitmap = prim->create_bitmap(cmd->m_bmid, (cmd->m_psram != 0));
     return bitmap;
 }
 
 DiBitmap* DiManager::create_masked_bitmap_for_tile_map(OtfCmd_102_Create_Masked_Bitmap_for_Tile_Map* cmd) {
     DiTileMap* prim; if (!(prim = (DiTileMap*)get_safe_primitive(cmd->m_id))) return NULL;
-    auto bitmap = prim->create_bitmap(cmd->m_bmid);
+    auto bitmap = prim->create_bitmap(cmd->m_bmid, (cmd->m_psram != 0));
     bitmap->set_transparent_color(cmd->m_color);
     return bitmap;
 }
 
 DiBitmap* DiManager::create_transparent_bitmap_for_tile_map(OtfCmd_103_Create_Transparent_Bitmap_for_Tile_Map* cmd) {
     DiTileMap* prim; if (!(prim = (DiTileMap*)get_safe_primitive(cmd->m_id))) return NULL;
-    auto bitmap = prim->create_bitmap(cmd->m_bmid);
+    auto bitmap = prim->create_bitmap(cmd->m_bmid, (cmd->m_psram != 0));
     bitmap->set_transparent_color(cmd->m_color);
     return bitmap;
 }

@@ -84,10 +84,10 @@ void DiTileMap::generate_instructions() {
   //}
 }
 
-DiBitmap* DiTileMap::create_bitmap(DiTileBitmapID bm_id) {
+DiBitmap* DiTileMap::create_bitmap(DiTileBitmapID bm_id, bool psram) {
   auto bitmap_item = m_id_to_bitmap_map.find(bm_id);
   if (bitmap_item == m_id_to_bitmap_map.end()) {
-    auto bitmap = new DiBitmap(m_tile_width, m_tile_height, m_flags, false);
+    auto bitmap = new DiBitmap(m_tile_width, m_tile_height, m_flags, psram);
     bitmap->set_custom(bm_id);
     m_id_to_bitmap_map[bm_id] = bitmap;
     return bitmap;

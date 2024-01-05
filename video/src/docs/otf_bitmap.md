@@ -13,7 +13,8 @@ when this command is used.
 
 If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
 rather than in DRAM. This should only be done in resolutions where the pixel clock
-rate is relatively slow; otherwise, flicker may occur.
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
 
 ## Create primitive: Masked Bitmap
 <b>VDU 23, 30, 121, id; pid; flags; w; h; psram, color</b> : Create primitive: Masked Bitmap
@@ -31,7 +32,8 @@ that must be invisible.
 
 If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
 rather than in DRAM. This should only be done in resolutions where the pixel clock
-rate is relatively slow; otherwise, flicker may occur.
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
 
 ## Create primitive: Transparent Bitmap
 <b>VDU 23, 30, 122, id; pid; flags; w; h; psram, color</b> : Create primitive: Transparent Bitmap
@@ -52,7 +54,8 @@ when this command is used.
 
 If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
 rather than in DRAM. This should only be done in resolutions where the pixel clock
-rate is relatively slow; otherwise, flicker may occur.
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
 
 ## Set position & slice solid bitmap
 <b>VDU 23, 30, 123, id; x; y; s; h;</b> : Set position & slice solid bitmap
