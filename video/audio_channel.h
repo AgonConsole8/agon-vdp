@@ -208,7 +208,7 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 			audioTaskAbortDelay(this->_channel);
 			waitForAbort();
 		}
-		const std::lock_guard<std::mutex> lock(_mutex);
+		_mutex.lock();
 		if (this->_waveform) {
 			debug_log("AudioChannel: detaching old waveform\n\r");
 			detachSoundGenerator();
@@ -216,6 +216,7 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 		this->_waveform = newWaveform;
 		_waveformType = waveformType;
 		attachSoundGenerator();
+		_mutex.unlock();
 		debug_log("AudioChannel: setWaveform %d done on channel %d\n\r", waveformType, channel());
 	}
 }

@@ -2,7 +2,6 @@
 #define ENHANCED_SAMPLES_GENERATOR_H
 
 #include <memory>
-#include <atomic>
 #include <vector>
 #include <unordered_map>
 #include <fabgl.h>
@@ -32,11 +31,11 @@ class EnhancedSamplesGenerator : public WaveformGenerator {
 		// TODO consider whether repeatStart and repeatLength may need to be here
 		// which would allow for per-channel repeat settings
 
-		std::atomic<int>		frequency;
-		std::atomic<int>		previousSample;
-		std::atomic<int>		currentSample;
-		std::atomic<double>		samplesPerGet;
-		std::atomic<double>		fractionalSampleOffset;
+		int			frequency;
+		int			previousSample;
+		int			currentSample;
+		double		samplesPerGet;
+		double		fractionalSampleOffset;
 
 		double calculateSamplerate(uint16_t frequency);
 		int8_t getNextSample();
@@ -63,7 +62,7 @@ int EnhancedSamplesGenerator::getSample() {
 
 	// if we've moved far enough along, read the next sample
 	while (fractionalSampleOffset >= 1.0) {
-		previousSample = currentSample.load();
+		previousSample = currentSample;
 		currentSample = getNextSample();
 		fractionalSampleOffset = fractionalSampleOffset - 1.0;
 	}
