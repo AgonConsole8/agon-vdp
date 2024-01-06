@@ -9,8 +9,8 @@
 #include "buffer_stream.h"
 
 struct AudioSample {
-	AudioSample(std::vector<std::shared_ptr<BufferStream>> streams, uint16_t id, uint8_t format, uint32_t sampleRate = AUDIO_DEFAULT_SAMPLE_RATE, uint16_t frequency = 0) :
-		blocks(streams), id(id), format(format), sampleRate(sampleRate), baseFrequency(frequency) {}
+	AudioSample(std::vector<std::shared_ptr<BufferStream>> streams, uint8_t format, uint32_t sampleRate = AUDIO_DEFAULT_SAMPLE_RATE, uint16_t frequency = 0) :
+		blocks(streams), format(format), sampleRate(sampleRate), baseFrequency(frequency) {}
 	~AudioSample();
 
 	int8_t getSample(uint32_t & index, uint32_t & blockIndex);
@@ -18,7 +18,6 @@ struct AudioSample {
 	uint32_t getSize();
 
 	std::vector<std::shared_ptr<BufferStream>> blocks;
-	uint16_t		id;					// ID of the sample
 	uint8_t			format;				// Format of the sample data
 	uint32_t		sampleRate;			// Sample rate of the sample
 	uint16_t		baseFrequency = 0;	// Base frequency of the sample
@@ -32,13 +31,12 @@ AudioSample::~AudioSample() {
 	// for (auto channelPair : this->channels) {
 	// 	auto channel = channelPair.second.lock();
 	// 	if (channel) {
-	// 		debug_log("AudioSample: removing sample %d from channel %d\n\r", id, channel->channel());
 	// 		// Remove sample from channel
+	//		debug_log("AudioSample: removing sample from channel %d\n\r", channel->channel());
 	// 		// TODO change so only removes if channel is definitely set to this sample
 	// 		channel->setWaveform(AUDIO_WAVE_DEFAULT, nullptr);
 	// 	}
 	// }
-	debug_log("AudioSample %d cleared\n\r", id);
 }
 
 int8_t AudioSample::getSample(uint32_t & index, uint32_t & blockIndex) {
