@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <atomic>
-#include <mutex>
 #include <vector>
 #include <unordered_map>
 #include <fabgl.h>
@@ -16,18 +15,15 @@
 class EnhancedSamplesGenerator : public WaveformGenerator {
 	public:
 		EnhancedSamplesGenerator(std::shared_ptr<AudioSample> sample);
-		~EnhancedSamplesGenerator();
 
 		void setFrequency(int value);
 		void setSampleRate(int value);
 		int getSample();
-		void setSample(std::shared_ptr<AudioSample> sample);
 
 		int getDuration(uint16_t frequency);
 
 		void seekTo(uint32_t position);
 	private:
-		// std::weak_ptr<AudioSample> _sample;
 		std::shared_ptr<AudioSample> _sample;
 
 		uint32_t	index;				// Current index inside the current sample block
@@ -41,7 +37,6 @@ class EnhancedSamplesGenerator : public WaveformGenerator {
 		std::atomic<int>		currentSample;
 		std::atomic<double>		samplesPerGet;
 		std::atomic<double>		fractionalSampleOffset;
-		std::mutex				sampleMutex;
 
 		double calculateSamplerate(uint16_t frequency);
 		int8_t getNextSample();
@@ -50,11 +45,6 @@ class EnhancedSamplesGenerator : public WaveformGenerator {
 EnhancedSamplesGenerator::EnhancedSamplesGenerator(std::shared_ptr<AudioSample> sample)
 	: _sample(sample), repeatCount(0), index(0), blockIndex(0), frequency(0), previousSample(0), currentSample(0), samplesPerGet(1.0), fractionalSampleOffset(0.0)
 {}
-
-EnhancedSamplesGenerator::~EnhancedSamplesGenerator() {
-	sampleMutex.lock();
-	sampleMutex.unlock();
-}
 
 void EnhancedSamplesGenerator::setFrequency(int value) {
 	frequency = value;
@@ -67,13 +57,9 @@ void EnhancedSamplesGenerator::setSampleRate(int value) {
 }
 
 int EnhancedSamplesGenerator::getSample() {
-	// if (duration() == 0 || _sample.expired()) {
 	if (duration() == 0) {
 		return 0;
 	}
-
-	// auto samplePtr = _sample.lock();
-	// auto samplePtr = _sample;
 
 	// if we've moved far enough along, read the next sample
 	while (fractionalSampleOffset >= 1.0) {
@@ -95,54 +81,28 @@ int EnhancedSamplesGenerator::getSample() {
 	return sample;
 }
 
-void EnhancedSamplesGenerator::setSample(std::shared_ptr<AudioSample> sample) {
-	sampleMutex.lock();
-	_sample = sample;
-	sampleMutex.unlock();
-	seekTo(0);
-}
-
 int EnhancedSamplesGenerator::getDuration(uint16_t frequency) {
 	// TODO this will produce an incorrect duration if the sample rate for the channel has been
 	// adjusted to differ from the underlying audio system sample rate
 	// At this point it's not clear how to resolve this, so we'll assume it hasn't been adjusted
-	// return _sample.expired() ? 0 : (_sample.lock()->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
-	// return !_sample ? 0 : (_sample->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
-	sampleMutex.lock();
-	// auto sample = _sample.lock();
-	auto sample = _sample;
-	auto duration = !sample ? 0 : (sample->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
-	sampleMutex.unlock();
-	return duration;
+	return !_sample ? 0 : (_sample->getSize() * 1000 / sampleRate()) / calculateSamplerate(frequency);
 }
 
 void EnhancedSamplesGenerator::seekTo(uint32_t position) {
-	// if (!_sample.expired()) {
-	// auto samplePtr = _sample.lock();
 	auto samplePtr = _sample;
-	// if (_sample) {
 	if (samplePtr) {
-		// auto samplePtr = _sample.lock();
-		sampleMutex.lock();
-		// auto samplePtr = _sample;
 		samplePtr->seekTo(position, index, blockIndex, repeatCount);
 
 		// prepare our fractional sample data for playback
 		fractionalSampleOffset = 0.0;
 		previousSample = samplePtr->getSample(index, blockIndex);
 		currentSample = samplePtr->getSample(index, blockIndex);
-		sampleMutex.unlock();
 	}
 }
 
 double EnhancedSamplesGenerator::calculateSamplerate(uint16_t frequency) {
-	// auto samplePtr = _sample.lock();
 	auto samplePtr = _sample;
-	// if (!_sample.expired()) {
-	// if (_sample) {
 	if (samplePtr) {
-		// auto samplePtr = _sample.lock();
-		// auto samplePtr = _sample;
 		auto baseFrequency = samplePtr->baseFrequency;
 		auto frequencyAdjust = baseFrequency > 0 ? (double)frequency / (double)baseFrequency : 1.0;
 		return frequencyAdjust * ((double)samplePtr->sampleRate / (double)(sampleRate()));
@@ -151,16 +111,9 @@ double EnhancedSamplesGenerator::calculateSamplerate(uint16_t frequency) {
 }
 
 int8_t EnhancedSamplesGenerator::getNextSample() {
-	// auto samplePtr = _sample.lock();
 	auto samplePtr = _sample;
-	// if (!_sample.expired()) {
-	// if (_sample) {
 	if (samplePtr) {
-		sampleMutex.lock();
-		// auto samplePtr = _sample.lock();
-		// auto samplePtr = _sample;
 		auto sample = samplePtr->getSample(index, blockIndex);
-		sampleMutex.unlock();
 		
 		// looping magic
 		repeatCount--;
