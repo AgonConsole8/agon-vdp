@@ -88,42 +88,31 @@ int EnhancedSamplesGenerator::getDuration(uint16_t frequency) {
 }
 
 void EnhancedSamplesGenerator::seekTo(uint32_t position) {
-	auto samplePtr = _sample;
-	if (samplePtr) {
-		samplePtr->seekTo(position, index, blockIndex, repeatCount);
+	_sample->seekTo(position, index, blockIndex, repeatCount);
 
-		// prepare our fractional sample data for playback
-		fractionalSampleOffset = 0.0;
-		previousSample = samplePtr->getSample(index, blockIndex);
-		currentSample = samplePtr->getSample(index, blockIndex);
-	}
+	// prepare our fractional sample data for playback
+	fractionalSampleOffset = 0.0;
+	previousSample = _sample->getSample(index, blockIndex);
+	currentSample = _sample->getSample(index, blockIndex);
 }
 
 double EnhancedSamplesGenerator::calculateSamplerate(uint16_t frequency) {
-	auto samplePtr = _sample;
-	if (samplePtr) {
-		auto baseFrequency = samplePtr->baseFrequency;
-		auto frequencyAdjust = baseFrequency > 0 ? (double)frequency / (double)baseFrequency : 1.0;
-		return frequencyAdjust * ((double)samplePtr->sampleRate / (double)(sampleRate()));
-	}
-	return 1.0;
+	auto baseFrequency = _sample->baseFrequency;
+	auto frequencyAdjust = baseFrequency > 0 ? (double)frequency / (double)baseFrequency : 1.0;
+	return frequencyAdjust * ((double)_sample->sampleRate / (double)(sampleRate()));
 }
 
 int8_t EnhancedSamplesGenerator::getNextSample() {
-	auto samplePtr = _sample;
-	if (samplePtr) {
-		auto sample = samplePtr->getSample(index, blockIndex);
-		
-		// looping magic
-		repeatCount--;
-		if (repeatCount == 0) {
-			// we've reached the end of the repeat section, so loop back
-			seekTo(samplePtr->repeatStart);
-		}
-
-		return sample;
+	auto sample = _sample->getSample(index, blockIndex);
+	
+	// looping magic
+	repeatCount--;
+	if (repeatCount == 0) {
+		// we've reached the end of the repeat section, so loop back
+		seekTo(_sample->repeatStart);
 	}
-	return 0;
+
+	return sample;
 }
 
 #endif // ENHANCED_SAMPLES_GENERATOR_H
