@@ -53,9 +53,6 @@ class AudioChannel {
 		std::atomic<std::uint64_t>			_startTime;
 		std::atomic<std::uint8_t>			_waveformType;
 		std::shared_ptr<WaveformGenerator> 	_waveform = nullptr;
-		std::shared_ptr<WaveformGenerator> 	_oldWaveform = nullptr;
-		// WaveformGenerator *					_waveform = nullptr;
-		// WaveformGenerator *					_oldWaveform = nullptr;
 		std::unique_ptr<VolumeEnvelope>		_volumeEnvelope;
 		std::unique_ptr<FrequencyEnvelope>	_frequencyEnvelope;
 		std::mutex							_mutex;
@@ -89,7 +86,6 @@ uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t durat
 	switch (this->_state) {
 		case AudioState::Idle:
 		case AudioState::Release:
-			// const std::lock_guard<std::mutex> lock(_mutex);
 			this->_volume = volume;
 			this->_frequency = frequency;
 			this->_duration = duration == 65535 ? -1 : duration;
@@ -107,7 +103,7 @@ uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t durat
 				}
 			}
 			this->_state = AudioState::Pending;
-			debug_log("AudioChannel: playNote %d,%d,%d,%d\n\r", channel(), this->_volume.load(), this->_frequency.load(), this->_duration.load());
+			debug_log("AudioChannel: playNote %d,%d,%d,%d\n\r", channel(), volume, frequency, this->_duration.load());
 			return 1;
 	}
 	return 0;
@@ -148,16 +144,6 @@ std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t samp
 		// 	return nullptr;
 		// }
 
-		// // if we're already a waveform, then swap sample
-		// if (this->_waveformType == AUDIO_WAVE_SAMPLE) {
-		// 	// swap sample
-		// 	_mutex.lock();
-		// 	((EnhancedSamplesGenerator *)this->_waveform)->setSample(sample);
-		// 	_mutex.unlock();
-		// 	debug_log("AudioChannel: setSample %d on channel %d\n\r", sampleId, channel());
-		// 	return nullptr;
-		// }
-
 		// TODO remove channel tracking??
 		// remove this channel from other samples
 		// for (auto samplePair : samples) {
@@ -167,7 +153,6 @@ std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t samp
 		// }
 		// sample->channels[_channel] = channelRef;
 
-		// return make_shared_psram<EnhancedSamplesGenerator>(sample);
 		return std::make_shared<EnhancedSamplesGenerator>(sample);
 	}
 	return nullptr;
@@ -178,27 +163,21 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 
 	switch (waveformType) {
 		case AUDIO_WAVE_SAWTOOTH:
-			// newWaveform = make_shared_psram<SawtoothWaveformGenerator>();
 			newWaveform = std::make_shared<SawtoothWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_SQUARE:
-			// newWaveform = make_shared_psram<SquareWaveformGenerator>();
 			newWaveform = std::make_shared<SquareWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_SINE:
-			// newWaveform = make_shared_psram<SineWaveformGenerator>();
 			newWaveform = std::make_shared<SineWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_TRIANGLE:
-			// newWaveform = make_shared_psram<TriangleWaveformGenerator>();
 			newWaveform = std::make_shared<TriangleWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_NOISE:
-			// newWaveform = make_shared_psram<NoiseWaveformGenerator>();
 			newWaveform = std::make_shared<NoiseWaveformGenerator>();
 			break;
 		case AUDIO_WAVE_VICNOISE:
-			// newWaveform = make_shared_psram<VICNoiseGenerator>();
 			newWaveform = std::make_shared<VICNoiseGenerator>();
 			break;
 		case AUDIO_WAVE_SAMPLE:
@@ -232,10 +211,8 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 		const std::lock_guard<std::mutex> lock(_mutex);
 		if (this->_waveform) {
 			debug_log("AudioChannel: detaching old waveform\n\r");
-			soundGenerator->detach(getWaveform());
-			this->_oldWaveform = this->_waveform;
+			detachSoundGenerator();
 		}
-		// this->_waveform = std::move(newWaveform);
 		this->_waveform = newWaveform;
 		_waveformType = waveformType;
 		attachSoundGenerator();
@@ -280,7 +257,6 @@ void AudioChannel::setVolume(uint8_t volume) {
 			default:
 				// All other states we'll set volume immediately
 				this->_volume = volume;
-				// const std::lock_guard<std::mutex> lock(_mutex);
 				this->_waveform->setVolume(volume);
 				if (volume == 0) {
 					// we're going silent, so abort any current playback
@@ -305,7 +281,6 @@ void AudioChannel::setFrequency(uint16_t frequency) {
 				// Do nothing as next loop will pick up the new frequency
 				break;
 			default:
-				// const std::lock_guard<std::mutex> lock(_mutex);
 				this->_waveform->setFrequency(frequency);
 		}
 	}
@@ -355,29 +330,24 @@ void AudioChannel::setFrequencyEnvelope(std::unique_ptr<FrequencyEnvelope> envel
 
 void AudioChannel::setSampleRate(uint16_t sampleRate) {
 	if (this->_waveform) {
-		// const std::lock_guard<std::mutex> lock(_mutex);
 		this->_waveform->setSampleRate(sampleRate);
 	}
 }
 
 void AudioChannel::attachSoundGenerator() {
 	if (this->_waveform) {
-		// this->_waveform->setAutoDestroy(true);
 		soundGenerator->attach(getWaveform());
 	}
 }
 
 void AudioChannel::detachSoundGenerator() {
 	if (this->_waveform) {
-		// this is a temp detach, so we don't want to destroy the waveform
-		// this->_waveform->setAutoDestroy(false);
 		soundGenerator->detach(getWaveform());
 	}
 }
 
 void AudioChannel::seekTo(uint32_t position) {
 	if (this->_waveformType == AUDIO_WAVE_SAMPLE) {
-		// const std::lock_guard<std::mutex> lock(_mutex);
 		((EnhancedSamplesGenerator *)getWaveform())->seekTo(position);
 	}
 }
@@ -428,9 +398,6 @@ void AudioChannel::loop() {
 		// can't obtain a lock, so other stuff is happening - just return
 		debug_log("AudioChannel: loop can't obtain lock on channel %d\n\r", channel());
 		return;
-	}
-	if (this->_oldWaveform) {
-		this->_oldWaveform = nullptr;
 	}
 	int delay = 0;
 	switch (this->_state) {
