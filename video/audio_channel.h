@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <atomic>
-#include <mutex>
+// #include <mutex>
 #include <unordered_map>
 #include <fabgl.h>
 #include <esp_timer.h>
@@ -55,7 +55,7 @@ class AudioChannel {
 		std::shared_ptr<WaveformGenerator> 	_waveform = nullptr;
 		std::unique_ptr<VolumeEnvelope>		_volumeEnvelope;
 		std::unique_ptr<FrequencyEnvelope>	_frequencyEnvelope;
-		std::mutex							_mutex;
+		// std::mutex							_mutex;
 };
 
 #include "audio_sample.h"
@@ -71,7 +71,7 @@ AudioChannel::AudioChannel(uint8_t channel) : _channel(channel), _state(AudioSta
 AudioChannel::~AudioChannel() {
 	debug_log("AudioChannel: deiniting %d\n\r", channel());
 	if (this->_waveform) {
-		const std::lock_guard<std::mutex> lock(_mutex);
+		// const std::lock_guard<std::mutex> lock(_mutex);
 		this->_waveform->enable(false);
 		soundGenerator->detach(getWaveform());
 	}
@@ -208,7 +208,7 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 			audioTaskAbortDelay(this->_channel);
 			waitForAbort();
 		}
-		_mutex.lock();
+		// _mutex.lock();
 		if (this->_waveform) {
 			debug_log("AudioChannel: detaching old waveform\n\r");
 			detachSoundGenerator();
@@ -216,7 +216,7 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 		this->_waveform = newWaveform;
 		_waveformType = waveformType;
 		attachSoundGenerator();
-		_mutex.unlock();
+		// _mutex.unlock();
 		debug_log("AudioChannel: setWaveform %d done on channel %d\n\r", waveformType, channel());
 	}
 }
@@ -395,11 +395,11 @@ bool AudioChannel::isFinished(uint32_t elapsed) {
 }
 
 void AudioChannel::loop() {
-	if (_mutex.try_lock() == false) {
-		// can't obtain a lock, so other stuff is happening - just return
-		debug_log("AudioChannel: loop can't obtain lock on channel %d\n\r", channel());
-		return;
-	}
+	// if (_mutex.try_lock() == false) {
+	// 	// can't obtain a lock, so other stuff is happening - just return
+	// 	debug_log("AudioChannel: loop can't obtain lock on channel %d\n\r", channel());
+	// 	return;
+	// }
 	int delay = 0;
 	switch (this->_state) {
 		case AudioState::Pending:
@@ -478,7 +478,7 @@ void AudioChannel::loop() {
 			this->_state = AudioState::Idle;
 			break;
 	}
-	_mutex.unlock();
+	// _mutex.unlock();
 	if (delay != 0) {
 		vTaskDelay(delay);
 	}
