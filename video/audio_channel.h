@@ -33,7 +33,7 @@ class AudioChannel {
 		void		setSampleRate(uint16_t sampleRate);
 		WaveformGenerator * getWaveform() { return this->_waveform.get(); }
 		void		attachSoundGenerator();
-		void		tempDetachSoundGenerator();
+		void		detachSoundGenerator();
 		void		seekTo(uint32_t position);
 		void		loop();
 		uint8_t		channel() { return _channel; }
@@ -367,7 +367,7 @@ void AudioChannel::attachSoundGenerator() {
 	}
 }
 
-void AudioChannel::tempDetachSoundGenerator() {
+void AudioChannel::detachSoundGenerator() {
 	if (this->_waveform) {
 		// this is a temp detach, so we don't want to destroy the waveform
 		// this->_waveform->setAutoDestroy(false);

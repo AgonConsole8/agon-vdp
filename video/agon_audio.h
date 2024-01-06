@@ -11,7 +11,6 @@
 #define AGON_AUDIO_H
 
 #include <memory>
-#include <atomic>
 #include <vector>
 #include <unordered_map>
 #include <fabgl.h>
@@ -79,7 +78,7 @@ void setSampleRate(uint16_t sampleRate) {
 		soundGenerator->play(false);
 		for (auto channelPair : audioChannels) {
 			auto channel = channelPair.second;
-			channel->tempDetachSoundGenerator();
+			channel->detachSoundGenerator();
 		}
 	}
 	// delete the old sound generator
@@ -161,7 +160,6 @@ uint8_t clearSample(uint16_t sampleId) {
 		debug_log("clearSample: sample %d not found\n\r", sampleId);
 		return 0;
 	}
-	// samples.erase(sampleId);
 	samples[sampleId] = nullptr;
 	debug_log("reset sample\n\r");
 	return 1;
