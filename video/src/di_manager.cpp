@@ -2966,7 +2966,7 @@ void DiManager::set_solid_bitmap_pixel(OtfCmd_129_Set_solid_bitmap_pixel* cmd, i
     px -= prim->get_width();
     py++;
   }
-  prim->set_transparent_pixel(px, py, cmd->m_color);
+  prim->set_transparent_pixel(px, py, cmd->m_color|PIXEL_ALPHA_100_MASK);
 }
 
 void DiManager::set_masked_bitmap_pixel(OtfCmd_130_Set_masked_bitmap_pixel* cmd, int16_t nth) {
@@ -2998,7 +2998,7 @@ void DiManager::set_solid_bitmap_pixel_for_tile_array(OtfCmd_85_Set_solid_bitmap
     cmd->m_x -= prim->get_width();
     cmd->m_y++;
   }
-  prim->set_pixel(cmd->m_bmid, cmd->m_x, cmd->m_y, cmd->m_color);
+  prim->set_pixel(cmd->m_bmid, cmd->m_x, cmd->m_y, cmd->m_color|PIXEL_ALPHA_100_MASK);
 }
 
 void DiManager::set_masked_bitmap_pixel_for_tile_array(OtfCmd_86_Set_masked_bitmap_pixel_in_Tile_Array* cmd, int16_t nth) {
@@ -3028,7 +3028,7 @@ void DiManager::set_solid_bitmap_pixel_for_tile_map(OtfCmd_105_Set_solid_bitmap_
     cmd->m_x -= prim->get_width();
     cmd->m_y++;
   }
-  prim->set_pixel(cmd->m_bmid, cmd->m_x, cmd->m_y, cmd->m_color);
+  prim->set_pixel(cmd->m_bmid, cmd->m_x, cmd->m_y, cmd->m_color|PIXEL_ALPHA_100_MASK);
 }
 
 void DiManager::set_masked_bitmap_pixel_for_tile_map(OtfCmd_106_Set_masked_bitmap_pixel_in_Tile_Map* cmd, int16_t nth) {
