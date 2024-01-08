@@ -875,7 +875,10 @@ void IRAM_ATTR DiManager::loop() {
             m_text_area->get_rel_tile_coordinates(col, row, cx, cy, cx_extent, cy_extent);
             auto w = cx_extent - cx;
             set_primitive_flags(cid, flags | PRIM_FLAG_PAINT_THIS);
-            set_primitive_position(cid, cx, cy_extent-2);
+            auto y = cy_extent - 2;
+            if (m_cursor->get_relative_x() != cx || m_cursor->get_relative_y() != y) {
+              set_primitive_position(cid, cx, y);
+            }
             m_flash_count = 0;
           }
         } else {
@@ -1532,7 +1535,7 @@ bool DiManager::handle_udg_sys_cmd(uint8_t character) {
 // Process 800x600x64 On-the-Fly Command Set
 //
 bool DiManager::handle_otf_cmd(uint8_t character) {
-  if (m_incoming_command.size() >= 5) {
+  if (m_incoming_command.size() >= 4) {
     // Check for commands that can be quite long, with their data.
     OtfCmdUnion* cu = (OtfCmdUnion*)(&m_incoming_command[0]);
     switch (m_incoming_command[2]) {
@@ -2961,33 +2964,24 @@ void DiManager::slice_transparent_bitmap_relative(OtfCmd_128_Adjust_position_and
 void DiManager::set_solid_bitmap_pixel(OtfCmd_129_Set_solid_bitmap_pixel* cmd, int16_t nth) {
   DiBitmap* prim; if (!(prim = (DiBitmap*)get_safe_primitive(cmd->m_id))) return;
   int32_t px = (int32_t)cmd->m_x + (int32_t)nth;
-  int32_t py = (int32_t)cmd->m_y;
-  while (px >= prim->get_width()) {
-    px -= prim->get_width();
-    py++;
-  }
+  int32_t py = (int32_t)cmd->m_y + (px / prim->get_width());
+  px %= prim->get_width();
   prim->set_transparent_pixel(px, py, cmd->m_color|PIXEL_ALPHA_100_MASK);
 }
 
 void DiManager::set_masked_bitmap_pixel(OtfCmd_130_Set_masked_bitmap_pixel* cmd, int16_t nth) {
   DiBitmap* prim; if (!(prim = (DiBitmap*)get_safe_primitive(cmd->m_id))) return;
   int32_t px = (int32_t)cmd->m_x + (int32_t)nth;
-  int32_t py = (int32_t)cmd->m_y;
-  while (px >= prim->get_width()) {
-    px -= prim->get_width();
-    py++;
-  }
+  int32_t py = (int32_t)cmd->m_y + (px / prim->get_width());
+  px %= prim->get_width();
   prim->set_transparent_pixel(px, py, cmd->m_color);
 }
 
 void DiManager::set_transparent_bitmap_pixel(OtfCmd_131_Set_transparent_bitmap_pixel* cmd, int16_t nth) {
   DiBitmap* prim; if (!(prim = (DiBitmap*)get_safe_primitive(cmd->m_id))) return;
   int32_t px = (int32_t)cmd->m_x + (int32_t)nth;
-  int32_t py = (int32_t)cmd->m_y;
-  while (px >= prim->get_width()) {
-    px -= prim->get_width();
-    py++;
-  }
+  int32_t py = (int32_t)cmd->m_y + (px / prim->get_width());
+  px %= prim->get_width();
   prim->set_transparent_pixel(px, py, cmd->m_color);
 }
 
