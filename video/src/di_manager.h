@@ -36,7 +36,6 @@
 typedef void (*DiVoidCallback)();
 
 #define INCOMING_DATA_BUFFER_SIZE  2048
-#define INCOMING_COMMAND_SIZE      24
 
 class DiManager {
   public:
@@ -224,8 +223,8 @@ class DiManager {
 
   uint8_t get_param_8(uint32_t index);
   int16_t get_param_16(uint32_t index);
-  bool handle_udg_sys_cmd();
-  bool handle_otf_cmd();
+  bool handle_udg_sys_cmd(uint8_t character);
+  bool handle_otf_cmd(uint8_t character);
   bool define_graphics_viewport();
   bool define_text_viewport();
   void move_cursor_tab(VduCmd_31_Set_text_tab_position* cmd);

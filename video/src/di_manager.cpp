@@ -1001,6 +1001,10 @@ VDU 31, x, y: TAB(x, y)
 VDU 127: Backspace
 */
 bool DiManager::process_character(uint8_t character) {
+  if (m_incoming_command.size() && m_incoming_command[0] == 23) {
+    return handle_udg_sys_cmd(character); // handle UDG/system command
+  }
+
   if (!m_incoming_command.size() && (character >= 0x20 && character != 0x7F)) {
     // printable character
     write_character(character);
@@ -1208,10 +1212,6 @@ bool DiManager::process_character(uint8_t character) {
         }
       } break;
 
-      case 23: {
-        return handle_udg_sys_cmd(); // handle UDG/system command
-      } break;
-
       case 24: {
         auto cmd = &cu->m_24_Define_graphics_viewport;
         if (m_incoming_command.size() >= sizeof(*cmd)) {
@@ -1386,10 +1386,11 @@ VDU 23, 0, &C4, 1:	Draw Border
 From this page: https://www.bbcbasic.co.uk/bbcwin/manual/bbcwin8.html#vdu23
 VDU 23, 1, 0; 0; 0; 0;: Text Cursor Control
 */
-bool DiManager::handle_udg_sys_cmd() {
-  if (m_incoming_command.size() >= 2 && get_param_8(1) == 30) {
-    return handle_otf_cmd();
+bool DiManager::handle_udg_sys_cmd(uint8_t character) {
+  if (m_incoming_command.size() >= 3 && get_param_8(1) == 30) {
+    return handle_otf_cmd(character);
   }
+  m_incoming_command.push_back(character);
   if (m_incoming_command.size() >= 2 && get_param_8(1) == 1) {
     // VDU 23, 1, enable; 0; 0; 0;: Text Cursor Control
     if (m_incoming_command.size() >= 10) {
@@ -1530,9 +1531,209 @@ bool DiManager::handle_udg_sys_cmd() {
 
 // Process 800x600x64 On-the-Fly Command Set
 //
-bool DiManager::handle_otf_cmd() {
+bool DiManager::handle_otf_cmd(uint8_t character) {
   if (m_incoming_command.size() >= 5) {
+    // Check for commands that can be quite long, with their data.
     OtfCmdUnion* cu = (OtfCmdUnion*)(&m_incoming_command[0]);
+    switch (m_incoming_command[2]) {
+      case 88: {
+        auto cmd = &cu->m_88_Set_solid_bitmap_pixels_in_Tile_Array;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_85_Set_solid_bitmap_pixel_in_Tile_Array cmd85;
+          cmd85.m_bmid = cmd->m_bmid;
+          cmd85.m_color = character;
+          cmd85.m_id = cmd->m_id;
+          cmd85.m_x = cmd->m_x;
+          cmd85.m_y = cmd->m_y;
+          set_solid_bitmap_pixel_for_tile_array(&cmd85, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+
+      case 89: {
+        auto cmd = &cu->m_89_Set_masked_bitmap_pixels_in_Tile_Array;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_86_Set_masked_bitmap_pixel_in_Tile_Array cmd86;
+          cmd86.m_bmid = cmd->m_bmid;
+          cmd86.m_color = character;
+          cmd86.m_id = cmd->m_id;
+          cmd86.m_x = cmd->m_x;
+          cmd86.m_y = cmd->m_y;
+          set_masked_bitmap_pixel_for_tile_array(&cmd86, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+
+      case 90: {
+        auto cmd = &cu->m_90_Set_transparent_bitmap_pixels_in_Tile_Array;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_87_Set_transparent_bitmap_pixel_in_Tile_Array cmd87;
+          cmd87.m_bmid = cmd->m_bmid;
+          cmd87.m_color = character;
+          cmd87.m_id = cmd->m_id;
+          cmd87.m_x = cmd->m_x;
+          cmd87.m_y = cmd->m_y;
+          set_transparent_bitmap_pixel_for_tile_array(&cmd87, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+
+      case 108: {
+        auto cmd = &cu->m_108_Set_solid_bitmap_pixels_in_Tile_Map;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_105_Set_solid_bitmap_pixel_in_Tile_Map cmd105;
+          cmd105.m_bmid = cmd->m_bmid;
+          cmd105.m_color = character;
+          cmd105.m_id = cmd->m_id;
+          cmd105.m_x = cmd->m_x;
+          cmd105.m_y = cmd->m_y;
+          set_solid_bitmap_pixel_for_tile_map(&cmd105, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+
+      case 109: {
+        auto cmd = &cu->m_109_Set_masked_bitmap_pixels_in_Tile_Map;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_106_Set_masked_bitmap_pixel_in_Tile_Map cmd106;
+          cmd106.m_bmid = cmd->m_bmid;
+          cmd106.m_color = character;
+          cmd106.m_id = cmd->m_id;
+          cmd106.m_x = cmd->m_x;
+          cmd106.m_y = cmd->m_y;
+          set_masked_bitmap_pixel_for_tile_map(&cmd106, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+
+      case 110: {
+        auto cmd = &cu->m_110_Set_transparent_bitmap_pixels_in_Tile_Map;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_107_Set_transparent_bitmap_pixel_in_Tile_Map cmd107;
+          cmd107.m_bmid = cmd->m_bmid;
+          cmd107.m_color = character;
+          cmd107.m_id = cmd->m_id;
+          cmd107.m_x = cmd->m_x;
+          cmd107.m_y = cmd->m_y;
+          set_transparent_bitmap_pixel_for_tile_map(&cmd107, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+
+      case 132: {
+        auto cmd = &cu->m_132_Set_solid_bitmap_pixels;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_129_Set_solid_bitmap_pixel cmd129;
+          cmd129.m_color = character;
+          cmd129.m_id = cmd->m_id;
+          cmd129.m_x = cmd->m_x;
+          cmd129.m_y = cmd->m_y;
+          set_solid_bitmap_pixel(&cmd129, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+
+      case 133: {
+        auto cmd = &cu->m_133_Set_masked_bitmap_pixels;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_130_Set_masked_bitmap_pixel cmd130;
+          cmd130.m_color = character;
+          cmd130.m_id = cmd->m_id;
+          cmd130.m_x = cmd->m_x;
+          cmd130.m_y = cmd->m_y;
+          set_masked_bitmap_pixel(&cmd130, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+
+      case 134: {
+        auto cmd = &cu->m_134_Set_transparent_bitmap_pixels;
+        auto len = m_incoming_command.size();
+        if (len >= sizeof(*cmd)-1) {
+          OtfCmd_131_Set_transparent_bitmap_pixel cmd131;
+          cmd131.m_color = character;
+          cmd131.m_id = cmd->m_id;
+          cmd131.m_x = cmd->m_x;
+          cmd131.m_y = cmd->m_y;
+          set_transparent_bitmap_pixel(&cmd131, m_command_data_index);
+          if (++m_command_data_index >= cmd->m_n) {
+            m_incoming_command.clear();
+            return true;
+          }
+        } else {
+          m_incoming_command.push_back(character);
+          m_command_data_index = 0;
+        }
+        return false;
+      } break;
+    }
+
+    // Handle shorter commands of various lengths.
+    m_incoming_command.push_back(character);
     switch (m_incoming_command[2]) {
 
       case 0: {
@@ -1629,8 +1830,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1644,8 +1843,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1659,8 +1856,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1674,8 +1869,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1689,8 +1882,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1704,8 +1895,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1773,8 +1962,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1788,8 +1975,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1803,8 +1988,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1818,8 +2001,6 @@ bool DiManager::handle_otf_cmd() {
             m_incoming_command.clear();
             return true;
           }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -1895,66 +2076,6 @@ bool DiManager::handle_otf_cmd() {
         }
       } break;
 
-      case 88: {
-        auto cmd = &cu->m_88_Set_solid_bitmap_pixels_in_Tile_Array;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_85_Set_solid_bitmap_pixel_in_Tile_Array cmd85;
-          cmd85.m_bmid = cmd->m_bmid;
-          cmd85.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd85.m_id = cmd->m_id;
-          cmd85.m_x = cmd->m_x;
-          cmd85.m_y = cmd->m_y;
-          set_solid_bitmap_pixel_for_tile_array(&cmd85, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
-        }
-      } break;
-
-      case 89: {
-        auto cmd = &cu->m_89_Set_masked_bitmap_pixels_in_Tile_Array;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_86_Set_masked_bitmap_pixel_in_Tile_Array cmd86;
-          cmd86.m_bmid = cmd->m_bmid;
-          cmd86.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd86.m_id = cmd->m_id;
-          cmd86.m_x = cmd->m_x;
-          cmd86.m_y = cmd->m_y;
-          set_masked_bitmap_pixel_for_tile_array(&cmd86, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
-        }
-      } break;
-
-      case 90: {
-        auto cmd = &cu->m_90_Set_transparent_bitmap_pixels_in_Tile_Array;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_87_Set_transparent_bitmap_pixel_in_Tile_Array cmd87;
-          cmd87.m_bmid = cmd->m_bmid;
-          cmd87.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd87.m_id = cmd->m_id;
-          cmd87.m_x = cmd->m_x;
-          cmd87.m_y = cmd->m_y;
-          set_transparent_bitmap_pixel_for_tile_array(&cmd87, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
-        }
-      } break;
-
       case 100: {
         auto cmd = &cu->m_100_Create_primitive_Tile_Map;
         if (m_incoming_command.size() == sizeof(*cmd)) {
@@ -2024,66 +2145,6 @@ bool DiManager::handle_otf_cmd() {
           set_transparent_bitmap_pixel_for_tile_map(cmd, 0);
           m_incoming_command.clear();
           return true;
-        }
-      } break;
-
-      case 108: {
-        auto cmd = &cu->m_108_Set_solid_bitmap_pixels_in_Tile_Map;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_105_Set_solid_bitmap_pixel_in_Tile_Map cmd105;
-          cmd105.m_bmid = cmd->m_bmid;
-          cmd105.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd105.m_id = cmd->m_id;
-          cmd105.m_x = cmd->m_x;
-          cmd105.m_y = cmd->m_y;
-          set_solid_bitmap_pixel_for_tile_map(&cmd105, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
-        }
-      } break;
-
-      case 109: {
-        auto cmd = &cu->m_109_Set_masked_bitmap_pixels_in_Tile_Map;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_106_Set_masked_bitmap_pixel_in_Tile_Map cmd106;
-          cmd106.m_bmid = cmd->m_bmid;
-          cmd106.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd106.m_id = cmd->m_id;
-          cmd106.m_x = cmd->m_x;
-          cmd106.m_y = cmd->m_y;
-          set_masked_bitmap_pixel_for_tile_map(&cmd106, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
-        }
-      } break;
-
-      case 110: {
-        auto cmd = &cu->m_110_Set_transparent_bitmap_pixels_in_Tile_Map;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_107_Set_transparent_bitmap_pixel_in_Tile_Map cmd107;
-          cmd107.m_bmid = cmd->m_bmid;
-          cmd107.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd107.m_id = cmd->m_id;
-          cmd107.m_x = cmd->m_x;
-          cmd107.m_y = cmd->m_y;
-          set_transparent_bitmap_pixel_for_tile_map(&cmd107, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -2192,63 +2253,6 @@ bool DiManager::handle_otf_cmd() {
           set_transparent_bitmap_pixel(cmd, 0);
           m_incoming_command.clear();
           return true;
-        }
-      } break;
-
-      case 132: {
-        auto cmd = &cu->m_132_Set_solid_bitmap_pixels;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_129_Set_solid_bitmap_pixel cmd129;
-          cmd129.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd129.m_id = cmd->m_id;
-          cmd129.m_x = cmd->m_x;
-          cmd129.m_y = cmd->m_y;
-          set_solid_bitmap_pixel(&cmd129, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
-        }
-      } break;
-
-      case 133: {
-        auto cmd = &cu->m_133_Set_masked_bitmap_pixels;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_130_Set_masked_bitmap_pixel cmd130;
-          cmd130.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd130.m_id = cmd->m_id;
-          cmd130.m_x = cmd->m_x;
-          cmd130.m_y = cmd->m_y;
-          set_masked_bitmap_pixel(&cmd130, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
-        }
-      } break;
-
-      case 134: {
-        auto cmd = &cu->m_134_Set_transparent_bitmap_pixels;
-        auto len = m_incoming_command.size();
-        if (len >= sizeof(*cmd)) {
-          OtfCmd_131_Set_transparent_bitmap_pixel cmd131;
-          cmd131.m_color = cmd->m_colors[len-sizeof(*cmd)];
-          cmd131.m_id = cmd->m_id;
-          cmd131.m_x = cmd->m_x;
-          cmd131.m_y = cmd->m_y;
-          set_transparent_bitmap_pixel(&cmd131, m_command_data_index);
-          if (++m_command_data_index >= cmd->m_n) {
-            m_incoming_command.clear();
-            return true;
-          }
-        } else if (m_incoming_command.size() == 5) {
-          m_command_data_index = 0;
         }
       } break;
 
@@ -2503,6 +2507,8 @@ bool DiManager::handle_otf_cmd() {
         return true; // ignore the command
       }
     }
+  } else {
+    m_incoming_command.push_back(character);
   }
   return false;
 }
