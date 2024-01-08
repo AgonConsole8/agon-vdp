@@ -1387,7 +1387,7 @@ From this page: https://www.bbcbasic.co.uk/bbcwin/manual/bbcwin8.html#vdu23
 VDU 23, 1, 0; 0; 0; 0;: Text Cursor Control
 */
 bool DiManager::handle_udg_sys_cmd(uint8_t character) {
-  if (m_incoming_command.size() >= 3 && get_param_8(1) == 30) {
+  if (m_incoming_command.size() >= 2 && get_param_8(1) == 30) {
     return handle_otf_cmd(character);
   }
   m_incoming_command.push_back(character);
@@ -2960,8 +2960,8 @@ void DiManager::slice_transparent_bitmap_relative(OtfCmd_128_Adjust_position_and
 
 void DiManager::set_solid_bitmap_pixel(OtfCmd_129_Set_solid_bitmap_pixel* cmd, int16_t nth) {
   DiBitmap* prim; if (!(prim = (DiBitmap*)get_safe_primitive(cmd->m_id))) return;
-  int32_t px = cmd->m_x + nth;
-  int32_t py = cmd->m_y;
+  int32_t px = (int32_t)cmd->m_x + (int32_t)nth;
+  int32_t py = (int32_t)cmd->m_y;
   while (px >= prim->get_width()) {
     px -= prim->get_width();
     py++;
@@ -2971,8 +2971,8 @@ void DiManager::set_solid_bitmap_pixel(OtfCmd_129_Set_solid_bitmap_pixel* cmd, i
 
 void DiManager::set_masked_bitmap_pixel(OtfCmd_130_Set_masked_bitmap_pixel* cmd, int16_t nth) {
   DiBitmap* prim; if (!(prim = (DiBitmap*)get_safe_primitive(cmd->m_id))) return;
-  int32_t px = cmd->m_x + nth;
-  int32_t py = cmd->m_y;
+  int32_t px = (int32_t)cmd->m_x + (int32_t)nth;
+  int32_t py = (int32_t)cmd->m_y;
   while (px >= prim->get_width()) {
     px -= prim->get_width();
     py++;
@@ -2982,8 +2982,8 @@ void DiManager::set_masked_bitmap_pixel(OtfCmd_130_Set_masked_bitmap_pixel* cmd,
 
 void DiManager::set_transparent_bitmap_pixel(OtfCmd_131_Set_transparent_bitmap_pixel* cmd, int16_t nth) {
   DiBitmap* prim; if (!(prim = (DiBitmap*)get_safe_primitive(cmd->m_id))) return;
-  int32_t px = cmd->m_x + nth;
-  int32_t py = cmd->m_y;
+  int32_t px = (int32_t)cmd->m_x + (int32_t)nth;
+  int32_t py = (int32_t)cmd->m_y;
   while (px >= prim->get_width()) {
     px -= prim->get_width();
     py++;
