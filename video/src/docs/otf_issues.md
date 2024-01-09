@@ -4,6 +4,7 @@ The following OTF capabilities have not yet been implemented or are presently in
 
 * Drawing circles and ellipses.
 * Doing 3D rendering.
+* Using tile maps (you can use tile arrays).
 * Using a mouse (because there is no support for the mouse pointer).
 * Using some video modes, especially certain double-scan modes. You can try, but some pixels/characters may be cut off (not shown).
 * Using sound. This has not been tested at all, and the high-priority OTF task may prevent it from working at present.

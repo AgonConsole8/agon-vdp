@@ -78,7 +78,9 @@ DiTileArray::~DiTileArray() {
   }
 }
 
+  extern void debug_log(const char* fmt,...);
 void DiTileArray::generate_instructions() {
+  debug_log("tile array gen\n");
   delete_instructions();
 
   // Painting is done with this parameter list:
@@ -123,6 +125,10 @@ void DiTileArray::generate_instructions() {
 
   m_paint_code.loop_to_here(a12, at_loop);
   m_paint_code.retw();
+
+  for (auto bitmap_item = m_id_to_bitmap_map.begin(); bitmap_item != m_id_to_bitmap_map.end(); bitmap_item++) {
+    bitmap_item->second->setup_alpha_bits();
+  }
 }
 
 DiBitmap* DiTileArray::create_bitmap(DiTileBitmapID bm_id, bool psram) {

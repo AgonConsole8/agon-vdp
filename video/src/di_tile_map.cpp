@@ -81,6 +81,7 @@ void DiTileMap::delete_instructions() {
 void DiTileMap::generate_instructions() {
   //for (auto bitmap = m_id_to_bitmap_map.begin(); bitmap != m_id_to_bitmap_map.end(); bitmap++) {
   //  bitmap->second->generate_instructions(m_draw_x, 0, m_tile_width);
+  //  bitmap_item->second->setup_alpha_bits();
   //}
 }
 

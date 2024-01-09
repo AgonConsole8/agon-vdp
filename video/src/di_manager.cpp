@@ -1010,6 +1010,7 @@ bool DiManager::process_character(uint8_t character) {
 
   if (!m_incoming_command.size() && (character >= 0x20 && character != 0x7F)) {
     // printable character
+    debug_log("%c", character);
     write_character(character);
   } else {
     m_incoming_command.push_back(character);

@@ -48,7 +48,7 @@ typedef struct {
     uint32_t m_syncs_off_x4;
     uint32_t m_scan_count;
 
-    //void dump();
+    void dump();
 } OtfVideoParams;
 
 extern OtfVideoParams otf_video_params;

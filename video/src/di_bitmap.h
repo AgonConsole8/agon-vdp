@@ -75,7 +75,10 @@ class DiBitmap : public DiPrimitive {
 
   // Reassemble the custom instructions needed to draw the primitive.
   virtual void generate_instructions();
-   
+  
+  // Replace pixel alpha bits with VS & HS (synchs OFF) bits.
+  void setup_alpha_bits();
+
   virtual void paint(volatile uint32_t* p_scan_line, uint32_t line_index);
 
   // Get a pointer to the pixel data.

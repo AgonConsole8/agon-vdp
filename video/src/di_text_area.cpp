@@ -51,8 +51,9 @@ void DiTextArea::delete_instructions() {
     cursor->delete_instructions();
   }
 }
-  
+  extern void debug_log(const char* fmt,...);
 void DiTextArea::generate_instructions() {
+  debug_log("text gen\n");
   delete_instructions();
   DiTileArray::generate_instructions();
   auto cursor = get_first_child();
@@ -81,7 +82,7 @@ DiTileBitmapID DiTextArea::get_bitmap_id(uint8_t character, uint8_t fg_color, ui
 DiTileBitmapID DiTextArea::define_character(uint8_t character, uint8_t fg_color, uint8_t bg_color) {
   auto bm_id = get_bitmap_id(character, fg_color, bg_color);
   if (m_id_to_bitmap_map.find(bm_id) == m_id_to_bitmap_map.end()) {
-    create_bitmap(bm_id, false);
+    auto bitmap = create_bitmap(bm_id, false);
     uint32_t char_start = (uint32_t)character * 8;
     for (uint y = 0; y < 8; y++) {
       uint8_t pixels = m_font[char_start+y];
@@ -93,6 +94,10 @@ DiTileBitmapID DiTextArea::define_character(uint8_t character, uint8_t fg_color,
         }
         pixels <<= 1;
       }
+    }
+
+    if (m_paint_code.get_code_size()) {
+      bitmap->setup_alpha_bits();
     }
   }
   return bm_id;

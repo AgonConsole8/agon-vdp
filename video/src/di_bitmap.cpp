@@ -123,8 +123,6 @@ void DiBitmap::set_pixel(uint32_t x, uint32_t y, uint8_t color) {
   uint32_t* p;
   int32_t index;
 
-  color |= otf_video_params.m_syncs_off_x4;
-
   if (m_flags & PRIM_FLAG_H_SCROLL_1) {
     for (uint32_t pos = 0; pos < 4; pos++) {
       p = m_pixels + pos * m_words_per_position + y * m_words_per_line + (FIX_INDEX(pos+x) / 4);
@@ -179,13 +177,17 @@ void DiBitmap::generate_instructions() {
   generate_code_for_positions(fixups, m_width, m_height);
   m_paint_code.do_fixups(fixups);
   set_current_paint_pointer(m_width, m_height);
-
+  setup_alpha_bits();
+}
+extern void debug_log(const char* fmt,...);
+void DiBitmap::setup_alpha_bits() {
   // Clear the alpha bits, and replace them with HS & VS bits,
   // so that the bytes may be copied directly to the DMA buffers.
   uint32_t n = m_words_per_position;
   if (m_flags & PRIM_FLAG_H_SCROLL_1) {
     n *= 4;
   }
+  debug_log("bmid %04X, custom %08X, set %u alpha words using %08X\n",m_id,m_custom,n,otf_video_params.m_syncs_off_x4);
   uint32_t* src_pixels = m_pixels;
   while (n--) {
     *src_pixels = (*src_pixels & 0x3F3F3F3F) | otf_video_params.m_syncs_off_x4;

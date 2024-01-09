@@ -62,7 +62,7 @@ relatively small; otherwise, flicker may occur.
 
 This command sets the position of a solid bitmap, and specifies
 the starting vertical offset within the bitmap, plus the height
-to draw. It not necessary to draw the entire bitmap. This command
+to draw. It is not necessary to draw the entire bitmap. This command
 may be used to select the individual frames of a sprite, or to
 scroll a bitmap vertically within a specified height.
 
@@ -74,7 +74,7 @@ is zero, and its draw height is equal to its created height.
 
 This command sets the position of a masked bitmap, and specifies
 the starting vertical offset within the bitmap, plus the height
-to draw. It not necessary to draw the entire bitmap. This command
+to draw. It is not necessary to draw the entire bitmap. This command
 may be used to select the individual frames of a sprite, or to
 scroll a bitmap vertically within a specified height.
 
@@ -86,7 +86,7 @@ is zero, and its draw height is equal to its created height.
 
 This command sets the position of a transparent bitmap, and specifies
 the starting vertical offset within the bitmap, plus the height
-to draw. It not necessary to draw the entire bitmap. This command
+to draw. It is not necessary to draw the entire bitmap. This command
 may be used to select the individual frames of a sprite, or to
 scroll a bitmap vertically within a specified height.
 
@@ -98,7 +98,7 @@ is zero, and its draw height is equal to its created height.
 
 This command adjusts the position of a solid bitmap, and specifies
 the starting vertical offset within the bitmap, plus the height
-to draw. It not necessary to draw the entire bitmap. This command
+to draw. It is not necessary to draw the entire bitmap. This command
 may be used to select the individual frames of a sprite, or to
 scroll a bitmap vertically within a specified height.
 
@@ -110,7 +110,7 @@ is zero, and its draw height is equal to its created height.
 
 This command adjusts the position of a masked bitmap, and specifies
 the starting vertical offset within the bitmap, plus the height
-to draw. It not necessary to draw the entire bitmap. This command
+to draw. It is not necessary to draw the entire bitmap. This command
 may be used to select the individual frames of a sprite, or to
 scroll a bitmap vertically within a specified height.
 
@@ -122,7 +122,7 @@ is zero, and its draw height is equal to its created height.
 
 This command adjusts the position of a transparent bitmap, and specifies
 the starting vertical offset within the bitmap, plus the height
-to draw. It not necessary to draw the entire bitmap. This command
+to draw. It is not necessary to draw the entire bitmap. This command
 may be used to select the individual frames of a sprite, or to
 scroll a bitmap vertically within a specified height.
 
