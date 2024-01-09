@@ -78,9 +78,7 @@ DiTileArray::~DiTileArray() {
   }
 }
 
-  extern void debug_log(const char* fmt,...);
 void DiTileArray::generate_instructions() {
-  debug_log("tile array gen\n");
   delete_instructions();
 
   // Painting is done with this parameter list:

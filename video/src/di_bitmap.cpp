@@ -179,7 +179,7 @@ void DiBitmap::generate_instructions() {
   set_current_paint_pointer(m_width, m_height);
   setup_alpha_bits();
 }
-extern void debug_log(const char* fmt,...);
+
 void DiBitmap::setup_alpha_bits() {
   // Clear the alpha bits, and replace them with HS & VS bits,
   // so that the bytes may be copied directly to the DMA buffers.
@@ -187,7 +187,6 @@ void DiBitmap::setup_alpha_bits() {
   if (m_flags & PRIM_FLAG_H_SCROLL_1) {
     n *= 4;
   }
-  debug_log("bmid %04X, custom %08X, set %u alpha words using %08X\n",m_id,m_custom,n,otf_video_params.m_syncs_off_x4);
   uint32_t* src_pixels = m_pixels;
   while (n--) {
     *src_pixels = (*src_pixels & 0x3F3F3F3F) | otf_video_params.m_syncs_off_x4;

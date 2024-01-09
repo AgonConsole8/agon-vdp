@@ -153,7 +153,7 @@ int8_t use_otf_mode(int8_t mode) {
     otf_video_params.m_hfp_pixels += adj;
 	otf_video_params.m_hbp_pixels -= adj;
 	
-	otf_video_params.dump();
+	//otf_video_params.dump();
 
     uint8_t oldMode = videoMode;
 	videoMode = mode;

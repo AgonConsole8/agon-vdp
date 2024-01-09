@@ -51,9 +51,8 @@ void DiTextArea::delete_instructions() {
     cursor->delete_instructions();
   }
 }
-  extern void debug_log(const char* fmt,...);
+
 void DiTextArea::generate_instructions() {
-  debug_log("text gen\n");
   delete_instructions();
   DiTileArray::generate_instructions();
   auto cursor = get_first_child();
