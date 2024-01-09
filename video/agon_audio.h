@@ -129,27 +129,87 @@ uint8_t getChannelStatus(uint8_t channel) {
 
 // Set channel volume
 //
-void setVolume(uint8_t channel, uint8_t volume) {
+uint8_t setVolume(uint8_t channel, uint8_t volume) {
 	if (channelEnabled(channel)) {
-		audioChannels[channel]->setVolume(volume);
+		return audioChannels[channel]->setVolume(volume);
 	}
+	return 1;
 }
 
 // Set channel frequency
 //
-void setFrequency(uint8_t channel, uint16_t frequency) {
+uint8_t setFrequency(uint8_t channel, uint16_t frequency) {
 	if (channelEnabled(channel)) {
-		audioChannels[channel]->setFrequency(frequency);
+		return audioChannels[channel]->setFrequency(frequency);
 	}
+	return 1;
 }
 
 // Set channel waveform
 //
-void setWaveform(uint8_t channel, int8_t waveformType, uint16_t sampleId) {
+uint8_t setWaveform(uint8_t channel, int8_t waveformType, uint16_t sampleId) {
 	if (channelEnabled(channel)) {
 		auto channelRef = audioChannels[channel];
-		channelRef->setWaveform(waveformType, channelRef, sampleId);
+		return channelRef->setWaveform(waveformType, channelRef, sampleId);
 	}
+	return 1;
+}
+
+// Seek to a position on a channel
+//
+uint8_t seekTo(uint8_t channel, uint32_t position) {
+	if (channelEnabled(channel)) {
+		return audioChannels[channel]->seekTo(position);
+	}
+	return 1;
+}
+
+// Set channel duration
+//
+uint8_t setDuration(uint8_t channel, uint16_t duration) {
+	if (channelEnabled(channel)) {
+		return audioChannels[channel]->setDuration(duration);
+	}
+	return 1;
+}
+
+// Set channel sample rate
+//
+uint8_t setSampleRate(uint8_t channel, uint16_t sampleRate) {
+	if (channel == 255) {
+		// set underlying sample rate
+		setSampleRate(sampleRate);
+		return 0;
+	}
+	if (channelEnabled(channel)) {
+		return audioChannels[channel]->setSampleRate(sampleRate);
+	}
+	return 1;
+}
+
+// Enable a channel
+//
+uint8_t enableChannel(uint8_t channel) {
+	if (channelEnabled(channel)) {
+		// channel already enabled
+		return 0;
+	}
+	if (channel >= 0 && channel < MAX_AUDIO_CHANNELS && audioChannels[channel] == nullptr) {
+		// channel not enabled, so enable it
+		initAudioChannel(channel);
+		return 0;
+	}
+	return 1;
+}
+
+// Disable a channel
+//
+uint8_t disableChannel(uint8_t channel) {
+	if (channelEnabled(channel)) {
+		audioTaskKill(channel);
+		return 0;
+	}
+	return 1;
 }
 
 // Clear a sample

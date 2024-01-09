@@ -22,17 +22,17 @@ class AudioChannel {
 		~AudioChannel();
 		uint8_t		playNote(uint8_t volume, uint16_t frequency, int32_t duration);
 		uint8_t		getStatus();
-		void		setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel> channelRef, uint16_t sampleId = 0);
-		void		setVolume(uint8_t volume);
-		void		setFrequency(uint16_t frequency);
-		void		setDuration(int32_t duration);
-		void		setVolumeEnvelope(std::unique_ptr<VolumeEnvelope> envelope);
-		void		setFrequencyEnvelope(std::unique_ptr<FrequencyEnvelope> envelope);
-		void		setSampleRate(uint16_t sampleRate);
+		uint8_t		setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel> channelRef, uint16_t sampleId = 0);
+		uint8_t		setVolume(uint8_t volume);
+		uint8_t		setFrequency(uint16_t frequency);
+		uint8_t		setDuration(int32_t duration);
+		uint8_t		setVolumeEnvelope(std::unique_ptr<VolumeEnvelope> envelope);
+		uint8_t		setFrequencyEnvelope(std::unique_ptr<FrequencyEnvelope> envelope);
+		uint8_t		setSampleRate(uint16_t sampleRate);
 		WaveformGenerator * getWaveform() { return this->_waveform.get(); }
 		void		attachSoundGenerator();
 		void		detachSoundGenerator();
-		void		seekTo(uint32_t position);
+		uint8_t		seekTo(uint32_t position);
 		void		loop();
 		uint8_t		channel() { return _channel; }
 	private:
@@ -153,7 +153,7 @@ std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t samp
 	return nullptr;
 }
 
-void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel> channelRef, uint16_t sampleId) {
+uint8_t AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel> channelRef, uint16_t sampleId) {
 	std::shared_ptr<WaveformGenerator> newWaveform = nullptr;
 
 	switch (waveformType) {
@@ -211,10 +211,13 @@ void AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel
 		_waveformType = waveformType;
 		attachSoundGenerator();
 		debug_log("AudioChannel: setWaveform %d done on channel %d\n\r", waveformType, channel());
+		return 1;
 	}
+	// waveform not changed, so return a failure
+	return 0;
 }
 
-void AudioChannel::setVolume(uint8_t volume) {
+uint8_t AudioChannel::setVolume(uint8_t volume) {
 	debug_log("AudioChannel: setVolume %d on channel %d\n\r", volume, channel());
 
 	if (this->_waveform) {
@@ -257,11 +260,13 @@ void AudioChannel::setVolume(uint8_t volume) {
 					audioTaskAbortDelay(this->_channel);
 				}
 				break;
-		}	
+		}
+		return 1;
 	}
+	return 0;
 }
 
-void AudioChannel::setFrequency(uint16_t frequency) {
+uint8_t AudioChannel::setFrequency(uint16_t frequency) {
 	debug_log("AudioChannel: setFrequency %d on channel %d\n\r", frequency, channel());
 	this->_frequency = frequency;
 
@@ -276,10 +281,12 @@ void AudioChannel::setFrequency(uint16_t frequency) {
 			default:
 				this->_waveform->setFrequency(frequency);
 		}
+		return 1;
 	}
+	return 0;
 }
 
-void AudioChannel::setDuration(int32_t duration) {
+uint8_t AudioChannel::setDuration(int32_t duration) {
 	debug_log("AudioChannel: setDuration %d on channel %d\n\r", duration, channel());
 	if (duration == 0xFFFFFF) {
 		duration = -1;
@@ -299,32 +306,38 @@ void AudioChannel::setDuration(int32_t duration) {
 			default:
 				// any other state we should be looping so it will just get picked up
 				break;
-		}	
+		}
+		return 1;
 	}
+	return 0;
 }
 
-void AudioChannel::setVolumeEnvelope(std::unique_ptr<VolumeEnvelope> envelope) {
+uint8_t AudioChannel::setVolumeEnvelope(std::unique_ptr<VolumeEnvelope> envelope) {
 	this->_volumeEnvelope = std::move(envelope);
 	if (envelope && this->_state == AudioState::Playing) {
 		// swap to looping
 		this->_state = AudioState::PlayLoop;
 		audioTaskAbortDelay(this->_channel);
 	}
+	return 1;
 }
 
-void AudioChannel::setFrequencyEnvelope(std::unique_ptr<FrequencyEnvelope> envelope) {
+uint8_t AudioChannel::setFrequencyEnvelope(std::unique_ptr<FrequencyEnvelope> envelope) {
 	this->_frequencyEnvelope = std::move(envelope);
 	if (envelope && this->_state == AudioState::Playing) {
 		// swap to looping
 		this->_state = AudioState::PlayLoop;
 		audioTaskAbortDelay(this->_channel);
 	}
+	return 1;
 }
 
-void AudioChannel::setSampleRate(uint16_t sampleRate) {
+uint8_t AudioChannel::setSampleRate(uint16_t sampleRate) {
 	if (this->_waveform) {
 		this->_waveform->setSampleRate(sampleRate);
+		return 1;
 	}
+	return 0;
 }
 
 void AudioChannel::attachSoundGenerator() {
@@ -339,10 +352,12 @@ void AudioChannel::detachSoundGenerator() {
 	}
 }
 
-void AudioChannel::seekTo(uint32_t position) {
+uint8_t AudioChannel::seekTo(uint32_t position) {
 	if (this->_waveformType == AUDIO_WAVE_SAMPLE) {
 		((EnhancedSamplesGenerator *)getWaveform())->seekTo(position);
+		return 1;
 	}
+	return 0;
 }
 
 void AudioChannel::waitForAbort() {
