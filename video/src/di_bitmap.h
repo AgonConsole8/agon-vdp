@@ -65,6 +65,10 @@ class DiBitmap : public DiPrimitive {
   // 11BBGGRR is 100% opaque).
   void set_transparent_color(uint8_t color);
 
+  // Get the single 8-bit color value used to represent a transparent pixel.
+  // Since the alpha bits are stored inverted, we must invert them here to yield the original color.
+  inline uint8_t get_transparent_color() { return PIXEL_ALPHA_INV_MASK(m_transparent_color); }
+
   virtual void generate_code_for_left_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible);
   virtual void generate_code_for_right_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible);
   virtual void generate_code_for_draw_area(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible);

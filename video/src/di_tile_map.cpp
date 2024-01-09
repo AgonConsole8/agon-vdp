@@ -96,6 +96,10 @@ DiBitmap* DiTileMap::create_bitmap(DiTileBitmapID bm_id, bool psram) {
   }
 }
 
+DiBitmap* DiTileMap::get_bitmap(DiTileBitmapID bm_id) {
+  return m_id_to_bitmap_map[bm_id];
+}
+
 void DiTileMap::set_pixel(DiTileBitmapID bm_id, uint32_t x, uint32_t y, uint8_t color) {
   m_id_to_bitmap_map[bm_id]->set_transparent_pixel(x, y, color);
 }

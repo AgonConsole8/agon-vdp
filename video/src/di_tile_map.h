@@ -57,6 +57,9 @@ class DiTileMap: public DiPrimitive {
   // Create the array of pixels for the tile bitmap.
   DiBitmap* create_bitmap(DiTileBitmapID bm_id, bool psram);
 
+  // Get a pointer to a tile bitmap.
+  DiBitmap* get_bitmap(DiTileBitmapID bm_id);
+
   // Save the pixel value of a particular pixel in a specific tile bitmap. A tile bitmap
   // may appear many times on the screen, based on the use of the bitmap ID.
   void set_pixel(DiTileBitmapID bm_id, uint32_t x, uint32_t y, uint8_t color);
