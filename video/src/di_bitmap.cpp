@@ -138,6 +138,41 @@ void DiBitmap::set_pixel(uint32_t x, uint32_t y, uint8_t color) {
   }
 }
 
+void DiBitmap::copy_pixels(DiBitmap* from_bitmap, uint8_t flip) {
+  auto lines = m_height;
+  if (m_flags & PRIM_FLAG_H_SCROLL_1) {
+    lines *= 4;
+  }
+  auto width = m_words_per_line * 4;
+  if (flip) {
+    auto src_pixels = (uint8_t*) from_bitmap->m_pixels;
+    auto dst_pixels = (uint8_t*) m_pixels;
+    if (flip & 0x02) {
+      dst_pixels = (uint8_t*)(m_pixels + (lines - 1));
+    }
+    while (lines--) {
+      if (flip & 0x01) {
+        for (uint32_t x = 0; x < width; x++) {
+          auto psrc = src_pixels + FIX_INDEX(x);
+          auto pdst = dst_pixels + FIX_INDEX((width - 1 - x));
+          *pdst = *psrc;
+        }
+      } else {
+        // pixels in line are not flipped
+        memcpy(dst_pixels, src_pixels, width);
+      }
+    }
+    src_pixels += m_bytes_per_line;
+    if (flip & 0x02) {
+      dst_pixels -= m_bytes_per_line;
+    } else {
+      dst_pixels += m_bytes_per_line;
+    }
+  } else {
+    memcpy(m_pixels, from_bitmap->m_pixels, lines * width);
+  }
+}
+
 void DiBitmap::generate_instructions() {
   delete_instructions();
   EspFixups fixups;

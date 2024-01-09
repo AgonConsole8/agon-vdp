@@ -221,6 +221,45 @@ similar bitmaps, using only one set of pixel data.
 
 This command sets the PRIM_FLAGS_REF_DATA flag for the new primitive automatically.
 
+## Create primitive: Duplicate Solid Bitmap
+<b>VDU 23, 30, 145, id; pid; flags; bmid, psram, flip</b> : Create primitive: Duplicate Solid Bitmap
+
+This command duplicates a solid bitmap (bmid), while allowing you to make some
+changes to the pixel data in the process. First, the RAM location of the
+new bitmap may differ from the RAM location of the original bitmap.
+Second, you can flip the bitmap vertically (&02), horizontally (&01), or both (&03).
+
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
+
+## Create primitive: Duplicate Masked Bitmap
+<b>VDU 23, 30, 146, id; pid; flags; bmid, psram, flip</b> : Create primitive: Duplicate Masked Bitmap
+
+This command duplicates a masked bitmap (bmid), while allowing you to make some
+changes to the pixel data in the process. First, the RAM location of the
+new bitmap may differ from the RAM location of the original bitmap.
+Second, you can flip the bitmap vertically (&02), horizontally (&01), or both (&03).
+
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
+
+## Create primitive: Duplicate Transparent Bitmap
+<b>VDU 23, 30, 147, id; pid; flags; bmid, psram, flip</b> : Create primitive: Duplicate Transparent Bitmap
+
+This command duplicates a transparent bitmap (bmid), while allowing you to make some
+changes to the pixel data in the process. First, the RAM location of the
+new bitmap may differ from the RAM location of the original bitmap.
+Second, you can flip the bitmap vertically (&02), horizontally (&01), or both (&03).
+
+If the psram parameter is nonzero, the bitmap pixels are kept in PSRAM (SPI RAM)
+rather than in DRAM. This should only be done in resolutions where the pixel clock
+rate is relatively slow, or the total size of bitmaps coming from PSRAM is
+relatively small; otherwise, flicker may occur.
+
 The following image illustrates the concepts, but the actual appearances will differ on the Agon, because this image was created on a PC.
 
 ![Bitmap](bitmap.png)

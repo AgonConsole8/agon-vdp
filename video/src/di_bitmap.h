@@ -81,6 +81,14 @@ class DiBitmap : public DiPrimitive {
   // Get a pointer to the pixel data.
   inline uint32_t* get_pixels() { return m_pixels; }
 
+  // Get the original height used to create the bitmap.
+  inline uint32_t get_original_height() { return m_save_height; }
+
+  // Copy pixel data from another, similarly sized, bitmap.
+  // This allows flipping the pixels vertically (0x02),
+  // horizontally (0x01), or both (0x03).
+  void copy_pixels(DiBitmap* from_bitmap, uint8_t flip);
+
   protected:
   // Set a single pixel with an adjusted color value.
   void set_pixel(uint32_t x, uint32_t y, uint8_t color);
@@ -92,7 +100,6 @@ class DiBitmap : public DiPrimitive {
   uint32_t*   m_visible_start;
   uint32_t*   m_pixels;
   uint32_t    m_save_height;
-  uint32_t    m_built_width;
   uint8_t     m_transparent_color;
   bool        m_use_psram;
 };

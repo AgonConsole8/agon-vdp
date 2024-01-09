@@ -2295,6 +2295,33 @@ bool DiManager::handle_otf_cmd(uint8_t character) {
         }
       } break;
 
+      case 145: {
+        auto cmd = &cu->m_145_Create_primitive_Duplicate_Solid_Bitmap;
+        if (m_incoming_command.size() == sizeof(*cmd)) {
+          create_duplicate_solid_bitmap(cmd);
+          m_incoming_command.clear();
+          return true;
+        }
+      } break;
+
+      case 146: {
+        auto cmd = &cu->m_146_Create_primitive_Duplicate_Masked_Bitmap;
+        if (m_incoming_command.size() == sizeof(*cmd)) {
+          create_duplicate_masked_bitmap(cmd);
+          m_incoming_command.clear();
+          return true;
+        }
+      } break;
+
+      case 147: {
+        auto cmd = &cu->m_147_Create_primitive_Duplicate_Transparent_Bitmap;
+        if (m_incoming_command.size() == sizeof(*cmd)) {
+          create_duplicate_transparent_bitmap(cmd);
+          m_incoming_command.clear();
+          return true;
+        }
+      } break;
+
       case 150: {
         auto cmd = &cu->m_150_Create_primitive_Text_Area;
         if (m_incoming_command.size() == sizeof(*cmd)) {
@@ -2800,6 +2827,41 @@ DiBitmap* DiManager::create_reference_transparent_bitmap(OtfCmd_137_Create_primi
     auto prim = new DiBitmap(cmd->m_flags, ref_prim);
 
     finish_create(cmd->m_id, prim, parent_prim);
+    return prim;
+}
+
+DiBitmap* DiManager::create_duplicate_solid_bitmap(OtfCmd_145_Create_primitive_Duplicate_Solid_Bitmap* cmd) {
+    if (!validate_id(cmd->m_id)) return NULL;
+    DiPrimitive* parent_prim; if (!(parent_prim = get_safe_primitive(cmd->m_pid))) return NULL;
+    DiBitmap* dup_prim; if (!(dup_prim = (DiBitmap*) get_safe_primitive(cmd->m_bmid))) return NULL;
+    auto prim = new DiBitmap(cmd->m_flags|PRIM_FLAGS_ALL_SAME, dup_prim->get_width(),
+      dup_prim->get_original_height(), cmd->m_psram);
+    finish_create(cmd->m_id, prim, parent_prim);
+    prim->copy_pixels(dup_prim, cmd->m_flip);
+    return prim;
+}
+
+DiBitmap* DiManager::create_duplicate_masked_bitmap(OtfCmd_146_Create_primitive_Duplicate_Masked_Bitmap* cmd) {
+    if (!validate_id(cmd->m_id)) return NULL;
+    DiPrimitive* parent_prim; if (!(parent_prim = get_safe_primitive(cmd->m_pid))) return NULL;
+    DiBitmap* dup_prim; if (!(dup_prim = (DiBitmap*) get_safe_primitive(cmd->m_bmid))) return NULL;
+    auto prim = new DiBitmap(cmd->m_flags|PRIM_FLAGS_MASKED, dup_prim->get_width(),
+      dup_prim->get_original_height(), cmd->m_psram);
+    finish_create(cmd->m_id, prim, parent_prim);
+    prim->set_transparent_color(dup_prim->get_transparent_color());
+    prim->copy_pixels(dup_prim, cmd->m_flip);
+    return prim;
+}
+
+DiBitmap* DiManager::create_duplicate_transparent_bitmap(OtfCmd_147_Create_primitive_Duplicate_Transparent_Bitmap* cmd) {
+    if (!validate_id(cmd->m_id)) return NULL;
+    DiPrimitive* parent_prim; if (!(parent_prim = get_safe_primitive(cmd->m_pid))) return NULL;
+    DiBitmap* dup_prim; if (!(dup_prim = (DiBitmap*) get_safe_primitive(cmd->m_bmid))) return NULL;
+    auto prim = new DiBitmap(cmd->m_flags|PRIM_FLAGS_BLENDED, dup_prim->get_width(),
+      dup_prim->get_original_height(), cmd->m_psram);
+    finish_create(cmd->m_id, prim, parent_prim);
+    prim->set_transparent_color(dup_prim->get_transparent_color());
+    prim->copy_pixels(dup_prim, cmd->m_flip);
     return prim;
 }
 

@@ -79,6 +79,9 @@ class DiManager {
   DiBitmap* create_reference_solid_bitmap(OtfCmd_135_Create_primitive_Reference_Solid_Bitmap* cmd);
   DiBitmap* create_reference_masked_bitmap(OtfCmd_136_Create_primitive_Reference_Masked_Bitmap* cmd);
   DiBitmap* create_reference_transparent_bitmap(OtfCmd_137_Create_primitive_Reference_Transparent_Bitmap* cmd);
+  DiBitmap* create_duplicate_solid_bitmap(OtfCmd_145_Create_primitive_Duplicate_Solid_Bitmap* cmd);
+  DiBitmap* create_duplicate_masked_bitmap(OtfCmd_146_Create_primitive_Duplicate_Masked_Bitmap* cmd);
+  DiBitmap* create_duplicate_transparent_bitmap(OtfCmd_147_Create_primitive_Duplicate_Transparent_Bitmap* cmd);
   DiBitmap* create_solid_bitmap_for_tile_array(OtfCmd_81_Create_Solid_Bitmap_for_Tile_Array* cmd);
   DiBitmap* create_masked_bitmap_for_tile_array(OtfCmd_82_Create_Masked_Bitmap_for_Tile_Array* cmd);
   DiBitmap* create_transparent_bitmap_for_tile_array(OtfCmd_83_Create_Transparent_Bitmap_for_Tile_Array* cmd);

@@ -48,7 +48,8 @@
 #define _firstchar uint8_t m_firstchar;
 #define _fgcolor uint8_t m_fgcolor;
 #define _flags  uint16_t m_flags;
-#define _green  uint8_t m_green;
+#define _flip   uint8_t  m_flip;
+#define _green  uint8_t  m_green;
 #define _h      uint16_t m_h;
 #define _i0     uint16_t m_i0;
 #define _id     uint16_t m_id;
@@ -57,7 +58,7 @@
 #define _iy     int16_t  m_iy;
 #define _lastchar uint8_t m_lastchar;
 #define _left   uint16_t m_left;
-#define _left8  uint8_t m_left;
+#define _left8  uint8_t  m_left;
 #define _logical  uint8_t m_logical;
 #define _mid    uint16_t m_mid;
 #define _mode   uint8_t m_mode;
@@ -187,6 +188,9 @@ OTFCMD(135,(_id _pid _flags _bmid),_Create_primitive_Reference_Solid_Bitmap)
 OTFCMD(136,(_id _pid _flags _bmid),_Create_primitive_Reference_Masked_Bitmap)
 OTFCMD(137,(_id _pid _flags _bmid),_Create_primitive_Reference_Transparent_Bitmap)
 OTFCMD(140,(_id _pid _flags _x _y _w _h),_Create_primitive_Group)
+OTFCMD(145,(_id _pid _flags _bmid _psram _flip),_Create_primitive_Duplicate_Solid_Bitmap)
+OTFCMD(146,(_id _pid _flags _bmid _psram _flip),_Create_primitive_Duplicate_Masked_Bitmap)
+OTFCMD(147,(_id _pid _flags _bmid _psram _flip),_Create_primitive_Duplicate_Transparent_Bitmap)
 OTFCMD(150,(_id _pid _flags _x _y _columns _rows _fgcolor _bgcolor),_Create_primitive_Text_Area)
 OTFCMD(151,(_id),_Select_Active_Text_Area)
 OTFCMD(152,(_id _char _fgcolor _bgcolor),_Define_Text_Area_Character)
@@ -320,6 +324,9 @@ typedef union {
     OtfCmd_136_Create_primitive_Reference_Masked_Bitmap m_136_Create_primitive_Reference_Masked_Bitmap;
     OtfCmd_137_Create_primitive_Reference_Transparent_Bitmap m_137_Create_primitive_Reference_Transparent_Bitmap;
     OtfCmd_140_Create_primitive_Group m_140_Create_primitive_Group;
+    OtfCmd_145_Create_primitive_Duplicate_Solid_Bitmap m_145_Create_primitive_Duplicate_Solid_Bitmap;
+    OtfCmd_146_Create_primitive_Duplicate_Masked_Bitmap m_146_Create_primitive_Duplicate_Masked_Bitmap;
+    OtfCmd_147_Create_primitive_Duplicate_Transparent_Bitmap m_147_Create_primitive_Duplicate_Transparent_Bitmap;
     OtfCmd_150_Create_primitive_Text_Area m_150_Create_primitive_Text_Area;
     OtfCmd_151_Select_Active_Text_Area m_151_Select_Active_Text_Area;
     OtfCmd_152_Define_Text_Area_Character m_152_Define_Text_Area_Character;
