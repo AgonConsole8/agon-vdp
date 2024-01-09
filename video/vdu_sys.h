@@ -156,6 +156,13 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_UDG_RESET: {			// VDU 23, 0, &91
 			copy_font();				// Reset UDGs
 		}	break;
+		case VDP_MAP_CHAR_TO_BITMAP: {	// VDU 23, 0, &92, c, bitmapId;
+			auto c = readByte_t();		// Map a character to a bitmap
+			auto bitmapId = readWord_t();
+			if (c >= 0 && bitmapId >= 0) {
+				mapCharToBitmap(c, bitmapId);
+			}
+		}	break;
 		case VDP_READ_COLOUR: {			// VDU 23, 0, &94, index
 			auto index = readByte_t();	// Read colour from palette
 			if (index >= 0) {

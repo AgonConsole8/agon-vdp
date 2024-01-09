@@ -81,7 +81,7 @@ void setSampleRate(uint16_t sampleRate) {
 		soundGenerator->play(false);
 		for (auto channelPair : audioChannels) {
 			auto channel = channelPair.second;
-			soundGenerator->detach(channel->getWaveform());
+			channel->detachSoundGenerator();
 		}
 		delete soundGenerator;
 	}
@@ -163,7 +163,7 @@ uint8_t clearSample(uint16_t sampleId) {
 		debug_log("clearSample: sample %d not found\n\r", sampleId);
 		return 0;
 	}
-	samples.erase(sampleId);
+	samples[sampleId] = nullptr;
 	debug_log("reset sample\n\r");
 	return 1;
 }

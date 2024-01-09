@@ -80,13 +80,13 @@ void setup() {
 	disableCore0WDT(); delay(200);				// Disable the watchdog timers
 	disableCore1WDT(); delay(200);
 	DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
+	copy_font();
+	set_mode(1);
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
 	initAudio();
-	copy_font();
-	set_mode(1);
 	processor->sendModeInformation();
 	boot_screen();
 }
