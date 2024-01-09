@@ -59,7 +59,7 @@ class DiTileMap: public DiPrimitive {
 
   // Save the pixel value of a particular pixel in a specific tile bitmap. A tile bitmap
   // may appear many times on the screen, based on the use of the bitmap ID.
-  void set_pixel(DiTileBitmapID bm_id, int32_t x, int32_t y, uint8_t color);
+  void set_pixel(DiTileBitmapID bm_id, uint32_t x, uint32_t y, uint8_t color);
 
   // Set the bitmap ID to use to draw a tile at a specific row and column.
   void set_tile(int16_t column, int16_t row, DiTileBitmapID bm_id);

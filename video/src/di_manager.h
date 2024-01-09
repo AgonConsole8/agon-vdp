@@ -116,15 +116,15 @@ class DiManager {
   void slice_transparent_bitmap_relative(OtfCmd_128_Adjust_position_and_slice_transparent_bitmap* cmd);
 
   // Set a pixel within an existing bitmap.
-  void set_solid_bitmap_pixel(OtfCmd_129_Set_solid_bitmap_pixel* cmd, int16_t nth);
-  void set_masked_bitmap_pixel(OtfCmd_130_Set_masked_bitmap_pixel* cmd, int16_t nth);
-  void set_transparent_bitmap_pixel(OtfCmd_131_Set_transparent_bitmap_pixel* cmd, int16_t nth);
-  void set_solid_bitmap_pixel_for_tile_array(OtfCmd_85_Set_solid_bitmap_pixel_in_Tile_Array* cmd, int16_t nth);
-  void set_masked_bitmap_pixel_for_tile_array(OtfCmd_86_Set_masked_bitmap_pixel_in_Tile_Array* cmd, int16_t nth);
-  void set_transparent_bitmap_pixel_for_tile_array(OtfCmd_87_Set_transparent_bitmap_pixel_in_Tile_Array* cmd, int16_t nth);
-  void set_solid_bitmap_pixel_for_tile_map(OtfCmd_105_Set_solid_bitmap_pixel_in_Tile_Map* cmd, int16_t nth);
-  void set_masked_bitmap_pixel_for_tile_map(OtfCmd_106_Set_masked_bitmap_pixel_in_Tile_Map* cmd, int16_t nth);
-  void set_transparent_bitmap_pixel_for_tile_map(OtfCmd_107_Set_transparent_bitmap_pixel_in_Tile_Map* cmd, int16_t nth);
+  void set_solid_bitmap_pixel(OtfCmd_129_Set_solid_bitmap_pixel* cmd, uint16_t nth);
+  void set_masked_bitmap_pixel(OtfCmd_130_Set_masked_bitmap_pixel* cmd, uint16_t nth);
+  void set_transparent_bitmap_pixel(OtfCmd_131_Set_transparent_bitmap_pixel* cmd, uint16_t nth);
+  void set_solid_bitmap_pixel_for_tile_array(OtfCmd_85_Set_solid_bitmap_pixel_in_Tile_Array* cmd, uint16_t nth);
+  void set_masked_bitmap_pixel_for_tile_array(OtfCmd_86_Set_masked_bitmap_pixel_in_Tile_Array* cmd, uint16_t nth);
+  void set_transparent_bitmap_pixel_for_tile_array(OtfCmd_87_Set_transparent_bitmap_pixel_in_Tile_Array* cmd, uint16_t nth);
+  void set_solid_bitmap_pixel_for_tile_map(OtfCmd_105_Set_solid_bitmap_pixel_in_Tile_Map* cmd, uint16_t nth);
+  void set_masked_bitmap_pixel_for_tile_map(OtfCmd_106_Set_masked_bitmap_pixel_in_Tile_Map* cmd, uint16_t nth);
+  void set_transparent_bitmap_pixel_for_tile_map(OtfCmd_107_Set_transparent_bitmap_pixel_in_Tile_Map* cmd, uint16_t nth);
 
   // Set bitmap ID for tile in tile array.
   void set_tile_array_bitmap_id(OtfCmd_84_Set_bitmap_ID_for_tile_in_Tile_Array* cmd);

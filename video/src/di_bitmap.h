@@ -56,7 +56,7 @@ class DiBitmap : public DiPrimitive {
   // 10BBGGRR is 75% opaque, and 11BBGGRR is 100% opaque). If the given color value
   // equals the already-set transparent color, then the pixel will be fully transparent,
   // meaning 0% opaque.
-  void set_transparent_pixel(int32_t x, int32_t y, uint8_t color);
+  void set_transparent_pixel(uint32_t x, uint32_t y, uint8_t color);
 
   // Set the single 8-bit color value used to represent a transparent pixel. This should be
   // an unused color value in the visible image when designing the image. This does take out
@@ -79,7 +79,7 @@ class DiBitmap : public DiPrimitive {
 
   protected:
   // Set a single pixel with an adjusted color value.
-  void set_pixel(int32_t x, int32_t y, uint8_t color);
+  void set_pixel(uint32_t x, uint32_t y, uint8_t color);
 
   uint32_t    m_words_per_line;
   uint32_t    m_bytes_per_line;

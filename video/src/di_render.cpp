@@ -174,8 +174,8 @@ void DiRender::render() {
   do_render(m_width, m_height);
 
   Pixel* p_render_pixels = frameBuffer;
-	for (int y = 0; y < m_height; y++) {
-		for (int x = 0; x < m_width; x++) {
+	for (uint y = 0; y < m_height; y++) {
+		for (uint x = 0; x < m_width; x++) {
 			uint8_t c = ((p_render_pixels->b >> 6) << 4) |
                   ((p_render_pixels->g >> 6) << 2) |
                   ((p_render_pixels->r >> 6));

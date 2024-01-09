@@ -83,9 +83,9 @@ DiTileBitmapID DiTextArea::define_character(uint8_t character, uint8_t fg_color,
   if (m_id_to_bitmap_map.find(bm_id) == m_id_to_bitmap_map.end()) {
     create_bitmap(bm_id, false);
     uint32_t char_start = (uint32_t)character * 8;
-    for (int y = 0; y < 8; y++) {
+    for (uint y = 0; y < 8; y++) {
       uint8_t pixels = m_font[char_start+y];
-      for (int x = 0; x < 8; x++) {
+      for (uint x = 0; x < 8; x++) {
         if (pixels & 0x80) {
           set_pixel(bm_id, x, y, fg_color);
         } else {
