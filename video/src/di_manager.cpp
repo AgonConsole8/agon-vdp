@@ -1011,7 +1011,6 @@ bool DiManager::process_character(uint8_t character) {
   if (!m_incoming_command.size() && (character >= 0x20 && character != 0x7F)) {
     // printable character
     write_character(character);
-    debug_log("%c",character);
   } else {
     m_incoming_command.push_back(character);
     VduCmdUnion* cu = (VduCmdUnion*)(&m_incoming_command[0]);

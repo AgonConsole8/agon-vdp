@@ -144,24 +144,69 @@ void DiBitmap::generate_instructions() {
   generate_code_for_positions(fixups, m_width, m_height);
   m_paint_code.do_fixups(fixups);
   set_current_paint_pointer(m_width, m_height);
+
+  // Clear the alpha bits, and replace them with HS & VS bits,
+  // so that the bytes may be copied directly to the DMA buffers.
+  uint32_t n = m_words_per_position;
+  if (m_flags & PRIM_FLAG_H_SCROLL_1) {
+    n *= 4;
+  }
+  uint32_t* src_pixels = m_pixels;
+  while (n--) {
+    *src_pixels = (*src_pixels & 0x3F3F3F3F) | otf_video_params.m_syncs_off_x4;
+    src_pixels++;
+  }
 }
 
 void DiBitmap::generate_code_for_left_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible) {
   DiPrimitive::generate_code_for_left_edge(fixups, x_offset, width, height, hidden, visible);
   auto draw_width = (m_draw_x_extent - m_draw_x) - hidden;
-  m_paint_code.copy_line(fixups, x_offset, hidden, visible, m_flags, m_transparent_color, m_visible_start, true);
+  if (m_flags & PRIM_FLAGS_ALL_SAME) {
+    m_paint_code.copy_line(fixups, x_offset, hidden, visible, m_flags, m_transparent_color, m_visible_start, true);
+  } else {
+    uint32_t at_jump_table = m_paint_code.init_jump_table(m_height);
+    uint32_t* src_pixels = m_visible_start;
+    for (uint32_t i = 0; i < m_height; i++) {
+      m_paint_code.align32();
+      m_paint_code.j_to_here(at_jump_table + i * sizeof(uint32_t));
+      m_paint_code.copy_line(fixups, x_offset, hidden, visible, m_flags, m_transparent_color, src_pixels, false);
+      src_pixels += m_words_per_line;
+    }
+  }
 }
 
 void DiBitmap::generate_code_for_right_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible) {
   DiPrimitive::generate_code_for_right_edge(fixups, x_offset, width, height, hidden, visible);
   auto draw_width = (m_draw_x_extent - m_draw_x) - hidden;
-  m_paint_code.copy_line(fixups, x_offset, 0, visible, m_flags, m_transparent_color, m_visible_start, true);
+  if (m_flags & PRIM_FLAGS_ALL_SAME) {
+    m_paint_code.copy_line(fixups, x_offset, 0, visible, m_flags, m_transparent_color, m_visible_start, true);
+  } else {
+    uint32_t at_jump_table = m_paint_code.init_jump_table(m_height);
+    uint32_t* src_pixels = m_visible_start;
+    for (uint32_t i = 0; i < m_height; i++) {
+      m_paint_code.align32();
+      m_paint_code.j_to_here(at_jump_table + i * sizeof(uint32_t));
+      m_paint_code.copy_line(fixups, x_offset, 0, visible, m_flags, m_transparent_color, src_pixels, false);
+      src_pixels += m_words_per_line;
+    }
+  }
 }
 
 void DiBitmap::generate_code_for_draw_area(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible) {
   DiPrimitive::generate_code_for_draw_area(fixups, x_offset, width, height, hidden, visible);
   auto draw_width = m_draw_x_extent - m_draw_x;
-  m_paint_code.copy_line(fixups, x_offset, 0, draw_width, m_flags, m_transparent_color, m_visible_start, true);
+  if (m_flags & PRIM_FLAGS_ALL_SAME) {
+    m_paint_code.copy_line(fixups, x_offset, 0, draw_width, m_flags, m_transparent_color, m_visible_start, true);
+  } else {
+    uint32_t at_jump_table = m_paint_code.init_jump_table(m_height);
+    uint32_t* src_pixels = m_visible_start;
+    for (uint32_t i = 0; i < m_height; i++) {
+      m_paint_code.align32();
+      m_paint_code.j_to_here(at_jump_table + i * sizeof(uint32_t));
+      m_paint_code.copy_line(fixups, x_offset, 0, draw_width, m_flags, m_transparent_color, src_pixels, false);
+      src_pixels += m_words_per_line;
+    }
+  }
 }
 
 void IRAM_ATTR DiBitmap::paint(volatile uint32_t* p_scan_line, uint32_t line_index) {

@@ -246,20 +246,14 @@ uint8_t DiPrimitive::inverted_alpha_to_opaqueness(uint8_t &color) {
 
 void DiPrimitive::generate_code_for_left_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible) {
   start_paint_section();
-  auto loc = m_paint_code.get_code_index();
-  auto idx = m_paint_ptrs.size() - 1;
 }
 
 void DiPrimitive::generate_code_for_right_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible) {
   start_paint_section();
-  auto loc = m_paint_code.get_code_index();
-  auto idx = m_paint_ptrs.size() - 1;
 }
 
 void DiPrimitive::generate_code_for_draw_area(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible) {
   start_paint_section();
-  auto loc = m_paint_code.get_code_index();
-  auto idx = m_paint_ptrs.size() - 1;
 }
 
 void DiPrimitive::generate_code_for_positions(EspFixups& fixups, uint32_t width, uint32_t height) {
