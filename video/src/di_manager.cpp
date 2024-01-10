@@ -3058,8 +3058,8 @@ void DiManager::set_solid_bitmap_pixel_for_tile_array(OtfCmd_85_Set_solid_bitmap
   DiTileArray* prim; if (!(prim = (DiTileArray*)get_safe_primitive(cmd->m_id))) return;
 
   uint32_t px = (uint32_t)cmd->m_ux + (uint32_t)nth;
-  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_width());
-  px %= prim->get_width();
+  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_tile_width());
+  px %= prim->get_tile_width();
 
   prim->set_pixel(cmd->m_bmid, px, py, cmd->m_color|PIXEL_ALPHA_100_MASK);
 }
@@ -3068,8 +3068,8 @@ void DiManager::set_masked_bitmap_pixel_for_tile_array(OtfCmd_86_Set_masked_bitm
   DiTileArray* prim; if (!(prim = (DiTileArray*)get_safe_primitive(cmd->m_id))) return;
 
   uint32_t px = (uint32_t)cmd->m_ux + (uint32_t)nth;
-  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_width());
-  px %= prim->get_width();
+  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_tile_width());
+  px %= prim->get_tile_width();
   if (cmd->m_color != prim->get_bitmap(cmd->m_bmid)->get_transparent_color()) {
     cmd->m_color |= PIXEL_ALPHA_100_MASK;
   }
@@ -3080,8 +3080,8 @@ void DiManager::set_transparent_bitmap_pixel_for_tile_array(OtfCmd_87_Set_transp
   DiTileArray* prim; if (!(prim = (DiTileArray*)get_safe_primitive(cmd->m_id))) return;
 
   uint32_t px = (uint32_t)cmd->m_ux + (uint32_t)nth;
-  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_width());
-  px %= prim->get_width();
+  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_tile_width());
+  px %= prim->get_tile_width();
 
   prim->set_pixel(cmd->m_bmid, px, py, cmd->m_color);
 }
@@ -3090,8 +3090,8 @@ void DiManager::set_solid_bitmap_pixel_for_tile_map(OtfCmd_105_Set_solid_bitmap_
   DiTileMap* prim; if (!(prim = (DiTileMap*)get_safe_primitive(cmd->m_id))) return;
 
   uint32_t px = (uint32_t)cmd->m_ux + (uint32_t)nth;
-  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_width());
-  px %= prim->get_width();
+  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_tile_width());
+  px %= prim->get_tile_width();
 
   prim->set_pixel(cmd->m_bmid, px, py, cmd->m_color|PIXEL_ALPHA_100_MASK);
 }
@@ -3100,8 +3100,8 @@ void DiManager::set_masked_bitmap_pixel_for_tile_map(OtfCmd_106_Set_masked_bitma
   DiTileMap* prim; if (!(prim = (DiTileMap*)get_safe_primitive(cmd->m_id))) return;
 
   uint32_t px = (uint32_t)cmd->m_ux + (uint32_t)nth;
-  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_width());
-  px %= prim->get_width();
+  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_tile_width());
+  px %= prim->get_tile_width();
   if (cmd->m_color != prim->get_bitmap(cmd->m_bmid)->get_transparent_color()) {
     cmd->m_color |= PIXEL_ALPHA_100_MASK;
   }
@@ -3112,8 +3112,8 @@ void DiManager::set_transparent_bitmap_pixel_for_tile_map(OtfCmd_107_Set_transpa
   DiTileMap* prim; if (!(prim = (DiTileMap*)get_safe_primitive(cmd->m_id))) return;
 
   uint32_t px = (uint32_t)cmd->m_ux + (uint32_t)nth;
-  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_width());
-  px %= prim->get_width();
+  uint32_t py = (uint32_t)cmd->m_uy + (px / prim->get_tile_width());
+  px %= prim->get_tile_width();
 
   prim->set_pixel(cmd->m_bmid, px, py, cmd->m_color);
 }

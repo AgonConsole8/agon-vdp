@@ -75,6 +75,12 @@ class DiTileMap: public DiPrimitive {
 
   virtual void IRAM_ATTR paint(volatile uint32_t* p_scan_line, uint32_t line_index);
 
+  // Get the tile width.
+  inline uint32_t get_tile_width() { return m_tile_width; }
+
+  // Get the tile height.
+  inline uint32_t get_tile_height() { return m_tile_height; }
+  
   protected:
   uint32_t  m_columns;              // number of columns (cells in each row)
   uint32_t  m_rows;                 // number of rows (cells in each column)
