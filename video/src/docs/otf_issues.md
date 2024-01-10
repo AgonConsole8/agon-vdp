@@ -10,6 +10,7 @@ The following OTF capabilities have not yet been implemented or are presently in
 * Using sound. This has not been tested at all, and the high-priority OTF task may prevent it from working at present.
 * Using very large bitmaps (from PSRAM) at resolutions above 320x240, because PSRAM is too slow to keep up with fast pixel clock rates. It is still possible to use smaller bitmaps at higher resolutions, such as 800x600.
 * Once the video mode is changed to an OTF mode, there is no way to exit that mode without resetting the Agon. This will be fixed later.
+* Partial transparency (as opposed to fully transparent or fully opaque) may not work (yet) in video modes with negative HS or VS signals. It should work in video modes where both signals are positive. This will be corrected soon.
 
 The following things should be considered:
 
