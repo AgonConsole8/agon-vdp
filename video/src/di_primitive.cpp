@@ -112,9 +112,23 @@ void IRAM_ATTR DiPrimitive::set_size(uint32_t width, uint32_t height) {
   m_height = height;
 }
 
+void IRAM_ATTR DiPrimitive::compute_absolute_geometry() {
+  if (m_parent) {
+    if (m_parent->get_flags() & PRIM_FLAG_CLIP_KIDS) {
+      compute_absolute_geometry(m_parent->get_draw_x(), m_parent->get_draw_y(),
+        m_parent->get_draw_x_extent(), m_parent->get_draw_y_extent());
+    } else {
+      compute_absolute_geometry(m_parent->get_view_x(), m_parent->get_view_y(),
+        m_parent->get_view_x_extent(), m_parent->get_view_y_extent());
+    }
+  } else {
+      compute_absolute_geometry(0, 0, m_width, m_height);
+  }
+}
+
 void IRAM_ATTR DiPrimitive::compute_absolute_geometry(
   int32_t view_x, int32_t view_y, int32_t view_x_extent, int32_t view_y_extent) {
-  if (m_flags & PRIM_FLAG_ABSOLUTE) {
+  if ((m_flags & PRIM_FLAG_ABSOLUTE) | !m_parent) {
     m_abs_x = m_rel_x;
     m_abs_y = m_rel_y;
   } else {
@@ -318,8 +332,24 @@ void DiPrimitive::generate_code_for_positions(EspFixups& fixups, uint32_t width,
   }
 }
 
+extern void debug_log(const char* f, ...);
+
 void DiPrimitive::set_current_paint_pointer(uint32_t width, uint32_t height,
   uint32_t left_hidden, uint32_t right_hidden) {
+//  debug_log(" @%i ",__LINE__);
+  m_cur_paint_ptr = get_paint_pointer(width, height, left_hidden, right_hidden);
+}
+
+void DiPrimitive::set_current_paint_pointer(uint32_t width, uint32_t height) {
+//  debug_log(" @%i ",__LINE__);
+  m_cur_paint_ptr = get_paint_pointer(width, height);
+}
+
+void DiPrimitive::set_current_paint_pointer() {
+  set_current_paint_pointer(m_width, m_height);
+}
+
+EspFcnPtr DiPrimitive::get_paint_pointer(uint32_t width, uint32_t height, uint32_t left_hidden, uint32_t right_hidden) {
   uint32_t index = 0;
   uint32_t pos = m_abs_x & 3;
 
@@ -368,11 +398,11 @@ void DiPrimitive::set_current_paint_pointer(uint32_t width, uint32_t height,
       }
     }
   } while (false);
-
-  m_cur_paint_ptr = m_paint_ptrs[index];
+// debug_log("m_id %X, mc %X, mpp size %u, index %u\n",m_id,m_custom,m_paint_ptrs.size(),index);
+  return m_paint_ptrs[index];
 }
 
-void DiPrimitive::set_current_paint_pointer(uint32_t width, uint32_t height) {
+EspFcnPtr DiPrimitive::get_paint_pointer(uint32_t width, uint32_t height) {
   uint32_t hidden_left = 0;
   uint32_t hidden_right = 0;
   if (m_abs_x < m_draw_x) {
@@ -380,11 +410,8 @@ void DiPrimitive::set_current_paint_pointer(uint32_t width, uint32_t height) {
   } else if (m_draw_x_extent < m_x_extent) {
     hidden_right = m_x_extent - m_draw_x_extent;
   }
-  set_current_paint_pointer(width, height, hidden_left, hidden_right);
-}
-
-void DiPrimitive::set_current_paint_pointer() {
-  set_current_paint_pointer(m_width, m_height);
+  // debug_log("gpp id %hu w %u h %u hL %u hR %u\n",m_id,width,height,hidden_left,hidden_right);
+  return get_paint_pointer(width, height, hidden_left, hidden_right);
 }
 
 void DiPrimitive::start_paint_section() {

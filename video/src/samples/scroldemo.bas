@@ -3,14 +3,14 @@
 30 MODE 64: REM 800x600x64 with text area
 105 T=TIME
 106 IF TIME-T<100 THEN GOTO 106
-100 FDFLT%=&000F: FHIDE%=&000E: FGRP%=&000E: FSAME%=&0200: OTF%=&1E17
+100 FDFLT%=&000F: FHIDE%=&000E: FGRP%=&000E: FSAME%=&0200: FSCROLL1%=&0010: OTF%=&1E17
 110 columns%=15: rows%=12
 115 bmpWidth%=64: bmpHeight%=50: bmpSize%=bmpWidth%*bmpHeight%
 116 rootID%=0: bmpID%=11: chunkLimit%=128: tileArrayID%=10
 120 DIM A% bmpSize%
 160 DIM code% 32
 200 REM Create tile array
-210 VDU OTF%; 80, tileArrayID%; rootID%; FHIDE%; columns%; rows%; bmpWidth%; bmpHeight%; 800; 600;
+210 VDU OTF%; 80, tileArrayID%; rootID%; FHIDE%+FSCROLL1%; columns%; rows%; bmpWidth%; bmpHeight%; 800; 600;
 220 PROC_LoadBmp("BITMAP_64X50_SOLID.BIN", A%, bmpSize%)
 230 VDU OTF%;4,tileArrayID%;
 240 FOR r%=0 TO rows%-1

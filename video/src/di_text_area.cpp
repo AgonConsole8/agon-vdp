@@ -94,10 +94,8 @@ DiTileBitmapID DiTextArea::define_character(uint8_t character, uint8_t fg_color,
         pixels <<= 1;
       }
     }
-
-    if (m_paint_code.get_code_size()) {
-      bitmap->setup_alpha_bits();
-    }
+    bitmap->compute_absolute_geometry();
+    bitmap->generate_instructions();
   }
   return bm_id;
 }

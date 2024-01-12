@@ -72,6 +72,11 @@ class DiPrimitive {
 
   // Compute the absolute position and related data members, based on the
   // current position, relative to the parent primitive. The viewport of
+  // this primitive is based on the parent draw parameters and certain flags.
+  void IRAM_ATTR compute_absolute_geometry();
+
+  // Compute the absolute position and related data members, based on the
+  // current position, relative to the parent primitive. The viewport of
   // this primitive is based on the given viewport parameters and certain flags.
   void IRAM_ATTR compute_absolute_geometry(int32_t view_x, int32_t view_y, int32_t view_x_extent, int32_t view_y_extent);
 
@@ -122,6 +127,9 @@ class DiPrimitive {
 
   // Clear the pointers to children.
   void clear_child_ptrs();
+
+  EspFcnPtr get_paint_pointer(uint32_t width, uint32_t height, uint32_t left_hidden, uint32_t right_hidden);
+  EspFcnPtr get_paint_pointer(uint32_t width, uint32_t height);
 
   protected:
   // Used to type-case some pointers. (Might be removed in future.)

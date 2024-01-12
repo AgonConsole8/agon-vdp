@@ -376,15 +376,7 @@ void DiManager::remove_primitive(DiPrimitive* prim) {
 
 void DiManager::recompute_primitive(DiPrimitive* prim, uint16_t old_flags,
                                     int32_t old_min_group, int32_t old_max_group) {
-  auto parent = prim->get_parent();
-  if (parent->get_flags() & PRIM_FLAG_CLIP_KIDS) {
-    prim->compute_absolute_geometry(parent->get_draw_x(), parent->get_draw_y(),
-      parent->get_draw_x_extent(), parent->get_draw_y_extent());
-  } else {
-    prim->compute_absolute_geometry(parent->get_view_x(), parent->get_view_y(),
-      parent->get_view_x_extent(), parent->get_view_y_extent());
-  }
-
+  prim->compute_absolute_geometry();
   bool old_use_groups = (old_min_group >= 0);
   bool new_use_groups = false;
   int32_t new_min_group = -1;

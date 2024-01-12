@@ -106,5 +106,7 @@ class DiTileArray: public DiPrimitive {
   uint32_t  m_tile_height;          // height of 1 tile in pixels
   uint8_t   m_transparent_color;    // value indicating not to draw the pixel
   DiTileIdToBitmapMap m_id_to_bitmap_map; // caches bitmaps based on bitmap ID
-  uint32_t** m_tile_pixels;         // 2D array of addresses of tile bitmap pixels
+  std::vector<DiBitmap*> m_tile_bitmaps; // 2D array of pointers to bitmaps
+  EspFcnPtrs m_tile_functions;      // 2D array of functions to paint tiles
+  EspFunction m_paint_nothing;      // Function that just returns, for empty tiles
 };

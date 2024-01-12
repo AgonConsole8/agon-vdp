@@ -73,9 +73,12 @@ class DiBitmap : public DiPrimitive {
   virtual void generate_code_for_right_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible);
   virtual void generate_code_for_draw_area(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible);
 
-  // Reassemble the custom instructions needed to draw the primitive.
+  // Reassemble the custom instructions required to draw the bitmap.
   virtual void generate_instructions();
   
+  // Assemble the custom instructions required to draw the bitmap, if needed.
+  void generate_instructions_if_needed();
+
   // Replace pixel alpha bits with VS & HS (synchs OFF) bits.
   void setup_alpha_bits();
 

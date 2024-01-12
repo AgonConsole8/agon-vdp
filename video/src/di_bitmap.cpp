@@ -180,6 +180,12 @@ void DiBitmap::generate_instructions() {
   setup_alpha_bits();
 }
 
+void DiBitmap::generate_instructions_if_needed() {
+  if (m_paint_code.get_code_size() <= 6) {
+    generate_instructions();
+  }
+}
+
 void DiBitmap::setup_alpha_bits() {
   // Clear the alpha bits, and replace them with HS & VS bits,
   // so that the bytes may be copied directly to the DMA buffers.
@@ -246,7 +252,6 @@ void DiBitmap::generate_code_for_draw_area(EspFixups& fixups, uint32_t x_offset,
 }
 
 void IRAM_ATTR DiBitmap::paint(volatile uint32_t* p_scan_line, uint32_t line_index) {
-  if (!m_cur_paint_ptr.m_address) return;
   auto line_offset = line_index - m_abs_y;
   uint32_t pixels = (uint32_t)(m_visible_start + (m_words_per_line * line_offset));
   (*(m_cur_paint_ptr.m_a5a6))(this, p_scan_line, line_index, m_abs_x, pixels);
