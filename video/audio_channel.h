@@ -78,6 +78,12 @@ uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t durat
 		debug_log("AudioChannel: no waveform on channel %d\n\r", channel());
 		return 0;
 	}
+	if (this->_waveformType == AUDIO_WAVE_SAMPLE && this->_volume == 0 && this->_state != AudioState::Idle) {
+		// we're playing a silenced sample, so we're free to play a new note, so abort
+		this->_state = AudioState::Abort;
+		audioTaskAbortDelay(this->_channel);
+		waitForAbort();
+	}
 	switch (this->_state) {
 		case AudioState::Idle:
 		case AudioState::Release:
@@ -233,7 +239,7 @@ uint8_t AudioChannel::setVolume(uint8_t volume) {
 				break;
 			case AudioState::PlayLoop:
 				// we are looping, so an envelope may be active
-				if (volume == 0) {
+				if (volume == 0 && this->_waveformType != AUDIO_WAVE_SAMPLE) {
 					// silence whilst looping always stops playback - curtail duration
 					this->_duration = millis() - this->_startTime;
 					// if there's a volume envelope, just allow release to happen, otherwise...
@@ -254,7 +260,7 @@ uint8_t AudioChannel::setVolume(uint8_t volume) {
 				// All other states we'll set volume immediately
 				this->_volume = volume;
 				this->_waveform->setVolume(volume);
-				if (volume == 0) {
+				if (volume == 0 && this->_waveformType != AUDIO_WAVE_SAMPLE) {
 					// we're going silent, so abort any current playback
 					this->_state = AudioState::Abort;
 					audioTaskAbortDelay(this->_channel);
