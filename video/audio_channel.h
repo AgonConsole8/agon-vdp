@@ -225,6 +225,12 @@ uint8_t AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChan
 
 uint8_t AudioChannel::setVolume(uint8_t volume) {
 	debug_log("AudioChannel: setVolume %d on channel %d\n\r", volume, channel());
+	if (volume == 255) {
+		return this->_volume;
+	}
+	if (volume > 127) {
+		volume = 127;
+	}
 
 	if (this->_waveform) {
 		waitForAbort();
@@ -267,9 +273,9 @@ uint8_t AudioChannel::setVolume(uint8_t volume) {
 				}
 				break;
 		}
-		return 1;
+		return this->_volume;
 	}
-	return 0;
+	return 255;
 }
 
 uint8_t AudioChannel::setFrequency(uint16_t frequency) {

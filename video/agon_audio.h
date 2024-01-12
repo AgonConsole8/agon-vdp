@@ -130,10 +130,16 @@ uint8_t getChannelStatus(uint8_t channel) {
 // Set channel volume
 //
 uint8_t setVolume(uint8_t channel, uint8_t volume) {
-	if (channelEnabled(channel)) {
+	if (channel == 255) {
+		if (volume == 255) {
+			return soundGenerator->volume();
+		}
+		soundGenerator->setVolume(volume < 128 ? volume : 127);
+		return soundGenerator->volume();
+	} else if (channelEnabled(channel)) {
 		return audioChannels[channel]->setVolume(volume);
 	}
-	return 1;
+	return 255;
 }
 
 // Set channel frequency
@@ -142,7 +148,7 @@ uint8_t setFrequency(uint8_t channel, uint16_t frequency) {
 	if (channelEnabled(channel)) {
 		return audioChannels[channel]->setFrequency(frequency);
 	}
-	return 1;
+	return 0;
 }
 
 // Set channel waveform
@@ -152,7 +158,7 @@ uint8_t setWaveform(uint8_t channel, int8_t waveformType, uint16_t sampleId) {
 		auto channelRef = audioChannels[channel];
 		return channelRef->setWaveform(waveformType, channelRef, sampleId);
 	}
-	return 1;
+	return 0;
 }
 
 // Seek to a position on a channel
@@ -161,7 +167,7 @@ uint8_t seekTo(uint8_t channel, uint32_t position) {
 	if (channelEnabled(channel)) {
 		return audioChannels[channel]->seekTo(position);
 	}
-	return 1;
+	return 0;
 }
 
 // Set channel duration
@@ -170,7 +176,7 @@ uint8_t setDuration(uint8_t channel, uint16_t duration) {
 	if (channelEnabled(channel)) {
 		return audioChannels[channel]->setDuration(duration);
 	}
-	return 1;
+	return 0;
 }
 
 // Set channel sample rate
@@ -184,7 +190,7 @@ uint8_t setSampleRate(uint8_t channel, uint16_t sampleRate) {
 	if (channelEnabled(channel)) {
 		return audioChannels[channel]->setSampleRate(sampleRate);
 	}
-	return 1;
+	return 0;
 }
 
 // Enable a channel
@@ -192,14 +198,14 @@ uint8_t setSampleRate(uint8_t channel, uint16_t sampleRate) {
 uint8_t enableChannel(uint8_t channel) {
 	if (channelEnabled(channel)) {
 		// channel already enabled
-		return 0;
+		return 1;
 	}
 	if (channel >= 0 && channel < MAX_AUDIO_CHANNELS && audioChannels[channel] == nullptr) {
 		// channel not enabled, so enable it
 		initAudioChannel(channel);
-		return 0;
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 // Disable a channel
@@ -207,9 +213,9 @@ uint8_t enableChannel(uint8_t channel) {
 uint8_t disableChannel(uint8_t channel) {
 	if (channelEnabled(channel)) {
 		audioTaskKill(channel);
-		return 0;
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 // Clear a sample
@@ -218,11 +224,11 @@ uint8_t clearSample(uint16_t sampleId) {
 	debug_log("clearSample: sample %d\n\r", sampleId);
 	if (samples.find(sampleId) == samples.end()) {
 		debug_log("clearSample: sample %d not found\n\r", sampleId);
-		return 0;
+		return 1;
 	}
 	samples[sampleId] = nullptr;
 	debug_log("reset sample\n\r");
-	return 1;
+	return 0;
 }
 
 // Reset samples
