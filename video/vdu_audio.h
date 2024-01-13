@@ -67,7 +67,7 @@ void VDUStreamProcessor::vdu_sys_audio() {
 			auto action = readByte_t();		if (action == -1) return;
 
 			// sample number is negative 8 bit number, and provided in channel number param
-			int16_t sampleNum = BUFFERED_SAMPLE_BASEID + (-(int8_t)channel - 1);	// convert to positive, ranged from zero
+			uint16_t sampleNum = BUFFERED_SAMPLE_BASEID + (-(int8_t)channel - 1);	// convert to positive, ranged from zero
 
 			switch (action) {
 				case AUDIO_SAMPLE_LOAD: {
@@ -133,10 +133,11 @@ void VDUStreamProcessor::vdu_sys_audio() {
 				}	break;
 
 				case AUDIO_SAMPLE_DEBUG_INFO: {
-					debug_log("Sample info: %d (%d)\n\r", (int8_t)channel, sampleNum);
+					auto bufferId = readWord_t();	if (bufferId == -1) return;
+					debug_log("Sample info: %d\n\r", bufferId);
 					debug_log("  samples count: %d\n\r", samples.size());
 					debug_log("  free mem: %d\n\r", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-					auto sample = samples[sampleNum];
+					auto sample = samples[bufferId];
 					if (!sample) {
 						debug_log("  sample is null\n\r");
 						break;

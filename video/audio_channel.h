@@ -156,6 +156,7 @@ std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t samp
 
 		return std::make_shared<EnhancedSamplesGenerator>(sample);
 	}
+	debug_log("sample %d not found\n\r", sampleId);
 	return nullptr;
 }
 
@@ -200,7 +201,7 @@ uint8_t AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChan
 			break;
 	}
 
-	if (newWaveform) {
+	if (newWaveform != nullptr) {
 		debug_log("AudioChannel: setWaveform %d on channel %d\n\r", waveformType, channel());
 		if (this->_state != AudioState::Idle) {
 			debug_log("AudioChannel: aborting current playback\n\r");
