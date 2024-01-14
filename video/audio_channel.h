@@ -66,7 +66,7 @@ AudioChannel::AudioChannel(uint8_t channel) : _channel(channel), _state(AudioSta
 
 AudioChannel::~AudioChannel() {
 	debug_log("AudioChannel: deiniting %d\n\r", channel());
-	if (this->_waveform) {
+	if (this->_waveform != nullptr) {
 		this->_waveform->enable(false);
 		soundGenerator->detach(getWaveform());
 	}
@@ -210,7 +210,7 @@ uint8_t AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChan
 			audioTaskAbortDelay(this->_channel);
 			waitForAbort();
 		}
-		if (this->_waveform) {
+		if (this->_waveform != nullptr) {
 			debug_log("AudioChannel: detaching old waveform\n\r");
 			detachSoundGenerator();
 		}

@@ -58,12 +58,19 @@ void audioTaskAbortDelay(uint8_t channel) {
 void audioTaskKill(uint8_t channel) {
 	if (audioHandlers[channel]) {
 		vTaskDelete(audioHandlers[channel]);
+		audioChannels[channel]->detachSoundGenerator();
 		audioHandlers[channel] = nullptr;
-		audioChannels.erase(channel);
+		audioChannels[channel] = nullptr;
 		debug_log("audioTaskKill: channel %d killed\n\r", channel);
 	} else {
 		debug_log("audioTaskKill: channel %d not found\n\r", channel);
 	}
+}
+
+// Channel enabled?
+//
+bool channelEnabled(uint8_t channel) {
+	return channel < MAX_AUDIO_CHANNELS && audioChannels[channel];
 }
 
 // Change the sample rate
@@ -76,17 +83,19 @@ void setSampleRate(uint16_t sampleRate) {
 	// detach the old sound generator
 	if (soundGenerator) {
 		soundGenerator->play(false);
-		for (auto channelPair : audioChannels) {
-			auto channel = channelPair.second;
-			channel->detachSoundGenerator();
+		for (uint8_t i = 0; i < MAX_AUDIO_CHANNELS; i++) {
+			if (channelEnabled(i)) {
+				audioChannels[i]->detachSoundGenerator();
+			}
 		}
 	}
 	// delete the old sound generator
 	soundGenerator = nullptr;
 	soundGenerator = std::unique_ptr<fabgl::SoundGenerator>(new fabgl::SoundGenerator(sampleRate));
-	for (auto channelPair : audioChannels) {
-		auto channel = channelPair.second;
-		channel->attachSoundGenerator();
+	for (uint8_t i = 0; i < MAX_AUDIO_CHANNELS; i++) {
+		if (channelEnabled(i)) {
+			audioChannels[i]->attachSoundGenerator();
+		}
 	}
 	soundGenerator->play(true);
 }
@@ -101,12 +110,6 @@ void initAudio() {
 	for (uint8_t i = 0; i < AUDIO_CHANNELS; i++) {
 		initAudioChannel(i);
 	}
-}
-
-// Channel enabled?
-//
-bool channelEnabled(uint8_t channel) {
-	return channel < MAX_AUDIO_CHANNELS && audioChannels[channel];
 }
 
 // Play a note
