@@ -126,6 +126,7 @@
 
 #define AUDIO_ENVELOPE_NONE		0		// No envelope
 #define AUDIO_ENVELOPE_ADSR		1		// Simple ADSR volume envelope
+#define AUDIO_ENVELOPE_MULTIPHASE_ADSR		2		// Multi-phase ADSR envelope
 
 #define AUDIO_FREQUENCY_ENVELOPE_STEPPED	1		// Stepped frequency envelope
 

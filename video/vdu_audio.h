@@ -17,6 +17,9 @@
 #include "audio_sample.h"
 #include "buffers.h"
 #include "types.h"
+#include "envelopes/adsr.h"
+#include "envelopes/multiphase_adsr.h"
+#include "envelopes/frequency.h"
 
 // Audio VDU command support (VDU 23, 0, &85, <args>)
 //
@@ -265,14 +268,33 @@ uint8_t VDUStreamProcessor::setVolumeEnvelope(uint8_t channel, uint8_t type) {
 				debug_log("vdu_sys_audio: channel %d - volume envelope disabled\n\r", channel);
 				return audioChannels[channel]->setVolumeEnvelope(nullptr);
 				break;
-			case AUDIO_ENVELOPE_ADSR:
+			case AUDIO_ENVELOPE_ADSR: {
 				auto attack = readWord_t();		if (attack == -1) return 0;
 				auto decay = readWord_t();		if (decay == -1) return 0;
 				auto sustain = readByte_t();	if (sustain == -1) return 0;
 				auto release = readWord_t();	if (release == -1) return 0;
 				std::unique_ptr<VolumeEnvelope> envelope = make_unique_psram<ADSRVolumeEnvelope>(attack, decay, sustain, release);
 				return audioChannels[channel]->setVolumeEnvelope(std::move(envelope));
-				break;
+			}	break;
+			case AUDIO_ENVELOPE_MULTIPHASE_ADSR: {
+				auto getPhases = [&](std::shared_ptr<std::vector<VolumeSubPhase>> subPhases) -> int {
+					auto count = readByte_t();			if (count == -1) return 0;
+					for (auto n = 0; n < count; n++) {
+						auto level = readByte_t();      if (level == -1) return 0;
+						auto duration = readWord_t();   if (duration == -1) return 0;
+						subPhases->push_back(VolumeSubPhase { (uint8_t)level, (uint16_t)duration });
+					}
+					return 1;
+				};
+				auto attack = make_shared_psram<std::vector<VolumeSubPhase>>();
+				if (getPhases(attack) == 0) return 0;
+				auto sustain = make_shared_psram<std::vector<VolumeSubPhase>>();
+				if (getPhases(sustain) == 0) return 0;
+				auto release = make_shared_psram<std::vector<VolumeSubPhase>>();
+				if (getPhases(release) == 0) return 0;
+				std::unique_ptr<MultiphaseADSREnvelope> envelope = make_unique_psram<MultiphaseADSREnvelope>(attack, sustain, release);
+				return audioChannels[channel]->setVolumeEnvelope(std::move(envelope));
+			}	break;
 		}
 	}
 	return 0;

@@ -8,8 +8,7 @@
 
 #include "agon.h"
 #include "types.h"
-#include "envelopes/volume.h"
-#include "envelopes/frequency.h"
+#include "envelopes/types.h"
 
 extern std::unique_ptr<fabgl::SoundGenerator> soundGenerator;	// audio handling sub-system
 extern void audioTaskAbortDelay(uint8_t channel);
