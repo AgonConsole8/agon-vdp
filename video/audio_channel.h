@@ -15,7 +15,7 @@ extern void audioTaskAbortDelay(uint8_t channel);
 
 // The audio channel class
 //
-class AudioChannel {	
+class AudioChannel {
 	public:
 		AudioChannel(uint8_t channel);
 		~AudioChannel();
@@ -426,7 +426,7 @@ void AudioChannel::loop() {
 			this->seekTo(0);
 			this->_waveform->setFrequency(this->getFrequency(0));
 			this->_waveform->enable(true);
-			// if we have an envelope then we loop, otherwise just delay for duration			
+			// if we have an envelope then we loop, otherwise just delay for duration
 			if (this->_volumeEnvelope || this->_frequencyEnvelope) {
 				this->_state = AudioState::PlayLoop;
 			} else {

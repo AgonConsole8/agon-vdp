@@ -109,7 +109,7 @@ uint8_t MultiphaseADSREnvelope::getVolume(uint8_t baseVolume, uint32_t elapsed, 
 	subPhasePos -= _attackDuration;
 	pos += _attackDuration;
 
-	auto sustainVolume = getTargetVolume(baseVolume, _sustainLevel);	
+	auto sustainVolume = getTargetVolume(baseVolume, _sustainLevel);
 	if (_sustainLoops) {
 		// if we have sustain data, and it's not just zero duration, then loop around it
 		while (pos < duration) {

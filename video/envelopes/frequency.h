@@ -1,7 +1,7 @@
 //
-// Title:	        Audio Frequency Envelope support
-// Author:        	Steve Sims
-// Created:       	13/08/2023
+// Title:			Audio Frequency Envelope support
+// Author:			Steve Sims
+// Created:			13/08/2023
 // Last Updated:	14/01/2024
 
 #ifndef ENVELOPE_FREQUENCY_H

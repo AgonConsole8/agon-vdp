@@ -74,7 +74,7 @@ void VDUStreamProcessor::vdu_sys() {
 	else if (mode < 32) {
 		switch (mode) {
 			case 0x00: {					// VDU 23, 0
-	  			vdu_sys_video();			// Video system control
+				vdu_sys_video();			// Video system control
 			}	break;
 			case 0x01: {					// VDU 23, 1
 				auto b = readByte_t();		// Cursor control
@@ -83,7 +83,7 @@ void VDUStreamProcessor::vdu_sys() {
 				}
 			}	break;
 			case 0x07: {					// VDU 23, 7
-				vdu_sys_scroll();			// Scroll 
+				vdu_sys_scroll();			// Scroll
 			}	break;
 			case 0x10: {					// VDU 23, 16
 				vdu_sys_cursorBehaviour();	// Set cursor behaviour
@@ -131,7 +131,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 			auto x = readWord_t();		// Get pixel value at screen position x, y
 			auto y = readWord_t();
 			sendScreenPixel((short)x, (short)y);
-		}	break;		
+		}	break;
 		case VDP_AUDIO: {				// VDU 23, 0, &85, channel, command, <args>
 			vdu_sys_audio();
 		}	break;
@@ -197,7 +197,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_TERMINALMODE: {		// VDU 23, 0, &FF
 			startTerminal();		 	// Switch to, or resume, terminal mode
 		}	break;
-  	}
+	}
 }
 
 // VDU 23, 0, &80, <echo>: Send a general poll/echo byte back to MOS
@@ -212,7 +212,7 @@ void VDUStreamProcessor::sendGeneralPoll() {
 		(uint8_t) (b & 0xFF),
 	};
 	send_packet(PACKET_GP, sizeof packet, packet);
-	initialised = true;	
+	initialised = true;
 }
 
 // VDU 23, 0, &81, <region>: Set the keyboard layout
@@ -229,9 +229,9 @@ void VDUStreamProcessor::sendCursorPosition() {
 		(uint8_t) ((textCursor.X - textViewport.X1)/ fontW),
 		(uint8_t) ((textCursor.Y - textViewport.Y1)/ fontH),
 	};
-	send_packet(PACKET_CURSOR, sizeof packet, packet);	
+	send_packet(PACKET_CURSOR, sizeof packet, packet);
 }
-	
+
 // VDU 23, 0, &83 Send a character back to MOS
 //
 void VDUStreamProcessor::sendScreenChar(uint16_t x, uint16_t y) {
@@ -257,7 +257,7 @@ void VDUStreamProcessor::sendScreenPixel(uint16_t x, uint16_t y) {
 		pixel.B,
 		pixelIndex,	// And the pixel index in the palette
 	};
-	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);	
+	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);
 }
 
 // VDU 23, 0, &94, index: Send a colour back to MOS
@@ -295,7 +295,7 @@ void VDUStreamProcessor::sendColour(uint8_t colour) {
 		pixel.B,
 		colour,
 	};
-	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);	
+	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);
 }
 
 // VDU 23, 0, &87, 0: Send TIME information (from ESP32 RTC)
@@ -343,7 +343,7 @@ void VDUStreamProcessor::vdu_sys_video_time() {
 		auto yr = readByte_t(); if (yr == -1) return;
 		auto mo = readByte_t(); if (mo == -1) return;
 		auto da = readByte_t(); if (da == -1) return;
-		auto ho = readByte_t(); if (ho == -1) return;	
+		auto ho = readByte_t(); if (ho == -1) return;
 		auto mi = readByte_t(); if (mi == -1) return;
 		auto se = readByte_t(); if (se == -1) return;
 
@@ -530,7 +530,7 @@ void VDUStreamProcessor::vdu_sys_scroll() {
 
 
 // VDU 23,16: Set cursor behaviour
-// 
+//
 void VDUStreamProcessor::vdu_sys_cursorBehaviour() {
 	auto setting = readByte_t();	if (setting == -1) return;
 	auto mask = readByte_t();		if (mask == -1) return;
@@ -551,7 +551,7 @@ void VDUStreamProcessor::vdu_sys_udg(char c) {
 			return;
 		}
 		buffer[i] = b;
-	}	
+	}
 
 	redefineCharacter(c, buffer);
 }
