@@ -197,6 +197,8 @@ enum AudioState : uint8_t {	// Audio channel state
 
 #define BUFFERED_DEBUG_INFO		0x20	// Get debug info about a buffer
 
+#define BUFFERED_COPY_REF	    0x2D	// Copy references to blocks from multiple buffers into one buffer
+
 // Adjust operation codes
 #define ADJUST_NOT				0x00	// Adjust: NOT
 #define ADJUST_NEG				0x01	// Adjust: Negative

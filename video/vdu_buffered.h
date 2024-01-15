@@ -171,6 +171,15 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			debug_log("\n\r");
 		}	break;
+		case BUFFERED_COPY_REF: {
+			// read list of source buffer IDs
+			auto sourceBufferIds = getBufferIdsFromStream();
+			if (sourceBufferIds.size() == 0) {
+				debug_log("vdu_sys_buffered: no source buffer IDs\n\r");
+				return;
+			}
+			bufferCopyRef(bufferId, sourceBufferIds);
+		}	break;
 		default: {
 			debug_log("vdu_sys_buffered: unknown command %d, buffer %d\n\r", command, bufferId);
 		}	break;
@@ -953,6 +962,38 @@ void VDUStreamProcessor::bufferReverse(uint16_t bufferId, uint8_t options) {
 	}
 
 	debug_log("bufferReverse: reversed buffer %d\n\r", bufferId);
+}
+
+// VDU 23, 0, &A0, bufferId; &2D, sourceBufferId; sourceBufferId; ...; 65535; : Copy references to blocks from buffers
+// Copy references to (blocks from) a list of buffers into a new buffer
+// list is terminated with a bufferId of 65535 (-1)
+// Replaces the target buffer with the new one
+// This is useful to construct a single buffer from multiple buffers without the copy overhead
+// If target buffer is included in the source list it will be skipped to prevent a reference loop
+//
+void VDUStreamProcessor::bufferCopyRef(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds) {
+	if (bufferId == 65535) {
+		debug_log("bufferCopyRef: ignoring buffer %d\n\r", bufferId);
+		return;
+	}
+   	buffers[bufferId].clear();
+
+	// loop thru buffer IDs
+	for (auto sourceId : sourceBufferIds) {
+        if (sourceId == bufferId) {
+            debug_log("bufferCopyRef: skipping buffer %d as it's the target\n\r", sourceId);
+        } else if (buffers.find(sourceId) != buffers.end()) {
+			// buffer ID exists
+			// loop thru blocks stored against this ID
+			for (auto block : buffers[sourceId]) {
+				// push a pointer to the block into our target buffer
+				buffers[bufferId].push_back(block);
+			}
+		} else {
+			debug_log("bufferCopyRef: buffer %d not found\n\r", sourceId);
+		}
+	}
+	debug_log("bufferCopyRef: copied %d block references into buffer %d\n\r", buffers[bufferId].size(), bufferId);
 }
 
 #endif // VDU_BUFFERED_H
