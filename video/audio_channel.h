@@ -78,7 +78,7 @@ uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t durat
 		debug_log("AudioChannel: no waveform on channel %d\n\r", channel());
 		return 0;
 	}
-	switch (this->_state) {
+	switch (this->_state.load()) {
 		case AudioState::Idle:
 		case AudioState::Release:
 			this->_volume = volume;
@@ -112,7 +112,7 @@ uint8_t AudioChannel::getStatus() {
 			status |= AUDIO_STATUS_INDEFINITE;
 		}
 	}
-	switch (this->_state) {
+	switch (this->_state.load()) {
 		case AudioState::Pending:
 		case AudioState::Playing:
 		case AudioState::PlayLoop:
@@ -219,7 +219,7 @@ void AudioChannel::setVolume(uint8_t volume) {
 
 	if (this->_waveform) {
 		waitForAbort();
-		switch (this->_state) {
+		switch (this->_state.load()) {
 			case AudioState::Idle:
 				if (volume > 0) {
 					// new note playback
@@ -267,7 +267,7 @@ void AudioChannel::setFrequency(uint16_t frequency) {
 
 	if (this->_waveform) {
 		waitForAbort();
-		switch (this->_state) {
+		switch (this->_state.load()) {
 			case AudioState::Pending:
 			case AudioState::PlayLoop:
 			case AudioState::Release:
@@ -288,7 +288,7 @@ void AudioChannel::setDuration(int32_t duration) {
 
 	if (this->_waveform) {
 		waitForAbort();
-		switch (this->_state) {
+		switch (this->_state.load()) {
 			case AudioState::Idle:
 				// kick off a new note playback
 				this->_state = AudioState::Pending;
@@ -389,7 +389,7 @@ bool AudioChannel::isFinished(uint32_t elapsed) {
 void AudioChannel::loop() {
 	int delay = 0;
 
-	switch (this->_state) {
+	switch (this->_state.load()) {
 		case AudioState::Pending:
 			debug_log("AudioChannel: play %d,%d,%d,%d\n\r", channel(), this->_volume, this->_frequency, this->_duration);
 			// we have a new note to play
