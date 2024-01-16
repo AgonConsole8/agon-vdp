@@ -199,22 +199,36 @@ void DiBitmap::setup_alpha_bits() {
     src_pixels++;
   }
 }
-
+extern void debug_log(const char* f,...);
 void DiBitmap::generate_code_for_left_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible) {
+debug_log("gcfle this %X xo %u w %u h %u h %u v %u\n",this,x_offset,width,height,hidden,visible);
   DiPrimitive::generate_code_for_left_edge(fixups, x_offset, width, height, hidden, visible);
+debug_log("@%i\n",__LINE__);
   auto draw_width = (m_draw_x_extent - m_draw_x) - hidden;
+debug_log("@%i\n",__LINE__);
   if (m_flags & PRIM_FLAGS_ALL_SAME) {
+debug_log("@%i\n",__LINE__);
     m_paint_code.copy_line(fixups, x_offset, hidden, visible, m_flags, m_transparent_color, m_visible_start, true);
+debug_log("@%i\n",__LINE__);
   } else {
+debug_log("@%i\n",__LINE__);
     uint32_t at_jump_table = m_paint_code.init_jump_table(m_height);
+debug_log("@%i\n",__LINE__);
     uint32_t* src_pixels = m_visible_start;
+debug_log("@%i src %X\n",__LINE__,src_pixels);
     for (uint32_t i = 0; i < m_height; i++) {
+debug_log("@%i\n",__LINE__);
       m_paint_code.align32();
+debug_log("@%i\n",__LINE__);
       m_paint_code.j_to_here(at_jump_table + i * sizeof(uint32_t));
+debug_log("@%i\n",__LINE__);
       m_paint_code.copy_line(fixups, x_offset, hidden, visible, m_flags, m_transparent_color, src_pixels, false);
+debug_log("@%i\n",__LINE__);
       src_pixels += m_words_per_line;
+debug_log("@%i\n",__LINE__);
     }
   }
+debug_log("@%i\n",__LINE__);
 }
 
 void DiBitmap::generate_code_for_right_edge(EspFixups& fixups, uint32_t x_offset, uint32_t width, uint32_t height, uint32_t hidden, uint32_t visible) {
@@ -255,4 +269,12 @@ void IRAM_ATTR DiBitmap::paint(volatile uint32_t* p_scan_line, uint32_t line_ind
   auto line_offset = line_index - m_abs_y;
   uint32_t pixels = (uint32_t)(m_visible_start + (m_words_per_line * line_offset));
   (*(m_cur_paint_ptr.m_a5a6))(this, p_scan_line, line_index, m_abs_x, pixels);
+}
+
+void IRAM_ATTR DiBitmap::paint(volatile uint32_t* p_scan_line, uint32_t line_index,
+                                uint32_t fcn_index, uint32_t src_pixel_offset) {
+  auto line_offset = line_index - m_abs_y;
+  uint32_t pixels = (uint32_t)(m_pixels + (m_words_per_line * line_offset) + src_pixel_offset);
+  EspFcnPtr paint_ptr = m_paint_ptrs[fcn_index];
+  (*(paint_ptr.m_a5a6))(this, p_scan_line, line_index, 0, pixels);
 }

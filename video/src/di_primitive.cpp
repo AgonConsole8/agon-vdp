@@ -349,7 +349,8 @@ void DiPrimitive::set_current_paint_pointer() {
   set_current_paint_pointer(m_width, m_height);
 }
 
-EspFcnPtr DiPrimitive::get_paint_pointer(uint32_t width, uint32_t height, uint32_t left_hidden, uint32_t right_hidden) {
+uint32_t DiPrimitive::get_paint_fcn_index(uint32_t width, uint32_t height, uint32_t left_hidden, uint32_t right_hidden) {
+  debug_log("gpfi %u %u %u %u\n",width, height, left_hidden, right_hidden);
   uint32_t index = 0;
   uint32_t pos = m_abs_x & 3;
 
@@ -398,8 +399,11 @@ EspFcnPtr DiPrimitive::get_paint_pointer(uint32_t width, uint32_t height, uint32
       }
     }
   } while (false);
-// debug_log("m_id %X, mc %X, mpp size %u, index %u\n",m_id,m_custom,m_paint_ptrs.size(),index);
-  return m_paint_ptrs[index];
+  return index;
+}
+
+EspFcnPtr DiPrimitive::get_paint_pointer(uint32_t width, uint32_t height, uint32_t left_hidden, uint32_t right_hidden) {
+  return m_paint_ptrs[get_paint_fcn_index(width, height, left_hidden, right_hidden)];
 }
 
 EspFcnPtr DiPrimitive::get_paint_pointer(uint32_t width, uint32_t height) {
@@ -407,7 +411,8 @@ EspFcnPtr DiPrimitive::get_paint_pointer(uint32_t width, uint32_t height) {
   uint32_t hidden_right = 0;
   if (m_abs_x < m_draw_x) {
     hidden_left = m_draw_x - m_abs_x;
-  } else if (m_draw_x_extent < m_x_extent) {
+  }
+  if (m_draw_x_extent < m_x_extent) {
     hidden_right = m_x_extent - m_draw_x_extent;
   }
   // debug_log("gpp id %hu w %u h %u hL %u hR %u\n",m_id,width,height,hidden_left,hidden_right);

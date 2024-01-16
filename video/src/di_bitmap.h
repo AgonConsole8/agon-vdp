@@ -84,6 +84,10 @@ class DiBitmap : public DiPrimitive {
 
   virtual void paint(volatile uint32_t* p_scan_line, uint32_t line_index);
 
+  // Paint the bitmap using certain predetermined paint parameters.
+  void IRAM_ATTR paint(volatile uint32_t* p_scan_line, uint32_t line_index,
+                        uint32_t fcn_index, uint32_t src_pixel_offset);
+
   // Get a pointer to the pixel data.
   inline uint32_t* get_pixels() { return m_pixels; }
 

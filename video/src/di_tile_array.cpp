@@ -63,15 +63,6 @@ DiTileArray::DiTileArray(uint32_t screen_width, uint32_t screen_height,
   m_height = tile_height * rows;
 
   m_tile_bitmaps.resize(rows * columns);
-  m_tile_functions.resize(rows * columns);
-
-  // By default, the tile array has all empty tiles (cells), so
-  // every paint function pointer must point to a function that
-  // does not paint anything, but just returns when called.
-  m_paint_nothing.enter_and_leave_outer_function();
-  for (auto fcn = m_tile_functions.begin(); fcn != m_tile_functions.end(); fcn++) {
-    fcn->m_address = m_paint_nothing.get_real_address();
-  }
 }
 
 DiTileArray::~DiTileArray() {
@@ -86,6 +77,7 @@ void DiTileArray::generate_instructions() {
     bitmap->compute_absolute_geometry();
     bitmap->generate_instructions();
   }
+  compute_paint_parameters();
 }
 
 DiBitmap* DiTileArray::create_bitmap(DiTileBitmapID bm_id, bool psram) {
@@ -109,17 +101,12 @@ void DiTileArray::set_pixel(DiTileBitmapID bm_id, uint32_t x, uint32_t y, uint8_
 }
 extern void debug_log(const char* f,...);
 void DiTileArray::set_tile(int16_t column, int16_t row, DiTileBitmapID bm_id) {
-// debug_log("st r %hi c %hi this %X id %X -- ",row,column,this,bm_id);
   if (column >= 0 && column < m_columns && row >= 0 && row < m_rows) {
     auto bitmap_item = m_id_to_bitmap_map.find(bm_id);
     if (bitmap_item != m_id_to_bitmap_map.end()) {
       auto index = row * m_columns + column;
       auto bitmap = bitmap_item->second;
       m_tile_bitmaps[index] = bitmap;
- // debug_log("index %hi, bitmap %X -- ",index,bitmap);
-      auto pfcn = bitmap->get_paint_pointer(m_tile_width, m_tile_height, 0, 0);
- // debug_log("st r %hi c %hi i %i id %X fp %X\n",row,column,index,bm_id,pfcn);
-      m_tile_functions[index] = pfcn;
     }
   }
 }
@@ -150,7 +137,6 @@ void DiTileArray::unset_tiles(int16_t column, int16_t row, int16_t columns, int1
 void DiTileArray::unset_tile(int16_t column, int16_t row) {
   auto index = row * m_columns + column;
   m_tile_bitmaps[index] = NULL;
-  m_tile_functions[index].m_address = m_paint_nothing.get_real_address();
 }
 
 DiTileBitmapID DiTileArray::get_tile(int16_t column, int16_t row) {
@@ -213,4 +199,58 @@ void IRAM_ATTR DiTileArray::paint(volatile uint32_t* p_scan_line, uint32_t line_
       p_scan_line += m_tile_width / 4;
     }
   }
+}
+
+void DiTileArray::compute_paint_parameters() {
+  m_left_tile_count = 0;
+  m_left_src_pixel_offset = 0;
+  m_left_paint_fcn_index = 0;
+  m_mid_tile_count = 0;
+  m_mid_src_pixel_offset = 0;
+  m_mid_paint_fcn_index = 0;
+  m_right_tile_count = 0;
+  m_right_src_pixel_offset = 0;
+  m_right_paint_fcn_index = 0;
+  m_dst_x_offset = m_abs_x & 3;
+  m_dst_pixel_offset = 0;
+
+  debug_log("cpp id %hu ax %i axe %i dx %i dxe %i dw %i\n",m_id,m_abs_x,m_abs_x+m_width,m_draw_x,m_draw_x_extent,m_draw_x_extent-m_draw_x);
+
+  if (m_tile_bitmaps.size()) {
+    auto bitmap = *m_tile_bitmaps.begin();
+
+    uint32_t hidden_left = 0;
+    uint32_t hidden_right = 0;
+    auto draw_width = m_draw_x_extent - m_draw_x;
+    debug_log("  dw %i\n", draw_width);
+
+    if (m_abs_x < m_draw_x) {
+      hidden_left = (m_draw_x - m_abs_x) % m_tile_width;
+    }
+
+    if (m_draw_x_extent < m_x_extent) {
+      hidden_right = (m_x_extent - m_draw_x_extent) % m_tile_width;
+    }
+
+    if (hidden_left) {
+      draw_width -= hidden_left;
+      m_left_tile_count = 1;
+      m_left_paint_fcn_index = bitmap->get_paint_fcn_index(m_tile_width, m_tile_height, hidden_left, 0);
+      debug_log("  dw %i ltc %u lpfi %u\n", draw_width, m_left_tile_count, m_left_paint_fcn_index);
+    }
+
+    if (hidden_right) {
+      draw_width -= hidden_right;
+      m_right_tile_count = 1;
+      m_right_paint_fcn_index = bitmap->get_paint_fcn_index(m_tile_width, m_tile_height, 0, hidden_right);
+      debug_log("  dw %i rtc %u rpfi %u\n", draw_width, m_right_tile_count, m_right_paint_fcn_index);
+    }
+
+    if (draw_width) {
+      m_mid_tile_count = draw_width % m_tile_width;
+      m_mid_paint_fcn_index = bitmap->get_paint_fcn_index(m_tile_width, m_tile_height, 0, 0);
+      debug_log("  mtc %u mpfi %u\n", m_mid_tile_count, m_mid_paint_fcn_index);
+    }
+  }
+  debug_log("  --\n");
 }

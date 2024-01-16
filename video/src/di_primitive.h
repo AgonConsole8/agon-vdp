@@ -128,6 +128,7 @@ class DiPrimitive {
   // Clear the pointers to children.
   void clear_child_ptrs();
 
+  uint32_t get_paint_fcn_index(uint32_t width, uint32_t height, uint32_t left_hidden, uint32_t right_hidden);
   EspFcnPtr get_paint_pointer(uint32_t width, uint32_t height, uint32_t left_hidden, uint32_t right_hidden);
   EspFcnPtr get_paint_pointer(uint32_t width, uint32_t height);
 

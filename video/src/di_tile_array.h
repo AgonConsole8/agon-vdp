@@ -107,6 +107,19 @@ class DiTileArray: public DiPrimitive {
   uint8_t   m_transparent_color;    // value indicating not to draw the pixel
   DiTileIdToBitmapMap m_id_to_bitmap_map; // caches bitmaps based on bitmap ID
   std::vector<DiBitmap*> m_tile_bitmaps; // 2D array of pointers to bitmaps
-  EspFcnPtrs m_tile_functions;      // 2D array of functions to paint tiles
-  EspFunction m_paint_nothing;      // Function that just returns, for empty tiles
+
+  uint32_t  m_left_tile_count;          // How many tiles to paint on the left edge
+  uint32_t  m_left_src_pixel_offset;    // Source pixel offset for painting on the left edge
+  uint32_t  m_left_paint_fcn_index;     // Paint function index for painting on the left edge
+  uint32_t  m_mid_tile_count;           // How many tiles to paint in the middle
+  uint32_t  m_mid_src_pixel_offset;     // Source pixel offset for painting in the middle
+  uint32_t  m_mid_paint_fcn_index;      // Paint function index for painting in the middle
+  uint32_t  m_right_tile_count;         // How many tiles to paint on the right edge
+  uint32_t  m_right_src_pixel_offset;   // Source pixel offset for painting on the right edge
+  uint32_t  m_right_paint_fcn_index;    // Paint function index for painting on the right edge
+  uint32_t  m_dst_x_offset;             // Destination X offset (0..3)
+  uint32_t  m_dst_pixel_offset;         // Destination pixel (byte) offset
+
+  // Determine how to paint, based on current X position
+  void compute_paint_parameters();
 };
