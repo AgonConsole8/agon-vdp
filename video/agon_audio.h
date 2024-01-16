@@ -30,11 +30,12 @@ std::unique_ptr<fabgl::SoundGenerator> soundGenerator;				// audio handling sub-
 // Audio channel driver task
 //
 void audioDriver(void * parameters) {
-	uint8_t channel = *(uint8_t *)parameters;
+	uint8_t channelNum = *(uint8_t *)parameters;
+	auto channel = make_shared_psram<AudioChannel>(channelNum);
 
-	audioChannels[channel] = make_shared_psram<AudioChannel>(channel);
+	audioChannels[channelNum] = channel;
 	while (true) {
-		audioChannels[channel]->loop();
+		channel->loop();
 		vTaskDelay(1);
 	}
 }
@@ -60,17 +61,11 @@ void audioTaskKill(uint8_t channel) {
 		vTaskDelete(audioHandlers[channel]);
 		audioChannels[channel]->detachSoundGenerator();
 		audioHandlers[channel] = nullptr;
-		audioChannels[channel] = nullptr;
+		audioChannels.erase(channel);
 		debug_log("audioTaskKill: channel %d killed\n\r", channel);
 	} else {
 		debug_log("audioTaskKill: channel %d not found\n\r", channel);
 	}
-}
-
-// Channel enabled?
-//
-bool channelEnabled(uint8_t channel) {
-	return channel < MAX_AUDIO_CHANNELS && audioChannels[channel];
 }
 
 // Change the sample rate
@@ -83,19 +78,20 @@ void setSampleRate(uint16_t sampleRate) {
 	// detach the old sound generator
 	if (soundGenerator) {
 		soundGenerator->play(false);
-		for (uint8_t i = 0; i < MAX_AUDIO_CHANNELS; i++) {
-			if (channelEnabled(i)) {
-				audioChannels[i]->detachSoundGenerator();
+		for (const auto &channelPair : audioChannels) {
+			if (!channelPair.second) {
+				debug_log("duff channel pair for channel %d, skipping\n\r", channelPair.first);
+				audioChannels.erase(channelPair.first);
+				continue;
 			}
+			channelPair.second->detachSoundGenerator();
 		}
 	}
 	// delete the old sound generator
 	soundGenerator = nullptr;
 	soundGenerator = std::unique_ptr<fabgl::SoundGenerator>(new fabgl::SoundGenerator(sampleRate));
-	for (uint8_t i = 0; i < MAX_AUDIO_CHANNELS; i++) {
-		if (channelEnabled(i)) {
-			audioChannels[i]->attachSoundGenerator();
-		}
+	for (const auto &channelPair : audioChannels) {
+		channelPair.second->attachSoundGenerator();
 	}
 	soundGenerator->play(true);
 }
@@ -110,6 +106,12 @@ void initAudio() {
 	for (uint8_t i = 0; i < AUDIO_CHANNELS; i++) {
 		initAudioChannel(i);
 	}
+}
+
+// Channel enabled?
+//
+bool channelEnabled(uint8_t channel) {
+	return channel < MAX_AUDIO_CHANNELS && audioChannels.find(channel) != audioChannels.end();
 }
 
 // Play a note

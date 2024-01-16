@@ -28,7 +28,7 @@ struct AudioSample {
 
 AudioSample::~AudioSample() {
 	// iterate over channels
-	// for (auto channelPair : this->channels) {
+	// for (auto &channelPair : this->channels) {
 	// 	auto channel = channelPair.second.lock();
 	// 	if (channel) {
 	// 		// Remove sample from channel

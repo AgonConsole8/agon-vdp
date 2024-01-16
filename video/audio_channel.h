@@ -146,7 +146,7 @@ std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t samp
 
 		// TODO remove channel tracking??
 		// remove this channel from other samples
-		// for (auto samplePair : samples) {
+		// for (auto &samplePair : samples) {
 		// 	if (samplePair.second) {
 		// 		samplePair.second->channels.erase(_channel);
 		// 	}

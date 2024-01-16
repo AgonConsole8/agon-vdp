@@ -95,7 +95,7 @@ uint8_t MultiphaseADSREnvelope::getVolume(uint8_t baseVolume, uint32_t elapsed, 
 	// work out what sub-phase we're on, based on our elapsed time
 	if (subPhasePos < _attackDuration) {
 		// we're in an attack sub-phase
-		for (auto subPhase : *this->_attack) {
+		for (const auto& subPhase : *this->_attack) {
 			if (subPhasePos < subPhase.duration) {
 				// we're inside this sub-phase
 				return map(subPhasePos, 0, subPhase.duration, startVolume, getTargetVolume(baseVolume, subPhase.level));
