@@ -10,6 +10,7 @@
 #include "vdu_sys.h"
 
 extern bool consoleMode;
+extern bool printerOn;
 extern HardwareSerial DBGSerial;
 
 // Handle VDU commands
@@ -23,7 +24,44 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		DBGSerial.write(c);
 	}
 
+	if (printerOn) {
+		switch(c) {
+			case 0x03:
+				printerOn = false;
+				break;
+			// case 0x09:	// translate "cursor right" to a space, as terminals treat character 9 as tab
+			// 	vdu_print(32);
+			// 	break;
+			case 0x08 ... 0x13:
+			case 0x20 ... 0xFF: {
+				vdu_print(c);
+			}
+		}
+	}
+
+	if (!commandsEnabled) {
+		switch (c) {
+			case 0x01: {
+				// capture character and send to "printer" if enabled
+				auto b = readByte_t();	if (b == -1) return;
+				vdu_print(b);
+			}	break;
+			case 0x06:	// resume VDU command system
+				commandsEnabled = true;
+				break;
+		}
+		return;
+	}
+
 	switch(c) {
+		case 0x01: {
+			// capture character and send to "printer" if enabled
+			auto b = readByte_t();	if (b == -1) return;
+			vdu_print(b);
+		}	break;
+		case 0x02:
+			printerOn = true;
+			break;
 		case 0x04:
 			// enable text cursor
 			setCharacterOverwrite(true);
@@ -35,6 +73,9 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			setCharacterOverwrite(false);
 			setActiveCursor(getGraphicsCursor());
 			setActiveViewport(VIEWPORT_GRAPHICS);
+			break;
+		case 0x06:
+			// Resume VDU system
 			break;
 		case 0x07:	// Bell
 			playNote(0, 100, 750, 125);
@@ -75,6 +116,12 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		case 0x13:	// Define Logical Colour
 			vdu_palette();
 			break;
+		case 0x14:	// Reset colours
+			restorePalette();
+			break;
+		case 0x15:
+			commandsEnabled = false;
+			break;
 		case 0x16:	// Mode
 			vdu_mode();
 			break;
@@ -93,6 +140,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		case 0x1B: { // VDU 27
 			auto b = readByte_t();	if (b == -1) return;
 			plotCharacter(b);
+			vdu_print(c);
 		}	break;
 		case 0x1C:	// Define a text viewport
 			vdu_textViewport();
@@ -113,6 +161,16 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		case 0x7F:	// Backspace
 			plotBackspace();
 			break;
+	}
+}
+
+// VDU "print" command
+// will output to "printer", if enabled
+//
+void VDUStreamProcessor::vdu_print(uint8_t c) {
+	if (printerOn && !consoleMode) {
+		// if consoleMode is enabled we're echoing everything back anyway
+		DBGSerial.write(c);
 	}
 }
 
