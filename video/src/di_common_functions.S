@@ -25,7 +25,7 @@
 // SOFTWARE.
 // 
 
-  .section .iram1.text
+  .section .text
   .align 4
   
   .global   fcn_draw_256_pixels_in_loop
@@ -3786,27 +3786,23 @@ fcn_src_blend_75_for_4_pixels_at_offset_0_last:
 #define OP050   _050
 #define OP075   _075
 #define OP100   _100
-#define OPSKP  _skp
+#define OPSKP   _skp
 
 #define OPV025   0
 #define OPV050   1
 #define OPV075   2
 #define OPV100   3
-#define OPVSKP  4
+#define OPVSKP   4
 #define NUMOPS   5
 
 #define OPMUL0   (NUMOPS*NUMOPS*NUMOPS)
 #define OPMUL1   (NUMOPS*NUMOPS)
 #define OPMUL2   (NUMOPS)
 
-#define FCNINX(opv0,opv1,opv2,opv3) \
-  (((opv0)*OPMUL0)|((opv1)*OPMUL1)|((opv2)*OPMUL2)|(opv3))
-
-#define FCNID(op0,op1,op2,op3) \
-  fcn\op0\op1\op2\op3
+#define FCNINX(opv0,opv1,opv2,opv3) (((opv0)*OPMUL0)|((opv1)*OPMUL1)|((opv2)*OPMUL2)|(opv3))
 
   .macro begin_op_fcn op0,op1,op2,op3
-  FCNID(op0,op1,op2,op3):
+fcn\()\op0\()\op1\()\op2\()\op3:
   .endm
 
   .macro end_op_fcn
@@ -3814,31 +3810,31 @@ fcn_src_blend_75_for_4_pixels_at_offset_0_last:
   .endm
 
   .macro def_op_fcn3 op0,op1,op2,op3
-  .global FCNID(op0,op1,op2,op3)
+  .global fcn\()\op0\()\op1\()\op2\()\op3
   .endm
 
   .macro def_op_fcn2 op0,op1,op2
-  def_op_fcn3 op0,op1,op2,OP025
-  def_op_fcn3 op0,op1,op2,OP050
-  def_op_fcn3 op0,op1,op2,OP075
-  def_op_fcn3 op0,op1,op2,OP100
-  def_op_fcn3 op0,op1,op2,OPSKP
+  def_op_fcn3 \op0,\op1,\op2,OP025
+  def_op_fcn3 \op0,\op1,\op2,OP050
+  def_op_fcn3 \op0,\op1,\op2,OP075
+  def_op_fcn3 \op0,\op1,\op2,OP100
+  def_op_fcn3 \op0,\op1,\op2,OPSKP
   .endm
 
   .macro def_op_fcn1 op0,op1
-  def_op_fcn2 op0,op1,OP025
-  def_op_fcn2 op0,op1,OP050
-  def_op_fcn2 op0,op1,OP075
-  def_op_fcn2 op0,op1,OP100
-  def_op_fcn2 op0,op1,OPSKP
+  def_op_fcn2 \op0,\op1,OP025
+  def_op_fcn2 \op0,\op1,OP050
+  def_op_fcn2 \op0,\op1,OP075
+  def_op_fcn2 \op0,\op1,OP100
+  def_op_fcn2 \op0,\op1,OPSKP
   .endm
 
   .macro def_op_fcn0 op0
-  def_op_fcn1 op0,OP025
-  def_op_fcn1 op0,OP050
-  def_op_fcn1 op0,OP075
-  def_op_fcn1 op0,OP100
-  def_op_fcn1 op0,OPSKP
+  def_op_fcn1 \op0,OP025
+  def_op_fcn1 \op0,OP050
+  def_op_fcn1 \op0,OP075
+  def_op_fcn1 \op0,OP100
+  def_op_fcn1 \op0,OPSKP
   .endm
 
   .macro def_op_fcns
@@ -3850,31 +3846,31 @@ fcn_src_blend_75_for_4_pixels_at_offset_0_last:
   .endm
 
   .macro ref_op_fcn3 op0,op1,op2,op3
-  .extern FCNID(op0,op1,op2,op3)
+  .extern fcn\()\op0\()\op1\()\op2\()\op3
   .endm
 
   .macro ref_op_fcn2 op0,op1,op2
-  ref_op_fcn3 op0,op1,op2,OP025
-  ref_op_fcn3 op0,op1,op2,OP050
-  ref_op_fcn3 op0,op1,op2,OP075
-  ref_op_fcn3 op0,op1,op2,OP100
-  ref_op_fcn3 op0,op1,op2,OPSKP
+  ref_op_fcn3 \op0,\op1,\op2,OP025
+  ref_op_fcn3 \op0,\op1,\op2,OP050
+  ref_op_fcn3 \op0,\op1,\op2,OP075
+  ref_op_fcn3 \op0,\op1,\op2,OP100
+  ref_op_fcn3 \op0,\op1,\op2,OPSKP
   .endm
 
   .macro ref_op_fcn1 op0,op1
-  ref_op_fcn2 op0,op1,OP025
-  ref_op_fcn2 op0,op1,OP050
-  ref_op_fcn2 op0,op1,OP075
-  ref_op_fcn2 op0,op1,OP100
-  ref_op_fcn2 op0,op1,OPSKP
+  ref_op_fcn2 \op0,\op1,OP025
+  ref_op_fcn2 \op0,\op1,OP050
+  ref_op_fcn2 \op0,\op1,OP075
+  ref_op_fcn2 \op0,\op1,OP100
+  ref_op_fcn2 \op0,\op1,OPSKP
   .endm
 
   .macro ref_op_fcn0 op0
-  .global ref_op_fcn1 op0,OP025
-  .global ref_op_fcn1 op0,OP050
-  .global ref_op_fcn1 op0,OP075
-  .global ref_op_fcn1 op0,OP100
-  .global ref_op_fcn1 op0,OPSKP
+  ref_op_fcn1 \op0,OP025
+  ref_op_fcn1 \op0,OP050
+  ref_op_fcn1 \op0,OP075
+  ref_op_fcn1 \op0,OP100
+  ref_op_fcn1 \op0,OPSKP
   .endm
 
   .macro ref_op_fcns
@@ -7862,3 +7858,43 @@ fcn_100_100_100_075:
 fcn_100_100_100_100:
     copy_4_pixels_at_offset 0
     ret
+
+  .macro tbl_op_fcn3 op0,op1,op2,op3
+  .word fcn\()\op0\()\op1\()\op2\()\op3
+  .endm
+
+  .macro tbl_op_fcn2 op0,op1,op2
+  tbl_op_fcn3 \op0,\op1,\op2,OP025
+  tbl_op_fcn3 \op0,\op1,\op2,OP050
+  tbl_op_fcn3 \op0,\op1,\op2,OP075
+  tbl_op_fcn3 \op0,\op1,\op2,OP100
+  tbl_op_fcn3 \op0,\op1,\op2,OPSKP
+  .endm
+
+  .macro tbl_op_fcn1 op0,op1
+  tbl_op_fcn2 \op0,\op1,OP025
+  tbl_op_fcn2 \op0,\op1,OP050
+  tbl_op_fcn2 \op0,\op1,OP075
+  tbl_op_fcn2 \op0,\op1,OP100
+  tbl_op_fcn2 \op0,\op1,OPSKP
+  .endm
+
+  .macro tbl_op_fcn0 op0
+  tbl_op_fcn1 \op0,OP025
+  tbl_op_fcn1 \op0,OP050
+  tbl_op_fcn1 \op0,OP075
+  tbl_op_fcn1 \op0,OP100
+  tbl_op_fcn1 \op0,OPSKP
+  .endm
+
+  .macro tbl_op_fcns
+  tbl_op_fcn0 OP025
+  tbl_op_fcn0 OP050
+  tbl_op_fcn0 OP075
+  tbl_op_fcn0 OP100
+  tbl_op_fcn0 OPSKP
+  .endm
+
+  .align 4
+fcn_ptr_table:
+  tbl_op_fcns
