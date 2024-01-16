@@ -3883,3981 +3883,4590 @@ fcn\()\op0\()\op1\()\op2\()\op3:
 
   def_op_fcns // define all operation functions as global
 
-    .align 4
+  .align 4
 fcn_skp_skp_skp_skp:
-    ret
+  ret
 
-    .align 4
+  .align 4
 fcn_skp_skp_skp_025:
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_skp_050:
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_skp_075:
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_skp_100:
-    copy_xxx3_pixels_at_offset_3
-    ret
+  copy_xxx3_pixels_at_offset_3
+  ret
 
-    .align 4
+  .align 4
 fcn_skp_skp_025_skp:
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_025_025:
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_025_050:
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_025_075:
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_025_100:
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_050_skp:
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_050_025:
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_050_050:
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_050_075:
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_050_100:
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_075_skp:
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_075_025:
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_075_050:
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_075_075:
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_075_100:
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_100_skp:
-    copy_xx2x_pixels_at_offset_2
-    ret
+  copy_xx2x_pixels_at_offset_2
+  ret
 
-    .align 4
+  .align 4
 fcn_skp_skp_100_025:
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_100_050:
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_100_075:
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_skp_100_100:
-    copy_xx23_pixels_at_offset_2
-    ret
+  copy_xx23_pixels_at_offset_2
+  ret
 
-    .align 4
+  .align 4
 fcn_skp_025_skp_skp:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_skp_025:
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_skp_050:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_skp_075:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_skp_100:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_025_skp:
-    blend_for_x12x_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_025_025:
-    blend_for_x123_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x123_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_025_050:
-    blend_for_x12x_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_025_075:
-    blend_for_x12x_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_025_100:
-    blend_for_x12x_pixels_at_offset_1 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_050_skp:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_050_025:
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_050_050:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_050_075:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_050_100:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_075_skp:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_075_025:
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_075_050:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_075_075:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_075_100:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_100_skp:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_100_025:
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_100_050:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_100_075:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_025_100_100:
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_skp_skp:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_skp_025:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_skp_050:
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_skp_075:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_skp_100:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_025_skp:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_025_025:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_025_050:
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_025_075:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_025_100:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_050_skp:
-    blend_for_x12x_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_050_025:
-    blend_for_x12x_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_050_050:
-    blend_for_x123_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x123_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_050_075:
-    blend_for_x12x_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_050_100:
-    blend_for_x12x_pixels_at_offset_1 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_075_skp:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_075_025:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_075_050:
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_075_075:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_075_100:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_100_skp:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_100_025:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_100_050:
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_100_075:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_050_100_100:
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_skp_skp:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_skp_025:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_skp_050:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_skp_075:
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_skp_100:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_025_skp:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_025_025:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_025_050:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_025_075:
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_025_100:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_050_skp:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_050_025:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_050_050:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_050_075:
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_050_100:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_075_skp:
-    blend_for_x12x_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_075_025:
-    blend_for_x12x_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_075_050:
-    blend_for_x12x_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_075_075:
-    blend_for_x123_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_x123_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_075_100:
-    blend_for_x12x_pixels_at_offset_1 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_x12x_pixels_at_offset_1 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_100_skp:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_100_025:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_100_050:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_100_075:
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_075_100_100:
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_skp_skp:
-    copy_x1xx_pixels_at_offset_1
-    ret
+  copy_x1xx_pixels_at_offset_1
+  ret
 
-    .align 4
+  .align 4
 fcn_skp_100_skp_025:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_skp_050:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_skp_075:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_skp_100:
-    copy_x1x3_pixels_at_offset_1
-    ret
+  copy_x1x3_pixels_at_offset_1
+  ret
 
-    .align 4
+  .align 4
 fcn_skp_100_025_skp:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_025_025:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_025_050:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_025_075:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_025_100:
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_050_skp:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_050_025:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_050_050:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_050_075:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_050_100:
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_075_skp:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_075_025:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_075_050:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_075_075:
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_075_100:
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_100_skp:
-    copy_x12x_pixels_at_offset_1
-    ret
+  copy_x12x_pixels_at_offset_1
+  ret
 
-    .align 4
+  .align 4
 fcn_skp_100_100_025:
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_100_050:
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_100_075:
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_skp_100_100_100:
-    copy_x123_pixels_at_offset_1
-    ret
+  copy_x123_pixels_at_offset_1
+  ret
 
-    .align 4
+  .align 4
 fcn_025_skp_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_skp_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_skp_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_skp_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_025_skp:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_025_025:
-    blend_for_0x23_pixels_at_offset_0 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_025_050:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_025_075:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_025_100:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_050_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_050_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_050_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_050_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_050_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_075_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_075_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_075_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_075_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_075_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_100_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_100_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_100_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_skp_100_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_skp_skp:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_skp_025:
-    blend_for_01x3_pixels_at_offset_0 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_skp_050:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_skp_075:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_skp_100:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_025_skp:
-    blend_for_012x_pixels_at_offset_0 25 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_025_025:
-    blend_for_4_pixels_at_offset 25 src 0
-    ret
+  enter_blend_fcn
+  blend_for_4_pixels_at_offset 25 src 0
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_025_050:
-    blend_for_012x_pixels_at_offset_0 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_025_075:
-    blend_for_012x_pixels_at_offset_0 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_025_100:
-    blend_for_012x_pixels_at_offset_0 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_050_skp:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_050_025:
-    blend_for_01x3_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_050_050:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_050_075:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_050_100:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_075_skp:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_075_025:
-    blend_for_01x3_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_075_050:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_075_075:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_075_100:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_100_skp:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_100_025:
-    blend_for_01x3_pixels_at_offset_0 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_100_050:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_100_075:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_025_100_100:
-    blend_for_01xx_pixels_at_offset_0 25 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 25 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_skp_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_skp_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_skp_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_025_skp:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_025_025:
-    blend_for_0x23_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_025_050:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_025_075:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_025_100:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_050_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x12x_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x12x_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_050_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_x12x_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_x12x_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_050_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x123_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x123_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_050_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x12x_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x12x_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_050_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x12x_pixels_at_offset_1 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x12x_pixels_at_offset_1 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_075_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_075_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_075_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_075_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_075_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_100_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_100_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_100_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_050_100_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_skp_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_skp_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_skp_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_025_skp:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_025_025:
-    blend_for_0x23_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_025_050:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_025_075:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_025_100:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_050_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_050_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_050_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_050_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_050_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_075_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x12x_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x12x_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_075_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_x12x_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_x12x_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_075_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x12x_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x12x_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_075_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x123_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x123_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_075_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x12x_pixels_at_offset_1 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x12x_pixels_at_offset_1 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_100_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_100_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_100_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_075_100_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_skp_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_skp_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_skp_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1x3_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1x3_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_025_skp:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_025_025:
-    blend_for_0x23_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_025_050:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_025_075:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_025_100:
-    blend_for_0x2x_pixels_at_offset_0 25 src
-    copy_x1x3_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 25 src
+  copy_x1x3_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_050_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_050_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_050_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_050_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_050_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_075_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_075_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_075_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_075_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_075_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x12x_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x12x_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_100_025:
-    blend_for_0xx3_pixels_at_offset_0 25 src
-    copy_x12x_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 25 src
+  copy_x12x_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_100_050:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_100_075:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_025_100_100_100:
-    blend_for_0xxx_pixels_at_offset_0 25 src
-    copy_x123_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 25 src
+  copy_x123_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_skp_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_skp_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_skp_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_025_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_025_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_025_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_025_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_025_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_050_skp:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_050_025:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_050_050:
-    blend_for_0x23_pixels_at_offset_0 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_050_075:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_050_100:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_075_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_075_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_075_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_075_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_075_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_100_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_100_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_100_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_skp_100_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_skp_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_skp_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_skp_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_025_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x12x_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x12x_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_025_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x123_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x123_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_025_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_x12x_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_x12x_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_025_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x12x_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x12x_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_025_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x12x_pixels_at_offset_1 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x12x_pixels_at_offset_1 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_050_skp:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_050_025:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_050_050:
-    blend_for_0x23_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_050_075:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_050_100:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_075_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_075_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_075_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_075_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_075_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_100_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_100_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_100_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_025_100_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_skp_skp:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_skp_025:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_skp_050:
-    blend_for_01x3_pixels_at_offset_0 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_skp_075:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_skp_100:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_025_skp:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_025_025:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_025_050:
-    blend_for_01x3_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_025_075:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_025_100:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_050_skp:
-    blend_for_012x_pixels_at_offset_0 50 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_050_025:
-    blend_for_012x_pixels_at_offset_0 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_050_050:
-    blend_for_4_pixels_at_offset 50 src 0
-    ret
+  enter_blend_fcn
+  blend_for_4_pixels_at_offset 50 src 0
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_050_075:
-    blend_for_012x_pixels_at_offset_0 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_050_100:
-    blend_for_012x_pixels_at_offset_0 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_075_skp:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_075_025:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_075_050:
-    blend_for_01x3_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_075_075:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_075_100:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_100_skp:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_100_025:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_100_050:
-    blend_for_01x3_pixels_at_offset_0 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_100_075:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_050_100_100:
-    blend_for_01xx_pixels_at_offset_0 50 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 50 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_skp_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_skp_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_skp_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_025_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_025_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_025_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_025_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_025_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_050_skp:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_050_025:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_050_050:
-    blend_for_0x23_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_050_075:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_050_100:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_075_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x12x_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x12x_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_075_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x12x_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x12x_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_075_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_x12x_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_x12x_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_075_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x123_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x123_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_075_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x12x_pixels_at_offset_1 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x12x_pixels_at_offset_1 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_100_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_100_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_100_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_075_100_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_skp_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_skp_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_skp_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1x3_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1x3_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_025_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_025_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_025_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_025_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_025_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_050_skp:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_050_025:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_050_050:
-    blend_for_0x23_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_050_075:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_050_100:
-    blend_for_0x2x_pixels_at_offset_0 50 src
-    copy_x1x3_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 50 src
+  copy_x1x3_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_075_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_075_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_075_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_075_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_075_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x12x_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x12x_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_100_025:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_100_050:
-    blend_for_0xx3_pixels_at_offset_0 50 src
-    copy_x12x_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 50 src
+  copy_x12x_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_100_075:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_050_100_100_100:
-    blend_for_0xxx_pixels_at_offset_0 50 src
-    copy_x123_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 50 src
+  copy_x123_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_skp_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_skp_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_skp_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_025_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_025_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_025_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_025_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_025_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_050_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_050_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_050_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_050_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_050_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_075_skp:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_075_025:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_075_050:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_075_075:
-    blend_for_0x23_pixels_at_offset_0 75 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_075_100:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_100_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_100_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_100_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_skp_100_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_skp_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_skp_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_skp_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_025_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x12x_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x12x_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_025_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x123_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x123_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_025_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x12x_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x12x_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_025_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_x12x_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_x12x_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_025_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x12x_pixels_at_offset_1 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x12x_pixels_at_offset_1 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_050_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_050_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_050_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_050_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_050_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_075_skp:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_075_025:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_075_050:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_075_075:
-    blend_for_0x23_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_075_100:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_100_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_100_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_100_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_025_100_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_skp_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_skp_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_skp_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_025_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_025_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_025_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_025_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_025_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_050_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x12x_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x12x_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_050_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x12x_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x12x_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_050_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x123_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x123_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_050_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_x12x_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_x12x_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_050_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x12x_pixels_at_offset_1 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x12x_pixels_at_offset_1 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_075_skp:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_075_025:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_075_050:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_075_075:
-    blend_for_0x23_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_075_100:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_100_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_100_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_100_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_050_100_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_skp_skp:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_skp_025:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_skp_050:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_skp_075:
-    blend_for_01x3_pixels_at_offset_0 75 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_skp_100:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_025_skp:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_025_025:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_025_050:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_025_075:
-    blend_for_01x3_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_025_100:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_050_skp:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_050_025:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_050_050:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_050_075:
-    blend_for_01x3_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_050_100:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_075_skp:
-    blend_for_012x_pixels_at_offset_0 75 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_075_025:
-    blend_for_012x_pixels_at_offset_0 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_075_050:
-    blend_for_012x_pixels_at_offset_0 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_075_075:
-    blend_for_4_pixels_at_offset 75 src 0
-    ret
+  enter_blend_fcn
+  blend_for_4_pixels_at_offset 75 src 0
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_075_100:
-    blend_for_012x_pixels_at_offset_0 75 src
-    copy_xxx3_pixels_at_offset_3
-    ret
+  enter_blend_fcn
+  blend_for_012x_pixels_at_offset_0 75 src
+  copy_xxx3_pixels_at_offset_3
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_100_skp:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_100_025:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_100_050:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    copy_xx2x_pixels_at_offset_2
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  copy_xx2x_pixels_at_offset_2
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_100_075:
-    blend_for_01x3_pixels_at_offset_0 75 src
-    copy_xx2x_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01x3_pixels_at_offset_0 75 src
+  copy_xx2x_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_075_100_100:
-    blend_for_01xx_pixels_at_offset_0 75 src
-    copy_xx23_pixels_at_offset_2
-    ret
+  enter_blend_fcn
+  blend_for_01xx_pixels_at_offset_0 75 src
+  copy_xx23_pixels_at_offset_2
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_skp_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_skp_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_skp_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_skp_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_skp_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1x3_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1x3_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_025_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_025_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_025_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_025_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_025_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_050_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_050_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_050_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_050_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_050_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x1x3_pixels_at_offset_1
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x1x3_pixels_at_offset_1
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_075_skp:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_075_025:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_075_050:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_075_075:
-    blend_for_0x23_pixels_at_offset_0 75 src
-    copy_x1xx_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x23_pixels_at_offset_0 75 src
+  copy_x1xx_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_075_100:
-    blend_for_0x2x_pixels_at_offset_0 75 src
-    copy_x1x3_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0x2x_pixels_at_offset_0 75 src
+  copy_x1x3_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_100_skp:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x12x_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x12x_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_100_025:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_100_050:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x12x_pixels_at_offset_1
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x12x_pixels_at_offset_1
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_100_075:
-    blend_for_0xx3_pixels_at_offset_0 75 src
-    copy_x12x_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xx3_pixels_at_offset_0 75 src
+  copy_x12x_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_075_100_100_100:
-    blend_for_0xxx_pixels_at_offset_0 75 src
-    copy_x123_pixels_at_offset_1
-    ret
+  enter_blend_fcn
+  blend_for_0xxx_pixels_at_offset_0 75 src
+  copy_x123_pixels_at_offset_1
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_skp_skp:
-    copy_0xxx_pixels_at_offset_0
-    ret
+  copy_0xxx_pixels_at_offset_0
+  ret
 
-    .align 4
+  .align 4
 fcn_100_skp_skp_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_skp_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_skp_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_skp_100:
-    copy_0xx3_pixels_at_offset_0
-    ret
+  copy_0xx3_pixels_at_offset_0
+  ret
 
-    .align 4
+  .align 4
 fcn_100_skp_025_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_025_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_025_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_025_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_025_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_050_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_050_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_050_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_050_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_050_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_075_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_075_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_075_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_075_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_075_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_100_skp:
-    copy_0x2x_pixels_at_offset_0
-    ret
+  copy_0x2x_pixels_at_offset_0
+  ret
 
-    .align 4
+  .align 4
 fcn_100_skp_100_025:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_100_050:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_100_075:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_skp_100_100:
-    copy_0x23_pixels_at_offset_0
-    ret
+  copy_0x23_pixels_at_offset_0
+  ret
 
-    .align 4
+  .align 4
 fcn_100_025_skp_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_skp_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_skp_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_skp_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_skp_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_025_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_025_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x123_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x123_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_025_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_025_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_025_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_050_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_050_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_050_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_050_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_050_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_075_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_075_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_075_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_075_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_075_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_100_skp:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_100_025:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_100_050:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_100_075:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_025_100_100:
-    copy_0x23_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 25 src
-    ret
+  enter_blend_fcn
+  copy_0x23_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_skp_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_skp_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_skp_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_skp_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_skp_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_025_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_025_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_025_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_025_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_025_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_050_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_050_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_050_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x123_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x123_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_050_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_050_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_075_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_075_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_075_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_075_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_075_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_100_skp:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_100_025:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_100_050:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_100_075:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_050_100_100:
-    copy_0x23_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 50 src
-    ret
+  enter_blend_fcn
+  copy_0x23_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_skp_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_skp_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_skp_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_skp_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_skp_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_025_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_025_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_025_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_025_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_025_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_050_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_050_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_050_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_050_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_050_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_075_skp:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_075_025:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_075_050:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_075_075:
-    copy_0xxx_pixels_at_offset_0
-    blend_for_x123_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0xxx_pixels_at_offset_0
+  blend_for_x123_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_075_100:
-    copy_0xx3_pixels_at_offset_0
-    blend_for_x12x_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0xx3_pixels_at_offset_0
+  blend_for_x12x_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_100_skp:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_100_025:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_100_050:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_100_075:
-    copy_0x2x_pixels_at_offset_0
-    blend_for_x1x3_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0x2x_pixels_at_offset_0
+  blend_for_x1x3_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_075_100_100:
-    copy_0x23_pixels_at_offset_0
-    blend_for_x1xx_pixels_at_offset_1 75 src
-    ret
+  enter_blend_fcn
+  copy_0x23_pixels_at_offset_0
+  blend_for_x1xx_pixels_at_offset_1 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_skp_skp:
-    copy_01xx_pixels_at_offset_0
-    ret
+  copy_01xx_pixels_at_offset_0
+  ret
 
-    .align 4
+  .align 4
 fcn_100_100_skp_025:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_skp_050:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_skp_075:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_skp_100:
-    copy_01x3_pixels_at_offset_0
-    ret
+  copy_01x3_pixels_at_offset_0
+  ret
 
-    .align 4
+  .align 4
 fcn_100_100_025_skp:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_025_025:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx23_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx23_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_025_050:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_025_075:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_025_100:
-    copy_01x3_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 25 src
-    ret
+  enter_blend_fcn
+  copy_01x3_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_050_skp:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_050_025:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_050_050:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx23_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx23_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_050_075:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_050_100:
-    copy_01x3_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 50 src
-    ret
+  enter_blend_fcn
+  copy_01x3_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_075_skp:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_075_025:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_075_050:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_075_075:
-    copy_01xx_pixels_at_offset_0
-    blend_for_xx23_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_01xx_pixels_at_offset_0
+  blend_for_xx23_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_075_100:
-    copy_01x3_pixels_at_offset_0
-    blend_for_xx2x_pixels_at_offset_2 75 src
-    ret
+  enter_blend_fcn
+  copy_01x3_pixels_at_offset_0
+  blend_for_xx2x_pixels_at_offset_2 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_100_skp:
-    copy_012x_pixels_at_offset_0
-    ret
+  copy_012x_pixels_at_offset_0
+  ret
 
-    .align 4
+  .align 4
 fcn_100_100_100_025:
-    copy_012x_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 25 src
-    ret
+  enter_blend_fcn
+  copy_012x_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 25 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_100_050:
-    copy_012x_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 50 src
-    ret
+  enter_blend_fcn
+  copy_012x_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 50 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_100_075:
-    copy_012x_pixels_at_offset_0
-    blend_for_xxx3_pixels_at_offset_3 75 src
-    ret
+  enter_blend_fcn
+  copy_012x_pixels_at_offset_0
+  blend_for_xxx3_pixels_at_offset_3 75 src
+  leave_blend_fcn
 
-    .align 4
+  .align 4
 fcn_100_100_100_100:
-    copy_4_pixels_at_offset 0
-    ret
+  copy_4_pixels_at_offset 0
+  ret
 
   .macro tbl_op_fcn3 op0,op1,op2,op3
   .word fcn\()\op0\()\op1\()\op2\()\op3
