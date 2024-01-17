@@ -157,6 +157,15 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			auto options = readByte_t(); if (options == -1) return;
 			bufferReverse(bufferId, options);
 		}	break;
+		case BUFFERED_COPY_REF: {
+			// read list of source buffer IDs
+			auto sourceBufferIds = getBufferIdsFromStream();
+			if (sourceBufferIds.size() == 0) {
+				debug_log("vdu_sys_buffered: no source buffer IDs\n\r");
+				return;
+			}
+			bufferCopyRef(bufferId, sourceBufferIds);
+		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
 			if (buffers[bufferId].size() == 0) {
@@ -170,15 +179,6 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 				debug_log("%02X ", data);
 			}
 			debug_log("\n\r");
-		}	break;
-		case BUFFERED_COPY_REF: {
-			// read list of source buffer IDs
-			auto sourceBufferIds = getBufferIdsFromStream();
-			if (sourceBufferIds.size() == 0) {
-				debug_log("vdu_sys_buffered: no source buffer IDs\n\r");
-				return;
-			}
-			bufferCopyRef(bufferId, sourceBufferIds);
 		}	break;
 		default: {
 			debug_log("vdu_sys_buffered: unknown command %d, buffer %d\n\r", command, bufferId);
@@ -254,7 +254,7 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 	debug_log("bufferClear: buffer %d\n\r", bufferId);
 	if (bufferId == 65535) {
 		// iterate thru our buffers and clear their vectors
-		for (auto bufferPair : buffers) {
+		for (auto &bufferPair : buffers) {
 			bufferPair.second.clear();
 		}
 		resetBitmaps();
@@ -385,7 +385,7 @@ int16_t VDUStreamProcessor::getBufferByte(uint16_t bufferId, uint32_t offset) {
 	if (buffers.find(bufferId) != buffers.end()) {
 		// loop thru blocks stored against this ID to find data at offset
 		auto currentOffset = offset;
-		for (auto block : buffers[bufferId]) {
+		for (const auto &block : buffers[bufferId]) {
 			auto bufferLength = block->size();
 			if (currentOffset < bufferLength) {
 				return block->getBuffer()[currentOffset];
@@ -402,7 +402,7 @@ bool VDUStreamProcessor::setBufferByte(uint8_t value, uint16_t bufferId, uint32_
 	if (buffers.find(bufferId) != buffers.end()) {
 		// find the block containing the offset
 		auto currentOffset = offset;
-		for (auto block : buffers[bufferId]) {
+		for (const auto &block : buffers[bufferId]) {
 			auto bufferLength = block->size();
 			if (currentOffset < bufferLength) {
 				block->writeBufferByte(value, currentOffset);
@@ -563,7 +563,7 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 // This works in a similar manner to bufferAdjust
 // for now, this only supports single-byte comparisons
 // as multi-byte comparisons are a bit more complex
-// 
+//
 bool VDUStreamProcessor::bufferConditional() {
 	auto command = readByte_t();
 	auto checkBufferId = resolveBufferId(readWord_t(), id);
@@ -687,11 +687,11 @@ void VDUStreamProcessor::bufferCopy(uint16_t bufferId, std::vector<uint16_t> sou
 	// prepare a vector for storing our buffers
 	std::vector<std::shared_ptr<BufferStream>, psram_allocator<std::shared_ptr<BufferStream>>> streams;
 	// loop thru buffer IDs
-	for (auto sourceId : sourceBufferIds) {
+	for (const auto sourceId : sourceBufferIds) {
 		if (buffers.find(sourceId) != buffers.end()) {
 			// buffer ID exists
 			// loop thru blocks stored against this ID
-			for (auto block : buffers[sourceId]) {
+			for (const auto &block : buffers[sourceId]) {
 				// push a copy of the block into our vector
 				auto bufferStream = make_shared_psram<BufferStream>(block->size());
 				if (!bufferStream || !bufferStream->getBuffer()) {
@@ -707,7 +707,7 @@ void VDUStreamProcessor::bufferCopy(uint16_t bufferId, std::vector<uint16_t> sou
 	}
 	// replace buffer with new one
 	buffers[bufferId].clear();
-	for (auto block : streams) {
+	for (const auto &block : streams) {
 		debug_log("bufferCopy: copying stream %d bytes\n\r", block->size());
 		buffers[bufferId].push_back(block);
 	}
@@ -721,7 +721,7 @@ void VDUStreamProcessor::bufferCopy(uint16_t bufferId, std::vector<uint16_t> sou
 void VDUStreamProcessor::bufferConsolidate(uint16_t bufferId) {
 	// Create a new stream big enough to contain all streams in the given buffer
 	// Copy all streams into the new stream
-	// Replace the given buffer with the new stream	
+	// Replace the given buffer with the new stream
 	if (buffers.find(bufferId) == buffers.end()) {
 		debug_log("bufferConsolidate: buffer %d not found\n\r", bufferId);
 		return;
@@ -742,7 +742,7 @@ void VDUStreamProcessor::bufferConsolidate(uint16_t bufferId) {
 }
 
 void clearTargets(std::vector<uint16_t> targets) {
-	for (auto target : targets) {
+	for (const auto target : targets) {
 		if (buffers.find(target) != buffers.end()) {
 			buffers[target].clear();
 		}
@@ -779,7 +779,7 @@ void VDUStreamProcessor::bufferSplitInto(uint16_t bufferId, uint16_t length, std
 	// distribute our chunks to destination buffers
 	uint16_t newBufferIdIndex = 0;
 	auto targetId = newBufferIds[newBufferIdIndex];
-	for (auto chunk : chunks) {
+	for (const auto &chunk : chunks) {
 		if (iterate) {
 			clearTargets({ targetId });
 		}
@@ -821,7 +821,7 @@ void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, ui
 		}
 		// and re-jig into our chunks vector
 		auto chunkIndex = 0;
-		for (auto chunk : rawchunks) {
+		for (const auto &chunk : rawchunks) {
 			chunks[chunkIndex].push_back(chunk);
 			chunkIndex++;
 			if (chunkIndex >= chunkCount) {
@@ -833,7 +833,7 @@ void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, ui
 	// consolidate our chunks, and distribute to buffers
 	uint16_t newBufferIndex = 0;
 	auto targetId = newBufferIds[newBufferIndex];
-	for (auto stream : chunks) {
+	for (auto &stream : chunks) {
 		if (iterate) {
 			clearTargets({ targetId });
 		}
@@ -864,7 +864,7 @@ void VDUStreamProcessor::bufferSpreadInto(uint16_t bufferId, std::vector<uint16_
 	// iterate over its blocks and send to targets
 	uint16_t newBufferIndex = 0;
 	auto targetId = newBufferIds[newBufferIndex];
-	for (auto block : buffer) {
+	for (const auto &block : buffer) {
 		if (iterate) {
 			clearTargets({ targetId });
 		}
@@ -932,7 +932,7 @@ void VDUStreamProcessor::bufferReverse(uint16_t bufferId, uint8_t options) {
 	}
 
 	// verify that our blocks are a multiple of valueSize
-	for (auto block : buffers[bufferId]) {
+	for (const auto &block : buffers[bufferId]) {
 		auto size = block->size();
 		if (size % valueSize != 0 || (chunkSize != 0 && size % chunkSize != 0)) {
 			debug_log("bufferReverse: error - buffer %d contains block not a multiple of value/chunk size %d\n\r", bufferId, valueSize);
@@ -942,7 +942,7 @@ void VDUStreamProcessor::bufferReverse(uint16_t bufferId, uint8_t options) {
 
 	debug_log("bufferReverse: reversing buffer %d, value size %d, chunk size %d\n\r", bufferId, valueSize, chunkSize);
 
-	for (auto block : buffers[bufferId]) {
+	for (const auto &block : buffers[bufferId]) {
 		if (chunkSize == 0) {
 			// no chunking, so simpler reverse
 			reverseValues(block->getBuffer(), block->size(), valueSize);
@@ -976,16 +976,16 @@ void VDUStreamProcessor::bufferCopyRef(uint16_t bufferId, std::vector<uint16_t> 
 		debug_log("bufferCopyRef: ignoring buffer %d\n\r", bufferId);
 		return;
 	}
-   	buffers[bufferId].clear();
+	buffers[bufferId].clear();
 
 	// loop thru buffer IDs
-	for (auto sourceId : sourceBufferIds) {
-        if (sourceId == bufferId) {
-            debug_log("bufferCopyRef: skipping buffer %d as it's the target\n\r", sourceId);
-        } else if (buffers.find(sourceId) != buffers.end()) {
+	for (const auto sourceId : sourceBufferIds) {
+		if (sourceId == bufferId) {
+			debug_log("bufferCopyRef: skipping buffer %d as it's the target\n\r", sourceId);
+		} else if (buffers.find(sourceId) != buffers.end()) {
 			// buffer ID exists
 			// loop thru blocks stored against this ID
-			for (auto block : buffers[sourceId]) {
+			for (const auto &block : buffers[sourceId]) {
 				// push a pointer to the block into our target buffer
 				buffers[bufferId].push_back(block);
 			}
