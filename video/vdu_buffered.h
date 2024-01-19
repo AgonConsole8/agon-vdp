@@ -244,10 +244,7 @@ void VDUStreamProcessor::bufferCall(uint16_t callBufferId, uint32_t offset) {
 void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 	debug_log("bufferClear: buffer %d\n\r", bufferId);
 	if (bufferId == 65535) {
-		// iterate thru our buffers and clear their vectors
-		for (auto bufferPair : buffers) {
-			bufferPair.second.clear();
-		}
+        buffers.clear();
 		resetBitmaps();
 		resetSamples();
 		return;
@@ -256,7 +253,7 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 		debug_log("bufferClear: buffer %d not found\n\r", bufferId);
 		return;
 	}
-	buffers[bufferId].clear();
+    buffers.erase(bufferId);
 	clearBitmap(bufferId);
 	clearSample(bufferId);
 	debug_log("bufferClear: cleared buffer %d\n\r", bufferId);
