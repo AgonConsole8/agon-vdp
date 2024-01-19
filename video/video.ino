@@ -86,6 +86,7 @@ void setup() {
 	initAudio();
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
+	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	processor->sendModeInformation();
 	boot_screen();
 }
