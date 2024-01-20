@@ -54,6 +54,8 @@ It is possible to use multiple different colors for the same
 character glyph, in a single text area, simply by defining
 the character multiple times, using different colors.
 
+Simply printing a new character will define it automatically, meaning that this command is not absolutely necessary.
+
 ## Define Text Area Character Range
 <b>VDU 23, 30, 153, id; firstchar, lastchar, fgcolor, bgcolor</b> : Define Text Area Character Range
 
@@ -65,5 +67,7 @@ referenced by the text area.
 It is possible to use multiple different colors for the same
 character glyphs, in a single text area, simply by defining
 the characters multiple times, using different colors.
+
+Simply printing a new character will define it automatically, meaning that this command is not absolutely necessary.
 
 [Home](otf_mode.md)
