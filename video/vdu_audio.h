@@ -211,6 +211,14 @@ void VDUStreamProcessor::vdu_sys_audio() {
 
 			sendAudioStatus(channel, setSampleRate(channel, sampleRate));
 		}	break;
+
+		case AUDIO_CMD_SET_PARAM: {
+			auto param = readByte_t();		if (param == -1) return;
+			auto use16Bit = param & AUDIO_PARAM_16BIT;
+			auto value = use16Bit ? readWord_t() : readByte_t();	if (value == -1) return;
+
+			sendAudioStatus(channel, setParameter(channel, param, value));
+		}	break;
 	}
 }
 
@@ -364,6 +372,15 @@ uint8_t VDUStreamProcessor::setSampleRepeatLength(uint16_t sampleId, uint32_t re
 	}
 	samples[sampleId]->repeatLength = repeatLength;
 	return 1;
+}
+
+// Set channel/waveform parameter
+//
+uint8_t VDUStreamProcessor::setParameter(uint8_t channel, uint8_t parameter, uint16_t value) {
+	if (channelEnabled(channel)) {
+		return audioChannels[channel]->setParameter(parameter, value);
+	}
+	return 0;
 }
 
 #endif // VDU_AUDIO_H

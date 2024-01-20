@@ -28,6 +28,8 @@ class AudioChannel {
 		uint8_t		setVolumeEnvelope(std::unique_ptr<VolumeEnvelope> envelope);
 		uint8_t		setFrequencyEnvelope(std::unique_ptr<FrequencyEnvelope> envelope);
 		uint8_t		setSampleRate(uint16_t sampleRate);
+		uint8_t		setDutyCycle(uint8_t dutyCycle);
+		uint8_t		setParameter(uint8_t parameter, uint16_t value);
 		WaveformGenerator * getWaveform() { return this->_waveform.get(); }
 		void		attachSoundGenerator();
 		void		detachSoundGenerator();
@@ -348,6 +350,36 @@ uint8_t AudioChannel::setSampleRate(uint16_t sampleRate) {
 	if (this->_waveform) {
 		this->_waveform->setSampleRate(sampleRate);
 		return 1;
+	}
+	return 0;
+}
+
+uint8_t AudioChannel::setDutyCycle(uint8_t dutyCycle) {
+	if (this->_waveform && this->_waveformType == AUDIO_WAVE_SQUARE) {
+		((SquareWaveformGenerator *)getWaveform())->setDutyCycle(dutyCycle);
+		return 1;
+	}
+	return 0;
+}
+
+uint8_t AudioChannel::setParameter(uint8_t parameter, uint16_t value) {
+	if (this->_waveform) {
+		bool use16Bit = parameter & AUDIO_PARAM_16BIT;
+		auto param = parameter & AUDIO_PARAM_MASK;
+		switch (param) {
+			case AUDIO_PARAM_DUTY_CYCLE: {
+				return setDutyCycle(value);
+			}	break;
+			case AUDIO_PARAM_VOLUME: {
+				return setVolume(value);
+			}	break;
+			case AUDIO_PARAM_FREQUENCY: {
+				if (!use16Bit) {
+					value = _frequency & 0xFF00 | value & 0x00FF;
+				}
+				return setFrequency(value);
+			}	break;
+		}
 	}
 	return 0;
 }

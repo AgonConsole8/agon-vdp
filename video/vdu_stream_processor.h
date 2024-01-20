@@ -60,6 +60,7 @@ class VDUStreamProcessor {
 		uint8_t setSampleFrequency(uint16_t bufferId, uint16_t frequency);
 		uint8_t setSampleRepeatStart(uint16_t bufferId, uint32_t offset);
 		uint8_t setSampleRepeatLength(uint16_t bufferId, uint32_t length);
+		uint8_t setParameter(uint8_t channel, uint8_t parameter, uint16_t value);
 
 		void vdu_sys_sprites();
 		void receiveBitmap(uint16_t bufferId, uint16_t width, uint16_t height);
