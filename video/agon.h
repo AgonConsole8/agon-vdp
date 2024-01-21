@@ -202,6 +202,7 @@ enum AudioState : uint8_t {	// Audio channel state
 #define BUFFERED_SPREAD_FROM	0x16	// Spread blocks from target buffer ID onwards
 #define BUFFERED_REVERSE_BLOCKS	0x17	// Reverse the order of blocks in a buffer
 #define BUFFERED_REVERSE		0x18	// Reverse the order of data in a buffer
+#define BUFFERED_COPY_REF		0x19	// Copy references to blocks from multiple buffers into one buffer
 
 #define BUFFERED_DEBUG_INFO		0x20	// Get debug info about a buffer
 
