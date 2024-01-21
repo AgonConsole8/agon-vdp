@@ -22,9 +22,9 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 	if (consoleMode) {
 		DBGSerial.write(c);
 	}
-	
+
 	switch(c) {
-		case 0x04:	
+		case 0x04:
 			// enable text cursor
 			setCharacterOverwrite(true);
 			setActiveCursor(getTextCursor());
@@ -39,22 +39,22 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		case 0x07:	// Bell
 			playNote(0, 100, 750, 125);
 			break;
-		case 0x08:  // Cursor Left
+		case 0x08:	// Cursor Left
 			cursorLeft();
 			break;
-		case 0x09:  // Cursor Right
+		case 0x09:	// Cursor Right
 			cursorRight();
 			break;
-		case 0x0A:  // Cursor Down
+		case 0x0A:	// Cursor Down
 			cursorDown();
 			break;
-		case 0x0B:  // Cursor Up
+		case 0x0B:	// Cursor Up
 			cursorUp();
 			break;
-		case 0x0C:  // CLS
+		case 0x0C:	// CLS
 			cls(false);
 			break;
-		case 0x0D:  // CR
+		case 0x0D:	// CR
 			cursorCR();
 			break;
 		case 0x0E:	// Paged mode ON
@@ -69,22 +69,22 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		case 0x11:	// COLOUR
 			vdu_colour();
 			break;
-		case 0x12:  // GCOL
+		case 0x12:	// GCOL
 			vdu_gcol();
 			break;
 		case 0x13:	// Define Logical Colour
 			vdu_palette();
 			break;
-		case 0x16:  // Mode
+		case 0x16:	// Mode
 			vdu_mode();
 			break;
-		case 0x17:  // VDU 23
+		case 0x17:	// VDU 23
 			vdu_sys();
 			break;
 		case 0x18:	// Define a graphics viewport
 			vdu_graphicsViewport();
 			break;
-		case 0x19:  // PLOT
+		case 0x19:	// PLOT
 			vdu_plot();
 			break;
 		case 0x1A:	// Reset text and graphics viewports
@@ -110,14 +110,14 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		case 0x80 ... 0xFF:
 			plotCharacter(c);
 			break;
-		case 0x7F:  // Backspace
+		case 0x7F:	// Backspace
 			plotBackspace();
 			break;
 	}
 }
 
 // VDU 17 Handle COLOUR
-// 
+//
 void VDUStreamProcessor::vdu_colour() {
 	auto colour = readByte_t();
 
@@ -125,7 +125,7 @@ void VDUStreamProcessor::vdu_colour() {
 }
 
 // VDU 18 Handle GCOL
-// 
+//
 void VDUStreamProcessor::vdu_gcol() {
 	auto mode = readByte_t();
 	auto colour = readByte_t();
@@ -151,7 +151,7 @@ void VDUStreamProcessor::vdu_mode() {
 	auto mode = readByte_t();
 	debug_log("vdu_mode: %d\n\r", mode);
 	if (mode >= 0) {
-	  	set_mode(mode);
+		set_mode(mode);
 		sendModeInformation();
 		if (mouseEnabled) {
 			sendMouseData();
@@ -214,7 +214,7 @@ void VDUStreamProcessor::vdu_plot() {
 		default:
 			// 1, 3, 5, 7 are all draw modes
 			switch (operation) {
-				case 0x00: 	// line
+				case 0x00:	// line
 					plotLine();
 					break;
 				case 0x08:	// line, omitting last point
@@ -226,7 +226,7 @@ void VDUStreamProcessor::vdu_plot() {
 				case 0x38:	// dot-dash line, omitting both, pattern continued
 					debug_log("plot dot-dash line not implemented\n\r");
 					break;
-				case 0x20: 	// solid line, first point omitted
+				case 0x20:	// solid line, first point omitted
 					plotLine(true, false);
 					break;
 				case 0x28:	// solid line, first and last points omitted
@@ -323,8 +323,8 @@ void VDUStreamProcessor::vdu_textViewport() {
 		if (cx2 > 39) cx2 = 39;
 		if (cy2 > 24) cy2 = 24;
 		if (cx2 >= cx1 && cy2 >= cy1)
-	    ttxt_instance.set_window(cx1,cy2,cx2,cy1);
-	}	
+		ttxt_instance.set_window(cx1,cy2,cx2,cy1);
+	}
 	if (setTextViewport(x1, y1, x2, y2)) {
 		ensureCursorInViewport(textViewport);
 		debug_log("vdu_textViewport: OK %d,%d,%d,%d\n\r", x1, y1, x2, y2);

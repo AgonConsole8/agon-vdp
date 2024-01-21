@@ -82,9 +82,9 @@ void setup() {
 	set_mode(1);
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
+	initAudio();
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
-	initAudio();
 	processor->sendModeInformation();
 	boot_screen();
 }

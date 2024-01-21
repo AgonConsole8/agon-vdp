@@ -1,19 +1,13 @@
 //
-// Title:			Audio Volume Envelope support
+// Title:			Audio ADSR Volume Envelope support
 // Author:			Steve Sims
 // Created:			06/08/2023
-// Last Updated:	13/08/2023
+// Last Updated:	14/01/2024
 
-#ifndef ENVELOPE_VOLUME_H
-#define ENVELOPE_VOLUME_H
+#ifndef ENVELOPE_ADSR_H
+#define ENVELOPE_ADSR_H
 
-class VolumeEnvelope {
-	public:
-		virtual uint8_t getVolume(uint8_t baseVolume, uint32_t elapsed, int32_t duration) = 0;
-		virtual bool isReleasing(uint32_t elapsed, int32_t duration) = 0;
-		virtual bool isFinished(uint32_t elapsed, int32_t duration) = 0;
-		virtual uint16_t getRelease() = 0;
-};
+#include "./types.h"
 
 class ADSRVolumeEnvelope : public VolumeEnvelope {
 	public:
@@ -21,7 +15,7 @@ class ADSRVolumeEnvelope : public VolumeEnvelope {
 		uint8_t getVolume(uint8_t baseVolume, uint32_t elapsed, int32_t duration);
 		bool isReleasing(uint32_t elapsed, int32_t duration);
 		bool isFinished(uint32_t elapsed, int32_t duration);
-		uint16_t getRelease() {
+		uint32_t getRelease() {
 			return this->_release;
 		}
 	private:
@@ -83,4 +77,4 @@ bool ADSRVolumeEnvelope::isFinished(uint32_t elapsed, int32_t duration) {
 	return (elapsed >= duration + this->_release);
 }
 
-#endif // ENVELOPE_VOLUME_H
+#endif // ENVELOPE_ADSR_H
