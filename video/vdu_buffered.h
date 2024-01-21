@@ -961,7 +961,7 @@ void VDUStreamProcessor::bufferReverse(uint16_t bufferId, uint8_t options) {
 	debug_log("bufferReverse: reversed buffer %d\n\r", bufferId);
 }
 
-// VDU 23, 0, &A0, bufferId; &2D, sourceBufferId; sourceBufferId; ...; 65535; : Copy references to blocks from buffers
+// VDU 23, 0, &A0, bufferId; &19, sourceBufferId; sourceBufferId; ...; 65535; : Copy references to blocks from buffers
 // Copy references to (blocks from) a list of buffers into a new buffer
 // list is terminated with a bufferId of 65535 (-1)
 // Replaces the target buffer with the new one
