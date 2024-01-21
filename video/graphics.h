@@ -203,6 +203,24 @@ fabgl::PaintOptions getPaintOptions(uint8_t mode, fabgl::PaintOptions priorPaint
 	return p;
 }
 
+// Restore palette to default for current mode
+//
+void restorePalette() {
+	switch (getVGAColourDepth()) {
+		case  2: resetPalette(defaultPalette02); break;
+		case  4: resetPalette(defaultPalette04); break;
+		case  8: resetPalette(defaultPalette08); break;
+		case 16: resetPalette(defaultPalette10); break;
+		case 64: resetPalette(defaultPalette40); break;
+	}
+	gfg = colourLookup[0x3F];
+	gbg = colourLookup[0x00];
+	tfg = colourLookup[0x3F];
+	tbg = colourLookup[0x00];
+	tpo = getPaintOptions(0, tpo);
+	gpo = getPaintOptions(0, gpo);
+}
+
 // Set text colour (handles COLOUR / VDU 17)
 //
 void setTextColour(uint8_t colour) {
@@ -709,19 +727,7 @@ int8_t change_mode(uint8_t mode) {
 	if (errVal != 0) {
 		return errVal;
 	}
-	switch (getVGAColourDepth()) {
-		case  2: resetPalette(defaultPalette02); break;
-		case  4: resetPalette(defaultPalette04); break;
-		case  8: resetPalette(defaultPalette08); break;
-		case 16: resetPalette(defaultPalette10); break;
-		case 64: resetPalette(defaultPalette40); break;
-	}
-	tpo = getPaintOptions(0, tpo);
-	gpo = getPaintOptions(0, gpo);
-	gfg = colourLookup[0x3F];
-	gbg = colourLookup[0x00];
-	tfg = colourLookup[0x3F];
-	tbg = colourLookup[0x00];
+	restorePalette();
 	if (!ttxtMode) {
 		canvas->selectFont(&fabgl::FONT_AGON);
 	}

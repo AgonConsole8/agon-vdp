@@ -15,6 +15,7 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> inputStream;
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
+		bool commandsEnabled = true;
 
 		int16_t readByte_t(uint16_t timeout);
 		int32_t readWord_t(uint16_t timeout);
@@ -33,6 +34,8 @@ class VDUStreamProcessor {
 		void vdu_textViewport();
 		void vdu_origin();
 		void vdu_cursorTab();
+
+		void vdu_print(uint8_t c);
 
 		void vdu_sys();
 		void vdu_sys_video();
