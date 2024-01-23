@@ -190,6 +190,20 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_SWITCHBUFFER: {		// VDU 23, 0, &C3
 			switchBuffer();
 		}	break;
+		case VDP_SHRINK_SCREEN: {		// VDU 23, 0, &C4, x, y
+			auto x = readByte_t();		// Shrink the screen
+			auto y = readByte_t();
+			if (x >= 0 && y >= 0) {
+				shrinkScreen(x, y);
+			}
+		}	break;
+		case VDP_MOVE_SCREEN: {			// VDU 23, 0, &C5, x, y
+			auto x = readByte_t();		// Move the screen
+			auto y = readByte_t();
+			if (x >= 0 && y >= 0) {
+				moveScreen(x, y);
+			}
+		}	break;
 		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
 			auto b = readByte_t();
 			setConsoleMode((bool) b);
