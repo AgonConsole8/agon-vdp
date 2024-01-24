@@ -58,6 +58,7 @@ HardwareSerial	DBGSerial(0);
 
 TerminalState	terminalState = TerminalState::Disabled;		// Terminal state (for CP/M, etc)
 bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabled)
+bool			printerOn = false;				// Output "printer" to debug serial link
 
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support
@@ -84,9 +85,10 @@ void setup() {
 	set_mode(1);
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
+	initAudio();
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
-	initAudio();
+	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	processor->sendModeInformation();
 	boot_screen();
 }
@@ -137,9 +139,20 @@ void do_keyboard() {
 	if (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
 		// Handle some control keys
 		//
-		switch (keycode) {
-			case 14: setPagedMode(true); break;
-			case 15: setPagedMode(false); break;
+		if (down) {
+			switch (keycode) {
+				case 2:		// printer on
+				case 3:		// printer off
+				case 6:		// VDU commands enable
+				case 7:		// Bell
+				case 12:	// CLS
+				case 14 ... 15:	// paged mode on/off
+					processor->vdu(keycode);
+					break;
+				case 16:
+					// control-P toggles "printer" on R.T.Russell's BASIC
+					printerOn = !printerOn;
+			}
 		}
 		// Create and send the packet back to MOS
 		//

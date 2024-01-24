@@ -15,6 +15,7 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> inputStream;
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
+		bool commandsEnabled = true;
 
 		int16_t readByte_t(uint16_t timeout);
 		int32_t readWord_t(uint16_t timeout);
@@ -33,6 +34,8 @@ class VDUStreamProcessor {
 		void vdu_textViewport();
 		void vdu_origin();
 		void vdu_cursorTab();
+
+		void vdu_print(uint8_t c);
 
 		void vdu_sys();
 		void vdu_sys_video();
@@ -55,11 +58,12 @@ class VDUStreamProcessor {
 		void sendAudioStatus(uint8_t channel, uint8_t status);
 		uint8_t loadSample(uint16_t bufferId, uint32_t length);
 		uint8_t createSampleFromBuffer(uint16_t bufferId, uint8_t format, uint16_t sampleRate);
-		void setVolumeEnvelope(uint8_t channel, uint8_t type);
-		void setFrequencyEnvelope(uint8_t channel, uint8_t type);
+		uint8_t setVolumeEnvelope(uint8_t channel, uint8_t type);
+		uint8_t setFrequencyEnvelope(uint8_t channel, uint8_t type);
 		uint8_t setSampleFrequency(uint16_t bufferId, uint16_t frequency);
 		uint8_t setSampleRepeatStart(uint16_t bufferId, uint32_t offset);
 		uint8_t setSampleRepeatLength(uint16_t bufferId, uint32_t length);
+		uint8_t setParameter(uint8_t channel, uint8_t parameter, uint16_t value);
 
 		void vdu_sys_sprites();
 		void receiveBitmap(uint16_t bufferId, uint16_t width, uint16_t height);
@@ -90,6 +94,7 @@ class VDUStreamProcessor {
 		void bufferSpreadInto(uint16_t bufferId, std::vector<uint16_t> newBufferIds, bool iterate);
 		void bufferReverseBlocks(uint16_t bufferId);
 		void bufferReverse(uint16_t bufferId, uint8_t options);
+		void bufferCopyRef(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
 
 		void vdu_sys_updater();
 		void unlock();
