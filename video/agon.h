@@ -94,6 +94,7 @@
 #define AUDIO_CMD_SEEK			11		// Seek to a position in a sample
 #define AUDIO_CMD_DURATION		12		// Set the duration of a channel
 #define AUDIO_CMD_SAMPLERATE	13		// Set the samplerate for channel or underlying audio system
+#define AUDIO_CMD_SET_PARAM		14		// Set a waveform parameter
 
 #define AUDIO_WAVE_DEFAULT		0		// Default waveform (Square wave)
 #define AUDIO_WAVE_SQUARE		0		// Square wave
@@ -126,12 +127,19 @@
 
 #define AUDIO_ENVELOPE_NONE		0		// No envelope
 #define AUDIO_ENVELOPE_ADSR		1		// Simple ADSR volume envelope
+#define AUDIO_ENVELOPE_MULTIPHASE_ADSR		2		// Multi-phase ADSR envelope
 
 #define AUDIO_FREQUENCY_ENVELOPE_STEPPED	1		// Stepped frequency envelope
 
 #define AUDIO_FREQUENCY_REPEATS 0x01	// Repeat/loop the frequency envelope
 #define AUDIO_FREQUENCY_CUMULATIVE	0x02	// Reset frequency envelope when looping
 #define AUDIO_FREQUENCY_RESTRICT	0x04	// Restrict frequency envelope to the range 0-65535
+
+#define AUDIO_PARAM_DUTY_CYCLE		0		// Square wave duty cycle
+#define AUDIO_PARAM_VOLUME			2		// Volume
+#define AUDIO_PARAM_FREQUENCY		3		// Frequency
+#define AUDIO_PARAM_16BIT			0x80	// 16-bit value
+#define AUDIO_PARAM_MASK			0x0F	// Parameter mask
 
 #define AUDIO_STATUS_ACTIVE		0x01	// Has an active waveform
 #define AUDIO_STATUS_PLAYING	0x02	// Playing a note (not in release phase)
@@ -194,6 +202,7 @@ enum AudioState : uint8_t {	// Audio channel state
 #define BUFFERED_SPREAD_FROM	0x16	// Spread blocks from target buffer ID onwards
 #define BUFFERED_REVERSE_BLOCKS	0x17	// Reverse the order of blocks in a buffer
 #define BUFFERED_REVERSE		0x18	// Reverse the order of data in a buffer
+#define BUFFERED_COPY_REF		0x19	// Copy references to blocks from multiple buffers into one buffer
 
 #define BUFFERED_DEBUG_INFO		0x20	// Get debug info about a buffer
 

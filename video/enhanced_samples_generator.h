@@ -104,7 +104,7 @@ double EnhancedSamplesGenerator::calculateSamplerate(uint16_t frequency) {
 
 int8_t EnhancedSamplesGenerator::getNextSample() {
 	auto sample = _sample->getSample(index, blockIndex);
-	
+
 	// looping magic
 	repeatCount--;
 	if (repeatCount == 0) {
