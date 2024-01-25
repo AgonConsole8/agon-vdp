@@ -209,7 +209,8 @@ void VDUStreamProcessor::sendGeneralPoll() {
 		return;
 	}
 	uint8_t packet[] = {
-		(uint8_t) (b & 0xFF),
+		//(uint8_t) (b & 0xFF),
+		(uint8_t) (0x84),
 	};
 	send_packet(PACKET_GP, sizeof packet, packet);
 	initialised = true;
