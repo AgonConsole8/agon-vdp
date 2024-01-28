@@ -193,13 +193,9 @@ void resetPalette(const uint8_t colours[]) {
 
 // Get the paint options for a given GCOL mode
 //
-fabgl::PaintOptions getPaintOptions(uint8_t mode, fabgl::PaintOptions priorPaintOptions) {
+fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions priorPaintOptions) {
 	fabgl::PaintOptions p = priorPaintOptions;
-
-	switch (mode) {
-		case 0: p.NOT = 0; p.swapFGBG = 0; break;
-		case 4: p.NOT = 1; p.swapFGBG = 0; break;
-	}
+	p.mode = mode;
 	return p;
 }
 
@@ -217,8 +213,8 @@ void restorePalette() {
 	gbg = colourLookup[0x00];
 	tfg = colourLookup[0x3F];
 	tbg = colourLookup[0x00];
-	tpo = getPaintOptions(0, tpo);
-	gpo = getPaintOptions(0, gpo);
+	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
+	gpo = getPaintOptions(fabgl::PaintMode::Set, gpo);
 }
 
 // Set text colour (handles COLOUR / VDU 17)
@@ -260,7 +256,7 @@ void setGraphicsColour(uint8_t mode, uint8_t colour) {
 		else {
 			debug_log("vdu_gcol: invalid colour %d\n\r", colour);
 		}
-		gpo = getPaintOptions(mode, gpo);
+		gpo = getPaintOptions((fabgl::PaintMode)mode, gpo);
 	}
 	else {
 		debug_log("vdu_gcol: invalid mode %d\n\r", mode);
@@ -321,7 +317,12 @@ void setGraphicsOptions(uint8_t mode) {
 			// use fg colour
 			canvas->setPenColor(gfg);
 		} break;
-		case 2: break;	// logical inverse colour (not suported)
+		case 2: {
+			// logical inverse colour - overrides GCOL option set in gpo
+			auto options = getPaintOptions(fabgl::PaintMode::Invert, gpo);
+			canvas->setPaintOptions(options);
+			return;
+		} break;
 		case 3: {
 			// use bg colour
 			canvas->setPenColor(gbg);
@@ -367,9 +368,13 @@ void plotLine(bool omitFirstPoint = false, bool omitLastPoint = false) {
 	}
 	canvas->lineTo(p1.X, p1.Y);
 	if (omitFirstPoint) {
+		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpo);
+		canvas->setPaintOptions(paintOptions);
 		canvas->setPixel(p2, firstPixelColour);
 	}
 	if (omitLastPoint) {
+		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpo);
+		canvas->setPaintOptions(paintOptions);
 		canvas->setPixel(p1, lastPixelColour);
 	}
 }
@@ -406,7 +411,9 @@ void plotTriangle() {
 		p2,
 		p1,
 	};
-	canvas->drawPath(p, 3);
+	// if (gpo.mode == fabgl::PaintMode::Set) {
+	// 	canvas->drawPath(p, 3);
+	// }
 	canvas->fillPath(p, 3);
 }
 
@@ -425,7 +432,9 @@ void plotParallelogram() {
 		p1,
 		Point(p1.X + (p3.X - p2.X), p1.Y + (p3.Y - p2.Y)),
 	};
-	canvas->drawPath(p, 4);
+	// if (gpo.mode == fabgl::PaintMode::Set) {
+	// 	canvas->drawPath(p, 4);
+	// }
 	canvas->fillPath(p, 4);
 }
 
