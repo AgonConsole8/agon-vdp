@@ -32,7 +32,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			// case 0x09:	// translate "cursor right" to a space, as terminals treat character 9 as tab
 			// 	vdu_print(32);
 			// 	break;
-			case 0x08 ... 0x13:
+			case 8 ... 13:
 			case 0x20 ... 0xFF: {
 				vdu_print(c);
 			}
