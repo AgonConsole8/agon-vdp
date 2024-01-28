@@ -526,9 +526,15 @@ void AudioChannel::loop() {
 			break;
 	}
 
-	if (delay != 0) {
+	/*
+	 * in USERSPACE, xTaskAbortDelay is not implemented, so audioTaskAbortDelay
+	 * won't work, and waitForAbort() will freeze vdu stream processor for the
+	 * whole delay duration. So don't delay here, allowing 'abort' state to be
+	 * transitioned rapidly (at some small CPU cost).
+	if (delay > 0) {
+		// -TM-
 		vTaskDelay(pdMS_TO_TICKS(delay));
-	}
+	}*/
 }
 
 #endif // AUDIO_CHANNEL_H
