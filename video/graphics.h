@@ -270,12 +270,7 @@ void clearViewport(Rect * viewport) {
 		ttxt_instance.cls();
 	} else {
 		if (canvas) {
-			if (useViewports) {
-				canvas->fillRectangle(*viewport);
-			}
-			else {
-				canvas->clear();
-			}
+			canvas->fillRectangle(*viewport);
 		}
 	}
 }
