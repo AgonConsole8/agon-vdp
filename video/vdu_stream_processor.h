@@ -302,8 +302,69 @@ void VDUStreamProcessor::processAllAvailable() {
 // Process next command from the stream
 //
 void VDUStreamProcessor::processNext() {
+	uint8_t hi;
+	static uint16_t cnt=0;
+	static uint8_t state=0;
 	if (byteAvailable()) {
-		vdu(readByte());
+		uint8_t b = readByte();
+		if (cnt >= 1000) {
+			return;
+		}
+		cnt++;
+		switch(state) {
+			case 0: {
+				if (b == 0x8C) {
+					vdu('-');
+					vdu('S');
+					vdu('M');
+					vdu('-');
+					state = 1;
+				} else {
+					vdu(b);
+				}
+			} break;
+			case 1: {
+				if (b == 0x9D) {
+					vdu('-');
+					vdu('E');
+					vdu('S');
+					vdu('C');
+					vdu('-');
+					state = 2;
+				} else if (b == 0xAE) {
+					vdu('-');
+					vdu('E');
+					vdu('M');
+					vdu('-');
+					state = 0;
+				} else if (b >= 0x20 && b < 0x7F) {
+					vdu(b);
+				} else {
+					vdu('[');
+					hi = b>>4;
+					b &= 0xF;
+					vdu((hi>=10?(hi-10+'A'):(hi+'0')));
+					vdu((b>=10?(b-10+'A'):(b+'0')));
+					vdu(']');
+				}
+			} break;
+			case 2: {
+				vdu('[');
+				hi = b>>4;
+				b &= 0xF;
+				vdu((hi>=10?(hi-10+'A'):(hi+'0')));
+				vdu((b>=10?(b-10+'A'):(b+'0')));
+				vdu(']');
+				state = 1;
+			} break;
+			case 3: {
+				vdu(b);
+				if (b==0xFE) {
+					state = 0;
+				}
+			}
+		}
+		//vdu(readByte());
 	}
 }
 
