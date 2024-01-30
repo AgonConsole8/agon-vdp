@@ -244,7 +244,7 @@ void setGraphicsColour(uint8_t mode, uint8_t colour) {
 
 	uint8_t c = palette[colour % getVGAColourDepth()];
 
-	if (mode <= 6) {
+	if (mode <= 7) {
 		if (colour < 64) {
 			gfg = colourLookup[c];
 			debug_log("vdu_gcol: mode %d, gfg %d = %02X : %02X,%02X,%02X\n\r", mode, colour, c, gfg.R, gfg.G, gfg.B);
