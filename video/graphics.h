@@ -17,7 +17,8 @@ fabgl::PaintOptions			gpo;				// Graphics paint options
 fabgl::PaintOptions			tpo;				// Text paint options
 
 Point			p1, p2, p3;						// Coordinate store for plot
-Point			rp1, rp2, rp3;					// Relative coordinates store for plot
+Point			rp1;							// Relative coordinates store for plot
+Point			up1;							// Unscaled coordinates store for plot
 RGB888			gfg, gbg;						// Graphics foreground and background colour
 RGB888			tfg, tbg;						// Text foreground and background colour
 uint8_t			fontW;							// Font width
@@ -280,19 +281,17 @@ void clearViewport(Rect * viewport) {
 // Push point to list
 //
 void pushPoint(Point p) {
-	rp3 = rp2;
-	rp2 = rp1;
 	rp1 = Point(p.X - p1.X, p.Y - p1.Y);
 	p3 = p2;
 	p2 = p1;
 	p1 = p;
 }
 void pushPoint(uint16_t x, uint16_t y) {
+	up1 = Point(x, y);
 	pushPoint(translateCanvas(scale(x, y)));
 }
 void pushPointRelative(int16_t x, int16_t y) {
-	auto scaledPoint = scale(x, y);
-	pushPoint(Point(p1.X + scaledPoint.X, p1.Y + (logicalCoords ? -scaledPoint.Y : scaledPoint.Y)));
+	pushPoint(up1.X + x, up1.Y + y);
 }
 
 // get graphics cursor
