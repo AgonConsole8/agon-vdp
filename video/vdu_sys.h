@@ -208,10 +208,16 @@ void VDUStreamProcessor::sendGeneralPoll() {
 		debug_log("sendGeneralPoll: Timeout\n\r");
 		return;
 	}
-	uint8_t packet[] = {
-		//(uint8_t) (b & 0xFF),
-		(uint8_t) (0x84),
-	};
+
+	// If the EZ80 supports BDPP, we respond with the upper bit set.
+	// If the EZ80 does not support BDPP, we respond with the old echo.
+	uint8_t response = (uint8_t)b;
+	if (b >= 0x04 && b <= 0x0F) {
+		response |= 0x80; // indicates that ESP32 supports BDPP
+	}
+	debug_log("sendGeneralPoll: response %02hX\n\r", response);
+
+	uint8_t packet[] = { response };
 	send_packet(PACKET_GP, sizeof packet, packet);
 	initialised = true;
 }
