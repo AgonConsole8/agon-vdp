@@ -383,12 +383,17 @@ void fillHorizontalLine(bool scanLeft, bool match, RGB888 matchColor) {
 	debug_log("fillHorizontalLine: (%d, %d) transformed to (%d,%d) -> (%d,%d)\n\r", p1.X, p1.Y, x1, y, x2, y);
 
 	if (x1 == x2 || x1 > x2) {
+		// Coordinate needs to be tweaked to match Acorn's behaviour
+		auto p = toCurrentCoordinates(scanLeft ? x2 + 1 : x2, y);
+		pushPoint(p.X, up1.Y);
 		// nothing to draw
 		return;
 	}
 	canvas->moveTo(x1, y);
 	canvas->lineTo(x2, y);
-	pushPoint(x2, y);
+
+	auto p = toCurrentCoordinates(x2, y);
+	pushPoint(p.X, up1.Y);
 }
 
 // Point point
