@@ -471,6 +471,7 @@ void plotCopyMove(uint8_t mode) {
 		// move rectangle needs to clear source rectangle
 		// being careful not to clear the destination rectangle
 		canvas->setBrushColor(gbg);
+		canvas->setPaintOptions(getPaintOptions(fabgl::PaintMode::Set, gpobg));
 		Rect sourceRect = Rect(sourceX, sourceY, sourceX + width, sourceY + height);
 		Rect destRect = Rect(x, y - height, x + width, y);
 		if (sourceRect.intersects(destRect)) {
