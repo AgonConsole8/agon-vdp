@@ -121,17 +121,6 @@ void enable_interrupts() {
 
 //--------------------------------------------------
 
-// Setup the UART
-//
-// This function does not set every necesary UART register,
-// because it assumes that some were setup by the standard
-// communication handshake process.
-//
-static void bdpp_setup_uart() {
-	Serial2.end();
-
-}
-
 // Reset the receiver state
 static void reset_receiver() {
 #if DEBUG_BDPP
