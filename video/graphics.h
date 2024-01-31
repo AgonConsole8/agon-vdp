@@ -13,7 +13,8 @@
 #include "sprites.h"
 #include "viewport.h"
 
-fabgl::PaintOptions			gpo;				// Graphics paint options
+fabgl::PaintOptions			gpofg;				// Graphics paint options foreground
+fabgl::PaintOptions			gpobg;				// Graphics paint options background
 fabgl::PaintOptions			tpo;				// Text paint options
 
 Point			p1, p2, p3;						// Coordinate store for plot
@@ -215,7 +216,8 @@ void restorePalette() {
 	tfg = colourLookup[0x3F];
 	tbg = colourLookup[0x00];
 	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
-	gpo = getPaintOptions(fabgl::PaintMode::Set, gpo);
+	gpofg = getPaintOptions(fabgl::PaintMode::Set, gpofg);
+	gpobg = getPaintOptions(fabgl::PaintMode::Set, gpobg);
 }
 
 // Set text colour (handles COLOUR / VDU 17)
@@ -257,7 +259,11 @@ void setGraphicsColour(uint8_t mode, uint8_t colour) {
 		else {
 			debug_log("vdu_gcol: invalid colour %d\n\r", colour);
 		}
-		gpo = getPaintOptions((fabgl::PaintMode)mode, gpo);
+		if (colour < 128) {
+			gpofg = getPaintOptions((fabgl::PaintMode)mode, gpofg);
+		} else {
+			gpobg = getPaintOptions((fabgl::PaintMode)mode, gpobg);
+		}
 	}
 	else {
 		debug_log("vdu_gcol: invalid mode %d\n\r", mode);
@@ -310,19 +316,20 @@ void setGraphicsOptions(uint8_t mode) {
 		case 1: {
 			// use fg colour
 			canvas->setPenColor(gfg);
+			canvas->setPaintOptions(gpofg);
 		} break;
 		case 2: {
-			// logical inverse colour - overrides GCOL option set in gpo
-			auto options = getPaintOptions(fabgl::PaintMode::Invert, gpo);
+			// logical inverse colour - override paint options
+			auto options = getPaintOptions(fabgl::PaintMode::Invert, gpofg);
 			canvas->setPaintOptions(options);
 			return;
 		} break;
 		case 3: {
 			// use bg colour
 			canvas->setPenColor(gbg);
+			canvas->setPaintOptions(gpobg);
 		} break;
 	}
-	canvas->setPaintOptions(gpo);
 }
 
 // Set up canvas for drawing filled graphics
@@ -362,12 +369,12 @@ void plotLine(bool omitFirstPoint = false, bool omitLastPoint = false) {
 	}
 	canvas->lineTo(p1.X, p1.Y);
 	if (omitFirstPoint) {
-		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpo);
+		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 		canvas->setPaintOptions(paintOptions);
 		canvas->setPixel(p2, firstPixelColour);
 	}
 	if (omitLastPoint) {
-		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpo);
+		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 		canvas->setPaintOptions(paintOptions);
 		canvas->setPixel(p1, lastPixelColour);
 	}
@@ -526,7 +533,7 @@ void plotCharacter(char c) {
 				canvas->setPaintOptions(tpo);
 			} else {
 				canvas->setPenColor(gfg);
-				canvas->setPaintOptions(gpo);
+				canvas->setPaintOptions(gpofg);
 			}
 			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
 		}
@@ -594,7 +601,7 @@ void clg() {
 	if (canvas) {
 		canvas->setPenColor(gfg);
 		canvas->setBrushColor(gbg);
-		canvas->setPaintOptions(gpo);
+		canvas->setPaintOptions(gpobg);
 		clearViewport(getViewport(VIEWPORT_GRAPHICS));
 	}
 	pushPoint(0, 0);		// Reset graphics origin (as per BBC Micro CLG)
