@@ -9,8 +9,13 @@
 //
 
 #include "bdp_protocol.h"
+#include <HardwareSerial.h>
 #include <string.h>
 #include <queue>
+#include "soc/uhci_struct.h"
+#include "soc/uart_struct.h"
+#include "soc/uart_periph.h"
+#include "driver/uart.h"
 
 #define DEBUG_BDPP 1
 
@@ -115,6 +120,17 @@ void enable_interrupts() {
 }
 
 //--------------------------------------------------
+
+// Setup the UART
+//
+// This function does not set every necesary UART register,
+// because it assumes that some were setup by the standard
+// communication handshake process.
+//
+static void bdpp_setup_uart() {
+	Serial2.end();
+
+}
 
 // Reset the receiver state
 static void reset_receiver() {
