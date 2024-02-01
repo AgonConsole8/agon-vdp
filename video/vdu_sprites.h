@@ -60,7 +60,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			auto rx = readWord_t(); if (rx == -1) return;
 			auto ry = readWord_t(); if (ry == -1) return;
 
-			drawBitmap(rx,ry);
+			drawBitmap(rx,ry, false, true);
 			debug_log("vdu_sys_sprites: bitmap %d draw command\n\r", getCurrentBitmapId());
 		}	break;
 

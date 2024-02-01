@@ -531,18 +531,19 @@ void plotCharacter(char c) {
 	} else {
 		bool isTextCursor = textCursorActive();
 		auto bitmap = getBitmapFromChar(c);
-		canvas->setClippingRect(isTextCursor ? defaultViewport : graphicsViewport);
+		if (isTextCursor) {
+			canvas->setClippingRect(defaultViewport);
+			canvas->setPenColor(tfg);
+			canvas->setBrushColor(tbg);
+			canvas->setPaintOptions(tpo);
+		} else {
+			canvas->setClippingRect(graphicsViewport);
+			canvas->setPenColor(gfg);
+			canvas->setPaintOptions(gpofg);
+		}
 		if (bitmap) {
 			canvas->drawBitmap(activeCursor->X, activeCursor->Y + fontH - bitmap->height, bitmap.get());
 		} else {
-			if (isTextCursor) {
-				canvas->setPenColor(tfg);
-				canvas->setBrushColor(tbg);
-				canvas->setPaintOptions(tpo);
-			} else {
-				canvas->setPenColor(gfg);
-				canvas->setPaintOptions(gpofg);
-			}
 			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
 		}
 	}
