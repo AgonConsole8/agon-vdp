@@ -327,7 +327,7 @@ void VDUStreamProcessor::vdu_plot() {
 				debug_log("plot ellipse not implemented\n\r");
 				break;
 			case 0xE8:	// Bitmap plot
-				plotBitmap();
+				plotBitmap(mode);
 				break;
 		}
 

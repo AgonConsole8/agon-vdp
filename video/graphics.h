@@ -512,7 +512,14 @@ void plotCopyMove(uint8_t mode) {
 
 // Plot bitmap
 //
-void plotBitmap() {
+void plotBitmap(uint8_t mode) {
+	if ((mode & 0x03) == 0x03) {
+		// get a copy of gpobg, without changing it's paint mode
+		auto paintOptions = getPaintOptions(gpobg.mode, gpobg);
+		// swapFGBG on bitmap plots indicates to plot using pen color instead of bitmap
+		paintOptions.swapFGBG = true;
+		canvas->setPaintOptions(paintOptions);
+	}
 	drawBitmap(p1.X, p1.Y, true);
 }
 
