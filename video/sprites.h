@@ -71,7 +71,7 @@ void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet = f
 			auto options = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 			canvas->setPaintOptions(options);
 		}
-		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? y - bitmap->height : y, bitmap.get());
+		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get());
 	} else {
 		debug_log("drawBitmap: bitmap %d not found\n\r", currentBitmap);
 	}

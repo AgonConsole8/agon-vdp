@@ -224,10 +224,12 @@ void VDUStreamProcessor::createBitmapFromScreen(uint16_t bufferId) {
 		width = -width;
 		x1 = x2;
 	}
+	width += 1;
 	if (height < 0) {
 		height = -height;
 		y1 = y2;
 	}
+	height += 1;
 	auto size = width * height;
 	if (size == 0) {
 		debug_log("vdu_sys_sprites: bitmap %d - zero size\n\r", bufferId);
