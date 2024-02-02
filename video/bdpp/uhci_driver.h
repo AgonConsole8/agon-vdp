@@ -19,7 +19,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/xtensa_api.h"
-#include "freertos/ringbuf.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
 #include "driver/periph_ctrl.h"
@@ -45,6 +44,6 @@ int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t tick
 
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 
-esp_err_t uhci_driver_install(int uhci_num, size_t tx_buf_size, size_t rx_buf_size, int intr_flag, QueueHandle_t *uart_queue, int queue_cnt);
+esp_err_t uhci_driver_install(int uhci_num, size_t tx_buf_size, size_t rx_buf_size, int intr_flag);
 
 esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t *uart_config);

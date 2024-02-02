@@ -460,7 +460,6 @@ void bdpp_flush_drv_tx_packet() {
 uhci_event_t event;
 uint8_t* pr = NULL;
 uint8_t* pw = NULL;
-QueueHandle_t uhci_queue;
 
 
 int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait);
@@ -469,12 +468,13 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 void read_task2(void *param)
 {
     int total = 0;
-    int len = 0;
+    int rem = 8;
 	int i;
     for (i=0;i<60;i++) {
-        len = uart_dma_read(0, pr + total, 8, (portTickType)100);
+        auto len = uart_dma_read(0, pr + total, rem, (portTickType)100);
         total += len;
-		if (total >= 8) break;
+		rem -= len;
+		if (!rem) break;
     }
     debug_log("tot %d\n", total);
     for(i = 0; i < 8; i++) {
@@ -521,7 +521,7 @@ void bdpp_run_test() {
     //uart_set_pin(UART_NUM, 17, 16, 7, 8);
 	debug_log("@%i\n", __LINE__);
 
-    uhci_driver_install(UHCI_NUM, 1024*2, 1024*2, 0, &uhci_queue, 10);
+    uhci_driver_install(UHCI_NUM, 1024*2, 1024*2, 0);
 	debug_log("@%i\n", __LINE__);
 
     uhci_attach_uart_port(UHCI_NUM, UART_NUM, &uart_config);
