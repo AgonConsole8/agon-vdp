@@ -28,8 +28,8 @@
 #include "driver/periph_ctrl.h"
 #include "sdkconfig.h"
 #include "soc/periph_defs.h"
-
 #include "rom/lldesc.h"
+#include "hal/uart_hal.h"
 
 #define DMA_TX_IDLE_NUM (0)
 #define DMA_RX_IDLE_THRD (20)
@@ -62,6 +62,7 @@ typedef struct {
 } uhci_wr_item;
 
 typedef struct {
+    uart_hal_context_t uart_hal;
     uhci_hal_context_t uhci_hal;
     intr_handle_t intr_handle;
     int uhci_num;
@@ -87,6 +88,9 @@ typedef struct {
 } uhci_obj_t;
 
 uhci_obj_t *uhci_obj[UHCI_NUM_MAX] = {0};
+
+uart_dev_t uart_dev;
+uhci_dev_t uhci_dev;
 
 typedef uhci_obj_t uhci_handle_t;
 
@@ -124,8 +128,9 @@ static void uhci_rx_start_dma_s(int uhci_num)
         uhci_obj[uhci_num]->rx_dma[i].empty = (uint32_t)&(uhci_obj[uhci_num]->rx_dma[(i + 1) % DMA_RX_DESC_CNT]);
     }
     uhci_obj[uhci_num]->rx_cur = &uhci_obj[uhci_num]->rx_dma[0];
-    uhci_hal_set_rx_dma(&(uhci_obj[uhci_num]->uhci_hal), (uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
-    uhci_hal_rx_dma_start(&(uhci_obj[uhci_num]->uhci_hal));
+    auto hal = &(uhci_obj[uhci_num]->uhci_hal);
+    uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
+    uhci_hal_rx_dma_start(hal);
 }
 
 static void uhci_tx_start_dma_s(int uhci_num)
@@ -133,8 +138,9 @@ static void uhci_tx_start_dma_s(int uhci_num)
     uhci_obj[uhci_num]->tx_dma[0].size = DMA_TX_BUF_SIZE;
     uhci_obj[uhci_num]->tx_dma[0].eof = 1;
     uhci_obj[uhci_num]->tx_dma[0].owner = 1;
-    uhci_hal_set_tx_dma(&(uhci_obj[uhci_num]->uhci_hal), (uint32_t)(&(uhci_obj[uhci_num]->tx_dma[0])));
-    uhci_hal_tx_dma_start(&(uhci_obj[uhci_num]->uhci_hal));
+    auto hal = &(uhci_obj[uhci_num]->uhci_hal);
+    uhci_hal_set_tx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->tx_dma[0])));
+    uhci_hal_tx_dma_start(hal);
 }
 
 static void IRAM_ATTR uhci_isr_default_new(void *param)
@@ -212,10 +218,13 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
     }
 }
 
+extern void debug_log(const char* fmt, ...);
+
 //TODO cpoy DMA buffer stashed data to ringbuffer and restart RX DMA.
 //If timeout. return false
 static bool dma_buf_to_ringbuf(int uhci_num, TickType_t ticks_to_wait)
 {
+    debug_log("enter dma_buf_to_ringbuf\n");
     while(1) {
         rx_stash_item_t stash_item = {0};
         if (uhci_obj[uhci_num]->rx_idle == true) {
@@ -226,11 +235,13 @@ static bool dma_buf_to_ringbuf(int uhci_num, TickType_t ticks_to_wait)
                 UHCI_ENTER_CRITICAL(uhci_num);
                 uhci_rx_start_dma_s(uhci_num);
                 UHCI_EXIT_CRITICAL(uhci_num);
+                debug_log("leave dma_buf_to_ringbuf 1\n");
                 return true;
             }
         } else {
             if (xQueueReceive(uhci_obj[uhci_num]->stash_Queue, (void *)&stash_item, (TickType_t)ticks_to_wait) == pdFALSE) {
                 //TOUT
+                debug_log("leave dma_buf_to_ringbuf 0\n");
                 return false;
             }
         }
@@ -243,6 +254,7 @@ static bool dma_buf_to_ringbuf(int uhci_num, TickType_t ticks_to_wait)
 
 int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait)
 {
+    //debug_log("enter uart_dma_read\n");
     UHCI_CHECK(addr != NULL,  "Read buffer null", ESP_FAIL)
     uint8_t *rd_ptr = addr;
     size_t rd_rem = read_size;
@@ -261,9 +273,11 @@ int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t tick
             if (uhci_obj[uhci_num]->pread_cur != NULL) {
                 uhci_obj[uhci_num]->preturn = uhci_obj[uhci_num]->pread_cur;
                 tick_rem = 0;
-            } else { //RingBuffer is empty
+     debug_log("mismatch\n");
+           } else { //RingBuffer is empty
                 tick_rem = (ticks_to_wait == portMAX_DELAY ) ? portMAX_DELAY : tick_end - xTaskGetTickCount();
                 if (uhci_obj[uhci_num]->rx_buffer_full == true && dma_buf_to_ringbuf(uhci_num, tick_rem) == false) {
+    debug_log("goto exit\n");
                     goto exit;
                 }
                 continue;
@@ -278,17 +292,20 @@ int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t tick
         uhci_obj[uhci_num]->pread_cur += rd_size;
         rd_ptr += rd_size;
         rd_rem -= rd_size;
+    debug_log("read %u bytes\n", (uint)rd_size);
         if (uhci_obj[uhci_num]->stash_len == 0) {
             vRingbufferReturnItem(uhci_obj[uhci_num]->rx_ring_buf, (void *)uhci_obj[uhci_num]->preturn);
         }
     }
 exit:
     xSemaphoreGive(uhci_obj[uhci_num]->rx_mux);
+    //debug_log("leave uart_dma_read\n");
     return (read_size - rd_rem);
 }
 
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
 {
+    debug_log("enter uart_dma_write\n");
     size_t size_rem = wr;
     size_t size_tmp = 0;
     uint8_t *pr = pbuf;
@@ -298,13 +315,15 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
         xRingbufferSend(uhci_obj[uhci_num]->tx_ring_buf, (void *)pr, size_tmp, (portTickType)portMAX_DELAY);
         if (uhci_obj[uhci_num]->tx_idle == true) {
             uhci_obj[uhci_num]->tx_idle = false;
-            uhci_hal_tx_dma_start(&(uhci_obj[uhci_num]->uhci_hal));
-            uhci_hal_enable_intr(&(uhci_obj[uhci_num]->uhci_hal), UHCI_INTR_OUT_DSCR_ERR);
+            auto hal = &(uhci_obj[uhci_num]->uhci_hal);
+            uhci_hal_tx_dma_start(hal);
+            uhci_hal_enable_intr(hal, UHCI_INTR_OUT_DSCR_ERR);
         }
         size_rem -= size_tmp;
         pr += size_tmp;
     }
     xSemaphoreGive(uhci_obj[uhci_num]->tx_mux);
+    debug_log("leave uart_dma_write %u\n", (uint32_t)wr);
     return 0;
 }
 
@@ -357,36 +376,88 @@ esp_err_t uhci_driver_install(int uhci_num, size_t tx_buf_size, size_t rx_buf_si
     return esp_intr_alloc(uhci_periph_signal[uhci_num].irq, intr_flag, &uhci_isr_default_new, uhci_obj[uhci_num], &uhci_obj[uhci_num]->intr_handle);
 }
 
+static void dump_special_chars() {
+    uhci_dev_t* dev = UHCI_LL_GET_HW(0);
+    debug_log("\n");
+	debug_log("seper_char:      %02hX\n", dev->esc_conf0.seper_char);
+	debug_log("seper_esc_char0: %02hX\n", dev->esc_conf0.seper_esc_char0);
+	debug_log("seper_esc_char1: %02hX\n", dev->esc_conf0.seper_esc_char1);
+	debug_log("seq0:            %02hX\n", dev->esc_conf1.seq0);
+	debug_log("seq0_char0:      %02hX\n", dev->esc_conf1.seq0_char0);
+	debug_log("seq0_char1:      %02hX\n", dev->esc_conf1.seq0_char1);
+	debug_log("seq1:            %02hX\n", dev->esc_conf2.seq1);
+	debug_log("seq1_char0:      %02hX\n", dev->esc_conf2.seq1_char0);
+	debug_log("seq1_char1:      %02hX\n", dev->esc_conf2.seq1_char1);
+	debug_log("seq2:            %02hX\n", dev->esc_conf3.seq2);
+	debug_log("seq2_char0:      %02hX\n", dev->esc_conf3.seq2_char0);
+	debug_log("seq2_char1:      %02hX\n", dev->esc_conf3.seq2_char1);
+    debug_log("\n");
+}
+
 esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t *uart_config)
 {
-#if 0
-    //Configure UART param
-    periph_module_enable(uart_periph_signal[uart_num].module);
-    uart_hal_init(&(uhci_obj[uhci_num]->uart_hal), uart_num);
-    uart_hal_disable_intr_mask(&(uhci_obj[uhci_num]->uart_hal), UART_INTR_MASK);
-    uart_hal_set_baudrate(&(uhci_obj[uhci_num]->uart_hal), uart_config->source_clk, uart_config->baud_rate);
-    uart_hal_set_parity(&(uhci_obj[uhci_num]->uart_hal), uart_config->parity);
-    uart_hal_set_data_bit_num(&(uhci_obj[uhci_num]->uart_hal), uart_config->data_bits);
-    uart_hal_set_stop_bits(&(uhci_obj[uhci_num]->uart_hal), uart_config->stop_bits);
-    uart_hal_set_rx_idle_third(&(uhci_obj[uhci_num]->uart_hal), DMA_RX_IDLE_THRD);
-    uart_hal_set_tx_idle_num(&(uhci_obj[uhci_num]->uart_hal), DMA_TX_IDLE_NUM);
-    uart_hal_set_hw_flow_ctrl(&(uhci_obj[uhci_num]->uart_hal), uart_config->flow_ctrl, uart_config->rx_flow_ctrl_thresh);
-    uart_hal_rxfifo_rst(&(uhci_obj[uhci_num]->uart_hal));
-#endif
-    uart_param_config(uart_num, uart_config);
-    //Disable all uart interrupt
-    uart_disable_intr_mask(uart_num, ~0);
-
-    //Configure UHCI param
-    uhci_hal_init(&(uhci_obj[uhci_num]->uhci_hal), uhci_num);
-    uhci_hal_disable_intr(&(uhci_obj[uhci_num]->uhci_hal), UHCI_INTR_MASK);
-    uhci_hal_set_eof_mode(&(uhci_obj[uhci_num]->uhci_hal), UHCI_RX_IDLE_EOF);
-    uhci_hal_attach_uart_port(&(uhci_obj[uhci_num]->uhci_hal), uart_num);
-    uhci_hal_set_rx_dma(&(uhci_obj[uhci_num]->uhci_hal),(uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
-    uhci_hal_set_tx_dma(&(uhci_obj[uhci_num]->uhci_hal),(uint32_t)(&(uhci_obj[uhci_num]->tx_dma[0])));
-    uhci_hal_clear_intr(&(uhci_obj[uhci_num]->uhci_hal), UHCI_INTR_MASK);
-    uhci_hal_enable_intr(&(uhci_obj[uhci_num]->uhci_hal), UHCI_INTR_IN_DONE | UHCI_INTR_IN_DSCR_EMPTY | UHCI_INTR_OUT_DONE | UHCI_INTR_OUT_TOT_EOF);
-    uhci_hal_rx_dma_start(&(uhci_obj[uhci_num]->uhci_hal));
-    uhci_hal_tx_dma_start(&(uhci_obj[uhci_num]->uhci_hal));
+    {
+        // Configure UART params
+	debug_log("@%i\n", __LINE__);
+        periph_module_enable(uart_periph_signal[uart_num].module);
+	debug_log("@%i\n", __LINE__);
+        auto hal = &(uhci_obj[uhci_num]->uart_hal);
+	debug_log("@%i\n", __LINE__);
+        hal->dev = UART_LL_GET_HW(uart_num);
+        uart_hal_init(hal, uart_num);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_disable_intr_mask(hal, ~0);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_set_sclk(hal, uart_config->source_clk);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_set_baudrate(hal, uart_config->baud_rate);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_set_parity(hal, uart_config->parity);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_set_data_bit_num(hal, uart_config->data_bits);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_set_stop_bits(hal, uart_config->stop_bits);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_set_tx_idle_num(hal, DMA_TX_IDLE_NUM);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_set_hw_flow_ctrl(hal, uart_config->flow_ctrl, uart_config->rx_flow_ctrl_thresh);
+	debug_log("@%i\n", __LINE__);
+        uart_hal_rxfifo_rst(hal);
+	debug_log("@%i\n", __LINE__);
+        uart_param_config(uart_num, uart_config);
+	debug_log("@%i\n", __LINE__);
+    }
+    {
+        //Configure UHCI param
+	debug_log("@%i\n", __LINE__);
+        uhci_seper_chr_t seper_char = { 0x8B, 0x9D, 0xAE, 0x01 };
+	debug_log("@%i\n", __LINE__);
+        auto hal = &(uhci_obj[uhci_num]->uhci_hal);
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_init(hal, uhci_num);
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_disable_intr(hal, UHCI_INTR_MASK);
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_set_eof_mode(hal, UHCI_RX_IDLE_EOF);
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_attach_uart_port(hal, uart_num);
+	debug_log("@%i\n", __LINE__);
+        dump_special_chars();
+        //uhci_hal_set_seper_chr(hal, &seper_char);
+        //dump_special_chars();
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_set_rx_dma(hal,(uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_set_tx_dma(hal,(uint32_t)(&(uhci_obj[uhci_num]->tx_dma[0])));
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_clear_intr(hal, UHCI_INTR_MASK);
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE | UHCI_INTR_IN_DSCR_EMPTY | UHCI_INTR_OUT_DONE | UHCI_INTR_OUT_TOT_EOF);
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_rx_dma_start(hal);
+	debug_log("@%i\n", __LINE__);
+        uhci_hal_tx_dma_start(hal);
+	debug_log("@%i\n", __LINE__);
+    }
     return ESP_OK;
 }

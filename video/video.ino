@@ -75,6 +75,8 @@ VDUStreamProcessor *	processor;				// VDU Stream Processor
 
 #include "zdi.h"								// ZDI debugging console
 
+extern void bdpp_run_test();
+
 void setup() {
 	disableCore0WDT(); delay(200);				// Disable the watchdog timers
 	disableCore1WDT(); delay(200);
@@ -89,6 +91,8 @@ void setup() {
 	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	processor->sendModeInformation();
 	boot_screen();
+
+	bdpp_run_test();
 }
 
 // The main loop
