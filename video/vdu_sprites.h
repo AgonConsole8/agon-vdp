@@ -156,6 +156,12 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			debug_log("vdu_sys_sprites: reset sprites\n\r");
 		}	break;
 
+		case 18: {	// Set sprite paint mode
+			auto b = readByte_t(); if (b == -1) return;
+			debug_log("vdu_sys_sprites: set paint sprite mode %d\n\r", b);
+			setSpritePaintMode(b);
+		}	break;
+
 		// Extended bitmap commands
 		case 0x20: {	// Select bitmap, 16-bit buffer ID
 			auto b = readWord_t(); if (b == -1) return;

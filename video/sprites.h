@@ -290,4 +290,11 @@ void resetSprites() {
 	// }
 }
 
+void setSpritePaintMode(uint8_t mode) {
+	auto sprite = getSprite();
+	if (mode <= 7) {
+		sprite->paintOptions.mode = static_cast<fabgl::PaintMode>(mode);
+	}
+}
+
 #endif // SPRITES_H
