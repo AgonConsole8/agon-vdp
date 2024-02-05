@@ -463,7 +463,7 @@ void plotCopyMove(uint8_t mode) {
 	uint16_t sourceX = p3.X < p2.X ? p3.X : p2.X;
 	uint16_t sourceY = p3.Y < p2.Y ? p3.Y : p2.Y;
 	uint16_t destX = p1.X;
-	uint16_t destY = (p1.Y ) - height;
+	uint16_t destY = p1.Y - height;
 
 	debug_log("plotCopyMove: mode %d, (%d,%d) -> (%d,%d), width: %d, height: %d\n\r", mode, sourceX, sourceY, destX, destY, width, height);
 	canvas->copyRect(sourceX, sourceY, destX, destY, width + 1, height + 1);
@@ -821,6 +821,7 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 		if (direction == 3) ttxt_instance.scroll();
 	} else {
 		canvas->setPenColor(tbg);
+		canvas->setPaintOptions(tpo);
 		auto moveX = 0;
 		auto moveY = 0;
 		switch (direction) {
