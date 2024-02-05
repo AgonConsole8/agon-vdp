@@ -39,6 +39,8 @@ static inline void uhci_ll_init(uhci_dev_t *hw)
     hw->conf1.val = 0;
     hw->conf1.dma_in_fifo_full_thrs = 100;
     hw->conf1.check_owner = 0;//realy need?
+    hw->escape_conf.val = 0;
+    hw->hung_conf.val = 0;
 }
 
 static inline void uhci_ll_attach_uart_port(uhci_dev_t *hw, int uart_num)
@@ -62,6 +64,9 @@ static inline void uhci_ll_set_seper_chr(uhci_dev_t *hw, uhci_seper_chr_t *seper
         hw->escape_conf.tx_c0_esc_en = 1;
         hw->escape_conf.rx_c0_esc_en = 1;
         hw->conf0.seper_en = 1;
+        hw->hung_conf.rxfifo_timeout_ena = 1;
+        hw->hung_conf.rxfifo_timeout = 0xFF;
+        hw->hung_conf.rxfifo_timeout_shift = 4;
     } else {
         hw->escape_conf.tx_c0_esc_en = 0;
         hw->escape_conf.rx_c0_esc_en = 0;
