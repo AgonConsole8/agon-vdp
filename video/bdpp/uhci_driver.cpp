@@ -254,6 +254,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         uart_param_config(uart_num, uart_config);
 	debug_log("@%i\n", __LINE__);
         uart_hal_set_loop_back(hal, false);
+        uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (2+ byte times)
     }
     {
         //Configure UHCI param

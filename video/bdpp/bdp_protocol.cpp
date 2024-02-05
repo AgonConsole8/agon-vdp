@@ -522,9 +522,26 @@ void write_task(void *param)
     }
 }
 
+#include "hal/uart_ll.h"
+
+void dump_uart_regs() {
+	return;
+	auto dev = UART_LL_GET_HW(UART_NUM);
+	auto size = sizeof(*dev) & 0xFFFFFFFC;
+	auto p = (uint32_t*)dev;
+	for (int i = 0; i < size; i+=sizeof(uint32_t)) {
+		debug_log("[%04X] %08X\n", i, *p++);
+	}
+	debug_log("\n");
+}
+
 void bdpp_run_test() {
 	debug_log("@%i enter bdpp_run_test\n", __LINE__);
+	debug_log("\n\n--- Before Serial2.end() ---\n");
+	dump_uart_regs();
 	//Serial2.end(); // stop existing communication
+	debug_log("\n\n--- After Serial2.end() ---\n");
+	dump_uart_regs();
 	debug_log("@%i\n", __LINE__);
 
     uart_config_t uart_config = {
@@ -545,6 +562,9 @@ void bdpp_run_test() {
 
     uhci_attach_uart_port(UHCI_NUM, UART_NUM, &uart_config);
 	debug_log("@%i\n", __LINE__);
+
+	debug_log("\n\n--- After uhci_attach_uart_port() ---\n");
+	dump_uart_regs();
 
     pr = (uint8_t *)heap_caps_calloc(1, 1024, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
     if(pr == NULL) {
