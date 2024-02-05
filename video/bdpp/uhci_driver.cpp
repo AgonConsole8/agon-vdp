@@ -66,7 +66,7 @@ typedef struct {
     uhci_hal_context_t uhci_hal;
     intr_handle_t intr_handle;
     int uhci_num;
-    lldesc_t rx_dma;
+    lldesc_t rx_dma[2];
     lldesc_t tx_dma;
 } uhci_obj_t;
 
@@ -103,7 +103,11 @@ static const uhci_signal_conn_t uhci_periph_signal[UHCI_NUM_MAX] = {
     },
 };
 
+extern void debug_log(const char* fmt, ...);
+
 uint32_t dma_data_len;
+uint32_t hold_intr_mask;
+volatile uint8_t* dma_data_in;
 
 static void IRAM_ATTR uhci_isr_default_new(void *param)
 {
@@ -114,10 +118,15 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
             break;
         }
         uhci_hal_clear_intr(&(p_obj->uhci_hal), intr_mask);
+        hold_intr_mask = intr_mask;
 
         // handle RX interrupt */
         if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_DSCR_EMPTY)) {
-            dma_data_len = p_obj->rx_dma.length;
+            if (dma_data_len = p_obj->rx_dma[0].length) {
+                dma_data_in = p_obj->rx_dma[0].buf;
+            } else if (dma_data_len = p_obj->rx_dma[1].length) {
+                dma_data_in = p_obj->rx_dma[1].buf;
+            }
         }
 
         /* handle TX interrupt */
@@ -126,28 +135,34 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
     }
 }
 
-extern void debug_log(const char* fmt, ...);
-
 int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait)
 {
-    uhci_obj[uhci_num]->rx_dma.owner = 1;
-    uhci_obj[uhci_num]->rx_dma.eof = 1;
-    uhci_obj[uhci_num]->rx_dma.size = 8+4;
-    uhci_obj[uhci_num]->rx_dma.length = 0;
-    uhci_obj[uhci_num]->rx_dma.empty = 0;
+    uhci_obj[uhci_num]->rx_dma[0].owner = 1;
+    uhci_obj[uhci_num]->rx_dma[0].eof = 1;
+    uhci_obj[uhci_num]->rx_dma[0].size = 8+4;
+    uhci_obj[uhci_num]->rx_dma[0].length = 0;
+    uhci_obj[uhci_num]->rx_dma[0].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[1]; // actually 'qe' (ptr to next descr)
+    uhci_obj[uhci_num]->rx_dma[0].buf = addr;
+    uhci_obj[uhci_num]->rx_dma[0].offset = 0;
+    uhci_obj[uhci_num]->rx_dma[0].sosf = 0;
+
+    uhci_obj[uhci_num]->rx_dma[1].owner = 1;
+    uhci_obj[uhci_num]->rx_dma[1].eof = 1;
+    uhci_obj[uhci_num]->rx_dma[1].size = 8+4;
+    uhci_obj[uhci_num]->rx_dma[1].length = 0;
+    uhci_obj[uhci_num]->rx_dma[1].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[0]; // actually 'qe' (ptr to next descr)
+    uhci_obj[uhci_num]->rx_dma[1].buf = addr;
+    uhci_obj[uhci_num]->rx_dma[1].offset = 0;
+    uhci_obj[uhci_num]->rx_dma[1].sosf = 0;
+
     auto hal = &(uhci_obj[uhci_num]->uhci_hal);
-    uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->rx_dma)));
+    uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
+    //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF);
+
     uhci_hal_rx_dma_start(hal);
 
     //debug_log("enter uart_dma_read\n");
-    UHCI_CHECK(addr != NULL,  "Read buffer null", ESP_FAIL)
-    uint32_t len = 0;
-    if (dma_data_len > 0) {
-        len = dma_data_len;
-        dma_data_len = 0;
-        memcpy(addr, (void*) uhci_obj[uhci_num]->tx_dma.buf, len);
-    }
-    return len;
+    return 0;
 }
 
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
@@ -159,10 +174,11 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
     uhci_obj[uhci_num]->tx_dma.buf = pbuf;
     uhci_obj[uhci_num]->tx_dma.length = wr;
     uhci_obj[uhci_num]->tx_dma.size = wr;
-    uhci_obj[uhci_num]->rx_dma.empty = 0;
+    uhci_obj[uhci_num]->tx_dma.empty = 0; // actually 'qe' (ptr to next descr)
     auto hal = &(uhci_obj[uhci_num]->uhci_hal);
     uhci_hal_set_tx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->tx_dma)));
-    uhci_hal_enable_intr(hal, UHCI_INTR_OUT_DSCR_ERR);
+    //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF);
+    //uhci_hal_enable_intr(hal, UHCI_INTR_OUT_DONE|UHCI_INTR_OUT_EOF|UHCI_INTR_OUT_TOT_EOF);
     uhci_hal_tx_dma_start(hal);
 
     debug_log("leave uart_dma_write %u\n", (uint32_t)wr);
@@ -189,6 +205,7 @@ esp_err_t uhci_driver_install(int uhci_num, size_t tx_buf_size, size_t rx_buf_si
 static void dump_special_chars() {
     uhci_dev_t* dev = UHCI_LL_GET_HW(0);
     debug_log("\n");
+	debug_log("seper_en:        %02hX\n", dev->conf0.seper_en);
 	debug_log("seper_char:      %02hX\n", dev->esc_conf0.seper_char);
 	debug_log("seper_esc_char0: %02hX\n", dev->esc_conf0.seper_esc_char0);
 	debug_log("seper_esc_char1: %02hX\n", dev->esc_conf0.seper_esc_char1);
@@ -212,8 +229,8 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         periph_module_enable(uart_periph_signal[uart_num].module);
 	debug_log("@%i\n", __LINE__);
         auto hal = &(uhci_obj[uhci_num]->uart_hal);
-	debug_log("@%i\n", __LINE__);
         hal->dev = UART_LL_GET_HW(uart_num);
+	debug_log("@%i uart hal %X, dev %X\n", __LINE__, hal, hal->dev);
         uart_hal_init(hal, uart_num);
 	debug_log("@%i\n", __LINE__);
         uart_hal_disable_intr_mask(hal, ~0);
@@ -236,40 +253,41 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 	debug_log("@%i\n", __LINE__);
         uart_param_config(uart_num, uart_config);
 	debug_log("@%i\n", __LINE__);
+        uart_hal_set_loop_back(hal, false);
     }
     {
         //Configure UHCI param
 	debug_log("@%i\n", __LINE__);
-        uhci_seper_chr_t seper_char = { 0x8B, 0x9D, 0xAE, 0x01 };
+        //uhci_seper_chr_t seper_char = { 0x8B, 0x9D, 0xAE, 0x01 };
+        uhci_seper_chr_t seper_char = { 0xC0, 0xDB, 0xDC, 0x01 };
 	debug_log("@%i\n", __LINE__);
         auto hal = &(uhci_obj[uhci_num]->uhci_hal);
-	debug_log("@%i\n", __LINE__);
         uhci_hal_init(hal, uhci_num);
+	debug_log("@%i uhci hal %X, dev %X\n", __LINE__, hal, hal->dev);
 	debug_log("@%i\n", __LINE__);
         uhci_hal_disable_intr(hal, UHCI_INTR_MASK);
 	debug_log("@%i\n", __LINE__);
-        uhci_hal_set_eof_mode(hal, UHCI_RX_IDLE_EOF);
+        uhci_hal_set_eof_mode(hal, UHCI_RX_EOF_MAX);
 	debug_log("@%i\n", __LINE__);
         uhci_hal_attach_uart_port(hal, uart_num);
 	debug_log("@%i\n", __LINE__);
         dump_special_chars();
-        //uhci_hal_set_seper_chr(hal, &seper_char);
-        //dump_special_chars();
-        /*
+        uhci_hal_set_seper_chr(hal, &seper_char);
+        dump_special_chars();
 	debug_log("@%i\n", __LINE__);
-        uhci_hal_set_rx_dma(hal,(uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
+        //uhci_hal_set_rx_dma(hal,(uint32_t)(&(uhci_obj[uhci_num]->rx_dma)));
 	debug_log("@%i\n", __LINE__);
-        uhci_hal_set_tx_dma(hal,(uint32_t)(&(uhci_obj[uhci_num]->tx_dma[0])));
+        //uhci_hal_set_tx_dma(hal,(uint32_t)(&(uhci_obj[uhci_num]->tx_dma)));
 	debug_log("@%i\n", __LINE__);
         uhci_hal_clear_intr(hal, UHCI_INTR_MASK);
 	debug_log("@%i\n", __LINE__);
-        uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE | UHCI_INTR_IN_DSCR_EMPTY | UHCI_INTR_OUT_DONE | UHCI_INTR_OUT_TOT_EOF);
+        //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_IN_DSCR_EMPTY | UHCI_INTR_OUT_DONE | UHCI_INTR_OUT_EOF | UHCI_INTR_OUT_TOT_EOF);
+        uhci_hal_enable_intr(hal, 0x0001FFFF);
 	debug_log("@%i\n", __LINE__);
-        uhci_hal_rx_dma_start(hal);
+        //uhci_hal_rx_dma_start(hal);
 	debug_log("@%i\n", __LINE__);
-        uhci_hal_tx_dma_start(hal);
+        //uhci_hal_tx_dma_start(hal);
 	debug_log("@%i\n", __LINE__);
-    */
     }
     return ESP_OK;
 }

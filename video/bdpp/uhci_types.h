@@ -52,23 +52,23 @@ typedef struct {
 } uhci_swflow_ctrl_sub_chr_t;
 
 typedef enum {
-    UHCI_INTR_RX_START        = (0x1 << 0),
-    UHCI_INTR_TX_START        = (0x1 << 1),
-    UHCI_INTR_RX_HUNG         = (0x1 << 2),
-    UHCI_INTR_TX_HUNG         = (0x1 << 3),
-    UHCI_INTR_IN_DONE         = (0x1 << 4),
-    UHCI_INTR_IN_SUC_EOF      = (0x1 << 5),
-    UHCI_INTR_IN_ERR_EOF      = (0x1 << 6),
-    UHCI_INTR_OUT_DONE        = (0x1 << 7),
-    UHCI_INTR_OUT_EOF         = (0x1 << 8),
-    UHCI_INTR_IN_DSCR_ERR     = (0x1 << 9),
-    UHCI_INTR_OUT_DSCR_ERR    = (0x1 << 10),
-    UHCI_INTR_IN_DSCR_EMPTY   = (0x1 << 11),
-    UHCI_INTR_OUTLINK_EOF_ERR = (0x1 << 12),
-    UHCI_INTR_OUT_TOT_EOF     = (0x1 << 13),
-    UHCI_INTR_SEND_S_Q        = (0x1 << 14),
-    UHCI_INTR_SEND_A_Q        = (0x1 << 15),
-    UHCI_INTR_IN_FIFO_FULL    = (0x1 << 16),
+    UHCI_INTR_RX_START        = (0x1 << 0),     // 00001
+    UHCI_INTR_TX_START        = (0x1 << 1),     // 00002
+    UHCI_INTR_RX_HUNG         = (0x1 << 2),     // 00004
+    UHCI_INTR_TX_HUNG         = (0x1 << 3),     // 00008
+    UHCI_INTR_IN_DONE         = (0x1 << 4),     // 00010
+    UHCI_INTR_IN_SUC_EOF      = (0x1 << 5),     // 00020
+    UHCI_INTR_IN_ERR_EOF      = (0x1 << 6),     // 00040
+    UHCI_INTR_OUT_DONE        = (0x1 << 7),     // 00080
+    UHCI_INTR_OUT_EOF         = (0x1 << 8),     // 00100
+    UHCI_INTR_IN_DSCR_ERR     = (0x1 << 9),     // 00200
+    UHCI_INTR_OUT_DSCR_ERR    = (0x1 << 10),    // 00400
+    UHCI_INTR_IN_DSCR_EMPTY   = (0x1 << 11),    // 00800
+    UHCI_INTR_OUTLINK_EOF_ERR = (0x1 << 12),    // 01000
+    UHCI_INTR_OUT_TOT_EOF     = (0x1 << 13),    // 02000
+    UHCI_INTR_SEND_S_Q        = (0x1 << 14),    // 04000
+    UHCI_INTR_SEND_A_Q        = (0x1 << 15),    // 08000
+    UHCI_INTR_IN_FIFO_FULL    = (0x1 << 16),    // 10000
 } uhci_intr_t;
 
 #ifdef __cplusplus

@@ -461,6 +461,9 @@ uhci_event_t event;
 uint8_t* pr = NULL;
 uint8_t* pw = NULL;
 
+extern uint32_t dma_data_len;
+extern uint32_t hold_intr_mask;
+extern volatile uint8_t* dma_data_in;
 
 int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait);
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
@@ -468,18 +471,28 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 void read_task2(void *param)
 {
     int total = 0;
-    int rem = 8;
+    int rem = 6;
 	int i;
-    for (i=0;i<60;i++) {
-        auto len = uart_dma_read(0, pr + total, rem, (portTickType)100);
-        total += len;
-		rem -= len;
-		if (!rem) break;
+	auto len = uart_dma_read(0, pr + total, rem, (portTickType)100);
+    for (i=0;i<300;i++) {
+		debug_log(".");
+		if (dma_data_len) {
+			total += dma_data_len;
+			break;
+		}
+        vTaskDelay(20/portTICK_PERIOD_MS);
     }
-    debug_log("tot %d\n", total);
-    for(i = 0; i < 8; i++) {
-		debug_log("<%i> %02hX\n",i,pr[i]);
+
+	if (hold_intr_mask) {
+        debug_log("\n/intr %X/",hold_intr_mask);
     }
+
+    debug_log("\ntot %d\n", total);
+	if (total) {
+		for(i = 0; i < 6; i++) {
+			debug_log("<%i> %02hX\n",i,dma_data_in[i]);
+		}
+	}
     while(1) {
         vTaskDelay(100/portTICK_PERIOD_MS);
     }
@@ -488,14 +501,15 @@ void read_task2(void *param)
 void write_task(void *param)
 {
 	debug_log("enter write_task\n");
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i < 6; i++) {
         pw[i] = 'a'+ i;
 		debug_log("[%i] %02hX\n",i,pw[i]);
     }
     vTaskDelay(100/portTICK_PERIOD_MS);
-    for(int i = 0; i < 1; i++) {
+    for(int i = 0; i < 20; i++) {
 		debug_log("%i: call uart_dma_write %p\n", i, pw);
-        uart_dma_write(UHCI_NUM, pw, 8);
+        uart_dma_write(UHCI_NUM, pw, 6);
+        vTaskDelay(1000/portTICK_PERIOD_MS);
     }
 	debug_log("finished write_task\n");
     while(1) {
@@ -515,10 +529,10 @@ void bdpp_run_test() {
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_CTS_RTS,
         .rx_flow_ctrl_thresh = 120,
-        .use_ref_tick = 0,
+		.source_clk = UART_SCLK_APB
     };
 
-    //uart_set_pin(UART_NUM, 17, 16, 7, 8);
+    uart_set_pin(UART_NUM, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 	debug_log("@%i\n", __LINE__);
 
     uhci_driver_install(UHCI_NUM, 1024*2, 1024*2, 0);
@@ -527,19 +541,19 @@ void bdpp_run_test() {
     uhci_attach_uart_port(UHCI_NUM, UART_NUM, &uart_config);
 	debug_log("@%i\n", __LINE__);
 
-    pr =  (uint8_t *)heap_caps_calloc(1, 1024, MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+    pr = (uint8_t *)heap_caps_calloc(1, 1024, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
     if(pr == NULL) {
         debug_log("SRAM malloc fail\n");
         return;
     }
 
 	debug_log("@%i\n", __LINE__);
-    pw = (uint8_t*) malloc(1024);
+    pw = (uint8_t *)heap_caps_calloc(1, 1024, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
 	debug_log("@%i\n", __LINE__);
     xTaskCreate(read_task2, "read_task2", 2048*4, NULL, 12, NULL);
     vTaskDelay(100/portTICK_PERIOD_MS);
 	debug_log("@%i\n", __LINE__);
-    xTaskCreate(write_task, "write_task", 2048, NULL, 12, NULL);
+    //xTaskCreate(write_task, "write_task", 2048, NULL, 12, NULL);
 	debug_log("@%i\n", __LINE__);
 
 	debug_log("@%i leave bdpp_run_test\n", __LINE__);

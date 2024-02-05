@@ -61,9 +61,11 @@ static inline void uhci_ll_set_seper_chr(uhci_dev_t *hw, uhci_seper_chr_t *seper
         hw->esc_conf0.val = esc_conf0_reg.val;
         hw->escape_conf.tx_c0_esc_en = 1;
         hw->escape_conf.rx_c0_esc_en = 1;
+        hw->conf0.seper_en = 1;
     } else {
         hw->escape_conf.tx_c0_esc_en = 0;
         hw->escape_conf.rx_c0_esc_en = 0;
+        hw->conf0.seper_en = 0;
     }
 }
 
