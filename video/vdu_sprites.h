@@ -248,7 +248,7 @@ void VDUStreamProcessor::createBitmapFromScreen(uint16_t bufferId) {
 		debug_log("vdu_sys_sprites: failed to create buffer\n\r");
 		return;
 	}
-	createBitmapFromBuffer(bufferId, 3, width, height);
+	createBitmapFromBuffer(bufferId, 1, width, height);
 	// Copy screen area to buffer
 	canvas->copyToBitmap(x1, y1, getBitmap(bufferId).get());
 }
