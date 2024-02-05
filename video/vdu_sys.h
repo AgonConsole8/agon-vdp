@@ -88,6 +88,12 @@ void VDUStreamProcessor::vdu_sys() {
 			case 0x10: {					// VDU 23, 16
 				vdu_sys_cursorBehaviour();	// Set cursor behaviour
 			}	break;
+			case 0x17: {					// VDU 23, 23, n
+				auto b = readByte_t();		// Set line thickness
+				if (b >= 0) {
+					setLineThickness(b);
+				}
+			}	break;
 			case 0x1B: {					// VDU 23, 27
 				vdu_sys_sprites();			// Sprite system control
 			}	break;
