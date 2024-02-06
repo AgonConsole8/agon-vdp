@@ -232,6 +232,14 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         hal->dev = UART_LL_GET_HW(uart_num);
 	debug_log("@%i uart hal %X, dev %X\n", __LINE__, hal, hal->dev);
         uart_hal_init(hal, uart_num);
+
+	debug_log("@%i\n", __LINE__);
+    /*periph_module_disable(uhci_periph_signal[uhci_num].module);
+	debug_log("@%i\n", __LINE__);
+    vTaskDelay(5);*/
+	debug_log("@%i\n", __LINE__);
+    periph_module_enable(uart_periph_signal[uart_num].module);
+
 	debug_log("@%i\n", __LINE__);
         uart_hal_disable_intr_mask(hal, ~0);
 	debug_log("@%i\n", __LINE__);
@@ -261,6 +269,14 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 	debug_log("@%i\n", __LINE__);
         uart_hal_set_loop_back(hal, false);
 //        uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (2+ byte times)
+	debug_log("@%i\n", __LINE__);
+        //uart_hal_set_hw_flow_ctrl(hal, uart_config->flow_ctrl, uart_config->rx_flow_ctrl_thresh);
+        //uart_hal_set_rts(hal, 1);
+	debug_log("@%i\n", __LINE__);
+
+    debug_log("@%i\n", __LINE__);
+    uart_set_pin(uart_num, 2, 34, 13, 14);
+
     }
     {
         //Configure UHCI param

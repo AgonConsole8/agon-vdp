@@ -552,7 +552,7 @@ void bdpp_run_test() {
 	debug_log("@%i enter bdpp_run_test\n", __LINE__);
 	debug_log("\n\n--- Before Serial2.end() ---\n");
 	dump_uart_regs();
-	//Serial2.end(); // stop existing communication
+	Serial2.end(); // stop existing communication
 	debug_log("\n\n--- After Serial2.end() ---\n");
 	dump_uart_regs();
 	debug_log("@%i\n", __LINE__);
@@ -566,9 +566,6 @@ void bdpp_run_test() {
         .rx_flow_ctrl_thresh = 120,
 		.source_clk = UART_SCLK_APB
     };
-
-    //uart_set_pin(UART_NUM, 17, 16, 7, 8);
-	debug_log("@%i\n", __LINE__);
 
     uhci_driver_install(UHCI_NUM, 1024*2, 1024*2, 0);
 	debug_log("@%i\n", __LINE__);
