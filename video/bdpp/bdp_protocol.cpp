@@ -464,44 +464,43 @@ uint8_t* pw = NULL;
 extern uint32_t dma_data_len[2];
 extern uint32_t hold_intr_mask;
 extern volatile uint8_t* dma_data_in[2];
-#define PACKET_DATA_SIZE 26
+#define PACKET_DATA_SIZE (26*2+1+3)
 
 int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait);
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 
 void read_task(void *param)
 {
-	for (int n = 0; n < 5; n++) {
-		int total = 0;
-		int rem = PACKET_DATA_SIZE;
+	dma_data_len[0] = 0;
+	dma_data_len[1] = 0;
+	dma_data_in[0] = 0;
+	dma_data_in[1] = 0;
+	memset(pr, 0, PACKET_DATA_SIZE+1);
+	auto len = uart_dma_read(0, pr, PACKET_DATA_SIZE, (portTickType)100);
+	for (int n = 0; n < 100; n++) {
 		int i;
-		dma_data_len[0] = 0;
-		dma_data_len[1] = 0;
-		dma_data_in[0] = 0;
-		dma_data_in[1] = 0;
-		memset(pr, 0, PACKET_DATA_SIZE);
-		auto len = uart_dma_read(0, pr + total, rem, (portTickType)100);
-		for (i=0;i<300;i++) {
-			debug_log(".");
+		debug_log(".");
+		int total = 0;
+		for (i=0;i<600;i++) {
 			total = dma_data_len[0]+dma_data_len[1];
-			if (total >= rem) {
+			if (total >= PACKET_DATA_SIZE) {
 				break;
 			}
-			vTaskDelay(20/portTICK_PERIOD_MS);
+			vTaskDelay(2);
 		}
 
 		if (hold_intr_mask) {
-			debug_log("\n/intr %X/",hold_intr_mask);
+			debug_log("/intr %X/",hold_intr_mask);
 			hold_intr_mask = 0;
 		}
 
-		debug_log("\ntot %d\n", total);
 		for (int j=0; j<2;j++) {
 			if (dma_data_in[j]) {
-				for(i = 0; i < PACKET_DATA_SIZE; i++) {
-					debug_log(" %02hX",dma_data_in[j][i]);
-				}
-				debug_log("\n");
+				debug_log("/len %d/ ", total);
+				dma_data_in[j][total]=0;
+				debug_log("%s\n",dma_data_in[j]);
+				dma_data_in[j]=0;
+				dma_data_len[j]=0;
 			}
 		}
 	}
@@ -594,7 +593,7 @@ void bdpp_run_test() {
     vTaskDelay(20/portTICK_PERIOD_MS);
 	debug_log("@%i\n", __LINE__);
 
-    xTaskCreate(write_task, "write_task", 2048, NULL, 12, NULL);
+    //xTaskCreate(write_task, "write_task", 2048, NULL, 12, NULL);
 	debug_log("@%i\n", __LINE__);
 
 	debug_log("@%i leave bdpp_run_test\n", __LINE__);

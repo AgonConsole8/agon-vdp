@@ -108,7 +108,7 @@ extern void debug_log(const char* fmt, ...);
 uint32_t dma_data_len[2];
 uint32_t hold_intr_mask;
 volatile uint8_t* dma_data_in[2];
-#define PACKET_DATA_SIZE 26
+#define PACKET_DATA_SIZE (26*2+1+3)
 
 static void IRAM_ATTR uhci_isr_default_new(void *param)
 {
@@ -149,14 +149,14 @@ int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t tick
     uhci_obj[uhci_num]->rx_dma[1].eof = 1;
     uhci_obj[uhci_num]->rx_dma[1].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
     uhci_obj[uhci_num]->rx_dma[1].length = read_size;
-    uhci_obj[uhci_num]->rx_dma[1].empty = 0; // actually 'qe' (ptr to next descr)
+    uhci_obj[uhci_num]->rx_dma[1].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[0]; // actually 'qe' (ptr to next descr)
     uhci_obj[uhci_num]->rx_dma[1].buf = addr;
     uhci_obj[uhci_num]->rx_dma[1].offset = 0;
     uhci_obj[uhci_num]->rx_dma[1].sosf = 0;
 
     auto hal = &(uhci_obj[uhci_num]->uhci_hal);
-    debug_log("rx dma 0 %X\n", &(uhci_obj[uhci_num]->rx_dma[0]));
-    debug_log("rx dma 1 %X\n", &(uhci_obj[uhci_num]->rx_dma[1]));
+    //debug_log("rx dma 0 %X\n", &(uhci_obj[uhci_num]->rx_dma[0]));
+    //debug_log("rx dma 1 %X\n", &(uhci_obj[uhci_num]->rx_dma[1]));
     uhci_hal_rx_dma_restart(hal);
     uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
     //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF);
