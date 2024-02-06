@@ -124,8 +124,11 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
         // handle RX interrupt */
         if (intr_mask & (UHCI_INTR_IN_SUC_EOF)) {
             lldesc_t* descr = (lldesc_t*) p_obj->uhci_hal.dev->dma_in_suc_eof_des_addr;
-            dma_data_in[0] = descr->buf;
-            dma_data_len[0] += descr->length;
+            if (dma_data_in[0] == descr->buf) {
+                dma_data_len[0] = descr->length;
+            } else if (dma_data_in[1] == descr->buf) {
+                dma_data_len[1] = descr->length;
+            }
         }
 
         /* handle TX interrupt */
@@ -141,7 +144,7 @@ int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t tick
     uhci_obj[uhci_num]->rx_dma[0].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
     uhci_obj[uhci_num]->rx_dma[0].length = read_size;
     uhci_obj[uhci_num]->rx_dma[0].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[1]; // actually 'qe' (ptr to next descr)
-    uhci_obj[uhci_num]->rx_dma[0].buf = addr;
+    uhci_obj[uhci_num]->rx_dma[0].buf = dma_data_in[0];
     uhci_obj[uhci_num]->rx_dma[0].offset = 0;
     uhci_obj[uhci_num]->rx_dma[0].sosf = 0;
 
@@ -150,7 +153,7 @@ int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t tick
     uhci_obj[uhci_num]->rx_dma[1].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
     uhci_obj[uhci_num]->rx_dma[1].length = read_size;
     uhci_obj[uhci_num]->rx_dma[1].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[0]; // actually 'qe' (ptr to next descr)
-    uhci_obj[uhci_num]->rx_dma[1].buf = addr;
+    uhci_obj[uhci_num]->rx_dma[1].buf = dma_data_in[1];
     uhci_obj[uhci_num]->rx_dma[1].offset = 0;
     uhci_obj[uhci_num]->rx_dma[1].sosf = 0;
 
@@ -269,7 +272,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 	debug_log("@%i\n", __LINE__);
         uart_hal_set_loop_back(hal, false);
         uart_ll_set_rx_tout(hal->dev, 0); // use no timeout
-//        uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (2+ byte times)
+        //uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (1.5 character times?)
 	debug_log("@%i\n", __LINE__);
         //uart_hal_set_hw_flow_ctrl(hal, uart_config->flow_ctrl, uart_config->rx_flow_ctrl_thresh);
         //uart_hal_set_rts(hal, 1);

@@ -458,7 +458,6 @@ void bdpp_flush_drv_tx_packet() {
 }
 
 uhci_event_t event;
-uint8_t* pr = NULL;
 uint8_t* pw = NULL;
 
 extern uint32_t dma_data_len[2];
@@ -473,37 +472,40 @@ void read_task(void *param)
 {
 	dma_data_len[0] = 0;
 	dma_data_len[1] = 0;
-	dma_data_in[0] = 0;
-	dma_data_in[1] = 0;
-	memset(pr, 0, PACKET_DATA_SIZE+1);
-	auto len = uart_dma_read(0, pr, PACKET_DATA_SIZE, (portTickType)100);
+	auto len = uart_dma_read(0, 0, PACKET_DATA_SIZE, (portTickType)100);
+	bool timeout=true;
 	for (int n = 0; n < 1000; n++) {
 		int i;
 		debug_log(".");
 		int total = 0;
-		for (i=0;i<600;i++) {
+		while (true) {
 			total = dma_data_len[0]+dma_data_len[1];
 			if (total >= PACKET_DATA_SIZE) {
+				timeout=false;
 				break;
 			}
-			vTaskDelay(1);
+			taskYIELD();
 		}
 
-		if (hold_intr_mask) {
+		/*if (hold_intr_mask) {
 			debug_log("/intr %X/",hold_intr_mask);
 			hold_intr_mask = 0;
-		}
+		}*/
 
-		for (int j=0; j<2;j++) {
-			if (dma_data_in[j]) {
-				debug_log("/len %d/ ", total);
-				dma_data_in[j][total]=0;
-				debug_log("%s\n",dma_data_in[j]);
-				dma_data_in[j]=0;
-				dma_data_len[j]=0;
+		if (timeout) {
+			debug_log("t/o\n");
+		} else {
+			for (int j=0; j<2;j++) {
+				if (dma_data_len[j]) {
+					dma_data_len[j]=0;
+					//debug_log("/buf %i, len %d/ \n", j, total);
+					dma_data_in[j][5]=0;
+					debug_log("%s\n",dma_data_in[j]);
+				}
 			}
 		}
 	}
+
     while(1) {
         vTaskDelay(100/portTICK_PERIOD_MS);
     }
@@ -575,11 +577,8 @@ void bdpp_run_test() {
 	debug_log("\n\n--- After uhci_attach_uart_port() ---\n");
 	dump_uart_regs();
 
-    pr = (uint8_t *)heap_caps_calloc(1, 1024, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
-    if(pr == NULL) {
-        debug_log("SRAM RX malloc fail\n");
-        return;
-    }
+    dma_data_in[0] = (uint8_t *)heap_caps_calloc(1, PACKET_DATA_SIZE*2, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
+    dma_data_in[1] = (uint8_t *)heap_caps_calloc(1, PACKET_DATA_SIZE*2, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
 
 	debug_log("@%i\n", __LINE__);
     pw = (uint8_t *)heap_caps_calloc(1, 1024, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
