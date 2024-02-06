@@ -129,7 +129,7 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
         }
 
         /* handle TX interrupt */
-        if (intr_mask & (UHCI_INTR_OUT_TOT_EOF)) {
+        if (intr_mask & (UHCI_INTR_OUT_EOF)) {
         }
     }
 }
@@ -249,7 +249,12 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         uart_hal_set_hw_flow_ctrl(hal, uart_config->flow_ctrl, uart_config->rx_flow_ctrl_thresh);
         uart_hal_set_rts(hal, 1); // invert RTS/CTS
 	debug_log("@%i\n", __LINE__);
-        uart_hal_rxfifo_rst(hal);
+
+        // UART2 has no reset register for the FIFO, but may be affected via UART1.
+        auto dev1 = UART_LL_GET_HW(UART_NUM_1);
+        dev1->conf0.rxfifo_rst = 1;
+        dev1->conf0.txfifo_rst = 1;
+
 	debug_log("@%i\n", __LINE__);
         uart_param_config(uart_num, uart_config);
 	debug_log("@%i\n", __LINE__);
@@ -282,8 +287,8 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 	debug_log("@%i\n", __LINE__);
         uhci_hal_clear_intr(hal, UHCI_INTR_MASK);
 	debug_log("@%i\n", __LINE__);
-        //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_IN_DSCR_EMPTY | UHCI_INTR_OUT_DONE | UHCI_INTR_OUT_EOF | UHCI_INTR_OUT_TOT_EOF);
-        uhci_hal_enable_intr(hal, 0x0001FFFF);
+        uhci_hal_enable_intr(hal, UHCI_INTR_IN_SUC_EOF | UHCI_INTR_OUT_DONE);
+        //uhci_hal_enable_intr(hal, 0x0001FFFF);
 	debug_log("@%i\n", __LINE__);
         //uhci_hal_rx_dma_start(hal);
 	debug_log("@%i\n", __LINE__);

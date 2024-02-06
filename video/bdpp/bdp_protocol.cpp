@@ -471,30 +471,38 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 
 void read_task(void *param)
 {
-    int total = 0;
-    int rem = PACKET_DATA_SIZE;
-	int i;
-	auto len = uart_dma_read(0, pr + total, rem, (portTickType)100);
-    for (i=0;i<300;i++) {
-		debug_log(".");
-		total = dma_data_len[0]+dma_data_len[1];
-		if (total >= rem) {
-			break;
-		}
-        vTaskDelay(20/portTICK_PERIOD_MS);
-    }
-
-	if (hold_intr_mask) {
-        debug_log("\n/intr %X/",hold_intr_mask);
-    }
-
-    debug_log("\ntot %d\n", total);
-	for (int j=0; j<2;j++) {
-		if (dma_data_in[j]) {
-			for(i = 0; i < PACKET_DATA_SIZE; i++) {
-				debug_log(" <%i,%i>%02hX",j,i,dma_data_in[j][i]);
+	for (int n = 0; n < 5; n++) {
+		int total = 0;
+		int rem = PACKET_DATA_SIZE;
+		int i;
+		dma_data_len[0] = 0;
+		dma_data_len[1] = 0;
+		dma_data_in[0] = 0;
+		dma_data_in[1] = 0;
+		memset(pr, 0, PACKET_DATA_SIZE);
+		auto len = uart_dma_read(0, pr + total, rem, (portTickType)100);
+		for (i=0;i<300;i++) {
+			debug_log(".");
+			total = dma_data_len[0]+dma_data_len[1];
+			if (total >= rem) {
+				break;
 			}
-			debug_log("\n");
+			vTaskDelay(20/portTICK_PERIOD_MS);
+		}
+
+		if (hold_intr_mask) {
+			debug_log("\n/intr %X/",hold_intr_mask);
+			hold_intr_mask = 0;
+		}
+
+		debug_log("\ntot %d\n", total);
+		for (int j=0; j<2;j++) {
+			if (dma_data_in[j]) {
+				for(i = 0; i < PACKET_DATA_SIZE; i++) {
+					debug_log(" %02hX",dma_data_in[j][i]);
+				}
+				debug_log("\n");
+			}
 		}
 	}
     while(1) {
