@@ -161,6 +161,11 @@ static inline void uhci_ll_tx_dma_start(uhci_dev_t *hw)
     hw->dma_out_link.start = 1;
 }
 
+static inline void uhci_ll_rx_dma_restart(uhci_dev_t *hw)
+{
+    hw->dma_in_link.restart = 1;
+}
+
 static inline void uhci_ll_rx_dma_stop(uhci_dev_t *hw)
 {
     hw->dma_in_link.stop = 1;

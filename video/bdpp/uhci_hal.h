@@ -50,6 +50,7 @@ uint32_t uhci_hal_get_intr(uhci_hal_context_t *hal);
 void uhci_hal_set_rx_dma(uhci_hal_context_t *hal, uint32_t addr);
 void uhci_hal_set_tx_dma(uhci_hal_context_t *hal, uint32_t addr);
 void uhci_hal_rx_dma_start(uhci_hal_context_t *hal);
+void uhci_hal_rx_dma_restart(uhci_hal_context_t *hal);
 void uhci_hal_tx_dma_start(uhci_hal_context_t *hal);
 void uhci_hal_rx_dma_stop(uhci_hal_context_t *hal);
 void uhci_hal_tx_dma_stop(uhci_hal_context_t *hal);

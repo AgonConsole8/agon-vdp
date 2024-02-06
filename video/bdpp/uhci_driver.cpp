@@ -157,6 +157,7 @@ int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t tick
     auto hal = &(uhci_obj[uhci_num]->uhci_hal);
     debug_log("rx dma 0 %X\n", &(uhci_obj[uhci_num]->rx_dma[0]));
     debug_log("rx dma 1 %X\n", &(uhci_obj[uhci_num]->rx_dma[1]));
+    uhci_hal_rx_dma_restart(hal);
     uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
     //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF);
 
@@ -225,7 +226,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
     {
         // Configure UART params
 	debug_log("@%i\n", __LINE__);
-        periph_module_enable(uart_periph_signal[uart_num].module);
+//        periph_module_enable(uart_periph_signal[uart_num].module);
 	debug_log("@%i\n", __LINE__);
         auto hal = &(uhci_obj[uhci_num]->uart_hal);
         hal->dev = UART_LL_GET_HW(uart_num);
@@ -234,9 +235,9 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 	debug_log("@%i\n", __LINE__);
         uart_hal_disable_intr_mask(hal, ~0);
 	debug_log("@%i\n", __LINE__);
-        uart_hal_set_sclk(hal, uart_config->source_clk);
+//        uart_hal_set_sclk(hal, uart_config->source_clk);
 	debug_log("@%i\n", __LINE__);
-        uart_hal_set_baudrate(hal, uart_config->baud_rate);
+/*        uart_hal_set_baudrate(hal, uart_config->baud_rate);
 	debug_log("@%i\n", __LINE__);
         uart_hal_set_parity(hal, uart_config->parity);
 	debug_log("@%i\n", __LINE__);
@@ -247,19 +248,19 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         uart_hal_set_tx_idle_num(hal, DMA_TX_IDLE_NUM);
 	debug_log("@%i\n", __LINE__);
         uart_hal_set_hw_flow_ctrl(hal, uart_config->flow_ctrl, uart_config->rx_flow_ctrl_thresh);
-        uart_hal_set_rts(hal, 1); // invert RTS/CTS
+        uart_hal_set_rts(hal, 0);
 	debug_log("@%i\n", __LINE__);
-
+*/
         // UART2 has no reset register for the FIFO, but may be affected via UART1.
-        auto dev1 = UART_LL_GET_HW(UART_NUM_1);
-        dev1->conf0.rxfifo_rst = 1;
-        dev1->conf0.txfifo_rst = 1;
+        //auto dev1 = UART_LL_GET_HW(UART_NUM_1);
+        //dev1->conf0.rxfifo_rst = 1;
+        //dev1->conf0.txfifo_rst = 1;
 
 	debug_log("@%i\n", __LINE__);
         uart_param_config(uart_num, uart_config);
 	debug_log("@%i\n", __LINE__);
         uart_hal_set_loop_back(hal, false);
-        uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (2+ byte times)
+//        uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (2+ byte times)
     }
     {
         //Configure UHCI param

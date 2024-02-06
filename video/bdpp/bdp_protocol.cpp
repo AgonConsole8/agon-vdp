@@ -522,6 +522,11 @@ void write_task(void *param)
     for(int i = 0; i < 20; i++) {
 		debug_log("%i: call uart_dma_write %p\n", i, pw);
         uart_dma_write(UHCI_NUM, pw, 6);
+        vTaskDelay(2);
+		if (hold_intr_mask) {
+			debug_log("\n/intr %X/",hold_intr_mask);
+			hold_intr_mask = 0;
+		}
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
 	debug_log("finished write_task\n");
@@ -592,7 +597,7 @@ void bdpp_run_test() {
     vTaskDelay(20/portTICK_PERIOD_MS);
 	debug_log("@%i\n", __LINE__);
 
-    //xTaskCreate(write_task, "write_task", 2048, NULL, 12, NULL);
+    xTaskCreate(write_task, "write_task", 2048, NULL, 12, NULL);
 	debug_log("@%i\n", __LINE__);
 
 	debug_log("@%i leave bdpp_run_test\n", __LINE__);

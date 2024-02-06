@@ -79,6 +79,11 @@ void uhci_hal_rx_dma_start(uhci_hal_context_t *hal)
     uhci_ll_rx_dma_start(hal->dev);
 }
 
+void uhci_hal_rx_dma_restart(uhci_hal_context_t *hal)
+{
+    uhci_ll_rx_dma_restart(hal->dev);
+}
+
 void uhci_hal_tx_dma_start(uhci_hal_context_t *hal)
 {
     uhci_ll_tx_dma_start(hal->dev);
