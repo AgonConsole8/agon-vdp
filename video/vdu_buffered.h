@@ -1016,27 +1016,27 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, std::vector
 	}
 
 	// work out total length of buffer
-    uint32_t length = 0;
+	uint32_t length = 0;
 	for (const auto sourceId : sourceBufferIds) {
 		if (sourceId != bufferId && buffers.find(sourceId) != buffers.end()) {
 			for (const auto &block : buffers[sourceId]) {
-                length += block->size();
-            }
-        }
-    }
+				length += block->size();
+			}
+		}
+	}
 
-    // Ensure the buffer has 1 block of the correct size
-    if (buffers[bufferId].size() != 1 || buffers[bufferId][0]->size() != length)
-    {
-    	buffers[bufferId].clear();
-        auto bufferStream = make_shared_psram<BufferStream>(length);
-        if (!bufferStream || !bufferStream->getBuffer()) {
-            // buffer couldn't be created
-            debug_log("bufferCopyAndConsolidate: failed to create buffer %d\n\r", bufferId);
-            return;
-        }
-        buffers[bufferId].push_back(bufferStream);
-    }
+	// Ensure the buffer has 1 block of the correct size
+	if (buffers[bufferId].size() != 1 || buffers[bufferId][0]->size() != length)
+	{
+		buffers[bufferId].clear();
+		auto bufferStream = make_shared_psram<BufferStream>(length);
+		if (!bufferStream || !bufferStream->getBuffer()) {
+			// buffer couldn't be created
+			debug_log("bufferCopyAndConsolidate: failed to create buffer %d\n\r", bufferId);
+			return;
+		}
+		buffers[bufferId].push_back(bufferStream);
+	}
 
 	auto destination = buffers[bufferId][0]->getBuffer();
 
@@ -1049,9 +1049,9 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, std::vector
 			// loop thru blocks stored against this ID
 			for (const auto &block : buffers[sourceId]) {
 				// copy the block into our target buffer
-                auto bufferLength = block->size();
-                memcpy(destination, block->getBuffer(), bufferLength);
-                destination += bufferLength;
+				auto bufferLength = block->size();
+				memcpy(destination, block->getBuffer(), bufferLength);
+				destination += bufferLength;
 			}
 		} else {
 			debug_log("bufferCopyAndConsolidate: buffer %d not found\n\r", sourceId);
