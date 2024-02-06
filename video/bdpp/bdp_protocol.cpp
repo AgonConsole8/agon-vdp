@@ -477,7 +477,7 @@ void read_task(void *param)
 	dma_data_in[1] = 0;
 	memset(pr, 0, PACKET_DATA_SIZE+1);
 	auto len = uart_dma_read(0, pr, PACKET_DATA_SIZE, (portTickType)100);
-	for (int n = 0; n < 100; n++) {
+	for (int n = 0; n < 1000; n++) {
 		int i;
 		debug_log(".");
 		int total = 0;
@@ -486,7 +486,7 @@ void read_task(void *param)
 			if (total >= PACKET_DATA_SIZE) {
 				break;
 			}
-			vTaskDelay(2);
+			vTaskDelay(1);
 		}
 
 		if (hold_intr_mask) {
