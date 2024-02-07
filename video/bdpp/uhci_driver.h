@@ -40,7 +40,7 @@ typedef struct {
     int len;
 } uhci_event_t;
 
-int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait);
+int uart_dma_read(int uhci_num);
 
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 

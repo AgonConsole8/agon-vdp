@@ -129,7 +129,7 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
             lldesc_t* descr = p_obj->rx_cur;
             int index = descr - p_obj->rx_dma;
             dma_data_len[index] = descr->length;
-            //debug_log("i %i %u\n",index,descr->length);
+            //debug_log("i %i %u %u\n",index,descr->size,descr->length);
             if (index < 3) {
                 (p_obj->rx_cur)++;
             } else {
@@ -147,42 +147,42 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
     }
 }
 
-int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait)
+int uart_dma_read(int uhci_num)
 {
     auto hal = &(uhci_obj[uhci_num]->uhci_hal);
 
     uhci_obj[uhci_num]->rx_cur = uhci_obj[uhci_num]->rx_dma;
     uhci_obj[uhci_num]->rx_dma[0].owner = 1;
-    uhci_obj[uhci_num]->rx_dma[0].eof = 0;
+    uhci_obj[uhci_num]->rx_dma[0].eof = 1;
     uhci_obj[uhci_num]->rx_dma[0].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
-    uhci_obj[uhci_num]->rx_dma[0].length = read_size;
+    uhci_obj[uhci_num]->rx_dma[0].length = 0;
     uhci_obj[uhci_num]->rx_dma[0].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[1]; // actually 'qe' (ptr to next descr)
     uhci_obj[uhci_num]->rx_dma[0].buf = dma_data_in[0];
     uhci_obj[uhci_num]->rx_dma[0].offset = 0;
     uhci_obj[uhci_num]->rx_dma[0].sosf = 0;
 
     uhci_obj[uhci_num]->rx_dma[1].owner = 1;
-    uhci_obj[uhci_num]->rx_dma[1].eof = 0;
+    uhci_obj[uhci_num]->rx_dma[1].eof = 1;
     uhci_obj[uhci_num]->rx_dma[1].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
-    uhci_obj[uhci_num]->rx_dma[1].length = read_size;
+    uhci_obj[uhci_num]->rx_dma[1].length = 0;
     uhci_obj[uhci_num]->rx_dma[1].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[2]; // actually 'qe' (ptr to next descr)
     uhci_obj[uhci_num]->rx_dma[1].buf = dma_data_in[1];
     uhci_obj[uhci_num]->rx_dma[1].offset = 0;
     uhci_obj[uhci_num]->rx_dma[1].sosf = 0;
 
     uhci_obj[uhci_num]->rx_dma[2].owner = 1;
-    uhci_obj[uhci_num]->rx_dma[2].eof = 0;
+    uhci_obj[uhci_num]->rx_dma[2].eof = 1;
     uhci_obj[uhci_num]->rx_dma[2].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
-    uhci_obj[uhci_num]->rx_dma[2].length = read_size;
+    uhci_obj[uhci_num]->rx_dma[2].length = 0;
     uhci_obj[uhci_num]->rx_dma[2].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[3]; // actually 'qe' (ptr to next descr)
     uhci_obj[uhci_num]->rx_dma[2].buf = dma_data_in[2];
     uhci_obj[uhci_num]->rx_dma[2].offset = 0;
     uhci_obj[uhci_num]->rx_dma[2].sosf = 0;
 
     uhci_obj[uhci_num]->rx_dma[3].owner = 1;
-    uhci_obj[uhci_num]->rx_dma[3].eof = 0;
+    uhci_obj[uhci_num]->rx_dma[3].eof = 1;
     uhci_obj[uhci_num]->rx_dma[3].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
-    uhci_obj[uhci_num]->rx_dma[3].length = read_size;
+    uhci_obj[uhci_num]->rx_dma[3].length = 0;
     uhci_obj[uhci_num]->rx_dma[3].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[0]; // actually 'qe' (ptr to next descr)
     uhci_obj[uhci_num]->rx_dma[3].buf = dma_data_in[3];
     uhci_obj[uhci_num]->rx_dma[3].offset = 0;

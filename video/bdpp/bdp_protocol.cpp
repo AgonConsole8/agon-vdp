@@ -467,13 +467,13 @@ extern uint32_t hold_intr_mask;
 extern volatile uint8_t* dma_data_in[4];
 #define PACKET_DATA_SIZE ((26+1+3)*2+2)
 
-int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait);
+int uart_dma_read(int uhci_num);
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 
 void read_task(void *param)
 {
 	memset(dma_data_len, 0, sizeof(dma_data_len));
-	auto len = uart_dma_read(0, 0, PACKET_DATA_SIZE, (portTickType)100);
+	auto len = uart_dma_read(0);
 	for (int n = 0; n < 1000; n++) {
 		debug_log("(%u) ", rx_count);
 		int i;
