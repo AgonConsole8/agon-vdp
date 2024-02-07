@@ -162,19 +162,25 @@ uint8_t getPaletteIndex(RGB888 colour) {
 void setPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b) {
 	RGB888 col;				// The colour to set
 
-	if (getVGAColourDepth() < 64) {		// If it is a paletted video mode
-		if (p == 255) {					// If p = 255, then use the RGB values
-			col = RGB888(r, g, b);
-		} else if (p < 64) {			// If p < 64, then look the value up in the colour lookup table
-			col = colourLookup[p];
-		} else {
-			debug_log("vdu_palette: p=%d not supported\n\r", p);
-			return;
-		}
-		setPaletteItem(l, col);
-		debug_log("vdu_palette: %d,%d,%d,%d,%d\n\r", l, p, r, g, b);
+	if (p == 255) {					// If p = 255, then use the RGB values
+		col = RGB888(r, g, b);
+	} else if (p < 64) {			// If p < 64, then look the value up in the colour lookup table
+		col = colourLookup[p];
 	} else {
-		debug_log("vdu_palette: not supported in this mode\n\r");
+		debug_log("vdu_palette: p=%d not supported\n\r", p);
+		return;
+	}
+
+	debug_log("vdu_palette: %d,%d,%d,%d,%d\n\r", l, p, r, g, b);
+	if (getVGAColourDepth() < 64) {		// If it is a paletted video mode
+		setPaletteItem(l, col);
+	} else {
+		// adjust our palette array for new colour
+		// palette is an index into the colourLookup table, and our index is in 00RRGGBB format
+		uint8_t index = (col.R >> 6) << 4 | (col.G >> 6) << 2 | (col.B >> 6);
+		auto lookedup = colourLookup[index];
+		debug_log("vdu_palette: col.R %02X, col.G %02X, col.B %02X, index %d (%02X), lookup %02X, %02X, %02X\n\r", col.R, col.G, col.B, index, index, lookedup.R, lookedup.G, lookedup.B);
+		palette[l] = index;
 	}
 }
 
