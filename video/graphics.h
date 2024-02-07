@@ -22,6 +22,7 @@ Point			rp1;							// Relative coordinates store for plot
 Point			up1;							// Unscaled coordinates store for plot
 RGB888			gfg, gbg;						// Graphics foreground and background colour
 RGB888			tfg, tbg;						// Text foreground and background colour
+uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
 uint8_t			fontW;							// Font width
 uint8_t			fontH;							// Font height
 uint8_t			videoMode;						// Current video mode
@@ -181,6 +182,18 @@ void setPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b) {
 		auto lookedup = colourLookup[index];
 		debug_log("vdu_palette: col.R %02X, col.G %02X, col.B %02X, index %d (%02X), lookup %02X, %02X, %02X\n\r", col.R, col.G, col.B, index, index, lookedup.R, lookedup.G, lookedup.B);
 		palette[l] = index;
+		if (l == tfgc) {
+			tfg = lookedup;
+		}
+		if (l == tbgc) {
+			tbg = lookedup;
+		}
+		if (l == gfgc) {
+			gfg = lookedup;
+		}
+		if (l == gbgc) {
+			gbg = lookedup;
+		}
 	}
 }
 
@@ -210,7 +223,10 @@ fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions p
 // Restore palette to default for current mode
 //
 void restorePalette() {
-	switch (getVGAColourDepth()) {
+	auto depth = getVGAColourDepth();
+	gbgc = tbgc = 0;
+	gfgc = tfgc = 15 % depth;
+	switch (depth) {
 		case  2: resetPalette(defaultPalette02); break;
 		case  4: resetPalette(defaultPalette04); break;
 		case  8: resetPalette(defaultPalette08); break;
@@ -231,14 +247,17 @@ void restorePalette() {
 void setTextColour(uint8_t colour) {
 	if (ttxtMode) return;
 
-	uint8_t c = palette[colour % getVGAColourDepth()];
+	uint8_t col = colour % getVGAColourDepth();
+	uint8_t c = palette[col];
 
 	if (colour < 64) {
 		tfg = colourLookup[c];
+		tfgc = col;
 		debug_log("vdu_colour: tfg %d = %02X : %02X,%02X,%02X\n\r", colour, c, tfg.R, tfg.G, tfg.B);
 	}
 	else if (colour >= 128 && colour < 192) {
 		tbg = colourLookup[c];
+		tbgc = col;
 		debug_log("vdu_colour: tbg %d = %02X : %02X,%02X,%02X\n\r", colour, c, tbg.R, tbg.G, tbg.B);
 	}
 	else {
@@ -251,15 +270,18 @@ void setTextColour(uint8_t colour) {
 void setGraphicsColour(uint8_t mode, uint8_t colour) {
 	if (ttxtMode) return;
 
-	uint8_t c = palette[colour % getVGAColourDepth()];
+	uint8_t col = colour % getVGAColourDepth();
+	uint8_t c = palette[col];
 
 	if (mode <= 7) {
 		if (colour < 64) {
 			gfg = colourLookup[c];
+			gfgc = col;
 			debug_log("vdu_gcol: mode %d, gfg %d = %02X : %02X,%02X,%02X\n\r", mode, colour, c, gfg.R, gfg.G, gfg.B);
 		}
 		else if (colour >= 128 && colour < 192) {
 			gbg = colourLookup[c];
+			gbgc = col;
 			debug_log("vdu_gcol: mode %d, gbg %d = %02X : %02X,%02X,%02X\n\r", mode, colour, c, gbg.R, gbg.G, gbg.B);
 		}
 		else {
