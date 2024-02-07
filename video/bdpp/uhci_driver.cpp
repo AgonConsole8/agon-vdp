@@ -66,8 +66,9 @@ typedef struct {
     uhci_hal_context_t uhci_hal;
     intr_handle_t intr_handle;
     int uhci_num;
-    lldesc_t rx_dma[2];
+    lldesc_t rx_dma[4];
     lldesc_t tx_dma;
+    lldesc_t* rx_cur;
 } uhci_obj_t;
 
 uhci_obj_t *uhci_obj[UHCI_NUM_MAX] = {0};
@@ -105,10 +106,12 @@ static const uhci_signal_conn_t uhci_periph_signal[UHCI_NUM_MAX] = {
 
 extern void debug_log(const char* fmt, ...);
 
-uint32_t dma_data_len[2];
+uint32_t rx_count;
+bool hung;
+uint32_t dma_data_len[4];
 uint32_t hold_intr_mask;
-volatile uint8_t* dma_data_in[2];
-#define PACKET_DATA_SIZE (26*2+1+3)
+volatile uint8_t* dma_data_in[4];
+#define PACKET_DATA_SIZE ((26+1+3)*2+2)
 
 static void IRAM_ATTR uhci_isr_default_new(void *param)
 {
@@ -119,16 +122,23 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
             break;
         }
         uhci_hal_clear_intr(&(p_obj->uhci_hal), intr_mask);
-        hold_intr_mask = intr_mask;
+        hold_intr_mask |= intr_mask;
 
         // handle RX interrupt */
-        if (intr_mask & (UHCI_INTR_IN_SUC_EOF)) {
-            lldesc_t* descr = (lldesc_t*) p_obj->uhci_hal.dev->dma_in_suc_eof_des_addr;
-            if (dma_data_in[0] == descr->buf) {
-                dma_data_len[0] = descr->length;
-            } else if (dma_data_in[1] == descr->buf) {
-                dma_data_len[1] = descr->length;
+        if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF)) {
+            lldesc_t* descr = p_obj->rx_cur;
+            int index = descr - p_obj->rx_dma;
+            dma_data_len[index] = descr->length;
+            //debug_log("i %i %u\n",index,descr->length);
+            if (index < 3) {
+                (p_obj->rx_cur)++;
+            } else {
+                p_obj->rx_cur = p_obj->rx_dma;
             }
+            rx_count++;
+        }
+        if (intr_mask & UHCI_INTR_TX_HUNG) {
+            hung = true;
         }
 
         /* handle TX interrupt */
@@ -139,8 +149,11 @@ static void IRAM_ATTR uhci_isr_default_new(void *param)
 
 int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait)
 {
+    auto hal = &(uhci_obj[uhci_num]->uhci_hal);
+
+    uhci_obj[uhci_num]->rx_cur = uhci_obj[uhci_num]->rx_dma;
     uhci_obj[uhci_num]->rx_dma[0].owner = 1;
-    uhci_obj[uhci_num]->rx_dma[0].eof = 1;
+    uhci_obj[uhci_num]->rx_dma[0].eof = 0;
     uhci_obj[uhci_num]->rx_dma[0].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
     uhci_obj[uhci_num]->rx_dma[0].length = read_size;
     uhci_obj[uhci_num]->rx_dma[0].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[1]; // actually 'qe' (ptr to next descr)
@@ -149,20 +162,36 @@ int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t tick
     uhci_obj[uhci_num]->rx_dma[0].sosf = 0;
 
     uhci_obj[uhci_num]->rx_dma[1].owner = 1;
-    uhci_obj[uhci_num]->rx_dma[1].eof = 1;
+    uhci_obj[uhci_num]->rx_dma[1].eof = 0;
     uhci_obj[uhci_num]->rx_dma[1].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
     uhci_obj[uhci_num]->rx_dma[1].length = read_size;
-    uhci_obj[uhci_num]->rx_dma[1].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[0]; // actually 'qe' (ptr to next descr)
+    uhci_obj[uhci_num]->rx_dma[1].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[2]; // actually 'qe' (ptr to next descr)
     uhci_obj[uhci_num]->rx_dma[1].buf = dma_data_in[1];
     uhci_obj[uhci_num]->rx_dma[1].offset = 0;
     uhci_obj[uhci_num]->rx_dma[1].sosf = 0;
 
-    auto hal = &(uhci_obj[uhci_num]->uhci_hal);
+    uhci_obj[uhci_num]->rx_dma[2].owner = 1;
+    uhci_obj[uhci_num]->rx_dma[2].eof = 0;
+    uhci_obj[uhci_num]->rx_dma[2].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
+    uhci_obj[uhci_num]->rx_dma[2].length = read_size;
+    uhci_obj[uhci_num]->rx_dma[2].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[3]; // actually 'qe' (ptr to next descr)
+    uhci_obj[uhci_num]->rx_dma[2].buf = dma_data_in[2];
+    uhci_obj[uhci_num]->rx_dma[2].offset = 0;
+    uhci_obj[uhci_num]->rx_dma[2].sosf = 0;
+
+    uhci_obj[uhci_num]->rx_dma[3].owner = 1;
+    uhci_obj[uhci_num]->rx_dma[3].eof = 0;
+    uhci_obj[uhci_num]->rx_dma[3].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
+    uhci_obj[uhci_num]->rx_dma[3].length = read_size;
+    uhci_obj[uhci_num]->rx_dma[3].empty = (uint32_t)&uhci_obj[uhci_num]->rx_dma[0]; // actually 'qe' (ptr to next descr)
+    uhci_obj[uhci_num]->rx_dma[3].buf = dma_data_in[3];
+    uhci_obj[uhci_num]->rx_dma[3].offset = 0;
+    uhci_obj[uhci_num]->rx_dma[3].sosf = 0;
+
     //debug_log("rx dma 0 %X\n", &(uhci_obj[uhci_num]->rx_dma[0]));
     //debug_log("rx dma 1 %X\n", &(uhci_obj[uhci_num]->rx_dma[1]));
     uhci_hal_rx_dma_restart(hal);
     uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->rx_dma[0])));
-    //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF);
 
     uhci_hal_rx_dma_start(hal);
     return 0;
@@ -180,8 +209,6 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
     uhci_obj[uhci_num]->tx_dma.empty = 0; // actually 'qe' (ptr to next descr)
     auto hal = &(uhci_obj[uhci_num]->uhci_hal);
     uhci_hal_set_tx_dma(hal, (uint32_t)(&(uhci_obj[uhci_num]->tx_dma)));
-    //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF);
-    //uhci_hal_enable_intr(hal, UHCI_INTR_OUT_DONE|UHCI_INTR_OUT_EOF|UHCI_INTR_OUT_TOT_EOF);
     uhci_hal_tx_dma_start(hal);
 
     debug_log("leave uart_dma_write %u\n", (uint32_t)wr);
@@ -308,7 +335,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 	debug_log("@%i\n", __LINE__);
         uhci_hal_clear_intr(hal, UHCI_INTR_MASK);
 	debug_log("@%i\n", __LINE__);
-        uhci_hal_enable_intr(hal, UHCI_INTR_IN_SUC_EOF | UHCI_INTR_OUT_DONE);
+        uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG);
         //uhci_hal_enable_intr(hal, 0x0001FFFF);
 	debug_log("@%i\n", __LINE__);
         //uhci_hal_rx_dma_start(hal);

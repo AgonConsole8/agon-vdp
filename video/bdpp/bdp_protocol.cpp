@@ -460,55 +460,59 @@ void bdpp_flush_drv_tx_packet() {
 uhci_event_t event;
 uint8_t* pw = NULL;
 
-extern uint32_t dma_data_len[2];
+extern uint32_t rx_count;
+extern bool hung;
+extern uint32_t dma_data_len[4];
 extern uint32_t hold_intr_mask;
-extern volatile uint8_t* dma_data_in[2];
-#define PACKET_DATA_SIZE (26*2+1+3)
+extern volatile uint8_t* dma_data_in[4];
+#define PACKET_DATA_SIZE ((26+1+3)*2+2)
 
 int uart_dma_read(int uhci_num, uint8_t *addr, size_t read_size, TickType_t ticks_to_wait);
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 
 void read_task(void *param)
 {
-	dma_data_len[0] = 0;
-	dma_data_len[1] = 0;
+	memset(dma_data_len, 0, sizeof(dma_data_len));
 	auto len = uart_dma_read(0, 0, PACKET_DATA_SIZE, (portTickType)100);
-	bool timeout=true;
 	for (int n = 0; n < 1000; n++) {
+		debug_log("(%u) ", rx_count);
 		int i;
-		debug_log(".");
+		//debug_log(".");
+		hung = false;
 		int total = 0;
+		bool timeout=true;
 		while (true) {
-			total = dma_data_len[0]+dma_data_len[1];
-			if (total >= PACKET_DATA_SIZE) {
+			total = dma_data_len[0]+dma_data_len[1]+dma_data_len[2]+dma_data_len[3];
+			if (total) {
 				timeout=false;
+				break;
+			} else if (hung) {
 				break;
 			}
 			taskYIELD();
 		}
 
-		/*if (hold_intr_mask) {
-			debug_log("/intr %X/",hold_intr_mask);
+		if (hold_intr_mask) {
+			//debug_log("/intr %X/",hold_intr_mask);
 			hold_intr_mask = 0;
-		}*/
+		}
 
-		if (timeout) {
+		if (hung) {
+			debug_log("hung\n");
+		} else if (timeout) {
 			debug_log("t/o\n");
 		} else {
-			for (int j=0; j<2;j++) {
+			for (int j=0; j<4;j++) {
 				if (dma_data_len[j]) {
+					debug_log("/buf %i, len %d/ \n", j, total);
+					//dma_data_in[j][5]=0;
+					//dma_data_in[j][dma_data_len[j]]=0;
+					//debug_log("%i: %s...%s",j,dma_data_in[j],&dma_data_in[j][dma_data_len[j]-6]);
 					dma_data_len[j]=0;
-					//debug_log("/buf %i, len %d/ \n", j, total);
-					dma_data_in[j][5]=0;
-					debug_log("%s\n",dma_data_in[j]);
 				}
 			}
 		}
 	}
-
-    while(1) {
-        vTaskDelay(100/portTICK_PERIOD_MS);
-    }
 }
 
 void write_task(void *param)
@@ -531,9 +535,6 @@ void write_task(void *param)
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
 	debug_log("finished write_task\n");
-    while(1) {
-        vTaskDelay(100/portTICK_PERIOD_MS);
-    }
 }
 
 #include "hal/uart_ll.h"
@@ -577,8 +578,9 @@ void bdpp_run_test() {
 	debug_log("\n\n--- After uhci_attach_uart_port() ---\n");
 	dump_uart_regs();
 
-    dma_data_in[0] = (uint8_t *)heap_caps_calloc(1, PACKET_DATA_SIZE*2, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
-    dma_data_in[1] = (uint8_t *)heap_caps_calloc(1, PACKET_DATA_SIZE*2, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
+	for (int i = 0; i < 4; i++) {
+	    dma_data_in[i] = (uint8_t *)heap_caps_calloc(1, PACKET_DATA_SIZE*2, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
+	}
 
 	debug_log("@%i\n", __LINE__);
     pw = (uint8_t *)heap_caps_calloc(1, 1024, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);

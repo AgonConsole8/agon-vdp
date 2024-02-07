@@ -64,9 +64,12 @@ static inline void uhci_ll_set_seper_chr(uhci_dev_t *hw, uhci_seper_chr_t *seper
         hw->escape_conf.tx_c0_esc_en = 1;
         hw->escape_conf.rx_c0_esc_en = 1;
         hw->conf0.seper_en = 1;
-        hw->hung_conf.rxfifo_timeout_ena = 1;
-        hw->hung_conf.rxfifo_timeout = 0xFF;
-        hw->hung_conf.rxfifo_timeout_shift = 4;
+        hw->conf0.uart_idle_eof_en = 1;
+        hw->conf0.len_eof_en = 1;
+        hw->conf0.indscr_burst_en = 1;
+        hw->hung_conf.txfifo_timeout_ena = 1;
+        hw->hung_conf.txfifo_timeout = 0xFF;
+        hw->hung_conf.txfifo_timeout_shift = 4;
     } else {
         hw->escape_conf.tx_c0_esc_en = 0;
         hw->escape_conf.rx_c0_esc_en = 0;
