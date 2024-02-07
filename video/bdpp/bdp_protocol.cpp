@@ -504,10 +504,10 @@ void read_task(void *param)
 		} else {
 			for (int j=0; j<4;j++) {
 				if (dma_data_len[j]) {
-					debug_log("/buf %i, len %d/ \n", j, total);
-					//dma_data_in[j][5]=0;
-					//dma_data_in[j][dma_data_len[j]]=0;
-					//debug_log("%i: %s...%s",j,dma_data_in[j],&dma_data_in[j][dma_data_len[j]-6]);
+					debug_log("/buf %i, len %d/ ", j, total);
+					dma_data_in[j][5]=0;
+					dma_data_in[j][dma_data_len[j]]=0;
+					debug_log("%i: %s...%s",j,dma_data_in[j],&dma_data_in[j][dma_data_len[j]-6]);
 					dma_data_len[j]=0;
 				}
 			}
