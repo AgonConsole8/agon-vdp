@@ -390,10 +390,20 @@ void plotLine(bool omitFirstPoint = false, bool omitLastPoint = false) {
 	RGB888 firstPixelColour;
 	RGB888 lastPixelColour;
 	if (omitFirstPoint) {
-		firstPixelColour = canvas->getPixel(p2.X, p2.Y);
+		if (p2.X >= 0 && p2.X < canvasW && p2.Y >= 0 && p2.Y < canvasH) {
+			canvas->waitCompletion(false);
+			firstPixelColour = canvas->getPixel(p2.X, p2.Y);
+		} else {
+			omitFirstPoint = false;
+		}
 	}
 	if (omitLastPoint) {
-		lastPixelColour = canvas->getPixel(p1.X, p1.Y);
+		if (p1.X >= 0 && p1.X < canvasW && p1.Y >= 0 && p1.Y < canvasH) {
+			canvas->waitCompletion(false);
+			lastPixelColour = canvas->getPixel(p1.X, p1.Y);
+		} else {
+			omitLastPoint = false;
+		}
 	}
 	canvas->lineTo(p1.X, p1.Y);
 	if (omitFirstPoint) {
