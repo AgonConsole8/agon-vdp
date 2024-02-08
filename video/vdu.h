@@ -251,104 +251,88 @@ void VDUStreamProcessor::vdu_plot() {
 	}
 	setGraphicsOptions(mode);
 
-	// make copy/move work for mode 2 and 6
-	if (operation == 0xB8 && (mode == 2 || mode == 6)) {
-		mode = 3;
-	}
-
 	debug_log("vdu_plot: operation: %X, mode %d, (%d,%d) -> (%d,%d)\n\r", operation, mode, x, y, p1.X, p1.Y);
 
-	switch (mode) {
-		case 0:
-		case 4:
-			// move to modes
-			moveTo();
-			break;
-		case 2:
-		case 6:
-			// draw inverse logical colour not supported
-			debug_log("plot inverse logical colour not implemented\n\r");
-			break;
-		default:
-			// 1, 3, 5, 7 are all draw modes
-			switch (operation) {
-				case 0x00:	// line
-					plotLine();
-					break;
-				case 0x08:	// line, omitting last point
-					plotLine(false, true);
-					break;
-				case 0x10:	// dot-dash line
-				case 0x18:	// dot-dash line, omitting first point
-				case 0x30:	// dot-dash line, omitting first, pattern continued
-				case 0x38:	// dot-dash line, omitting both, pattern continued
-					debug_log("plot dot-dash line not implemented\n\r");
-					break;
-				case 0x20:	// solid line, first point omitted
-					plotLine(true, false);
-					break;
-				case 0x28:	// solid line, first and last points omitted
-					plotLine(true, true);
-					break;
-				case 0x40:	// point
-					plotPoint();
-					break;
-				case 0x48:	// line fill left/right to non-bg
-					fillHorizontalLine(true, false, gbg);
-					break;
-				case 0x50:	// triangle fill
-					setGraphicsFill(mode);
-					plotTriangle();
-					break;
-				case 0x58:	// line fill right to bg
-					fillHorizontalLine(false, true, gbg);
-					break;
-				case 0x60:	// rectangle fill
-					setGraphicsFill(mode);
-					plotRectangle();
-					break;
-				case 0x68:	// line fill left/left to fg
-					fillHorizontalLine(true, true, gfg);
-					break;
-				case 0x70:	// parallelogram fill
-					setGraphicsFill(mode);
-					plotParallelogram();
-					break;
-				case 0x78:	// line fill right to non-fg
-					fillHorizontalLine(false, false, gfg);
-					break;
-				case 0x80:	// flood to non-bg
-				case 0x88:	// flood to fg
-					debug_log("plot flood fill not implemented\n\r");
-					break;
-				case 0x90:	// circle outline
-					plotCircle();
-					break;
-				case 0x98:	// circle fill
-					setGraphicsFill(mode);
-					plotCircle(true);
-					break;
-				case 0xA0:	// circular arc
-				case 0xA8:	// circular segment
-				case 0xB0:	// circular sector
-					// fab-gl has no arc or segment operations, only simple ellipse (squashable circle)
-					debug_log("plot circular arc/segment/sector not implemented\n\r");
-					break;
-				case 0xB8:	// copy/move
-					plotCopyMove(mode);
-					break;
-				case 0xC0:	// ellipse outline
-				case 0xC8:	// ellipse fill
-					// fab-gl's ellipse isn't compatible with BBC BASIC
-					debug_log("plot ellipse not implemented\n\r");
-					break;
-				case 0xE8:	// Bitmap plot
-					plotBitmap();
-					break;
-			}
-			moveTo();
-			break;
+	// if (mode != 0 && mode != 4) {
+	if (mode & 0x03) {
+		switch (operation) {
+			case 0x00:	// line
+				plotLine();
+				break;
+			case 0x08:	// line, omitting last point
+				plotLine(false, true);
+				break;
+			case 0x10:	// dot-dash line
+			case 0x18:	// dot-dash line, omitting first point
+			case 0x30:	// dot-dash line, omitting first, pattern continued
+			case 0x38:	// dot-dash line, omitting both, pattern continued
+				debug_log("plot dot-dash line not implemented\n\r");
+				break;
+			case 0x20:	// solid line, first point omitted
+				plotLine(true, false);
+				break;
+			case 0x28:	// solid line, first and last points omitted
+				plotLine(true, true);
+				break;
+			case 0x40:	// point
+				plotPoint();
+				break;
+			case 0x48:	// line fill left/right to non-bg
+				fillHorizontalLine(true, false, gbg);
+				break;
+			case 0x50:	// triangle fill
+				setGraphicsFill(mode);
+				plotTriangle();
+				break;
+			case 0x58:	// line fill right to bg
+				fillHorizontalLine(false, true, gbg);
+				break;
+			case 0x60:	// rectangle fill
+				setGraphicsFill(mode);
+				plotRectangle();
+				break;
+			case 0x68:	// line fill left/left to fg
+				fillHorizontalLine(true, true, gfg);
+				break;
+			case 0x70:	// parallelogram fill
+				setGraphicsFill(mode);
+				plotParallelogram();
+				break;
+			case 0x78:	// line fill right to non-fg
+				fillHorizontalLine(false, false, gfg);
+				break;
+			case 0x80:	// flood to non-bg
+			case 0x88:	// flood to fg
+				debug_log("plot flood fill not implemented\n\r");
+				break;
+			case 0x90:	// circle outline
+				plotCircle();
+				break;
+			case 0x98:	// circle fill
+				setGraphicsFill(mode);
+				plotCircle(true);
+				break;
+			case 0xA0:	// circular arc
+			case 0xA8:	// circular segment
+			case 0xB0:	// circular sector
+				// fab-gl has no arc or segment operations, only simple ellipse (squashable circle)
+				debug_log("plot circular arc/segment/sector not implemented\n\r");
+				break;
+			case 0xB8:	// copy/move
+				plotCopyMove(mode);
+				break;
+			case 0xC0:	// ellipse outline
+			case 0xC8:	// ellipse fill
+				// fab-gl's ellipse isn't compatible with BBC BASIC
+				debug_log("plot ellipse not implemented\n\r");
+				break;
+			case 0xE8:	// Bitmap plot
+				plotBitmap(mode);
+				break;
+		}
+
 	}
+	moveTo();
 }
 
 // VDU 26 Reset graphics and text viewports

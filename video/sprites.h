@@ -28,6 +28,9 @@ uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor
 // character to bitmap mapping
 std::vector<uint16_t> charToBitmap(255, 65535);
 
+extern fabgl::PaintOptions			gpofg;
+extern fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions priorPaintOptions);
+
 std::shared_ptr<Bitmap> getBitmap(uint16_t id = currentBitmap) {
 	if (bitmaps.find(id) != bitmaps.end()) {
 		return bitmaps[id];
@@ -61,10 +64,14 @@ inline uint16_t getCurrentBitmapId() {
 	return currentBitmap;
 }
 
-void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight = false) {
+void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet = false) {
 	auto bitmap = getBitmap();
 	if (bitmap) {
-		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? y - bitmap->height : y, bitmap.get());
+		if (forceSet) {
+			auto options = getPaintOptions(fabgl::PaintMode::Set, gpofg);
+			canvas->setPaintOptions(options);
+		}
+		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get());
 	} else {
 		debug_log("drawBitmap: bitmap %d not found\n\r", currentBitmap);
 	}
@@ -281,6 +288,13 @@ void resetSprites() {
 	// for (auto n = 0; n < MAX_SPRITES; n++) {
 	// 	sprites[n] = Sprite();
 	// }
+}
+
+void setSpritePaintMode(uint8_t mode) {
+	auto sprite = getSprite();
+	if (mode <= 7) {
+		sprite->paintOptions.mode = static_cast<fabgl::PaintMode>(mode);
+	}
 }
 
 #endif // SPRITES_H
