@@ -111,7 +111,7 @@ bool hung;
 uint32_t dma_data_len[4];
 uint32_t hold_intr_mask;
 volatile uint8_t* dma_data_in[4];
-#define PACKET_DATA_SIZE ((26+1+3)*2+2)
+#define PACKET_DATA_SIZE ((26+1+3)*2+2+3)
 
 static void IRAM_ATTR uhci_isr_default_new(void *param)
 {
@@ -313,7 +313,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         //Configure UHCI param
 	debug_log("@%i\n", __LINE__);
         //uhci_seper_chr_t seper_char = { 0x8B, 0x9D, 0xAE, 0x01 };
-        uhci_seper_chr_t seper_char = { 0xC0, 0xDB, 0xDC, 0x01 };
+        uhci_seper_chr_t seper_char = { 0x89, 0x8B, 0x8A, 0x8B, 0x8D, 0x01 };
 	debug_log("@%i\n", __LINE__);
         auto hal = &(uhci_obj[uhci_num]->uhci_hal);
         uhci_hal_init(hal, uhci_num);

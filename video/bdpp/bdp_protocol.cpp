@@ -465,7 +465,7 @@ extern bool hung;
 extern uint32_t dma_data_len[4];
 extern uint32_t hold_intr_mask;
 extern volatile uint8_t* dma_data_in[4];
-#define PACKET_DATA_SIZE ((26+1+3)*2+2)
+#define PACKET_DATA_SIZE ((26+1+3)*2+2+3)
 
 int uart_dma_read(int uhci_num);
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
@@ -474,7 +474,7 @@ void read_task(void *param)
 {
 	memset(dma_data_len, 0, sizeof(dma_data_len));
 	auto len = uart_dma_read(0);
-	for (int n = 0; n < 1000; n++) {
+	for (int n = 0; n < 300; n++) {
 		debug_log("(%u) ", rx_count);
 		int i;
 		//debug_log(".");
@@ -505,9 +505,19 @@ void read_task(void *param)
 			for (int j=0; j<4;j++) {
 				if (dma_data_len[j]) {
 					debug_log("/buf %i, len %d/ ", j, total);
-					dma_data_in[j][5]=0;
+					//dma_data_in[j][5]=0;
 					dma_data_in[j][dma_data_len[j]]=0;
-					debug_log("%i: %s...%s",j,dma_data_in[j],&dma_data_in[j][dma_data_len[j]-6]);
+					//debug_log("%i: %s...%s",j,dma_data_in[j],&dma_data_in[j][dma_data_len[j]-6]);
+					debug_log("%i: ",j);
+					for (i=0;i<dma_data_len[j];i++) {
+						uint8_t ch = dma_data_in[j][i];
+						if (ch>=0x20 && ch<=0x7E) {
+							debug_log("%c",ch);
+						} else {
+							debug_log("[%02hX]",ch);
+						}
+					}
+					debug_log("\n");
 					dma_data_len[j]=0;
 				}
 			}
@@ -575,8 +585,8 @@ void bdpp_run_test() {
     uhci_attach_uart_port(UHCI_NUM, UART_NUM, &uart_config);
 	debug_log("@%i\n", __LINE__);
 
-	debug_log("\n\n--- After uhci_attach_uart_port() ---\n");
-	dump_uart_regs();
+	//debug_log("\n\n--- After uhci_attach_uart_port() ---\n");
+	//dump_uart_regs();
 
 	for (int i = 0; i < 4; i++) {
 	    dma_data_in[i] = (uint8_t *)heap_caps_calloc(1, PACKET_DATA_SIZE*2, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);

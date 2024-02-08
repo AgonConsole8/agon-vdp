@@ -61,18 +61,32 @@ static inline void uhci_ll_set_seper_chr(uhci_dev_t *hw, uhci_seper_chr_t *seper
         esc_conf0_reg.seper_esc_char0 = seper_char->sub_chr1;
         esc_conf0_reg.seper_esc_char1 = seper_char->sub_chr2;
         hw->esc_conf0.val = esc_conf0_reg.val;
+
+        typeof(hw->esc_conf1) esc_conf1_reg;
+        esc_conf1_reg.val = hw->esc_conf1.val;
+        esc_conf1_reg.seq0 = seper_char->sub_chr1;
+        esc_conf1_reg.seq0_char0 = seper_char->sub_chr1b;
+        esc_conf1_reg.seq0_char1 = seper_char->sub_chr2b;
+        hw->esc_conf1.val = esc_conf1_reg.val;
+
         hw->escape_conf.tx_c0_esc_en = 1;
+        hw->escape_conf.tx_db_esc_en = 1;
         hw->escape_conf.rx_c0_esc_en = 1;
+        hw->escape_conf.rx_db_esc_en = 1;
+
         hw->conf0.seper_en = 1;
         hw->conf0.uart_idle_eof_en = 1;
         hw->conf0.len_eof_en = 1;
         hw->conf0.indscr_burst_en = 1;
+
         hw->hung_conf.txfifo_timeout_ena = 1;
         hw->hung_conf.txfifo_timeout = 0xFF;
         hw->hung_conf.txfifo_timeout_shift = 4;
     } else {
         hw->escape_conf.tx_c0_esc_en = 0;
+        hw->escape_conf.tx_db_esc_en = 0;
         hw->escape_conf.rx_c0_esc_en = 0;
+        hw->escape_conf.rx_db_esc_en = 0;
         hw->conf0.seper_en = 0;
     }
 }

@@ -38,6 +38,8 @@ typedef struct {
     uint8_t seper_chr;
     uint8_t sub_chr1;
     uint8_t sub_chr2;
+    uint8_t sub_chr1b;
+    uint8_t sub_chr2b;
     bool sub_chr_en;
 } uhci_seper_chr_t;
 
