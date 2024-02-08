@@ -901,4 +901,8 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 	}
 }
 
+void setLineThickness(uint8_t thickness) {
+	canvas->setPenWidth(thickness);
+}
+
 #endif
