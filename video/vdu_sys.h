@@ -169,6 +169,12 @@ void VDUStreamProcessor::vdu_sys_video() {
 				sendColour(index);
 			}
 		}	break;
+		case VDP_CONTROLKEYS: {			// VDU 23, 0, &98, n
+			auto b = readByte_t();		// Set control keys,  0 = off, 1 = on (default)
+			if (b >= 0) {
+				controlKeys = (bool) b;
+			}
+		}	break;
 		case VDP_BUFFERED: {			// VDU 23, 0, &A0, bufferId; command, <args>
 			vdu_sys_buffered();
 		}	break;
