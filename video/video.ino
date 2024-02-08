@@ -59,6 +59,7 @@ HardwareSerial	DBGSerial(0);
 TerminalState	terminalState = TerminalState::Disabled;		// Terminal state (for CP/M, etc)
 bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabled)
 bool			printerOn = false;				// Output "printer" to debug serial link
+bool			controlKeys = true;				// Control keys enabled
 
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support
@@ -139,7 +140,7 @@ void do_keyboard() {
 	if (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
 		// Handle some control keys
 		//
-		if (down) {
+		if (controlKeys && down) {
 			switch (keycode) {
 				case 2:		// printer on
 				case 3:		// printer off

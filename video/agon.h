@@ -51,6 +51,7 @@
 #define VDP_UDG_RESET			0x91	// Reset UDGs
 #define VDP_MAP_CHAR_TO_BITMAP	0x92	// Map a character to a bitmap
 #define VDP_READ_COLOUR			0x94	// Read colour
+#define VDP_CONTROLKEYS			0x98	// Control keys on/off
 #define VDP_BUFFERED			0xA0	// Buffered commands
 #define VDP_UPDATER				0xA1	// Update VDP
 #define VDP_LOGICALCOORDS		0xC0	// Switch BBC Micro style logical coords on and off
@@ -125,13 +126,13 @@
 #define AUDIO_FORMAT_WITH_RATE		8	// OR this with the format to indicate a sample rate follows
 #define AUDIO_FORMAT_TUNEABLE		16	// OR this with the format to indicate sample can be tuned (frequency adjustable)
 
-#define AUDIO_ENVELOPE_NONE		0		// No envelope
-#define AUDIO_ENVELOPE_ADSR		1		// Simple ADSR volume envelope
+#define AUDIO_ENVELOPE_NONE			0		// No envelope
+#define AUDIO_ENVELOPE_ADSR			1		// Simple ADSR volume envelope
 #define AUDIO_ENVELOPE_MULTIPHASE_ADSR		2		// Multi-phase ADSR envelope
 
 #define AUDIO_FREQUENCY_ENVELOPE_STEPPED	1		// Stepped frequency envelope
 
-#define AUDIO_FREQUENCY_REPEATS 0x01	// Repeat/loop the frequency envelope
+#define AUDIO_FREQUENCY_REPEATS		0x01	// Repeat/loop the frequency envelope
 #define AUDIO_FREQUENCY_CUMULATIVE	0x02	// Reset frequency envelope when looping
 #define AUDIO_FREQUENCY_RESTRICT	0x04	// Restrict frequency envelope to the range 0-65535
 
@@ -169,42 +170,43 @@ enum AudioState : uint8_t {	// Audio channel state
 #define MOUSE_SET_ACCERATION	9		// Set mouse acceleration (1-2000)
 #define MOUSE_SET_WHEELACC		10		// Set mouse wheel acceleration
 
-#define MOUSE_DEFAULT_CURSOR	0;		// Default mouse cursor
-#define MOUSE_DEFAULT_SAMPLERATE	60;	// Default mouse sample rate
-#define MOUSE_DEFAULT_RESOLUTION	2;	// Default mouse resolution (4 counts/mm)
-#define MOUSE_DEFAULT_SCALING	1;		// Default mouse scaling (1:1)
+#define MOUSE_DEFAULT_CURSOR		0;		// Default mouse cursor
+#define MOUSE_DEFAULT_SAMPLERATE	60;		// Default mouse sample rate
+#define MOUSE_DEFAULT_RESOLUTION	2;		// Default mouse resolution (4 counts/mm)
+#define MOUSE_DEFAULT_SCALING		1;		// Default mouse scaling (1:1)
 #define MOUSE_DEFAULT_ACCELERATION	180;	// Default mouse acceleration 
 #define MOUSE_DEFAULT_WHEELACC		60000;	// Default mouse wheel acceleration
 
 // Buffered commands
-#define BUFFERED_WRITE			0x00	// Write to a numbered buffer
-#define BUFFERED_CALL			0x01	// Call buffered commands
-#define BUFFERED_CLEAR			0x02	// Clear buffered commands
-#define BUFFERED_CREATE			0x03	// Create a new empty buffer
-#define BUFFERED_SET_OUTPUT		0x04	// Set the output buffer
-#define BUFFERED_ADJUST			0x05	// Adjust buffered commands
-#define BUFFERED_COND_CALL		0x06	// Conditionally call a buffer
-#define BUFFERED_JUMP			0x07	// Jump to a buffer
-#define BUFFERED_COND_JUMP		0x08	// Conditionally jump to a buffer
-#define BUFFERED_OFFSET_JUMP	0x09	// Jump to a buffer with an offset
-#define BUFFERED_OFFSET_COND_JUMP	0x0A	// Conditionally jump to a buffer with an offset
-#define BUFFERED_OFFSET_CALL	0x0B	// Call a buffer with an offset
-#define BUFFERED_OFFSET_COND_CALL	0x0C	// Conditionally call a buffer with an offset
-#define BUFFERED_COPY			0x0D	// Copy blocks from multiple buffers into one buffer
-#define BUFFERED_CONSOLIDATE	0x0E	// Consolidate blocks inside a buffer into one
-#define BUFFERED_SPLIT			0x0F	// Split a buffer into multiple blocks
-#define BUFFERED_SPLIT_INTO		0x10	// Split a buffer into multiple blocks to new buffer(s)
-#define BUFFERED_SPLIT_FROM		0x11	// Split to new buffers from a target bufferId onwards
-#define BUFFERED_SPLIT_BY		0x12	// Split a buffer into multiple blocks by width (columns)
-#define BUFFERED_SPLIT_BY_INTO	0x13	// Split by width into new buffer(s)
-#define BUFFERED_SPLIT_BY_FROM	0x14	// Split by width to new buffers from a target bufferId onwards
-#define BUFFERED_SPREAD_INTO	0x15	// Spread blocks from a buffer to multiple target buffers
-#define BUFFERED_SPREAD_FROM	0x16	// Spread blocks from target buffer ID onwards
-#define BUFFERED_REVERSE_BLOCKS	0x17	// Reverse the order of blocks in a buffer
-#define BUFFERED_REVERSE		0x18	// Reverse the order of data in a buffer
-#define BUFFERED_COPY_REF		0x19	// Copy references to blocks from multiple buffers into one buffer
+#define BUFFERED_WRITE					0x00	// Write to a numbered buffer
+#define BUFFERED_CALL					0x01	// Call buffered commands
+#define BUFFERED_CLEAR					0x02	// Clear buffered commands
+#define BUFFERED_CREATE					0x03	// Create a new empty buffer
+#define BUFFERED_SET_OUTPUT				0x04	// Set the output buffer
+#define BUFFERED_ADJUST					0x05	// Adjust buffered commands
+#define BUFFERED_COND_CALL				0x06	// Conditionally call a buffer
+#define BUFFERED_JUMP					0x07	// Jump to a buffer
+#define BUFFERED_COND_JUMP				0x08	// Conditionally jump to a buffer
+#define BUFFERED_OFFSET_JUMP			0x09	// Jump to a buffer with an offset
+#define BUFFERED_OFFSET_COND_JUMP		0x0A	// Conditionally jump to a buffer with an offset
+#define BUFFERED_OFFSET_CALL			0x0B	// Call a buffer with an offset
+#define BUFFERED_OFFSET_COND_CALL		0x0C	// Conditionally call a buffer with an offset
+#define BUFFERED_COPY					0x0D	// Copy blocks from multiple buffers into one buffer
+#define BUFFERED_CONSOLIDATE			0x0E	// Consolidate blocks inside a buffer into one
+#define BUFFERED_SPLIT					0x0F	// Split a buffer into multiple blocks
+#define BUFFERED_SPLIT_INTO				0x10	// Split a buffer into multiple blocks to new buffer(s)
+#define BUFFERED_SPLIT_FROM				0x11	// Split to new buffers from a target bufferId onwards
+#define BUFFERED_SPLIT_BY				0x12	// Split a buffer into multiple blocks by width (columns)
+#define BUFFERED_SPLIT_BY_INTO			0x13	// Split by width into new buffer(s)
+#define BUFFERED_SPLIT_BY_FROM			0x14	// Split by width to new buffers from a target bufferId onwards
+#define BUFFERED_SPREAD_INTO			0x15	// Spread blocks from a buffer to multiple target buffers
+#define BUFFERED_SPREAD_FROM			0x16	// Spread blocks from target buffer ID onwards
+#define BUFFERED_REVERSE_BLOCKS			0x17	// Reverse the order of blocks in a buffer
+#define BUFFERED_REVERSE				0x18	// Reverse the order of data in a buffer
+#define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
+#define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
 
-#define BUFFERED_DEBUG_INFO		0x20	// Get debug info about a buffer
+#define BUFFERED_DEBUG_INFO				0x20	// Get debug info about a buffer
 
 // Adjust operation codes
 #define ADJUST_NOT				0x00	// Adjust: NOT
