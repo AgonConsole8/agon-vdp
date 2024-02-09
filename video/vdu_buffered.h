@@ -166,6 +166,15 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferCopyRef(bufferId, sourceBufferIds);
 		}	break;
+		case BUFFERED_COPY_AND_CONSOLIDATE: {
+			// read list of source buffer IDs
+			auto sourceBufferIds = getBufferIdsFromStream();
+			if (sourceBufferIds.size() == 0) {
+				debug_log("vdu_sys_buffered: no source buffer IDs\n\r");
+				return;
+			}
+			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
+		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
 			if (buffers[bufferId].size() == 0) {
@@ -991,6 +1000,64 @@ void VDUStreamProcessor::bufferCopyRef(uint16_t bufferId, std::vector<uint16_t> 
 		}
 	}
 	debug_log("bufferCopyRef: copied %d block references into buffer %d\n\r", buffers[bufferId].size(), bufferId);
+}
+
+// VDU 23, 0, &A0, bufferId; &1A, sourceBufferId; sourceBufferId; ...; 65535; : Copy blocks from buffers and consolidate
+// Copy (blocks from) a list of buffers into a new buffer and consolidate them
+// list is terminated with a bufferId of 65535 (-1)
+// Replaces the target buffer with the new one, but will re-use the memory if it is the same size
+// This is useful for constructing bitmaps from multiple buffers without needing an extra consolidate step
+// If target buffer is included in the source list it will be skipped.
+//
+void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds) {
+	if (bufferId == 65535) {
+		debug_log("bufferCopyAndConsolidate: ignoring buffer %d\n\r", bufferId);
+		return;
+	}
+
+	// work out total length of buffer
+	uint32_t length = 0;
+	for (const auto sourceId : sourceBufferIds) {
+		if (sourceId != bufferId && buffers.find(sourceId) != buffers.end()) {
+			for (const auto &block : buffers[sourceId]) {
+				length += block->size();
+			}
+		}
+	}
+
+	// Ensure the buffer has 1 block of the correct size
+	if (buffers[bufferId].size() != 1 || buffers[bufferId][0]->size() != length)
+	{
+		buffers[bufferId].clear();
+		auto bufferStream = make_shared_psram<BufferStream>(length);
+		if (!bufferStream || !bufferStream->getBuffer()) {
+			// buffer couldn't be created
+			debug_log("bufferCopyAndConsolidate: failed to create buffer %d\n\r", bufferId);
+			return;
+		}
+		buffers[bufferId].push_back(bufferStream);
+	}
+
+	auto destination = buffers[bufferId][0]->getBuffer();
+
+	// loop thru buffer IDs
+	for (const auto sourceId : sourceBufferIds) {
+		if (sourceId == bufferId) {
+			debug_log("bufferCopyAndConsolidate: skipping buffer %d as it's the target\n\r", sourceId);
+		} else if (buffers.find(sourceId) != buffers.end()) {
+			// buffer ID exists
+			// loop thru blocks stored against this ID
+			for (const auto &block : buffers[sourceId]) {
+				// copy the block into our target buffer
+				auto bufferLength = block->size();
+				memcpy(destination, block->getBuffer(), bufferLength);
+				destination += bufferLength;
+			}
+		} else {
+			debug_log("bufferCopyAndConsolidate: buffer %d not found\n\r", sourceId);
+		}
+	}
+	debug_log("bufferCopyAndConsolidate: copied %d bytes into buffer %d\n\r", length, bufferId);
 }
 
 #endif // VDU_BUFFERED_H
