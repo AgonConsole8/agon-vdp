@@ -83,11 +83,11 @@ std::shared_ptr<BufferStream> consolidateBuffers(std::vector<std::shared_ptr<Buf
 		// buffer couldn't be created
 		return nullptr;
 	}
-	auto offset = 0;
+	auto destination = bufferStream->getBuffer();
 	for (auto block : streams) {
 		auto bufferLength = block->size();
-		memcpy(bufferStream->getBuffer() + offset, block->getBuffer(), bufferLength);
-		offset += bufferLength;
+		memcpy(destination, block->getBuffer(), bufferLength);
+		destination += bufferLength;
 	}
 	return bufferStream;
 }

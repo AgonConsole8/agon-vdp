@@ -88,6 +88,12 @@ void VDUStreamProcessor::vdu_sys() {
 			case 0x10: {					// VDU 23, 16
 				vdu_sys_cursorBehaviour();	// Set cursor behaviour
 			}	break;
+			case 0x17: {					// VDU 23, 23, n
+				auto b = readByte_t();		// Set line thickness
+				if (b >= 0) {
+					setLineThickness(b);
+				}
+			}	break;
 			case 0x1B: {					// VDU 23, 27
 				vdu_sys_sprites();			// Sprite system control
 			}	break;
@@ -167,6 +173,12 @@ void VDUStreamProcessor::vdu_sys_video() {
 			auto index = readByte_t();	// Read colour from palette
 			if (index >= 0) {
 				sendColour(index);
+			}
+		}	break;
+		case VDP_CONTROLKEYS: {			// VDU 23, 0, &98, n
+			auto b = readByte_t();		// Set control keys,  0 = off, 1 = on (default)
+			if (b >= 0) {
+				controlKeys = (bool) b;
 			}
 		}	break;
 		case VDP_BUFFERED: {			// VDU 23, 0, &A0, bufferId; command, <args>

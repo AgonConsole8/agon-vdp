@@ -60,7 +60,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			auto rx = readWord_t(); if (rx == -1) return;
 			auto ry = readWord_t(); if (ry == -1) return;
 
-			drawBitmap(rx,ry);
+			drawBitmap(rx,ry, false, true);
 			debug_log("vdu_sys_sprites: bitmap %d draw command\n\r", getCurrentBitmapId());
 		}	break;
 
@@ -156,6 +156,12 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			debug_log("vdu_sys_sprites: reset sprites\n\r");
 		}	break;
 
+		case 18: {	// Set sprite paint mode
+			auto b = readByte_t(); if (b == -1) return;
+			debug_log("vdu_sys_sprites: set paint sprite mode %d\n\r", b);
+			setSpritePaintMode(b);
+		}	break;
+
 		// Extended bitmap commands
 		case 0x20: {	// Select bitmap, 16-bit buffer ID
 			auto b = readWord_t(); if (b == -1) return;
@@ -224,10 +230,12 @@ void VDUStreamProcessor::createBitmapFromScreen(uint16_t bufferId) {
 		width = -width;
 		x1 = x2;
 	}
+	width += 1;
 	if (height < 0) {
 		height = -height;
 		y1 = y2;
 	}
+	height += 1;
 	auto size = width * height;
 	if (size == 0) {
 		debug_log("vdu_sys_sprites: bitmap %d - zero size\n\r", bufferId);
@@ -240,7 +248,7 @@ void VDUStreamProcessor::createBitmapFromScreen(uint16_t bufferId) {
 		debug_log("vdu_sys_sprites: failed to create buffer\n\r");
 		return;
 	}
-	createBitmapFromBuffer(bufferId, 3, width, height);
+	createBitmapFromBuffer(bufferId, 1, width, height);
 	// Copy screen area to buffer
 	canvas->copyToBitmap(x1, y1, getBitmap(bufferId).get());
 }
