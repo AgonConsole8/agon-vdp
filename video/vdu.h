@@ -238,15 +238,14 @@ void VDUStreamProcessor::vdu_graphicsViewport() {
 void VDUStreamProcessor::vdu_plot() {
 	uint8_t buffer[5];
 	auto remaining = readIntoBuffer(buffer, 5);
-	if (remaining > 0) return; // Timeout
+	if (remaining > 0 || ttxtMode) return; // Timeout or teletext mode active
 
 	auto& command = buffer[0];
 	auto mode = command & 0x07;
 	auto operation = command & 0xF8;
 
-	auto x = *(short*)(buffer+1);
-	auto y = *(short*)(buffer+3);
-	if (ttxtMode) return;
+	auto& x = *(short*)(buffer+1);
+	auto& y = *(short*)(buffer+3);
 
 	if (mode < 4) {
 		pushPointRelative(x, y);
