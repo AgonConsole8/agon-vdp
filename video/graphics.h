@@ -1,6 +1,8 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include <vector>
+
 #include <fabgl.h>
 
 #include "agon.h"
@@ -29,6 +31,7 @@ uint8_t			videoMode;						// Current video mode
 bool			legacyModes = false;			// Default legacy modes being false
 bool			rectangularPixels = false;		// Pixels are square by default
 uint8_t			palette[64];					// Storage for the palette
+std::vector<Point>	pathPoints;					// Storage for path points
 
 extern bool ttxtMode;							// Teletext mode
 extern agon_ttxt ttxt_instance;					// Teletext instance
@@ -459,6 +462,42 @@ void plotTriangle() {
 	// 	canvas->drawPath(p, 3);
 	// }
 	canvas->fillPath(p, 3);
+}
+
+// Path plot
+//
+void plotPath(uint8_t mode, uint8_t lastMode) {
+	debug_log("plotPath: mode %d, lastMode %d, pathPoints.size() %d\n\r", mode, lastMode, pathPoints.size());
+	// if the mode indicates a "move", then this is a "commit" command
+	// so we should draw the path and clear the pathPoints array
+	if ((mode & 0x03) == 0) {
+		if (pathPoints.size() < 3) {
+			// we need at least three points to draw a path
+			debug_log("plotPath: not enough points to draw a path - clearing\n\r");
+			pathPoints.clear();
+			return;
+		}
+		debug_log("plotPath: drawing path\n\r");
+		// iterate over our pathPoints and output in debug statement
+		for (auto p : pathPoints) {
+			debug_log("plotPath: (%d,%d)\n\r", p.X, p.Y);
+		}
+		debug_log("plotPath: setting graphics fill with lastMode %d\n\r", lastMode);
+		// i'm not entirely sure yet whether this is needed
+		// setGraphicsOptions(lastMode);
+		setGraphicsFill(lastMode);
+		canvas->fillPath(pathPoints.data(), pathPoints.size());
+		pathPoints.clear();
+		return;
+	}
+
+	// if we have an empty pathPoints list, then push two points
+	if (pathPoints.size() == 0) {
+		pathPoints.push_back(p3);
+		pathPoints.push_back(p2);
+	}
+	// push latest point
+	pathPoints.push_back(p1);
 }
 
 // Rectangle plot
