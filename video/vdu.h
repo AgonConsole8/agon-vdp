@@ -236,12 +236,16 @@ void VDUStreamProcessor::vdu_graphicsViewport() {
 // VDU 25 Handle PLOT
 //
 void VDUStreamProcessor::vdu_plot() {
-	auto command = readByte_t(); if (command == -1) return;
+	uint8_t buffer[5];
+	auto remaining = readIntoBuffer(buffer, 5);
+	if (remaining > 0) return; // Timeout
+
+	auto& command = buffer[0];
 	auto mode = command & 0x07;
 	auto operation = command & 0xF8;
 
-	auto x = readWord_t(); if (x == -1) return; else x = (short)x;
-	auto y = readWord_t(); if (y == -1) return; else y = (short)y;
+	auto x = *(short*)(buffer+1);
+	auto y = *(short*)(buffer+3);
 	if (ttxtMode) return;
 
 	if (mode < 4) {
