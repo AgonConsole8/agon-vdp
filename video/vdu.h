@@ -263,10 +263,16 @@ void VDUStreamProcessor::vdu_plot() {
 				plotLine(false, true);
 				break;
 			case 0x10:	// dot-dash line
+				plotLine(false, false, true);
+				break;
 			case 0x18:	// dot-dash line, omitting first point
+				plotLine(true, false, true);
+				break;
 			case 0x30:	// dot-dash line, omitting first, pattern continued
+				plotLine(true, false, true, false);
+				break;
 			case 0x38:	// dot-dash line, omitting both, pattern continued
-				debug_log("plot dot-dash line not implemented\n\r");
+				plotLine(true, true, true, false);
 				break;
 			case 0x20:	// solid line, first point omitted
 				plotLine(true, false);

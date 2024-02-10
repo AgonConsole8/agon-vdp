@@ -82,6 +82,13 @@ void VDUStreamProcessor::vdu_sys() {
 					enableCursor((bool) b);
 				}
 			}	break;
+			case 0x06: {					// VDU 23, 6
+				uint8_t pattern[8];			// Set dotted line pattern
+				auto remaining = readIntoBuffer(pattern, 8);
+				if (remaining == 0) {
+					setDottedLinePattern(pattern);
+				}
+			}	break;
 			case 0x07: {					// VDU 23, 7
 				vdu_sys_scroll();			// Scroll
 			}	break;
@@ -201,6 +208,12 @@ void VDUStreamProcessor::vdu_sys_video() {
 		}	break;
 		case VDP_SWITCHBUFFER: {		// VDU 23, 0, &C3
 			switchBuffer();
+		}	break;
+		case VDP_PATTERN_LENGTH: {		// VDU 23, 0, &F2, n
+			auto b = readByte_t();		// Set pattern length
+			if (b >= 0) {
+				setDottedLinePatternLength(b);
+			}
 		}	break;
 		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
 			auto b = readByte_t();
