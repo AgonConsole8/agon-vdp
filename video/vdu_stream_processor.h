@@ -21,7 +21,7 @@ class VDUStreamProcessor {
 		int32_t readWord_t();
 		int32_t read24_t();
 		uint8_t readByte_b();
-		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length);
+		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
 		uint32_t discardBytes(uint32_t length);
 
 		void vdu_colour();
@@ -187,9 +187,24 @@ uint8_t VDUStreamProcessor::readByte_b() {
 // which should be zero if all bytes were read
 // but will be non-zero if the read timed out
 //
-uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length) {
-	auto read = inputStream->readBytes(buffer, length);
-	return length - read;
+uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout = COMMS_TIMEOUT) {
+	uint32_t remaining = length;
+	if (buffer == nullptr) {
+		debug_log("readIntoBuffer: buffer is null\n\r");
+		return remaining;
+	}
+
+	while (remaining > 0) {
+		auto read = inputStream->readBytes(buffer, remaining);
+		if (read == 0) {
+			// timed out
+			debug_log("readIntoBuffer: timed out\n\r");
+			return remaining;
+		}
+		buffer += read;
+		remaining -= read;
+	}
+	return remaining;
 }
 
 // Discard a given number of bytes from input stream
