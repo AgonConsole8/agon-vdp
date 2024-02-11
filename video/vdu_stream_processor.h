@@ -17,12 +17,12 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> originalOutputStream;
 		bool commandsEnabled = true;
 
-		int16_t readByte_t(uint16_t timeout);
-		int32_t readWord_t(uint16_t timeout);
-		int32_t read24_t(uint16_t timeout);
+		int16_t readByte_t();
+		int32_t readWord_t();
+		int32_t read24_t();
 		uint8_t readByte_b();
-		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
-		uint32_t discardBytes(uint32_t length, uint16_t timeout);
+		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length);
+		uint32_t discardBytes(uint32_t length);
 
 		void vdu_colour();
 		void vdu_gcol();
@@ -138,25 +138,18 @@ class VDUStreamProcessor {
 // Returns:
 // - Byte value (0 to 255) if value read, otherwise -1
 //
-int16_t VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) {
-	auto t = millis();
-
-	while (millis() - t <= timeout) {
-		if (byteAvailable()) {
-			return readByte();
-		}
-	}
-	return -1;
+int16_t inline VDUStreamProcessor::readByte_t() {
+	return inputStream->read();
 }
 
 // Read an unsigned word from the serial port, with a timeout
 // Returns:
 // - Word value (0 to 65535) if 2 bytes read, otherwise -1
 //
-int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
-	auto l = readByte_t(timeout);
+int32_t VDUStreamProcessor::readWord_t() {
+	auto l = readByte_t();
 	if (l >= 0) {
-		auto h = readByte_t(timeout);
+		auto h = readByte_t();
 		if (h >= 0) {
 			return (h << 8) | l;
 		}
@@ -168,12 +161,12 @@ int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
 // Returns:
 // - Value (0 to 16777215) if 3 bytes read, otherwise -1
 //
-int32_t VDUStreamProcessor::read24_t(uint16_t timeout = COMMS_TIMEOUT) {
-	auto l = readByte_t(timeout);
+int32_t VDUStreamProcessor::read24_t() {
+	auto l = readByte_t();
 	if (l >= 0) {
-		auto m = readByte_t(timeout);
+		auto m = readByte_t();
 		if (m >= 0) {
-			auto h = readByte_t(timeout);
+			auto h = readByte_t();
 			if (h >= 0) {
 				return (h << 16) | (m << 8) | l;
 			}
@@ -194,41 +187,15 @@ uint8_t VDUStreamProcessor::readByte_b() {
 // which should be zero if all bytes were read
 // but will be non-zero if the read timed out
 //
-uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout = COMMS_TIMEOUT) {
-	uint32_t remaining = length;
-	if (buffer == nullptr) {
-		debug_log("readIntoBuffer: buffer is null\n\r");
-		return remaining;
-	}
-	auto t = xTaskGetTickCountFromISR();
-	auto now = t;
-	auto timeCheck = pdMS_TO_TICKS(timeout);
-
-	while (remaining > 0) {
-		now = xTaskGetTickCountFromISR();
-		if (now - t > timeCheck) {
-			debug_log("readIntoBuffer: timed out\n\r");
-			return remaining;
-		}
-		auto available = inputStream->available();
-		if (available > 0) {
-			if (available > remaining) {
-				available = remaining;
-			}
-			// debug_log("readIntoBuffer: reading %d bytes\n\r", available);
-			inputStream->readBytes(buffer, available);
-			buffer += available;
-			remaining -= available;
-			t = now;
-		}
-	}
-	return remaining;
+uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length) {
+	auto read = inputStream->readBytes(buffer, length);
+	return length - read;
 }
 
 // Discard a given number of bytes from input stream
 // Returns 0 on success, or the number of bytes remaining if timed out
 //
-uint32_t VDUStreamProcessor::discardBytes(uint32_t length, uint16_t timeout = COMMS_TIMEOUT) {
+uint32_t VDUStreamProcessor::discardBytes(uint32_t length) {
 	uint32_t remaining = length;
 	auto bufferSize = 64;
 	auto readSize = bufferSize;
@@ -238,7 +205,7 @@ uint32_t VDUStreamProcessor::discardBytes(uint32_t length, uint16_t timeout = CO
 		if (remaining < readSize) {
 			readSize = remaining;
 		}
-		if (readIntoBuffer(buffer.get(), readSize, timeout) != 0) {
+		if (readIntoBuffer(buffer.get(), readSize) != 0) {
 			// timed out
 			return remaining;
 		}
