@@ -139,7 +139,10 @@ class VDUStreamProcessor {
 // - Byte value (0 to 255) if value read, otherwise -1
 //
 int16_t inline VDUStreamProcessor::readByte_t() {
-	return inputStream->read();
+	auto read = inputStream->read();
+	// perform a single retry
+	if (read == -1) read = inputStream->read();
+	return read;
 }
 
 // Read an unsigned word from the serial port, with a timeout
@@ -197,9 +200,12 @@ uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length, u
 	while (remaining > 0) {
 		auto read = inputStream->readBytes(buffer, remaining);
 		if (read == 0) {
-			// timed out
-			debug_log("readIntoBuffer: timed out\n\r");
-			return remaining;
+			// timed out - perform a single retry
+			read = inputStream->readBytes(buffer, remaining);
+			if (read == 0) {
+				debug_log("readIntoBuffer: timed out\n\r");
+				return remaining;
+			}
 		}
 		buffer += read;
 		remaining -= read;
