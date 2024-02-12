@@ -143,6 +143,11 @@ static inline void uhci_ll_enable_intr(uhci_dev_t *hw, uint32_t intr_mask)
     hw->int_ena.val |= intr_mask;
 }
 
+static inline uint32_t uhci_ll_get_enabled_intr(uhci_dev_t *hw, uint32_t intr_mask)
+{
+    return hw->int_ena.val;
+}
+
 static inline void uhci_ll_disable_intr(uhci_dev_t *hw, uint32_t intr_mask)
 {
     hw->int_ena.val &= (~intr_mask);

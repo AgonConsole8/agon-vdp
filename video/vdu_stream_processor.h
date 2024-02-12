@@ -53,6 +53,7 @@ class VDUStreamProcessor {
 		void vdu_sys_scroll();
 		void vdu_sys_cursorBehaviour();
 		void vdu_sys_udg(char c);
+		void vdu_sys_bdpp();
 
 		void vdu_sys_audio();
 		void sendAudioStatus(uint8_t channel, uint8_t status);

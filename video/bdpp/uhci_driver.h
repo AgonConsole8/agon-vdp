@@ -44,6 +44,10 @@ int uart_dma_read(int uhci_num);
 
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr);
 
-esp_err_t uhci_driver_install(int uhci_num, size_t tx_buf_size, size_t rx_buf_size, int intr_flag);
+esp_err_t uhci_driver_install(int uhci_num, int intr_flag);
 
 esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t *uart_config);
+
+uint32_t uhci_disable_interrupts();
+
+void uhci_enable_interrupts(uint32_t old_int);

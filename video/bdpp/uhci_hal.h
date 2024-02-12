@@ -43,6 +43,7 @@ void uhci_hal_get_seper_chr(uhci_hal_context_t *hal, uhci_seper_chr_t *seper_chr
 void uhci_hal_set_swflow_ctrl_sub_chr(uhci_hal_context_t *hal, uhci_swflow_ctrl_sub_chr_t *sub_ctr);
 void uhci_hal_dma_in_reset(uhci_hal_context_t *hal);
 void uhci_hal_dma_out_reset(uhci_hal_context_t *hal);
+uint32_t uhci_hal_get_enabled_intr(uhci_hal_context_t *hal);
 void uhci_hal_enable_intr(uhci_hal_context_t *hal, uint32_t intr_mask);
 void uhci_hal_disable_intr(uhci_hal_context_t *hal, uint32_t intr_mask);
 void uhci_hal_clear_intr(uhci_hal_context_t *hal, uint32_t intr_mask);

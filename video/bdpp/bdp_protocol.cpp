@@ -17,6 +17,7 @@
 #include "soc/uart_periph.h"
 #include "driver/uart.h"
 #include "uhci_driver.h"
+#include "uhci_hal.h"
 
 #define UHCI_NUM  UHCI_NUM_0
 #define UART_NUM  UART_NUM_2
@@ -114,14 +115,6 @@ void UART0_disable_interrupt(uint8_t flag) {
 	//uart_ier &= ~flag;
 }
 
-void disable_interrupts() {
-	debug_log("disable_interrupts\n");
-}
-
-void enable_interrupts() {
-	debug_log("enable_interrupts\n");
-}
-
 //--------------------------------------------------
 
 // Reset the receiver state
@@ -165,6 +158,22 @@ void bdpp_initialize_driver() {
 		bdpp_app_pkt_header[i].indexes = (uint8_t)i;
 		bdpp_app_pkt_header[i].flags |= BDPP_PKT_FLAG_APP_OWNED;
 	}
+
+	// Initialize the UART2/UHCI hardware.
+	Serial2.end(); // stop existing communication
+
+    uart_config_t uart_config = {
+        .baud_rate = 1152000,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_CTS_RTS,
+        .rx_flow_ctrl_thresh = 120,
+		.source_clk = UART_SCLK_APB
+    };
+
+    uhci_driver_install(UHCI_NUM, 0);
+    uhci_attach_uart_port(UHCI_NUM, UART_NUM, &uart_config);
 }
 
 // Get whether BDPP is allowed (both CPUs have it)
@@ -183,14 +192,14 @@ bool_t bdpp_is_enabled() {
 //
 bool_t bdpp_is_busy() {
 	bool_t rc;
-	disable_interrupts();
+	auto old_int = uhci_disable_interrupts();
 	rc = (bdpp_tx_state != BDPP_TX_STATE_IDLE ||
 		bdpp_rx_state != BDPP_RX_STATE_AWAIT_START ||
 		bdpp_tx_packet != NULL ||
 		bdpp_rx_packet != NULL ||
 		bdpp_tx_queue.size() != 0 ||
 		bdpp_tx_build_packet != NULL);
-	enable_interrupts();
+	uhci_enable_interrupts(old_int);
 	return rc;
 }
 
@@ -276,9 +285,9 @@ bool_t bdpp_queue_tx_app_packet(uint8_t indexes, uint8_t flags, const uint8_t* d
 	index = indexes & BDPP_PACKET_INDEX_BITS;
 	if (bdpp_is_allowed() && (index < BDPP_MAX_APP_PACKETS)) {
 		BDPP_PACKET* packet = &bdpp_app_pkt_header[index];
-		disable_interrupts();
+		auto old_int = uhci_disable_interrupts();
 		if (bdpp_rx_packet == packet || bdpp_tx_packet == packet) {
-			enable_interrupts();
+			uhci_enable_interrupts(old_int);
 			return false;
 		}
 		flags &= ~(BDPP_PKT_FLAG_DONE|BDPP_PKT_FLAG_FOR_RX);
@@ -290,7 +299,7 @@ bool_t bdpp_queue_tx_app_packet(uint8_t indexes, uint8_t flags, const uint8_t* d
 		packet->data = (uint8_t*)data;
 		bdpp_tx_queue.push(packet);
 		//UART0_enable_interrupt(UART_IER_TRANSMITINT);
-		enable_interrupts();
+		uhci_enable_interrupts(old_int);
 		return true;
 	}
 	return false;
@@ -302,10 +311,10 @@ bool_t bdpp_is_rx_app_packet_done(uint8_t index) {
 	bool_t rc;
 	if (bdpp_is_allowed() && (index < BDPP_MAX_APP_PACKETS)) {
 		BDPP_PACKET* packet = &bdpp_app_pkt_header[index];
-		disable_interrupts();
+		auto old_int = uhci_disable_interrupts();
 		rc = ((packet->flags & (BDPP_PKT_FLAG_FOR_RX|BDPP_PKT_FLAG_DONE)) ==
 				(BDPP_PKT_FLAG_FOR_RX|BDPP_PKT_FLAG_DONE));
-		enable_interrupts();
+		uhci_enable_interrupts(old_int);
 #if DEBUG_BDPP
 		debug_log("bdpp_is_rx_app_packet_done(%02hX) -> %hX\n", index, rc);
 #endif
@@ -338,12 +347,12 @@ static void bdpp_internal_flush_drv_tx_packet() {
 #if DEBUG_BDPP
 		debug_log("bdpp_internal_flush_drv_tx_packet() flushing %p\n", bdpp_tx_build_packet);
 #endif
-		disable_interrupts();
+		auto old_int = uhci_disable_interrupts();
 			bdpp_tx_build_packet->flags |= BDPP_PKT_FLAG_READY;
 			bdpp_tx_queue.push(bdpp_tx_build_packet);
 			bdpp_tx_build_packet = NULL;
 			//UART0_enable_interrupt(UART_IER_TRANSMITINT);
-		enable_interrupts();
+		uhci_enable_interrupts(old_int);
 	}
 }
 
@@ -558,57 +567,4 @@ void dump_uart_regs() {
 		debug_log("[%04X] %08X\n", i, *p++);
 	}
 	debug_log("\n");
-}
-
-void bdpp_run_test() {
-	debug_log("@%i enter bdpp_run_test\n", __LINE__);
-	debug_log("\n\n--- Before Serial2.end() ---\n");
-	dump_uart_regs();
-	Serial2.end(); // stop existing communication
-	debug_log("\n\n--- After Serial2.end() ---\n");
-	dump_uart_regs();
-	debug_log("@%i\n", __LINE__);
-
-    uart_config_t uart_config = {
-        .baud_rate = 1152000,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_CTS_RTS,
-        .rx_flow_ctrl_thresh = 120,
-		.source_clk = UART_SCLK_APB
-    };
-
-    uhci_driver_install(UHCI_NUM, 1024*2, 1024*2, 0);
-	debug_log("@%i\n", __LINE__);
-
-    uhci_attach_uart_port(UHCI_NUM, UART_NUM, &uart_config);
-	debug_log("@%i\n", __LINE__);
-
-	//debug_log("\n\n--- After uhci_attach_uart_port() ---\n");
-	//dump_uart_regs();
-
-	for (int i = 0; i < 4; i++) {
-	    dma_data_in[i] = (uint8_t *)heap_caps_calloc(1, PACKET_DATA_SIZE*2, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
-	}
-
-	debug_log("@%i\n", __LINE__);
-    pw = (uint8_t *)heap_caps_calloc(1, 1024, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
-    if(pw == NULL) {
-        debug_log("SRAM TX malloc fail\n");
-        return;
-    }
-
-	debug_log("@%i\n", __LINE__);
-    xTaskCreate(read_task, "read_task", 2048*4, NULL, 12, NULL);
-    vTaskDelay(20/portTICK_PERIOD_MS);
-	debug_log("@%i\n", __LINE__);
-
-    //xTaskCreate(write_task, "write_task", 2048, NULL, 12, NULL);
-	debug_log("@%i\n", __LINE__);
-
-	debug_log("@%i leave bdpp_run_test\n", __LINE__);
-    while(1) {
-        vTaskDelay(100/portTICK_PERIOD_MS);
-    }
 }

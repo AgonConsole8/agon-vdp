@@ -7,6 +7,7 @@
 
 extern void printFmt(const char *format, ...);
 extern void print(const char * text);
+extern void bdpp_initialize_driver();
 
 namespace Updater {
 	static constexpr uint8_t unlockCode[] = "unlock";
@@ -163,6 +164,10 @@ void VDUStreamProcessor::vdu_sys_updater() {
 			switchFirmware();
 		} break;
 	}
+}
+
+void VDUStreamProcessor::vdu_sys_bdpp() {
+	bdpp_initialize_driver();
 }
 
 #endif // UPDATER_H
