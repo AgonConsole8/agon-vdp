@@ -25,11 +25,17 @@
 
 extern void debug_log(const char* fmt, ...);
 
+bool bdpp_initialized; // Whether the driver has been initialized
 std::queue<Packet*> bdpp_tx_queue; // Transmit (TX) packet queue
 std::queue<Packet*> bdpp_rx_queue; // Receive (RX) packet queue
 std::queue<Packet*> bdpp_free_queue; // Free packet queue for RX
 
 //--------------------------------------------------
+
+// Get whether the driver has been initialized.
+bool bdpp_is_initialized() {
+	return bdpp_initialized;
+}
 
 // Initialize the BDPP driver.
 //
@@ -58,6 +64,8 @@ void bdpp_initialize_driver() {
 
     uhci_driver_install(UHCI_NUM, 0);
     uhci_attach_uart_port(UHCI_NUM, UART_NUM, &uart_config);
+	uart_dma_read(UHCI_NUM);
+	bdpp_initialized = true;
 }
 
 // Queue a packet for transmission to the EZ80.
@@ -66,6 +74,7 @@ void bdpp_initialize_driver() {
 void bdpp_queue_tx_packet(Packet* packet) {
 	auto old_int = uhci_disable_interrupts();
 	bdpp_tx_queue.push(packet);
+	old_int |= UHCI_INTR_OUT_EOF;
 	uhci_enable_interrupts(old_int);
 }
 

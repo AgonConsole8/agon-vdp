@@ -44,6 +44,10 @@ void uhci_hal_dma_out_reset(uhci_hal_context_t *hal)
     uhci_ll_dma_out_reset(hal->dev);
 }
 
+uint32_t uhci_hal_get_enabled_intr(uhci_hal_context_t *hal) {
+    uhci_ll_get_enabled_intr(hal->dev);
+}
+
 void uhci_hal_enable_intr(uhci_hal_context_t *hal, uint32_t intr_mask)
 {
     uhci_ll_enable_intr(hal->dev, intr_mask);

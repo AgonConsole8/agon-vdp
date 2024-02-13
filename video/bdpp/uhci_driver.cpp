@@ -30,6 +30,12 @@
 #include "soc/periph_defs.h"
 #include "rom/lldesc.h"
 #include "hal/uart_hal.h"
+#include "bdp_protocol.h"
+#include <queue>
+
+extern std::queue<Packet*> bdpp_tx_queue; // Transmit (TX) packet queue
+extern std::queue<Packet*> bdpp_rx_queue; // Receive (RX) packet queue
+extern std::queue<Packet*> bdpp_free_queue; // Free packet queue for RX
 
 #define DMA_TX_IDLE_NUM (0)
 #define DMA_RX_IDLE_THRD (20)
@@ -38,80 +44,21 @@
 #define DMA_RX_BUF_SZIE (128)
 #define DMA_TX_BUF_SIZE  (256)
 
-#define UHCI_ENTER_CRITICAL_ISR(uhci_num)   portENTER_CRITICAL_ISR(&uhci_spinlock[uhci_num])
-#define UHCI_EXIT_CRITICAL_ISR(uhci_num)    portEXIT_CRITICAL_ISR(&uhci_spinlock[uhci_num])
-#define UHCI_ENTER_CRITICAL(uhci_num)       portENTER_CRITICAL(&uhci_spinlock[uhci_num])
-#define UHCI_EXIT_CRITICAL(uhci_num)        portEXIT_CRITICAL(&uhci_spinlock[uhci_num])
-
-static const char* UHCI_TAG = "uhci";
-
-#define UHCI_CHECK(a, str, ret_val) \
-    if (!(a)) { \
-        ESP_LOGE(UHCI_TAG,"%s(%d): %s", __FUNCTION__, __LINE__, str); \
-        return (ret_val); \
-    }
-
-typedef struct {
-    uint8_t *buf;
-    size_t size;
-} rx_stash_item_t;
-
-typedef struct {
-    uint8_t *p;
-    size_t size;
-} uhci_wr_item;
-
 typedef struct {
     uart_hal_context_t uart_hal;
     uhci_hal_context_t uhci_hal;
     intr_handle_t intr_handle;
     int uhci_num;
-    lldesc_t rx_dma[4];
+    lldesc_t rx_dma[BDPP_MAX_RX_PACKETS];
     lldesc_t tx_dma;
     lldesc_t* rx_cur;
+    Packet* rx_pkt[BDPP_MAX_RX_PACKETS];
+    Packet* tx_pkt;
 } uhci_obj_t;
 
 uhci_obj_t uhci_obj = {0};
 
-uart_dev_t uart_dev;
-uhci_dev_t uhci_dev;
-
-typedef uhci_obj_t uhci_handle_t;
-
-static portMUX_TYPE uhci_spinlock[UHCI_NUM_MAX] = {
-    portMUX_INITIALIZER_UNLOCKED,
-#if UART_NUM_MAX > 1
-    portMUX_INITIALIZER_UNLOCKED
-#endif
-};
-
-typedef struct {
-    const uint8_t irq;
-    const periph_module_t module;
-} uhci_signal_conn_t;
-
-/*
- Bunch of constants for every UHCI peripheral: hw addr of registers and isr source
-*/
-static const uhci_signal_conn_t uhci_periph_signal[UHCI_NUM_MAX] = {
-    {
-        .irq = ETS_UHCI0_INTR_SOURCE,
-        .module = PERIPH_UHCI0_MODULE,
-    },
-    {
-        .irq = ETS_UHCI1_INTR_SOURCE,
-        .module = PERIPH_UHCI1_MODULE,
-    },
-};
-
 extern void debug_log(const char* fmt, ...);
-
-uint32_t rx_count;
-bool hung;
-uint32_t dma_data_len[4];
-uint32_t hold_intr_mask;
-volatile uint8_t* dma_data_in[4];
-#define PACKET_DATA_SIZE ((26+1+3)*2+2+3)
 
 static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 {
@@ -121,27 +68,44 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
             break;
         }
         uhci_hal_clear_intr(&(uhci_obj.uhci_hal), intr_mask);
-        hold_intr_mask |= intr_mask;
+        debug_log("* INT %X *\n", intr_mask);
 
         // handle RX interrupt */
         if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF)) {
             lldesc_t* descr = uhci_obj.rx_cur;
             int index = descr - uhci_obj.rx_dma;
-            dma_data_len[index] = descr->length;
-            //debug_log("i %i %u %u\n",index,descr->size,descr->length);
+            bdpp_rx_queue.push(uhci_obj.rx_pkt[index]);
+
+            debug_log("irq %i %u %u\n",index,descr->size,descr->length);
+            auto packet = uhci_obj.rx_pkt[index];
+            packet->set_flags(BDPP_PKT_FLAG_DONE);
+            packet->clear_flags(BDPP_PKT_FLAG_READY);
+            debug_log("irq Packet: %X, %02hX, %02hx, %02hX, %u\n",
+                packet,
+                packet->get_flags(),
+                packet->get_packet_index(),
+                packet->get_stream_index(),
+                packet->get_actual_data_size());
             if (index < 3) {
                 (uhci_obj.rx_cur)++;
             } else {
                 uhci_obj.rx_cur = uhci_obj.rx_dma;
             }
-            rx_count++;
-        }
-        if (intr_mask & UHCI_INTR_TX_HUNG) {
-            hung = true;
+            debug_log("@%i\n",__LINE__);
+            uhci_obj.rx_pkt[index] = Packet::create_rx_packet();
+            debug_log("@%i\n",__LINE__);
+            uhci_obj.rx_dma[index].buf = uhci_obj.rx_pkt[index]->get_data();
+            debug_log("@%i\n",__LINE__);
+            uhci_obj.rx_dma[index].size = uhci_obj.rx_pkt[index]->get_maximum_data_size();
+            debug_log("@%i\n",__LINE__);
+            uhci_obj.rx_dma[index].length = 0;
+            debug_log("@%i\n",__LINE__);
         }
 
         /* handle TX interrupt */
         if (intr_mask & (UHCI_INTR_OUT_EOF)) {
+            debug_log("@%i\n",__LINE__);
+            //uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
         }
     }
 }
@@ -151,39 +115,44 @@ int uart_dma_read(int uhci_num)
     auto hal = &(uhci_obj.uhci_hal);
 
     uhci_obj.rx_cur = uhci_obj.rx_dma;
+    uhci_obj.rx_pkt[0] = Packet::create_rx_packet();
+    auto alloc_size = Packet::get_alloc_size(uhci_obj.rx_pkt[0]->get_maximum_data_size());
     uhci_obj.rx_dma[0].owner = 1;
     uhci_obj.rx_dma[0].eof = 1;
-    uhci_obj.rx_dma[0].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
+    uhci_obj.rx_dma[0].size = alloc_size;
     uhci_obj.rx_dma[0].length = 0;
     uhci_obj.rx_dma[0].empty = (uint32_t)&uhci_obj.rx_dma[1]; // actually 'qe' (ptr to next descr)
-    uhci_obj.rx_dma[0].buf = dma_data_in[0];
+    uhci_obj.rx_dma[0].buf = uhci_obj.rx_pkt[0]->get_data();
     uhci_obj.rx_dma[0].offset = 0;
     uhci_obj.rx_dma[0].sosf = 0;
 
+    uhci_obj.rx_pkt[1] = Packet::create_rx_packet();
     uhci_obj.rx_dma[1].owner = 1;
     uhci_obj.rx_dma[1].eof = 1;
-    uhci_obj.rx_dma[1].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
+    uhci_obj.rx_dma[1].size = alloc_size;
     uhci_obj.rx_dma[1].length = 0;
     uhci_obj.rx_dma[1].empty = (uint32_t)&uhci_obj.rx_dma[2]; // actually 'qe' (ptr to next descr)
-    uhci_obj.rx_dma[1].buf = dma_data_in[1];
+    uhci_obj.rx_dma[1].buf = uhci_obj.rx_pkt[1]->get_data();
     uhci_obj.rx_dma[1].offset = 0;
     uhci_obj.rx_dma[1].sosf = 0;
 
+    uhci_obj.rx_pkt[2] = Packet::create_rx_packet();
     uhci_obj.rx_dma[2].owner = 1;
     uhci_obj.rx_dma[2].eof = 1;
-    uhci_obj.rx_dma[2].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
+    uhci_obj.rx_dma[2].size = alloc_size;
     uhci_obj.rx_dma[2].length = 0;
     uhci_obj.rx_dma[2].empty = (uint32_t)&uhci_obj.rx_dma[3]; // actually 'qe' (ptr to next descr)
-    uhci_obj.rx_dma[2].buf = dma_data_in[2];
+    uhci_obj.rx_dma[2].buf = uhci_obj.rx_pkt[2]->get_data();
     uhci_obj.rx_dma[2].offset = 0;
     uhci_obj.rx_dma[2].sosf = 0;
 
+    uhci_obj.rx_pkt[3] = Packet::create_rx_packet();
     uhci_obj.rx_dma[3].owner = 1;
     uhci_obj.rx_dma[3].eof = 1;
-    uhci_obj.rx_dma[3].size = (PACKET_DATA_SIZE+7)&0xFFFFFFFC;
+    uhci_obj.rx_dma[3].size = alloc_size;
     uhci_obj.rx_dma[3].length = 0;
     uhci_obj.rx_dma[3].empty = (uint32_t)&uhci_obj.rx_dma[0]; // actually 'qe' (ptr to next descr)
-    uhci_obj.rx_dma[3].buf = dma_data_in[3];
+    uhci_obj.rx_dma[3].buf = uhci_obj.rx_pkt[3]->get_data();
     uhci_obj.rx_dma[3].offset = 0;
     uhci_obj.rx_dma[3].sosf = 0;
 
@@ -192,6 +161,7 @@ int uart_dma_read(int uhci_num)
     uhci_hal_rx_dma_restart(hal);
     uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj.rx_dma[0])));
 
+    uhci_enable_interrupts(UHCI_INTR_IN_DONE);
     uhci_hal_rx_dma_start(hal);
     return 0;
 }
@@ -217,8 +187,8 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
 esp_err_t uhci_driver_install(int uhci_num, int intr_flag)
 {
     uhci_obj.uhci_num = uhci_num;
-    periph_module_enable(uhci_periph_signal[uhci_num].module);
-    return esp_intr_alloc(uhci_periph_signal[uhci_num].irq, intr_flag, &uhci_isr_handler_for_bdpp,
+    periph_module_enable(PERIPH_UHCI0_MODULE);
+    return esp_intr_alloc(ETS_UHCI0_INTR_SOURCE, intr_flag, &uhci_isr_handler_for_bdpp,
                             &uhci_obj, &uhci_obj.intr_handle);
 }
 
@@ -283,7 +253,6 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
     {
         //Configure UHCI param
 	debug_log("@%i\n", __LINE__);
-        //uhci_seper_chr_t seper_char = { 0x8B, 0x9D, 0xAE, 0x01 };
         uhci_seper_chr_t seper_char = { 0x89, 0x8B, 0x8A, 0x8B, 0x8D, 0x01 };
 	debug_log("@%i\n", __LINE__);
         auto hal = &(uhci_obj.uhci_hal);
@@ -316,7 +285,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 }
 
 uint32_t uhci_disable_interrupts() {
-	debug_log("uhci_disable_interrupts\n");
+	//debug_log("uhci_disable_interrupts\n");
 	auto hal = &(uhci_obj.uhci_hal);
 	auto old_int = uhci_hal_get_enabled_intr(hal);
     uhci_hal_disable_intr(hal, ~0);
@@ -324,7 +293,7 @@ uint32_t uhci_disable_interrupts() {
 }
 
 void uhci_enable_interrupts(uint32_t old_int) {
-	debug_log("uhci_enable_interrupts\n");
+	//debug_log("uhci_enable_interrupts\n");
 	auto hal = &(uhci_obj.uhci_hal);
     uhci_hal_enable_intr(hal, old_int);
 }

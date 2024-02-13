@@ -20,6 +20,9 @@ typedef uint8_t bool_t;	// To match what the EZ80 is using for this
 // Initialize the BDPP driver.
 void bdpp_initialize_driver();
 
+// Get whether the driver has been initialized.
+bool bdpp_is_initialized();
+
 // Queue a packet for transmission to the EZ80.
 // The packet is expected to be full (to contain all data that
 // VDP wants to place into it) when this function is called.

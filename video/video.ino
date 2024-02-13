@@ -70,6 +70,7 @@ bool			controlKeys = true;				// Control keys enabled
 #include "vdp_protocol.h"						// VDP Protocol
 #include "vdu_stream_processor.h"
 #include "hexload.h"
+#include "bdpp/bdp_protocol.h"					// BDPP Protocol
 
 std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
 VDUStreamProcessor *	processor;				// VDU Stream Processor
@@ -119,6 +120,21 @@ void loop() {
 				do_cursor();
 			}
 			processor->processNext();
+		}
+
+		if (bdpp_is_initialized()) {
+			auto packet = bdpp_get_rx_packet();
+			if (packet) {
+	            debug_log("@%i\n",__LINE__);
+				debug_log("Packet: %X, %02hX, %02hx, %02hX, %u\n",
+					packet,
+					packet->get_flags(),
+					packet->get_packet_index(),
+					packet->get_stream_index(),
+					packet->get_actual_data_size());
+				delete packet;
+	            debug_log("@%i\n",__LINE__);
+			}
 		}
 	}
 }

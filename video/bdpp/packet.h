@@ -19,6 +19,7 @@
 #define BDPP_MAX_DRIVER_PACKETS			16		// Maximum number of driver-owned small packets
 #define BDPP_MAX_APP_PACKETS			16		// Maximum number of app-owned packets
 #define BDPP_MAX_STREAMS				16		// Maximum number of command/data streams
+#define BDPP_MAX_RX_PACKETS             4       // Maximum number of packets setup for DMA RX
 
 #define BDPP_STREAM_INDEX_BITS			0xF0	// Upper nibble used for stream index
 #define BDPP_PACKET_INDEX_BITS			0x0F	// Lower nibble used for packet index
@@ -43,7 +44,6 @@
 typedef struct tagUhciPacket {
 	uint8_t     flags;	// Flags describing the packet
 	uint8_t     indexes; // Index of the packet (lower nibble) & stream (upper nibble)
-	uint16_t	max_size; // Maximum size of the data portion
 	uint16_t	act_size; // Actual size of the data portion
 	uint8_t     data[1]; // The real data bytes
 } UhciPacket;
@@ -65,17 +65,17 @@ class Packet {
 
     // Create a new, empty, RX packet (for driver-owned or app-owned).
     static Packet* create_rx_packet() {
-        return new Packet(BDPP_PKT_FLAG_FOR_RX | BDPP_PKT_FLAG_READY, 0, 0);
+        return new Packet(BDPP_PKT_FLAG_FOR_RX | BDPP_PKT_FLAG_READY | BDPP_PKT_FLAG_APP_OWNED, 0, 0);
     }
 
     // Create a new, empty packet.
     Packet(uint8_t flags, uint8_t packet_index, uint8_t stream_index) {
         auto max_size = (flags & BDPP_PKT_FLAG_APP_OWNED) ? BDDP_MAX_PACKET_DATA_SIZE : BDPP_SMALL_PACKET_DATA_SIZE;
-        auto alloc_size = ((sizeof(UhciPacket) - 1 + max_size + 3) & 0xFFFFFFFC) + 4;
+        auto alloc_size = get_alloc_size(max_size);
         uhci_packet = (volatile UhciPacket *) heap_caps_calloc(1, alloc_size, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
         uhci_packet->flags = flags;
         uhci_packet->indexes = (packet_index | (stream_index << 4));
-        uhci_packet->max_size = max_size;
+        this->max_size = max_size;
         uhci_packet->act_size = 0;
     }
 
@@ -90,6 +90,9 @@ class Packet {
     // Test whether a flag is clear.
     inline bool is_flag_clear(uint8_t flag) { return ((uhci_packet->flags & flag) == 0); }
 
+    // Get the flags.
+    inline uint8_t get_flags() { return uhci_packet->flags; }
+
     // Get the packet index.
     inline uint8_t get_packet_index() { return (uhci_packet->indexes & 0x0F); }
 
@@ -97,10 +100,15 @@ class Packet {
     inline uint8_t get_stream_index() { return (uhci_packet->indexes >> 4); }
 
     // Get the maximum data size.
-    inline uint16_t get_maximum_data_size() { return uhci_packet->max_size; }
+    inline uint16_t get_maximum_data_size() { return max_size; }
 
     // Get the actual data size.
     inline uint16_t get_actual_data_size() { return uhci_packet->act_size; }
+
+    // Get the allocated memory size.
+    static uint16_t get_alloc_size(uint16_t max_size) {
+        return ((sizeof(UhciPacket) - 1 + max_size + 3) & 0xFFFFFFFC) + 4;
+    }
 
     // Get a pointer to the data.
     inline volatile uint8_t* get_data() { return uhci_packet->data; }
@@ -123,5 +131,6 @@ class Packet {
     }
 
     protected:
-    volatile UhciPacket* uhci_packet; // Pointer to UHCI data for the packet
+	uint16_t	            max_size; // Maximum size of the data portion
+    volatile UhciPacket*    uhci_packet; // Pointer to UHCI data for the packet
 };
