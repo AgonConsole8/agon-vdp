@@ -132,8 +132,12 @@ void loop() {
 					packet->get_packet_index(),
 					packet->get_stream_index(),
 					packet->get_actual_data_size());
+				auto data = packet->get_data();
+				for (int i = 0; i < 32; i++) {
+					debug_log(" %02hX", data[i]);
+				}
 				delete packet;
-	            debug_log("@%i\n",__LINE__);
+	            debug_log("\n@%i\n",__LINE__);
 			}
 		}
 	}

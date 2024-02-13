@@ -84,6 +84,9 @@ class Packet {
         heap_caps_free((void*) uhci_packet);
     }
 
+    // Get a pointer to the allocated UHCI packet data memory.
+    inline uint8_t* get_uhci_data() { return (uint8_t*) uhci_packet; }
+
     // Test whether a flag is set.
     inline bool is_flag_set(uint8_t flag) { return ((uhci_packet->flags & flag) != 0); }
 

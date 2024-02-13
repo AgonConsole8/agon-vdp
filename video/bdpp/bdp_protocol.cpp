@@ -95,5 +95,5 @@ Packet* bdpp_get_rx_packet() {
 		bdpp_rx_queue.pop();
 	}
 	uhci_enable_interrupts(old_int);
-	return packet;
+	return (Packet*) packet;
 }
