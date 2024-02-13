@@ -17,9 +17,9 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> originalOutputStream;
 		bool commandsEnabled = true;
 
-		int16_t readByte_t();
-		int32_t readWord_t();
-		int32_t read24_t();
+		int16_t readByte_t(uint16_t timeout);
+		int32_t readWord_t(uint16_t timeout);
+		int32_t read24_t(uint16_t timeout);
 		uint8_t readByte_b();
 		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
 		uint32_t discardBytes(uint32_t length);
@@ -138,10 +138,22 @@ class VDUStreamProcessor {
 // Returns:
 // - Byte value (0 to 255) if value read, otherwise -1
 //
-int16_t inline VDUStreamProcessor::readByte_t() {
+int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto read = inputStream->read();
-	// perform a single retry
-	if (read == -1) read = inputStream->read();
+	if (read >= 0) {
+		return read;
+	}
+
+	auto start = xTaskGetTickCountFromISR();
+	const auto timeCheck = pdMS_TO_TICKS(timeout);
+
+	do {
+		read = inputStream->read();
+		if (read >= 0) {
+			return read;
+		}
+	} while (xTaskGetTickCountFromISR() - start < timeCheck);
+
 	return read;
 }
 
@@ -149,10 +161,10 @@ int16_t inline VDUStreamProcessor::readByte_t() {
 // Returns:
 // - Word value (0 to 65535) if 2 bytes read, otherwise -1
 //
-int32_t VDUStreamProcessor::readWord_t() {
-	auto l = readByte_t();
+int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
+	auto l = readByte_t(timeout);
 	if (l >= 0) {
-		auto h = readByte_t();
+		auto h = readByte_t(timeout);
 		if (h >= 0) {
 			return (h << 8) | l;
 		}
@@ -164,12 +176,12 @@ int32_t VDUStreamProcessor::readWord_t() {
 // Returns:
 // - Value (0 to 16777215) if 3 bytes read, otherwise -1
 //
-int32_t VDUStreamProcessor::read24_t() {
-	auto l = readByte_t();
+int32_t VDUStreamProcessor::read24_t(uint16_t timeout = COMMS_TIMEOUT) {
+	auto l = readByte_t(timeout);
 	if (l >= 0) {
-		auto m = readByte_t();
+		auto m = readByte_t(timeout);
 		if (m >= 0) {
-			auto h = readByte_t();
+			auto h = readByte_t(timeout);
 			if (h >= 0) {
 				return (h << 16) | (m << 8) | l;
 			}
