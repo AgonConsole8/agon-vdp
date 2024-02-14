@@ -27,7 +27,7 @@ extern void debug_log(const char* fmt, ...);
 
 bool bdpp_initialized; // Whether the driver has been initialized
 std::queue<Packet*> bdpp_tx_queue; // Transmit (TX) packet queue
-std::queue<Packet*> bdpp_rx_queue; // Receive (RX) packet queue
+std::queue<Packet*> bdpp_rx_queue[BDPP_MAX_STREAMS]; // Receive (RX) packet queue
 std::queue<Packet*> bdpp_free_queue; // Free packet queue for RX
 
 //--------------------------------------------------
@@ -79,20 +79,21 @@ void bdpp_queue_tx_packet(Packet* packet) {
 }
 
 // Check for a received packet being available.
-bool bdpp_rx_packet_available() {
+bool bdpp_rx_packet_available(uint8_t stream_index) {
 	auto old_int = uhci_disable_interrupts();
-	bool available = !bdpp_rx_queue.empty();
+	bool available = !bdpp_rx_queue[stream_index].empty();
 	uhci_enable_interrupts(old_int);
 	return available;
 }
 
 // Get a received packet.
-Packet* bdpp_get_rx_packet() {
+Packet* bdpp_get_rx_packet(uint8_t stream_index) {
 	Packet* packet = NULL;
 	auto old_int = uhci_disable_interrupts();
-	if (!bdpp_rx_queue.empty()) {
-		packet = bdpp_rx_queue.front();
-		bdpp_rx_queue.pop();
+	auto queue = &bdpp_rx_queue[stream_index];
+	if (!queue->empty()) {
+		packet = queue->front();
+		queue->pop();
 	}
 	uhci_enable_interrupts(old_int);
 	return (Packet*) packet;

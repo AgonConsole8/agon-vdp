@@ -114,38 +114,41 @@ void loop() {
 		do_keyboard();
 		do_mouse();
 
-		if (processor->byteAvailable()) {
-			if (drawCursor) {
-				drawCursor = false;
-				do_cursor();
-			}
-			processor->processNext();
-		}
-
 		if (bdpp_is_initialized()) {
-			auto packet = bdpp_get_rx_packet();
-			if (packet) {
-				auto act_size = packet->get_actual_data_size();
-				auto data = packet->get_data();
+			for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+				auto packet = bdpp_get_rx_packet(s);
+				if (packet) {
+					auto act_size = packet->get_actual_data_size();
+					auto data = packet->get_data();
 
-	            //debug_log("@%i\n",__LINE__);
-				debug_log("Packet: %X, %02hX, %02hx, %02hX, %u\n",
-					packet,
-					packet->get_flags(),
-					packet->get_packet_index(),
-					packet->get_stream_index(),
-					act_size);
-				for (uint16_t i = 0; i < act_size; i++) {
-					auto ch = data[i];
-					if (ch > 0x20 && ch < 0x7E) {
-						debug_log("%c", ch);
-					} else {
-						debug_log("[%02hX]", ch);
+					//debug_log("@%i\n",__LINE__);
+					debug_log("[%02hX] Packet: %X, %02hX, %02hx, %u\n",
+						packet->get_stream_index(),
+						packet,
+						packet->get_flags(),
+						packet->get_packet_index(),
+						act_size);
+					for (uint16_t i = 0; i < act_size; i++) {
+						auto ch = data[i];
+						if (ch > 0x20 && ch < 0x7E) {
+							debug_log("%c", ch);
+						} else {
+							debug_log("[%02hX]", ch);
+						}
+						processor->vdu(ch);
 					}
-					processor->vdu(ch);
+					delete packet;
+					debug_log("\n@%i\n",__LINE__);
 				}
-				delete packet;
-	            debug_log("\n@%i\n",__LINE__);
+			}
+		} else {
+			// For legacy, use Serial2.
+			if (processor->byteAvailable()) {
+				if (drawCursor) {
+					drawCursor = false;
+					do_cursor();
+				}
+				processor->processNext();
 			}
 		}
 	}

@@ -32,6 +32,6 @@ void bdpp_queue_tx_packet(Packet* packet);
 bool bdpp_rx_packet_available();
 
 // Get a received packet.
-Packet* bdpp_get_rx_packet();
+Packet* bdpp_get_rx_packet(uint8_t stream_index);
 
 #endif // BDPP_PROTOCOL_H

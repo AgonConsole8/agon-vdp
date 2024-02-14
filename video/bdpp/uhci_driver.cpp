@@ -34,7 +34,7 @@
 #include <queue>
 
 extern std::queue<Packet*> bdpp_tx_queue; // Transmit (TX) packet queue
-extern std::queue<Packet*> bdpp_rx_queue; // Receive (RX) packet queue
+extern std::queue<Packet*> bdpp_rx_queue[BDPP_MAX_STREAMS]; // Receive (RX) packet queue
 extern std::queue<Packet*> bdpp_free_queue; // Free packet queue for RX
 
 #define DMA_TX_IDLE_NUM (0)
@@ -73,11 +73,11 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
         // handle RX interrupt */
         if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF)) {
             lldesc_t* descr = uhci_obj.rx_cur;
-            int index = descr - uhci_obj.rx_dma;
-            bdpp_rx_queue.push(uhci_obj.rx_pkt[index]);
+            int dma_index = descr - uhci_obj.rx_dma;
+            auto packet = uhci_obj.rx_pkt[dma_index];
+            bdpp_rx_queue[packet->get_stream_index()].push(packet);
 
-            //debug_log("irq %i %u %u\n",index,descr->size,descr->length);
-            auto packet = uhci_obj.rx_pkt[index];
+            //debug_log("irq %i %u %u\n",dma_index,descr->size,descr->length);
             packet->set_flags(BDPP_PKT_FLAG_DONE);
             packet->clear_flags(BDPP_PKT_FLAG_READY);
             /*debug_log("irq Packet: %X, %02hX, %02hx, %02hX, %u\n",
@@ -86,19 +86,21 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
                 packet->get_packet_index(),
                 packet->get_stream_index(),
                 packet->get_actual_data_size());*/
-            if (index < 3) {
+            if (dma_index < 3) {
                 (uhci_obj.rx_cur)++;
             } else {
                 uhci_obj.rx_cur = uhci_obj.rx_dma;
             }
             //debug_log("@%i\n",__LINE__);
-            uhci_obj.rx_pkt[index] = Packet::create_rx_packet();
+            packet = Packet::create_rx_packet();
+            uhci_obj.rx_pkt[dma_index] = packet;
             //debug_log("@%i\n",__LINE__);
-            uhci_obj.rx_dma[index].buf = uhci_obj.rx_pkt[index]->get_uhci_data();
+            auto dma = &uhci_obj.rx_dma[dma_index];
+            dma->buf = packet->get_uhci_data();
             //debug_log("@%i\n",__LINE__);
-            uhci_obj.rx_dma[index].size = uhci_obj.rx_pkt[index]->get_maximum_data_size();
+            dma->size = packet->get_maximum_data_size();
             //debug_log("@%i\n",__LINE__);
-            uhci_obj.rx_dma[index].length = 0;
+            dma->length = 0;
             //debug_log("@%i\n",__LINE__);
         }
 
