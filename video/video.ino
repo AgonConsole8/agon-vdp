@@ -125,16 +125,24 @@ void loop() {
 		if (bdpp_is_initialized()) {
 			auto packet = bdpp_get_rx_packet();
 			if (packet) {
-	            debug_log("@%i\n",__LINE__);
+				auto act_size = packet->get_actual_data_size();
+				auto data = packet->get_data();
+
+	            //debug_log("@%i\n",__LINE__);
 				debug_log("Packet: %X, %02hX, %02hx, %02hX, %u\n",
 					packet,
 					packet->get_flags(),
 					packet->get_packet_index(),
 					packet->get_stream_index(),
-					packet->get_actual_data_size());
-				auto data = packet->get_data();
-				for (int i = 0; i < 32; i++) {
-					debug_log(" %02hX", data[i]);
+					act_size);
+				for (uint16_t i = 0; i < act_size; i++) {
+					auto ch = data[i];
+					if (ch > 0x20 && ch < 0x7E) {
+						debug_log("%c", ch);
+					} else {
+						debug_log("[%02hX]", ch);
+					}
+					processor->vdu(ch);
 				}
 				delete packet;
 	            debug_log("\n@%i\n",__LINE__);

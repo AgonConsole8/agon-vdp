@@ -196,26 +196,26 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 {
     {
         // Configure UART params
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
 //        periph_module_enable(uart_periph_signal[uart_num].module);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         auto hal = &(uhci_obj.uart_hal);
         hal->dev = UART_LL_GET_HW(uart_num);
-	debug_log("@%i uart hal %X, dev %X\n", __LINE__, hal, hal->dev);
+	//debug_log("@%i uart hal %X, dev %X\n", __LINE__, hal, hal->dev);
         uart_hal_init(hal, uart_num);
 
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
     /*periph_module_disable(uhci_periph_signal[uhci_num].module);
 	debug_log("@%i\n", __LINE__);
     vTaskDelay(5);*/
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
     periph_module_enable(uart_periph_signal[uart_num].module);
 
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uart_hal_disable_intr_mask(hal, ~0);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
 //        uart_hal_set_sclk(hal, uart_config->source_clk);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
 /*        uart_hal_set_baudrate(hal, uart_config->baud_rate);
 	debug_log("@%i\n", __LINE__);
         uart_hal_set_parity(hal, uart_config->parity);
@@ -235,51 +235,51 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         //dev1->conf0.rxfifo_rst = 1;
         //dev1->conf0.txfifo_rst = 1;
 
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uart_param_config(uart_num, uart_config);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uart_hal_set_loop_back(hal, false);
         uart_ll_set_rx_tout(hal->dev, 0); // use no timeout
         //uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (1.5 character times?)
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         //uart_hal_set_hw_flow_ctrl(hal, uart_config->flow_ctrl, uart_config->rx_flow_ctrl_thresh);
         //uart_hal_set_rts(hal, 1);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
 
-    debug_log("@%i\n", __LINE__);
+    //debug_log("@%i\n", __LINE__);
     uart_set_pin(uart_num, 2, 34, 13, 14);
 
     }
     {
         //Configure UHCI param
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uhci_seper_chr_t seper_char = { 0x89, 0x8B, 0x8A, 0x8B, 0x8D, 0x01 };
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         auto hal = &(uhci_obj.uhci_hal);
         uhci_hal_init(hal, uhci_num);
-	debug_log("@%i uhci hal %X, dev %X\n", __LINE__, hal, hal->dev);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i uhci hal %X, dev %X\n", __LINE__, hal, hal->dev);
+	//debug_log("@%i\n", __LINE__);
         uhci_hal_disable_intr(hal, UHCI_INTR_MASK);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uhci_hal_set_eof_mode(hal, UHCI_RX_EOF_MAX);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uhci_hal_attach_uart_port(hal, uart_num);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uhci_hal_set_seper_chr(hal, &seper_char);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         //uhci_hal_set_rx_dma(hal,(uint32_t)(&(uhci_obj.rx_dma)));
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         //uhci_hal_set_tx_dma(hal,(uint32_t)(&(uhci_obj.tx_dma)));
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uhci_hal_clear_intr(hal, UHCI_INTR_MASK);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG);
         //uhci_hal_enable_intr(hal, 0x0001FFFF);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         //uhci_hal_rx_dma_start(hal);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
         //uhci_hal_tx_dma_start(hal);
-	debug_log("@%i\n", __LINE__);
+	//debug_log("@%i\n", __LINE__);
     }
     return ESP_OK;
 }
