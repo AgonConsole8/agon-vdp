@@ -140,7 +140,7 @@ class VDUStreamProcessor {
 //
 int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto read = inputStream->read();
-	if (read >= 0) {
+	if (read != -1) {
 		return read;
 	}
 
@@ -149,7 +149,7 @@ int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) 
 
 	do {
 		read = inputStream->read();
-		if (read >= 0) {
+		if (read != -1) {
 			return read;
 		}
 	} while (xTaskGetTickCountFromISR() - start < timeCheck);
