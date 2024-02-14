@@ -113,6 +113,9 @@ class Packet {
         return ((sizeof(UhciPacket) - 1 + max_size + 3) & 0xFFFFFFFC) + 4;
     }
 
+    // Determine whether the packet is full of data.
+    inline bool is_full() { return get_actual_data_size() >= get_maximum_data_size(); }
+
     // Get a pointer to the data.
     inline volatile uint8_t* get_data() { return uhci_packet->data; }
 

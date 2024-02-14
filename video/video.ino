@@ -6,7 +6,7 @@
 //					Igor Chaves Cananea (vdp-gl maintenance)
 //					Steve Sims (Audio enhancements, refactoring, bug fixes)
 // Created:			22/03/2022
-// Last Updated:	12/09/2023
+// Last Updated:	14/02/2024
 //
 // Modinfo:
 // 11/07/2022:		Baud rate tweaked for Agon Light, HW Flow Control temporarily commented out
@@ -44,6 +44,7 @@
 // 05/09/2023:					+ New audio enhancements, improved mode change code
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
+// 14/02/2024:		CW Add support for BDPP streams
 
 #include <WiFi.h>
 #include <HardwareSerial.h>
@@ -70,10 +71,12 @@ bool			controlKeys = true;				// Control keys enabled
 #include "vdp_protocol.h"						// VDP Protocol
 #include "vdu_stream_processor.h"
 #include "hexload.h"
-#include "bdpp/bdp_protocol.h"					// BDPP Protocol
+#include "bdpp/bdp_stream.h"					// BDPP Stream support
 
 std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
 VDUStreamProcessor *	processor;				// VDU Stream Processor
+BdppStream bddp_stream[BDPP_MAX_STREAMS];		// Set of BDPP data streams
+VDUStreamProcessor * bddp_processor[BDPP_MAX_STREAMS]; // Set of BDPP stream processors
 
 #include "zdi.h"								// ZDI debugging console
 
@@ -91,6 +94,11 @@ void setup() {
 	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	processor->sendModeInformation();
 	boot_screen();
+
+	// Get ready in case BDPP gets activated.
+	for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+		bddp_stream[s].set_stream_index(s);
+	}
 }
 
 // The main loop
@@ -98,6 +106,7 @@ void setup() {
 void loop() {
 	bool drawCursor = false;
 	auto cursorTime = millis();
+	auto bddp_active = false;
 
 	while (true) {
 		if (processTerminal()) {
@@ -115,6 +124,17 @@ void loop() {
 		do_mouse();
 
 		if (bdpp_is_initialized()) {
+			if (!bddp_active) {
+				// Setup the BDPP stream processors.
+				bddp_active = true;
+				delete processor;
+				for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+					bddp_processor[s] = new VDUStreamProcessor(&bddp_stream[s]);
+				}
+				processor = bddp_processor[0];
+			}
+
+			// Handle incoming data on all BDPP streams.
 			for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
 				auto packet = bdpp_get_rx_packet(s);
 				if (packet) {
@@ -135,7 +155,7 @@ void loop() {
 						} else {
 							debug_log("[%02hX]", ch);
 						}
-						processor->vdu(ch);
+						bddp_processor[s]->vdu(ch);
 					}
 					delete packet;
 					debug_log("\n@%i\n",__LINE__);
