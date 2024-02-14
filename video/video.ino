@@ -74,9 +74,10 @@ bool			controlKeys = true;				// Control keys enabled
 #include "bdpp/bdp_stream.h"					// BDPP Stream support
 
 std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
-VDUStreamProcessor *	processor;				// VDU Stream Processor
+VDUStreamProcessor * processor;					// VDU Stream Processor
 BdppStream bddp_stream[BDPP_MAX_STREAMS];		// Set of BDPP data streams
 VDUStreamProcessor * bddp_processor[BDPP_MAX_STREAMS]; // Set of BDPP stream processors
+Stream * default_stream;						// Default VDU Stream
 
 #include "zdi.h"								// ZDI debugging console
 
@@ -87,6 +88,7 @@ void setup() {
 	copy_font();
 	set_mode(1);
 	setupVDPProtocol();
+	default_stream = &VDPSerial;
 	processor = new VDUStreamProcessor(&VDPSerial);
 	initAudio();
 	processor->wait_eZ80();
@@ -127,11 +129,12 @@ void loop() {
 			if (!bddp_active) {
 				// Setup the BDPP stream processors.
 				bddp_active = true;
-				delete processor;
+				//delete processor;
 				for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
 					bddp_processor[s] = new VDUStreamProcessor(&bddp_stream[s]);
 				}
 				processor = bddp_processor[0];
+				default_stream = &bddp_stream[0];
 			}
 
 			// Handle incoming data on all BDPP streams.

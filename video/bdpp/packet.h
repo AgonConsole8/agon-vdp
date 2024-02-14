@@ -108,6 +108,11 @@ class Packet {
     // Get the actual data size.
     inline uint16_t get_actual_data_size() { return uhci_packet->act_size; }
 
+    // Get the transfer packet size.
+    uint16_t get_transfer_size() {
+        return (sizeof(UhciPacket) - 1 + uhci_packet->act_size);
+    }
+
     // Get the allocated memory size.
     static uint16_t get_alloc_size(uint16_t max_size) {
         return ((sizeof(UhciPacket) - 1 + max_size + 3) & 0xFFFFFFFC) + 4;

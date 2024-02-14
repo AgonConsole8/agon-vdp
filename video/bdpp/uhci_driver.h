@@ -51,3 +51,5 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 uint32_t uhci_disable_interrupts();
 
 void uhci_enable_interrupts(uint32_t old_int);
+
+void uart_dma_start_transmitter();

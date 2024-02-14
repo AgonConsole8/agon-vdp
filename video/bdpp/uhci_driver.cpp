@@ -106,8 +106,18 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 
         /* handle TX interrupt */
         if (intr_mask & (UHCI_INTR_OUT_EOF)) {
-            //debug_log("@%i\n",__LINE__);
-            //uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
+            debug_log("OUT EOF @%i\n",__LINE__);
+            auto packet = uhci_obj.tx_pkt;
+            if (packet) {
+                delete packet;
+            }
+                if (bdpp_tx_queue.size()) {
+                            debug_log("OUT EOF @%i\n",__LINE__);
+                        auto packet = bdpp_tx_queue.front();
+                        bdpp_tx_queue.pop();
+                        uhci_obj.tx_pkt = packet;
+                        uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(), packet->get_transfer_size()); 
+                }
         }
     }
 }
@@ -184,6 +194,20 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
 
     debug_log("leave uart_dma_write %u\n", (uint32_t)wr);
     return 0;
+}
+
+void uart_dma_start_transmitter() {
+        auto old_int = uhci_disable_interrupts();
+        if (!uhci_obj.tx_pkt) {
+                if (bdpp_tx_queue.size()) {
+                        auto packet = bdpp_tx_queue.front();
+                        bdpp_tx_queue.pop();
+                        uhci_obj.tx_pkt = packet;
+                        uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(), packet->get_transfer_size());             
+                        old_int |= UHCI_INTR_OUT_EOF;
+                }
+        }
+        uhci_enable_interrupts(old_int);
 }
 
 esp_err_t uhci_driver_install(int uhci_num, int intr_flag)

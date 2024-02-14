@@ -1,0 +1,391 @@
+# 1 "C:\\Users\\restd\\AppData\\Local\\Temp\\tmpllbyv4i6"
+#include <Arduino.h>
+# 1 "D:/Console8/agon-vdp-otf/video/video.ino"
+# 49 "D:/Console8/agon-vdp-otf/video/video.ino"
+#include <WiFi.h>
+#include <HardwareSerial.h>
+#include <fabgl.h>
+
+#define DEBUG 1
+#define SERIALBAUDRATE 115200
+
+HardwareSerial DBGSerial(0);
+
+#include "agon.h"
+
+TerminalState terminalState = TerminalState::Disabled;
+bool consoleMode = false;
+bool printerOn = false;
+bool controlKeys = true;
+
+#include "version.h"
+#include "agon_ps2.h"
+#include "agon_audio.h"
+#include "agon_ttxt.h"
+#include "graphics.h"
+#include "cursor.h"
+#include "vdp_protocol.h"
+#include "vdu_stream_processor.h"
+#include "hexload.h"
+#include "bdpp/bdp_stream.h"
+
+std::unique_ptr<fabgl::Terminal> Terminal;
+VDUStreamProcessor * processor;
+BdppStream bddp_stream[BDPP_MAX_STREAMS];
+VDUStreamProcessor * bddp_processor[BDPP_MAX_STREAMS];
+Stream * default_stream;
+
+#include "zdi.h"
+void setup();
+void loop();
+void do_keyboard();
+void do_keyboard_terminal();
+void do_mouse();
+void boot_screen();
+void debug_log(const char *format, ...);
+void setConsoleMode(bool mode);
+void startTerminal();
+void stopTerminal();
+void suspendTerminal();
+bool processTerminal();
+void print(char const * text);
+void printFmt(const char *format, ...);
+#line 84 "D:/Console8/agon-vdp-otf/video/video.ino"
+void setup() {
+ disableCore0WDT(); delay(200);
+ disableCore1WDT(); delay(200);
+ DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
+ copy_font();
+ set_mode(1);
+ setupVDPProtocol();
+ default_stream = &VDPSerial;
+ processor = new VDUStreamProcessor(&VDPSerial);
+ initAudio();
+ processor->wait_eZ80();
+ setupKeyboardAndMouse();
+ resetMousePositioner(canvasW, canvasH, _VGAController.get());
+ processor->sendModeInformation();
+ boot_screen();
+
+
+ for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+  bddp_stream[s].set_stream_index(s);
+ }
+}
+
+
+
+void loop() {
+ bool drawCursor = false;
+ auto cursorTime = millis();
+ auto bddp_active = false;
+
+ while (true) {
+  if (processTerminal()) {
+   continue;
+  }
+  if (millis() - cursorTime > CURSOR_PHASE) {
+   cursorTime = millis();
+   drawCursor = !drawCursor;
+   if (ttxtMode) {
+    ttxt_instance.flash(drawCursor);
+   }
+   do_cursor();
+  }
+  do_keyboard();
+  do_mouse();
+
+  if (bdpp_is_initialized()) {
+   if (!bddp_active) {
+
+    bddp_active = true;
+
+    for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+     bddp_processor[s] = new VDUStreamProcessor(&bddp_stream[s]);
+    }
+    processor = bddp_processor[0];
+    default_stream = &bddp_stream[0];
+   }
+
+
+   for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+    auto packet = bdpp_get_rx_packet(s);
+    if (packet) {
+     auto act_size = packet->get_actual_data_size();
+     auto data = packet->get_data();
+
+
+     debug_log("[%02hX] Packet: %X, %02hX, %02hx, %u\n",
+      packet->get_stream_index(),
+      packet,
+      packet->get_flags(),
+      packet->get_packet_index(),
+      act_size);
+     for (uint16_t i = 0; i < act_size; i++) {
+      auto ch = data[i];
+      if (ch > 0x20 && ch < 0x7E) {
+       debug_log("%c", ch);
+      } else {
+       debug_log("[%02hX]", ch);
+      }
+      bddp_processor[s]->vdu(ch);
+     }
+     delete packet;
+     debug_log("\n@%i\n",__LINE__);
+    }
+   }
+  } else {
+
+   if (processor->byteAvailable()) {
+    if (drawCursor) {
+     drawCursor = false;
+     do_cursor();
+    }
+    processor->processNext();
+   }
+  }
+ }
+}
+
+
+
+void do_keyboard() {
+ uint8_t keycode;
+ uint8_t modifiers;
+ uint8_t vk;
+ uint8_t down;
+ if (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
+
+
+  if (controlKeys && down) {
+   switch (keycode) {
+    case 2:
+    case 3:
+    case 6:
+    case 7:
+    case 12:
+    case 14 ... 15:
+     processor->vdu(keycode);
+     break;
+    case 16:
+
+     printerOn = !printerOn;
+   }
+  }
+
+
+  uint8_t packet[] = {
+   keycode,
+   modifiers,
+   vk,
+   down,
+  };
+  processor->send_packet(PACKET_KEYCODE, sizeof packet, packet);
+ }
+}
+
+
+
+void do_keyboard_terminal() {
+ uint8_t ascii;
+ if (getKeyboardKey(&ascii)) {
+
+  processor->writeByte(ascii);
+ }
+}
+
+
+
+void do_mouse() {
+
+ MouseDelta delta;
+ if (mouseMoved(&delta)) {
+  auto mouse = getMouse();
+  auto mStatus = mouse->status();
+
+  setMouseCursorPos(mStatus.X, mStatus.Y);
+  processor->sendMouseData(&delta);
+ }
+}
+
+
+
+void boot_screen() {
+ printFmt("Agon %s VDP Version %d.%d.%d", VERSION_VARIANT, VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+ #if VERSION_CANDIDATE > 0
+  printFmt(" %s%d", VERSION_TYPE, VERSION_CANDIDATE);
+ #endif
+
+ #ifdef VERSION_BUILD
+  printFmt(" Build %s", VERSION_BUILD);
+ #endif
+ printFmt("\n\r");
+}
+
+
+
+void debug_log(const char *format, ...) {
+ #if DEBUG == 1
+ va_list ap;
+ va_start(ap, format);
+ auto size = vsnprintf(nullptr, 0, format, ap) + 1;
+ if (size > 0) {
+  va_end(ap);
+  va_start(ap, format);
+  char buf[size + 1];
+  vsnprintf(buf, size, format, ap);
+  DBGSerial.print(buf);
+ }
+ va_end(ap);
+ #endif
+}
+
+
+
+
+
+void setConsoleMode(bool mode) {
+ consoleMode = mode;
+}
+
+
+
+void startTerminal() {
+ switch (terminalState) {
+  case TerminalState::Disabled: {
+   terminalState = TerminalState::Enabling;
+  } break;
+  case TerminalState::Suspending: {
+   terminalState = TerminalState::Enabled;
+  } break;
+  case TerminalState::Suspended: {
+   terminalState = TerminalState::Resuming;
+  } break;
+ }
+}
+
+void stopTerminal() {
+ switch (terminalState) {
+  case TerminalState::Enabled:
+  case TerminalState::Resuming:
+  case TerminalState::Suspended:
+  case TerminalState::Suspending: {
+   terminalState = TerminalState::Disabling;
+  } break;
+  case TerminalState::Enabling: {
+   terminalState = TerminalState::Disabled;
+  } break;
+ }
+}
+
+void suspendTerminal() {
+ switch (terminalState) {
+  case TerminalState::Enabled:
+  case TerminalState::Resuming: {
+   terminalState = TerminalState::Suspending;
+   processTerminal();
+  } break;
+  case TerminalState::Enabling: {
+
+   processTerminal();
+   terminalState = TerminalState::Suspending;
+  } break;
+ }
+}
+
+
+
+bool processTerminal() {
+ switch (terminalState) {
+  case TerminalState::Disabled: {
+
+   return false;
+  } break;
+  case TerminalState::Suspended: {
+
+
+   do_keyboard_terminal();
+   return false;
+  } break;
+  case TerminalState::Enabling: {
+
+   Terminal = std::unique_ptr<fabgl::Terminal>(new fabgl::Terminal());
+   Terminal->begin(_VGAController.get());
+   Terminal->connectSerialPort(VDPSerial);
+   Terminal->enableCursor(true);
+
+   Terminal->onVirtualKeyItem = [&](VirtualKeyItem * vkItem) {
+    if (vkItem->vk == VirtualKey::VK_F12) {
+     if (vkItem->CTRL && (vkItem->LALT || vkItem->RALT)) {
+
+      stopTerminal();
+     }
+    }
+   };
+
+
+   Terminal->onUserSequence = [&](char const * seq) {
+
+    if (strcmp("Q!", seq) == 0) {
+     stopTerminal();
+    }
+    if (strcmp("S!", seq) == 0) {
+     suspendTerminal();
+    }
+   };
+   debug_log("Terminal enabled\n\r");
+   terminalState = TerminalState::Enabled;
+  } break;
+  case TerminalState::Enabled: {
+   do_keyboard_terminal();
+
+
+   if (processor->byteAvailable()) {
+    Terminal->write(processor->readByte());
+   }
+  } break;
+  case TerminalState::Disabling: {
+   Terminal->deactivate();
+   Terminal = nullptr;
+   set_mode(1);
+   processor->sendModeInformation();
+   debug_log("Terminal disabled\n\r");
+   terminalState = TerminalState::Disabled;
+  } break;
+  case TerminalState::Suspending: {
+
+   debug_log("Terminal suspended\n\r");
+   terminalState = TerminalState::Suspended;
+  } break;
+  case TerminalState::Resuming: {
+
+   debug_log("Terminal resumed\n\r");
+   terminalState = TerminalState::Enabled;
+  } break;
+  default: {
+   debug_log("processTerminal: unknown terminal state %d\n\r", terminalState);
+   return false;
+  } break;
+ }
+ return true;
+}
+
+void print(char const * text) {
+ for (auto i = 0; i < strlen(text); i++) {
+  processor->vdu(text[i]);
+ }
+}
+
+void printFmt(const char *format, ...) {
+ va_list ap;
+ va_start(ap, format);
+ int size = vsnprintf(nullptr, 0, format, ap) + 1;
+ if (size > 0) {
+  va_end(ap);
+  va_start(ap, format);
+  char buf[size + 1];
+  vsnprintf(buf, size, format, ap);
+  print(buf);
+ }
+ va_end(ap);
+}

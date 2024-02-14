@@ -75,8 +75,8 @@ void bdpp_queue_tx_packet(Packet* packet) {
 	auto old_int = uhci_disable_interrupts();
 	packet->set_flags(BDPP_PKT_FLAG_READY);
 	bdpp_tx_queue.push(packet);
-	old_int |= UHCI_INTR_OUT_EOF;
 	uhci_enable_interrupts(old_int);
+	uart_dma_start_transmitter();
 }
 
 // Check for a received packet being available.

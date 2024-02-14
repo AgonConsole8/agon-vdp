@@ -112,7 +112,9 @@ class BdppStream : public Stream {
     // This builds an outgoing (TX) packet, and sends it when full.
     //
     virtual size_t write(uint8_t data_byte) {
+    	debug_log("bddp write @%i\n",__LINE__);
         if (!tx_packet) {
+        	debug_log("bddp write @%i\n",__LINE__);
             tx_packet = Packet::create_driver_tx_packet(
                 BDPP_PKT_FLAG_COMMAND | BDPP_PKT_FLAG_DRIVER_OWNED |
                 BDPP_PKT_FLAG_MIDDLE, packet_index++, stream_index);
@@ -122,6 +124,7 @@ class BdppStream : public Stream {
         }
         tx_packet->append_data(data_byte);
         if (tx_packet->is_full()) {
+        	debug_log("bddp write @%i\n",__LINE__);
             bdpp_queue_tx_packet(tx_packet);
             tx_packet = NULL;
         }
@@ -139,7 +142,9 @@ class BdppStream : public Stream {
     // This will flush any packet currently being built.
     //
     virtual void flush() {
+    	debug_log("bddp flush @%i\n",__LINE__);
         if (tx_packet) {
+        	debug_log("bddp flush @%i\n",__LINE__);
             bdpp_queue_tx_packet(tx_packet);
             tx_packet = NULL;
         }
