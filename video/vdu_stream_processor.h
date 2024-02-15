@@ -22,7 +22,7 @@ class VDUStreamProcessor {
 		int32_t read24_t(uint16_t timeout);
 		uint8_t readByte_b();
 		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
-		uint32_t discardBytes(uint32_t length);
+		uint32_t discardBytes(uint32_t length, uint16_t timeout);
 
 		void vdu_colour();
 		void vdu_gcol();
@@ -163,9 +163,9 @@ int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) 
 //
 int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto l = readByte_t(timeout);
-	if (l >= 0) {
+	if (l != -1) {
 		auto h = readByte_t(timeout);
-		if (h >= 0) {
+		if (h != -1) {
 			return (h << 8) | l;
 		}
 	}
@@ -178,11 +178,11 @@ int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
 //
 int32_t VDUStreamProcessor::read24_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto l = readByte_t(timeout);
-	if (l >= 0) {
+	if (l != -1) {
 		auto m = readByte_t(timeout);
-		if (m >= 0) {
+		if (m != -1) {
 			auto h = readByte_t(timeout);
-			if (h >= 0) {
+			if (h != -1) {
 				return (h << 16) | (m << 8) | l;
 			}
 		}
@@ -228,7 +228,7 @@ uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length, u
 // Discard a given number of bytes from input stream
 // Returns 0 on success, or the number of bytes remaining if timed out
 //
-uint32_t VDUStreamProcessor::discardBytes(uint32_t length) {
+uint32_t VDUStreamProcessor::discardBytes(uint32_t length, uint16_t timeout = COMMS_TIMEOUT) {
 	uint32_t remaining = length;
 	auto bufferSize = 64;
 	auto readSize = bufferSize;
@@ -238,7 +238,7 @@ uint32_t VDUStreamProcessor::discardBytes(uint32_t length) {
 		if (remaining < readSize) {
 			readSize = remaining;
 		}
-		if (readIntoBuffer(buffer.get(), readSize) != 0) {
+		if (readIntoBuffer(buffer.get(), readSize, timeout) != 0) {
 			// timed out
 			return remaining;
 		}
