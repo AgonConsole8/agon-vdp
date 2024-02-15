@@ -114,7 +114,7 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
             //debug_log("OUT EOF @%i\n",__LINE__);
                 packet->clear_flags(BDPP_PKT_FLAG_READY);
                 packet->set_flags(BDPP_PKT_FLAG_DONE);
-                //delete packet;
+                delete packet;
                 old_tx_packet = packet;
                 uhci_obj.tx_pkt = NULL;
             //debug_log("OUT EOF @%i\n",__LINE__);

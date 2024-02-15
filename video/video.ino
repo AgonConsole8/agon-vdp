@@ -150,7 +150,7 @@ if (old_tx_packet) {
 					auto data = packet->get_data();
 
 					//debug_log("@%i\n",__LINE__);
-					debug_log("[%02hX] Packet: %X, %02hX, %02hx, %u\n",
+					debug_log("\n[%02hX] Packet: %X, %02hX, %02hX, %u\n",
 						packet->get_stream_index(),
 						packet,
 						packet->get_flags(),
@@ -168,7 +168,7 @@ if (old_tx_packet) {
 						bddp_processor[s]->vdu(ch);
 					}
 					delete packet;
-					debug_log("\n@%i\n",__LINE__);
+					debug_log("\n\n");
 				}
 			}
 		} else {
