@@ -125,6 +125,11 @@ void loop() {
 		do_keyboard();
 		do_mouse();
 
+extern Packet* old_tx_packet;
+if (old_tx_packet) {
+	debug_log("TRANSMITTED %X\n",old_tx_packet);
+	old_tx_packet=NULL;
+}
 		if (bdpp_is_initialized()) {
 			if (!bddp_active) {
 				// Setup the BDPP stream processors.
@@ -153,7 +158,9 @@ void loop() {
 						act_size);
 					for (uint16_t i = 0; i < act_size; i++) {
 						auto ch = data[i];
-						if (ch > 0x20 && ch < 0x7E) {
+						if (ch == 0x20) {
+							debug_log("_");
+						} else if (ch > 0x20 && ch < 0x7E) {
 							debug_log("%c", ch);
 						} else {
 							debug_log("[%02hX]", ch);

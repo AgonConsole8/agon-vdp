@@ -59,6 +59,7 @@ typedef struct {
 uhci_obj_t uhci_obj = {0};
 
 extern void debug_log(const char* fmt, ...);
+Packet* old_tx_packet;
 
 static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 {
@@ -106,17 +107,31 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 
         /* handle TX interrupt */
         if (intr_mask & (UHCI_INTR_OUT_EOF)) {
-            debug_log("OUT EOF @%i\n",__LINE__);
+            //debug_log("OUT EOF @%i\n",__LINE__);
             auto packet = uhci_obj.tx_pkt;
+            //debug_log("OUT EOF @%i %x\n",__LINE__,packet);
             if (packet) {
-                delete packet;
+            //debug_log("OUT EOF @%i\n",__LINE__);
+                packet->clear_flags(BDPP_PKT_FLAG_READY);
+                packet->set_flags(BDPP_PKT_FLAG_DONE);
+                //delete packet;
+                old_tx_packet = packet;
+                uhci_obj.tx_pkt = NULL;
+            //debug_log("OUT EOF @%i\n",__LINE__);
             }
-                if (bdpp_tx_queue.size()) {
-                            debug_log("OUT EOF @%i\n",__LINE__);
+            //debug_log("OUT EOF @%i\n",__LINE__);
+               if (bdpp_tx_queue.size()) {
+                            //debug_log("OUT EOF @%i\n",__LINE__);
                         auto packet = bdpp_tx_queue.front();
+            //debug_log("OUT EOF @%i %X\n",__LINE__,packet);
                         bdpp_tx_queue.pop();
+            //debug_log("OUT EOF @%i\n",__LINE__);
                         uhci_obj.tx_pkt = packet;
+            //debug_log("OUT EOF @%i\n",__LINE__);
                         uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(), packet->get_transfer_size()); 
+            //debug_log("OUT EOF @%i\n",__LINE__);
+                } else {
+                        uhci_hal_disable_intr(&uhci_obj.uhci_hal, UHCI_INTR_OUT_EOF);
                 }
         }
     }
@@ -180,7 +195,7 @@ int uart_dma_read(int uhci_num)
 
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
 {
-    debug_log("enter uart_dma_write\n");
+    //debug_log("enter uart_dma_write\n");
 
     uhci_obj.tx_dma.owner = 1;
     uhci_obj.tx_dma.eof = 1;
@@ -192,7 +207,7 @@ int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
     uhci_hal_set_tx_dma(hal, (uint32_t)(&(uhci_obj.tx_dma)));
     uhci_hal_tx_dma_start(hal);
 
-    debug_log("leave uart_dma_write %u\n", (uint32_t)wr);
+    //debug_log("leave uart_dma_write %u\n", (uint32_t)wr);
     return 0;
 }
 
@@ -201,10 +216,12 @@ void uart_dma_start_transmitter() {
         if (!uhci_obj.tx_pkt) {
                 if (bdpp_tx_queue.size()) {
                         auto packet = bdpp_tx_queue.front();
+                        debug_log("ST @%i %X\n",__LINE__,packet);
                         bdpp_tx_queue.pop();
                         uhci_obj.tx_pkt = packet;
                         uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(), packet->get_transfer_size());             
                         old_int |= UHCI_INTR_OUT_EOF;
+                        debug_log("ST @%i\n",__LINE__);
                 }
         }
         uhci_enable_interrupts(old_int);
