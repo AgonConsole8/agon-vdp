@@ -76,3 +76,32 @@ such packets. Each packet can contain up to 4072 bytes of data.
 ## EZ80 Function Call Tree
 
 ## ESP32 Function Call Tree
+
+## BDPP VDU Commands
+
+VDU 23, 31, 1 : Get Memory Statistics
+
+VDU 23, 31, 2, addressLo; addressHi; count; : Read Memory Area
+
+VDU 23, 31, 3, addressLo; addressHi; count; data0, ... : Write Memory Area
+
+VDU 23, 31, 4, addressLo; addressHi; count; data : Fill Memory Area
+
+VDU 23, 31, 5, count; : Allocate  DRAM
+
+VDU 23, 31, 6, count; : Allocate IRAM
+
+VDU 23, 31, 7, count; : Allocate PSRAM
+
+VDU 23, 31, 8, addressLo; addressHi; : Free DRAM
+
+VDU 23, 31, 9 , addressLo; addressHi; : Free IRAM
+
+VDU 23, 31, 10, addressLo; addressHi; : Free PSRAM
+
+VDU 23, 31, 11, addressLo; addressHi; : Execute Code Function
+
+VDU 23, 31, 12, addressLo; addressHi; count; data0, ...: Execute Code Function with Params
+
+VDU 23, 31, 13, count; data0,  ... : Echo Data
+
