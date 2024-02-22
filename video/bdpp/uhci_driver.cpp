@@ -72,8 +72,9 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
         //debug_log("* INT %X *\n", intr_mask);
 
         // handle RX interrupt */
-        if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF)) {
+        if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG)) {
             lldesc_t* descr = uhci_obj.rx_cur;
+            //lldesc_t* descr = (lldesc_t*) uhci_obj.uhci_hal.dev->?;
             int dma_index = descr - uhci_obj.rx_dma;
             auto packet = uhci_obj.rx_pkt[dma_index];
             bdpp_rx_queue[packet->get_stream_index()].push(packet);
@@ -188,7 +189,7 @@ int uart_dma_read(int uhci_num)
     uhci_hal_rx_dma_restart(hal);
     uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj.rx_dma[0])));
 
-    uhci_enable_interrupts(UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF);
+    uhci_enable_interrupts(UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF|UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG);
     uhci_hal_rx_dma_start(hal);
     return 0;
 }
@@ -282,8 +283,8 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         uart_param_config(uart_num, uart_config);
 	//debug_log("@%i\n", __LINE__);
         uart_hal_set_loop_back(hal, false);
-        uart_ll_set_rx_tout(hal->dev, 0); // use no timeout
-        //uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (1.5 character times?)
+        //uart_ll_set_rx_tout(hal->dev, 0); // use no timeout
+        uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (1.5 character times?)
 	//debug_log("@%i\n", __LINE__);
         //uart_hal_set_hw_flow_ctrl(hal, uart_config->flow_ctrl, uart_config->rx_flow_ctrl_thresh);
         //uart_hal_set_rts(hal, 1);
@@ -309,6 +310,8 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         uhci_hal_attach_uart_port(hal, uart_num);
 	//debug_log("@%i\n", __LINE__);
         uhci_hal_set_seper_chr(hal, &seper_char);
+        hal->dev->conf0.len_eof_en = 1;
+        hal->dev->conf0.uart_idle_eof_en = 1;
 	//debug_log("@%i\n", __LINE__);
         //uhci_hal_set_rx_dma(hal,(uint32_t)(&(uhci_obj.rx_dma)));
 	//debug_log("@%i\n", __LINE__);
@@ -316,7 +319,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 	//debug_log("@%i\n", __LINE__);
         uhci_hal_clear_intr(hal, UHCI_INTR_MASK);
 	//debug_log("@%i\n", __LINE__);
-        //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG);
+        //uhci_hal_enable_intr(hal, UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG);
         //uhci_hal_enable_intr(hal, 0x0001FFFF);
 	//debug_log("@%i\n", __LINE__);
         //uhci_hal_rx_dma_start(hal);
