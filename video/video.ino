@@ -76,7 +76,7 @@ bool			controlKeys = true;				// Control keys enabled
 std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
 VDUStreamProcessor * processor;					// VDU Stream Processor
 BdppStream bddp_stream[BDPP_MAX_STREAMS];		// Set of BDPP data streams
-VDUStreamProcessor * bddp_processor[BDPP_MAX_STREAMS]; // Set of BDPP stream processors
+VDUStreamProcessor * bdpp_processor[BDPP_MAX_STREAMS]; // Set of BDPP stream processors
 Stream * default_stream;						// Default VDU Stream
 
 #include "zdi.h"								// ZDI debugging console
@@ -136,40 +136,16 @@ if (old_tx_packet) {
 				bddp_active = true;
 				//delete processor;
 				for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
-					bddp_processor[s] = new VDUStreamProcessor(&bddp_stream[s]);
+					bdpp_processor[s] = new VDUStreamProcessor(&bddp_stream[s]);
 				}
-				processor = bddp_processor[0];
+				processor = bdpp_processor[0];
 				default_stream = &bddp_stream[0];
 			}
 
 			// Handle incoming data on all BDPP streams.
 			for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
-				auto packet = bdpp_get_rx_packet(s);
-				if (packet) {
-					auto act_size = packet->get_actual_data_size();
-					auto data = packet->get_data();
-
-					//debug_log("@%i\n",__LINE__);
-					debug_log("\n[%02hX] Packet: %X, %02hX, %02hX, %u\n",
-						packet->get_stream_index(),
-						packet,
-						packet->get_flags(),
-						packet->get_packet_index(),
-						act_size);
-					for (uint16_t i = 0; i < act_size; i++) {
-						auto ch = data[i];
-						if (ch == 0x20) {
-							debug_log("_");
-						} else if (ch > 0x20 && ch < 0x7E) {
-							debug_log("%c", ch);
-						} else {
-							debug_log("[%02hX]", ch);
-						}
-						bddp_processor[s]->vdu(ch);
-					}
-					delete packet;
-					debug_log("\n\n");
-				}
+				auto bdpp_proc = bdpp_processor[s];
+				bdpp_proc->processAllAvailable();
 			}
 		} else {
 			// For legacy, use Serial2.

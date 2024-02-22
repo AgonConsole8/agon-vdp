@@ -63,12 +63,39 @@ class BdppStream : public Stream {
             }
             if (bdpp_rx_packet_available(stream_index)) {
                 rx_packet = bdpp_get_rx_packet(stream_index);
+
+                // DEBUG ONLY
+				auto packet = rx_packet;
+				if (packet) {
+					auto act_size = packet->get_actual_data_size();
+					auto data = packet->get_data();
+
+					debug_log("\n[%02hX] Packet: %X, %02hX, %02hX, %u\n",
+						packet->get_stream_index(),
+						packet,
+						packet->get_flags(),
+						packet->get_packet_index(),
+						act_size);
+					for (uint16_t i = 0; i < act_size; i++) {
+						auto ch = data[i];
+						if (ch == 0x20) {
+							debug_log("_");
+						} else if (ch > 0x20 && ch < 0x7E) {
+							debug_log("%c", ch);
+						} else {
+							debug_log("[%02hX]", ch);
+						}
+					}
+					debug_log("\n\n");
+				}
+
                 auto data_size = rx_packet->get_actual_data_size();
                 if (data_size) {
                     data_index = 0;
                     return data_size;
                 }
                 delete rx_packet;
+                rx_packet = NULL;
             } else {
                 return false;
             }
@@ -139,9 +166,9 @@ class BdppStream : public Stream {
     // This will flush any packet currently being built.
     //
     virtual void flush() {
-    	debug_log("bddp flush @%i\n",__LINE__);
+    	//debug_log("bddp flush @%i\n",__LINE__);
         if (tx_packet) {
-        	debug_log("bddp flush @%i\n",__LINE__);
+        	//debug_log("bddp flush @%i\n",__LINE__);
             bdpp_queue_tx_packet(tx_packet);
             tx_packet = NULL;
         }
