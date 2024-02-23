@@ -49,7 +49,8 @@ class BdppStream : public Stream {
 
     // Check for available data
     //
-    // Data is available if we have a current packet (we discard
+    // Data is available if we have a current packet where
+    // not all data bytes have been consumed (we discard
     // packets that have a zero actual data size).
     //
     // If there is no current packet, but we can pull one from
@@ -65,39 +66,38 @@ class BdppStream : public Stream {
                 rx_packet = bdpp_get_rx_packet(stream_index);
 
                 // DEBUG ONLY
-				auto packet = rx_packet;
-				if (packet) {
-					auto act_size = packet->get_actual_data_size();
-					auto data = packet->get_data();
+                auto act_size = rx_packet->get_actual_data_size();
+                auto data = rx_packet->get_data();
 
-					/*debug_log("\n[%02hX] Packet: %X, %02hX, %02hX, %u\n",
-						packet->get_stream_index(),
-						packet,
-						packet->get_flags(),
-						packet->get_packet_index(),
-						act_size);*/
-					for (uint16_t i = 0; i < act_size; i++) {
-						auto ch = data[i];
-						if (ch == 0x20) {
-							debug_log("_");
-						} else if (ch > 0x20 && ch < 0x7E) {
-							debug_log("%c", ch);
-						} else {
-							debug_log("[%02hX]", ch);
-						}
-					}
-					debug_log("\n");
-				}
-
-                auto data_size = rx_packet->get_actual_data_size();
-                if (data_size) {
-                    data_index = 0;
-                    return data_size;
+                /*debug_log("\n[%02hX] %X, %02hX, %02hX, %u: ",
+                    rx_packet->get_stream_index(),
+                    rx_packet,
+                    rx_packet->get_flags(),
+                    rx_packet->get_packet_index(),
+                    act_size);
+                for (uint16_t i = 0; i < act_size; i++) {
+                    auto ch = data[i];
+                    if (ch == 0x20) {
+                        debug_log("_");
+                    } else if (ch > 0x20 && ch < 0x7E) {
+                        debug_log("%c", ch);
+                    } else {
+                        debug_log("[%02hX]", ch);
+                    }
                 }
+                debug_log(" (%hu)\n", act_size);*/
+                debug_log(" %02hX(%hu)",rx_packet->get_packet_index(),act_size);
+
+                if (act_size) {
+                    data_index = 0;
+                    return act_size;
+                }
+
+                // ignore empty packet
                 delete rx_packet;
                 rx_packet = NULL;
             } else {
-                return false;
+                return 0; // no data available
             }
         }
     }
