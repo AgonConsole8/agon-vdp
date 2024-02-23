@@ -859,6 +859,7 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 		if (direction == 3) ttxt_instance.scroll();
 	} else {
 		canvas->setPenColor(tbg);
+		canvas->setBrushColor(tbg);
 		canvas->setPaintOptions(tpo);
 		auto moveX = 0;
 		auto moveY = 0;
