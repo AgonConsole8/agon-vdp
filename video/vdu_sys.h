@@ -187,7 +187,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_UPDATER: {				// VDU 23, 0, &A1, command, <args>
 			vdu_sys_updater();
 		}	break;
-		case VDP_BDDP: {				// VDU 23, 0, &A2
+		case VDP_BDPP: {				// VDU 23, 0, &A2
 			vdu_sys_bdpp();				// Enable BDPP mode
 		}	break;
 		case VDP_LOGICALCOORDS: {		// VDU 23, 0, &C0, n

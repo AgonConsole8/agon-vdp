@@ -166,7 +166,7 @@ class BdppStream : public Stream {
     // This will flush any packet currently being built.
     //
     virtual void flush() {
-    	//debug_log("bddp flush @%i\n",__LINE__);
+    	//debug_log("bdpp flush @%i\n",__LINE__);
         if (tx_packet) {
         	//debug_log("bddp flush @%i\n",__LINE__);
             bdpp_queue_tx_packet(tx_packet);

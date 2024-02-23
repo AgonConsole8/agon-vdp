@@ -54,7 +54,7 @@
 #define VDP_CONTROLKEYS			0x98	// Control keys on/off
 #define VDP_BUFFERED			0xA0	// Buffered commands
 #define VDP_UPDATER				0xA1	// Update VDP
-#define VDP_BDDP				0xA2	// Enable BDDP
+#define VDP_BDPP				0xA2	// Enable BDPP
 #define VDP_LOGICALCOORDS		0xC0	// Switch BBC Micro style logical coords on and off
 #define VDP_LEGACYMODES			0xC1	// Switch VDP 1.03 compatible modes on and off
 #define VDP_SWITCHBUFFER		0xC3	// Double buffering control

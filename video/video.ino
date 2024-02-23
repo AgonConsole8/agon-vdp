@@ -75,7 +75,7 @@ bool			controlKeys = true;				// Control keys enabled
 
 std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
 VDUStreamProcessor * processor;					// VDU Stream Processor
-BdppStream bddp_stream[BDPP_MAX_STREAMS];		// Set of BDPP data streams
+BdppStream bdpp_stream[BDPP_MAX_STREAMS];		// Set of BDPP data streams
 VDUStreamProcessor * bdpp_processor[BDPP_MAX_STREAMS]; // Set of BDPP stream processors
 Stream * default_stream;						// Default VDU Stream
 
@@ -99,7 +99,7 @@ void setup() {
 
 	// Get ready in case BDPP gets activated.
 	for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
-		bddp_stream[s].set_stream_index(s);
+		bdpp_stream[s].set_stream_index(s);
 	}
 }
 
@@ -108,7 +108,7 @@ void setup() {
 void loop() {
 	bool drawCursor = false;
 	auto cursorTime = millis();
-	auto bddp_active = false;
+	auto bdpp_active = false;
 
 	while (true) {
 		if (processTerminal()) {
@@ -131,15 +131,15 @@ if (old_tx_packet) {
 	old_tx_packet=NULL;
 }
 		if (bdpp_is_initialized()) {
-			if (!bddp_active) {
+			if (!bdpp_active) {
 				// Setup the BDPP stream processors.
-				bddp_active = true;
+				bdpp_active = true;
 				//delete processor;
 				for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
-					bdpp_processor[s] = new VDUStreamProcessor(&bddp_stream[s]);
+					bdpp_processor[s] = new VDUStreamProcessor(&bdpp_stream[s]);
 				}
 				processor = bdpp_processor[0];
-				default_stream = &bddp_stream[0];
+				default_stream = &bdpp_stream[0];
 			}
 
 			// Handle incoming data on all BDPP streams.

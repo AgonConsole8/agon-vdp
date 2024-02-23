@@ -41,7 +41,7 @@ bool bdpp_is_initialized() {
 //
 void bdpp_initialize_driver() {
 #if DEBUG_BDPP
-	debug_log("Activating BDDP.\n");
+	debug_log("Activating BDPP.\n");
 #endif
 
 	// Initialize the free packet list

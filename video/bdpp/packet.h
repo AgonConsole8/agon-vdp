@@ -14,7 +14,7 @@
 #include <string.h>
 #include "esp_heap_caps.h"
 
-#define BDDP_MAX_PACKET_DATA_SIZE       4072    // Maximum size of the data in one packet
+#define BDPP_MAX_PACKET_DATA_SIZE       4072    // Maximum size of the data in one packet
 #define BDPP_SMALL_PACKET_DATA_SIZE		32		// Maximum payload data length for small packet
 #define BDPP_MAX_DRIVER_PACKETS			16		// Maximum number of driver-owned small packets
 #define BDPP_MAX_APP_PACKETS			16		// Maximum number of app-owned packets
@@ -70,7 +70,7 @@ class Packet {
 
     // Create a new, empty packet.
     Packet(uint8_t flags, uint8_t packet_index, uint8_t stream_index) {
-        auto max_size = (flags & BDPP_PKT_FLAG_APP_OWNED) ? BDDP_MAX_PACKET_DATA_SIZE : BDPP_SMALL_PACKET_DATA_SIZE;
+        auto max_size = (flags & BDPP_PKT_FLAG_APP_OWNED) ? BDPP_MAX_PACKET_DATA_SIZE : BDPP_SMALL_PACKET_DATA_SIZE;
         auto alloc_size = get_alloc_size(max_size);
         uhci_packet = (volatile UhciPacket *) heap_caps_calloc(1, alloc_size, MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
         uhci_packet->flags = flags;
