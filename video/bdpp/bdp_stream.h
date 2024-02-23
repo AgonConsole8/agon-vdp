@@ -70,12 +70,12 @@ class BdppStream : public Stream {
 					auto act_size = packet->get_actual_data_size();
 					auto data = packet->get_data();
 
-					debug_log("\n[%02hX] Packet: %X, %02hX, %02hX, %u\n",
+					/*debug_log("\n[%02hX] Packet: %X, %02hX, %02hX, %u\n",
 						packet->get_stream_index(),
 						packet,
 						packet->get_flags(),
 						packet->get_packet_index(),
-						act_size);
+						act_size);*/
 					for (uint16_t i = 0; i < act_size; i++) {
 						auto ch = data[i];
 						if (ch == 0x20) {
@@ -86,7 +86,7 @@ class BdppStream : public Stream {
 							debug_log("[%02hX]", ch);
 						}
 					}
-					debug_log("\n\n");
+					debug_log("\n");
 				}
 
                 auto data_size = rx_packet->get_actual_data_size();
