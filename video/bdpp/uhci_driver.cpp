@@ -217,7 +217,8 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         uart_hal_disable_intr_mask(hal, ~0);
         uart_param_config(uart_num, uart_config);
         uart_hal_set_loop_back(hal, false);
-        uart_ll_set_rx_tout(hal->dev, 3*8); // 24 baud bit times (1.5 character times?)
+        uart_ll_set_rx_tout(hal->dev, 255*8); // 2040 baud bit times (1.5 character times?)
+        //uart_ll_set_rx_tout(hal->dev, 0); // no timeout
         uart_set_pin(uart_num, 2, 34, 13, 14);
     }
     {
@@ -230,7 +231,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
         uhci_hal_attach_uart_port(hal, uart_num);
         uhci_hal_set_seper_chr(hal, &seper_char);
         hal->dev->conf0.len_eof_en = 1;
-        hal->dev->conf0.uart_idle_eof_en = 1;
+        //hal->dev->conf0.uart_idle_eof_en = 1;
         uhci_hal_clear_intr(hal, UHCI_INTR_MASK);
     }
     return ESP_OK;
