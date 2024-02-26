@@ -47,7 +47,6 @@ class VDUStreamProcessor {
 		void sendColour(uint8_t colour);
 		void sendTime();
 		void vdu_sys_video_time();
-		void sendKeyboardState();
 		void vdu_sys_keystate();
 		void vdu_sys_mouse();
 		void vdu_sys_scroll();
@@ -124,6 +123,7 @@ class VDUStreamProcessor {
 		void send_packet(uint8_t code, uint16_t len, uint8_t data[]);
 
 		void sendMouseData(MouseDelta * delta);
+		void sendKeyboardState();
 
 		void processAllAvailable();
 		void processNext();

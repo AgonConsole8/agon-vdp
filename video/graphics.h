@@ -33,6 +33,8 @@ uint8_t			palette[64];					// Storage for the palette
 extern bool ttxtMode;							// Teletext mode
 extern agon_ttxt ttxt_instance;					// Teletext instance
 
+extern int8_t use_otf_mode(int8_t mode);        // Provides access to on-the-fly mode
+
 // Copy the AGON font data from Flash to RAM
 //
 void copy_font() {
@@ -757,6 +759,8 @@ int8_t change_mode(uint8_t mode) {
 		case 18:
 			errVal = change_resolution(2, SVGA_1024x768_60Hz);		// VDP 1.03 Mode 0
 			break;
+		case 32 ... 79:
+			return use_otf_mode(mode);
 		case 129:
 			errVal = change_resolution(4, VGA_640x480_60Hz, true);
 			break;
