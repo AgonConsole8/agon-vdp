@@ -58,9 +58,6 @@ typedef struct {
 
 uhci_obj_t uhci_obj = {0};
 
-extern void debug_log(const char* fmt, ...);
-Packet* old_tx_packet;
-
 static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 {
     while (1) {
@@ -69,7 +66,6 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
             break;
         }
         uhci_hal_clear_intr(&(uhci_obj.uhci_hal), intr_mask);
-        //debug_log("* INT %X *\n", intr_mask);
 
         // handle RX interrupt */
         if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG)) {
@@ -101,7 +97,6 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
                 packet->clear_flags(BDPP_PKT_FLAG_READY);
                 packet->set_flags(BDPP_PKT_FLAG_DONE);
                 delete packet;
-                old_tx_packet = packet;
                 uhci_obj.tx_pkt = NULL;
             }
                if (bdpp_tx_queue.size()) {

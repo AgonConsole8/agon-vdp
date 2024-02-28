@@ -44,12 +44,18 @@ void bdpp_initialize_driver() {
 	debug_log("Activating BDPP.\n");
 #endif
 
+	//bdpp_initialized = true; // DEBUG
+	//return; // DEBUG
+
 	// Initialize the free packet list
 	for (int i = 0; i < BDPP_MAX_APP_PACKETS; i++) {
 		bdpp_free_queue.push(Packet::create_rx_packet());
 	}
 
 	// Initialize the UART2/UHCI hardware.
+	//while (Serial2.available()) {
+	//	debug_log("Toss: %02hX\n", Serial2.read());
+	//}
 	Serial2.end(); // stop existing communication
 
     uart_config_t uart_config = {
@@ -72,6 +78,18 @@ void bdpp_initialize_driver() {
 // The packet is expected to be full (to contain all data that
 // VDP wants to place into it) when this function is called.
 void bdpp_queue_tx_packet(Packet* packet) {
+	auto act_size = packet->get_actual_data_size();
+	debug_log("Queue TX pkt: %02hX %02hX %02hX %02hX %02hX (%hu):",
+		packet->get_flags(),
+		packet->get_packet_index(),
+		packet->get_stream_index(),
+		act_size & 0xFF, act_size >> 8, act_size);
+	auto data = packet->get_data();
+	for (uint16_t i = 0; i < act_size; i++) {
+		debug_log(" %02hX", data[i]);
+	}
+	debug_log("\n");
+
 	auto old_int = uhci_disable_interrupts();
 	packet->set_flags(BDPP_PKT_FLAG_READY);
 	bdpp_tx_queue.push(packet);

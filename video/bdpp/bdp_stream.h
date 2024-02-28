@@ -12,6 +12,8 @@
 #include <Stream.h>
 #include "bdpp/bdp_protocol.h"
 
+extern void debug_log(const char* f, ...);
+
 // This class represents a stream of data coming from BDPP.
 //
 class BdppStream : public Stream {
@@ -69,24 +71,24 @@ class BdppStream : public Stream {
                 auto act_size = rx_packet->get_actual_data_size();
                 auto data = rx_packet->get_data();
 
-                /*debug_log("\n[%02hX] %X, %02hX, %02hX, %u: ",
-                    rx_packet->get_stream_index(),
-                    rx_packet,
+                debug_log("\nRX pkt: %02hX %02hX %02hX %02hX %02hX (%u): ",
                     rx_packet->get_flags(),
                     rx_packet->get_packet_index(),
-                    act_size);
+                    rx_packet->get_stream_index(),
+                    act_size & 0xFF, act_size >> 8, act_size);
                 for (uint16_t i = 0; i < act_size; i++) {
                     auto ch = data[i];
                     if (ch == 0x20) {
-                        debug_log("_");
+                        debug_log("-");
                     } else if (ch > 0x20 && ch < 0x7E) {
                         debug_log("%c", ch);
                     } else {
                         debug_log("[%02hX]", ch);
                     }
                 }
-                debug_log(" (%hu)\n", act_size);*/
-                debug_log(" %02hX(%hu)",rx_packet->get_packet_index(),act_size);
+                //debug_log(" (%hu)\n", act_size);
+                //debug_log(" %02hX(%hu)",rx_packet->get_packet_index(),act_size);
+                debug_log("\n");
 
                 if (act_size) {
                     data_index = 0;
@@ -166,9 +168,7 @@ class BdppStream : public Stream {
     // This will flush any packet currently being built.
     //
     virtual void flush() {
-    	//debug_log("bdpp flush @%i\n",__LINE__);
         if (tx_packet) {
-        	//debug_log("bddp flush @%i\n",__LINE__);
             bdpp_queue_tx_packet(tx_packet);
             tx_packet = NULL;
         }

@@ -125,11 +125,6 @@ void loop() {
 		do_keyboard();
 		do_mouse();
 
-extern Packet* old_tx_packet;
-if (old_tx_packet) {
-	debug_log("TRANSMITTED %X\n",old_tx_packet);
-	old_tx_packet=NULL;
-}
 		if (bdpp_is_initialized()) {
 			if (!bdpp_active) {
 				// Setup the BDPP stream processors.
@@ -157,6 +152,27 @@ if (old_tx_packet) {
 				processor->processNext();
 			}
 		}
+		/*if (bdpp_is_initialized()) {
+			if (VDPSerial.available()) {
+				auto ch = VDPSerial.read();
+				if (ch > 0x20 && ch <= 0x7E) {
+					debug_log("%c", ch);
+				} else if (ch == 0x20) {
+					debug_log("-");
+				} else {
+					debug_log("[%02hX]", ch);
+					if (ch == 0x0A || ch == 0x0D) {
+						debug_log("\n");
+					}
+				}
+			}
+		} else if (processor->byteAvailable()) {
+			if (drawCursor) {
+				drawCursor = false;
+				do_cursor();
+			}
+			processor->processNext();
+		}*/
 	}
 }
 
