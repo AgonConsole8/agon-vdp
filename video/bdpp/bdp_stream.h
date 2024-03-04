@@ -149,7 +149,7 @@ class BdppStream : public Stream {
                 packet_index = 0;
             }
         }
-        tx_packet->append_data(data_byte);
+        tx_packet->get_uhci_packet()->append_data(data_byte);
         if (tx_packet->is_full()) {
             bdpp_queue_tx_packet(tx_packet);
             tx_packet = NULL;
@@ -175,9 +175,9 @@ class BdppStream : public Stream {
     }
 
     protected:
-    uint8_t packet_index; // index of an outgoing packet
-    uint8_t stream_index; // index of this string (0..BDPP_MAX_STREAMS-1)
-    uint16_t data_index; // index into data portion of current packet
-    Packet* rx_packet; // current packet used to extract data
-    Packet* tx_packet; // current packet used to output data
+    uint8_t     packet_index; // index of an outgoing packet
+    uint8_t     stream_index; // index of this string (0..BDPP_MAX_STREAMS-1)
+    uint16_t    data_index; // index into data portion of current packet
+    UhciPacket* rx_packet; // current packet used to extract data
+    Packet*     tx_packet; // current packet used to output data
 };

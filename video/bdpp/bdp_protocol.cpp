@@ -27,8 +27,7 @@ extern void debug_log(const char* fmt, ...);
 
 bool bdpp_initialized; // Whether the driver has been initialized
 std::queue<Packet*> bdpp_tx_queue; // Transmit (TX) packet queue
-std::queue<Packet*> bdpp_rx_queue[BDPP_MAX_STREAMS]; // Receive (RX) packet queue
-std::queue<Packet*> bdpp_free_queue; // Free packet queue for RX
+std::queue<UhciPacket*> bdpp_rx_queue[BDPP_MAX_STREAMS]; // Receive (RX) packet queue
 
 //--------------------------------------------------
 
@@ -43,14 +42,6 @@ void bdpp_initialize_driver() {
 #if DEBUG_BDPP
 	debug_log("Activating BDPP.\n");
 #endif
-
-	//bdpp_initialized = true; // DEBUG
-	//return; // DEBUG
-
-	// Initialize the free packet list
-	for (int i = 0; i < BDPP_MAX_APP_PACKETS; i++) {
-		bdpp_free_queue.push(Packet::create_rx_packet());
-	}
 
 	// Initialize the UART2/UHCI hardware.
 	//while (Serial2.available()) {
@@ -70,7 +61,7 @@ void bdpp_initialize_driver() {
 
     uhci_driver_install(UHCI_NUM, 0);
     uhci_attach_uart_port(UHCI_NUM, UART_NUM, &uart_config);
-	uart_dma_read(UHCI_NUM);
+	uart_dma_read();
 	bdpp_initialized = true;
 }
 
@@ -78,20 +69,21 @@ void bdpp_initialize_driver() {
 // The packet is expected to be full (to contain all data that
 // VDP wants to place into it) when this function is called.
 void bdpp_queue_tx_packet(Packet* packet) {
-	auto act_size = packet->get_actual_data_size();
+	auto uhci_packet = packet->get_uhci_packet();
+	auto act_size = packet->get_uhci_packet()->get_actual_data_size();
 	debug_log("Queue TX pkt: %02hX %02hX %02hX %02hX %02hX (%hu):",
-		packet->get_flags(),
-		packet->get_packet_index(),
-		packet->get_stream_index(),
+		uhci_packet->get_flags(),
+		uhci_packet->get_packet_index(),
+		uhci_packet->get_stream_index(),
 		act_size & 0xFF, act_size >> 8, act_size);
-	auto data = packet->get_data();
+	auto data = uhci_packet->get_data();
 	for (uint16_t i = 0; i < act_size; i++) {
 		debug_log(" %02hX", data[i]);
 	}
 	debug_log("\n");
 
 	auto old_int = uhci_disable_interrupts();
-	packet->set_flags(BDPP_PKT_FLAG_READY);
+	uhci_packet->set_flags(BDPP_PKT_FLAG_READY);
 	bdpp_tx_queue.push(packet);
 	uhci_enable_interrupts(old_int);
 	uart_dma_start_transmitter();
@@ -106,8 +98,8 @@ bool bdpp_rx_packet_available(uint8_t stream_index) {
 }
 
 // Get a received packet.
-Packet* bdpp_get_rx_packet(uint8_t stream_index) {
-	Packet* packet = NULL;
+UhciPacket* bdpp_get_rx_packet(uint8_t stream_index) {
+	UhciPacket* packet = NULL;
 	auto old_int = uhci_disable_interrupts();
 	auto queue = &bdpp_rx_queue[stream_index];
 	if (!queue->empty()) {
@@ -115,5 +107,5 @@ Packet* bdpp_get_rx_packet(uint8_t stream_index) {
 		queue->pop();
 	}
 	uhci_enable_interrupts(old_int);
-	return (Packet*) packet;
+	return packet;
 }

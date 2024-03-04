@@ -34,8 +34,7 @@
 #include <queue>
 
 extern std::queue<Packet*> bdpp_tx_queue; // Transmit (TX) packet queue
-extern std::queue<Packet*> bdpp_rx_queue[BDPP_MAX_STREAMS]; // Receive (RX) packet queue
-extern std::queue<Packet*> bdpp_free_queue; // Free packet queue for RX
+extern std::queue<UhciPacket*> bdpp_rx_queue[BDPP_MAX_STREAMS]; // Receive (RX) packet queue
 
 #define DMA_TX_IDLE_NUM (0)
 #define DMA_RX_IDLE_THRD (20)
@@ -45,19 +44,19 @@ extern std::queue<Packet*> bdpp_free_queue; // Free packet queue for RX
 #define DMA_TX_BUF_SIZE  (256)
 
 typedef struct {
-    uart_hal_context_t uart_hal;
-    uhci_hal_context_t uhci_hal;
-    intr_handle_t intr_handle;
-    int uhci_num;
-    lldesc_t rx_dma[BDPP_MAX_RX_PACKETS];
-    lldesc_t tx_dma;
-    lldesc_t* rx_cur;
-    Packet* rx_pkt[BDPP_MAX_RX_PACKETS];
-    Packet* tx_pkt;
+    uart_hal_context_t  uart_hal;
+    uhci_hal_context_t  uhci_hal;
+    intr_handle_t       intr_handle;
+    int                 uhci_num;
+    lldesc_t            tx_dma;
+    Packet*             tx_pkt;
+    lldesc_t            rx_dma[BDPP_MAX_RX_PACKETS];
+    UhciPacket          rx_pkt[BDPP_MAX_RX_PACKETS];
 } uhci_obj_t;
 
-uhci_obj_t uhci_obj = {0};
-
+DRAM_ATTR uhci_obj_t uhci_obj = {0};
+extern void debug_log(const char* f, ...);
+int last_dma_index = -1;
 static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 {
     while (1) {
@@ -69,100 +68,70 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 
         // handle RX interrupt */
         if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG)) {
-            lldesc_t* descr = uhci_obj.rx_cur;
-            //lldesc_t* descr = (lldesc_t*) uhci_obj.uhci_hal.dev->?;
+            lldesc_t* descr = (lldesc_t*) uhci_obj.uhci_hal.dev->dma_in_suc_eof_des_addr;
             int dma_index = descr - uhci_obj.rx_dma;
-            auto packet = uhci_obj.rx_pkt[dma_index];
-            bdpp_rx_queue[packet->get_stream_index()].push(packet);
-
-            packet->set_flags(BDPP_PKT_FLAG_DONE);
-            packet->clear_flags(BDPP_PKT_FLAG_READY);
-            if (dma_index < 3) {
-                (uhci_obj.rx_cur)++;
-            } else {
-                uhci_obj.rx_cur = uhci_obj.rx_dma;
+            last_dma_index = dma_index;
+            if (descr->length >= sizeof(UhciPacket)-1) {
+                // provide this packet to the app
+                auto packet = &uhci_obj.rx_pkt[dma_index];
+                packet->set_flags(BDPP_PKT_FLAG_DONE);
+                packet->clear_flags(BDPP_PKT_FLAG_READY);
+                bdpp_rx_queue[packet->get_stream_index()].push(packet);                
             }
-            packet = Packet::create_rx_packet();
-            uhci_obj.rx_pkt[dma_index] = packet;
-            auto dma = &uhci_obj.rx_dma[dma_index];
-            dma->buf = packet->get_uhci_data();
-            dma->size = packet->get_maximum_data_size();
-            dma->length = 0;
         }
 
         /* handle TX interrupt */
         if (intr_mask & (UHCI_INTR_OUT_EOF)) {
+            debug_log("@%i\n",__LINE__);
             auto packet = uhci_obj.tx_pkt;
             if (packet) {
-                packet->clear_flags(BDPP_PKT_FLAG_READY);
-                packet->set_flags(BDPP_PKT_FLAG_DONE);
+            //debug_log("@%i\n",__LINE__);
+                packet->get_uhci_packet()->clear_flags(BDPP_PKT_FLAG_READY);
+                packet->get_uhci_packet()->set_flags(BDPP_PKT_FLAG_DONE);
                 delete packet;
                 uhci_obj.tx_pkt = NULL;
             }
-               if (bdpp_tx_queue.size()) {
-                        auto packet = bdpp_tx_queue.front();
-                        bdpp_tx_queue.pop();
-                        uhci_obj.tx_pkt = packet;
-                        uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(), packet->get_transfer_size()); 
-                } else {
-                        uhci_hal_disable_intr(&uhci_obj.uhci_hal, UHCI_INTR_OUT_EOF);
-                }
+            //debug_log("@%i\n",__LINE__);
+            if (bdpp_tx_queue.size()) {
+            //debug_log("@%i\n",__LINE__);
+                    auto packet = bdpp_tx_queue.front();
+                    bdpp_tx_queue.pop();
+                    uhci_obj.tx_pkt = packet;
+                    uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(),
+                        packet->get_uhci_packet()->get_transfer_size()); 
+            } else {
+            //debug_log("@%i\n",__LINE__);
+                    uhci_hal_disable_intr(&uhci_obj.uhci_hal, UHCI_INTR_OUT_EOF);
+            }
+            debug_log("@%i\n",__LINE__);
         }
     }
 }
 
-int uart_dma_read(int uhci_num)
+void uart_dma_read()
 {
     auto hal = &(uhci_obj.uhci_hal);
 
-    uhci_obj.rx_cur = uhci_obj.rx_dma;
-    uhci_obj.rx_pkt[0] = Packet::create_rx_packet();
-    auto alloc_size = Packet::get_alloc_size(uhci_obj.rx_pkt[0]->get_maximum_data_size());
-    uhci_obj.rx_dma[0].owner = 1;
-    uhci_obj.rx_dma[0].eof = 1;
-    uhci_obj.rx_dma[0].size = alloc_size;
-    uhci_obj.rx_dma[0].length = 0;
-    uhci_obj.rx_dma[0].empty = (uint32_t)&uhci_obj.rx_dma[1]; // actually 'qe' (ptr to next descr)
-    uhci_obj.rx_dma[0].buf = uhci_obj.rx_pkt[0]->get_uhci_data();
-    uhci_obj.rx_dma[0].offset = 0;
-    uhci_obj.rx_dma[0].sosf = 0;
-
-    uhci_obj.rx_pkt[1] = Packet::create_rx_packet();
-    uhci_obj.rx_dma[1].owner = 1;
-    uhci_obj.rx_dma[1].eof = 1;
-    uhci_obj.rx_dma[1].size = alloc_size;
-    uhci_obj.rx_dma[1].length = 0;
-    uhci_obj.rx_dma[1].empty = (uint32_t)&uhci_obj.rx_dma[2]; // actually 'qe' (ptr to next descr)
-    uhci_obj.rx_dma[1].buf = uhci_obj.rx_pkt[1]->get_uhci_data();
-    uhci_obj.rx_dma[1].offset = 0;
-    uhci_obj.rx_dma[1].sosf = 0;
-
-    uhci_obj.rx_pkt[2] = Packet::create_rx_packet();
-    uhci_obj.rx_dma[2].owner = 1;
-    uhci_obj.rx_dma[2].eof = 1;
-    uhci_obj.rx_dma[2].size = alloc_size;
-    uhci_obj.rx_dma[2].length = 0;
-    uhci_obj.rx_dma[2].empty = (uint32_t)&uhci_obj.rx_dma[3]; // actually 'qe' (ptr to next descr)
-    uhci_obj.rx_dma[2].buf = uhci_obj.rx_pkt[2]->get_uhci_data();
-    uhci_obj.rx_dma[2].offset = 0;
-    uhci_obj.rx_dma[2].sosf = 0;
-
-    uhci_obj.rx_pkt[3] = Packet::create_rx_packet();
-    uhci_obj.rx_dma[3].owner = 1;
-    uhci_obj.rx_dma[3].eof = 1;
-    uhci_obj.rx_dma[3].size = alloc_size;
-    uhci_obj.rx_dma[3].length = 0;
-    uhci_obj.rx_dma[3].empty = (uint32_t)&uhci_obj.rx_dma[0]; // actually 'qe' (ptr to next descr)
-    uhci_obj.rx_dma[3].buf = uhci_obj.rx_pkt[3]->get_uhci_data();
-    uhci_obj.rx_dma[3].offset = 0;
-    uhci_obj.rx_dma[3].sosf = 0;
+    for (uint32_t i = 0; i < BDPP_MAX_RX_PACKETS; i++) {
+        auto dma = &uhci_obj.rx_dma[i];
+        auto packet = &uhci_obj.rx_pkt[i];
+        dma->buf = (volatile uint8_t *) packet;
+        dma->eof = 1;
+        dma->owner = 1;
+        dma->size = BDPP_MAX_PACKET_DATA_SIZE;
+        dma->length = 0;
+        dma->offset = 0;
+        dma->sosf = 0;
+        auto next = (i >= BDPP_MAX_RX_PACKETS-1 ? 0 : i + 1);
+        dma->empty = (uint32_t) &uhci_obj.rx_dma[next]; // actually, 'qe' field
+        packet->flags = BDPP_PKT_FLAG_FOR_RX | BDPP_PKT_FLAG_READY;
+    }
 
     uhci_hal_rx_dma_restart(hal);
     uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj.rx_dma[0])));
 
     uhci_enable_interrupts(UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF|UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG);
     uhci_hal_rx_dma_start(hal);
-    return 0;
 }
 
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
@@ -186,7 +155,8 @@ void uart_dma_start_transmitter() {
                         auto packet = bdpp_tx_queue.front();
                         bdpp_tx_queue.pop();
                         uhci_obj.tx_pkt = packet;
-                        uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(), packet->get_transfer_size());             
+                        uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(),
+                            packet->get_uhci_packet()->get_transfer_size());             
                         old_int |= UHCI_INTR_OUT_EOF;
                 }
         }
