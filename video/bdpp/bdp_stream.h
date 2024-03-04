@@ -98,7 +98,6 @@ class BdppStream : public Stream {
                 }
 
                 // ignore empty packet
-                delete rx_packet;
                 rx_packet = NULL;
             } else {
                 return 0; // no data available
@@ -116,7 +115,6 @@ class BdppStream : public Stream {
         if (available()) {
             auto result = (int)(uint)(rx_packet->get_data()[data_index++]);
             if (data_index >= rx_packet->get_actual_data_size()) {
-                delete rx_packet;
                 rx_packet = NULL;
             }
             return result;

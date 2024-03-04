@@ -88,7 +88,7 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
                 int dma_index = descr - uhci_obj->rx_dma;
                 if (dma_index <= BDPP_MAX_RX_PACKETS) {
                     last_dma_index = dma_index;
-                    debug_log("@%i %i %X\n",__LINE__,dma_index,descr);
+                    //debug_log("@%i %i %X\n",__LINE__,dma_index,descr);
                     if (descr->length >= sizeof(UhciPacket)-BDPP_MAX_PACKET_DATA_SIZE) {
                         // provide this packet to the app
                         auto packet = &uhci_obj->rx_pkt[dma_index];
@@ -104,7 +104,7 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 
         /* handle TX interrupt */
         if (intr_mask & (UHCI_INTR_OUT_EOF)) {
-            debug_log("@%i\n",__LINE__);
+            //debug_log("@%i\n",__LINE__);
             auto packet = uhci_obj->tx_pkt;
             if (packet) {
             //debug_log("@%i\n",__LINE__);
@@ -125,7 +125,7 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
             //debug_log("@%i\n",__LINE__);
                     uhci_hal_disable_intr(&uhci_obj->uhci_hal, UHCI_INTR_OUT_EOF);
             }
-            debug_log("@%i\n",__LINE__);
+            //debug_log("@%i\n",__LINE__);
         }
     }
 }
@@ -135,10 +135,11 @@ void uart_dma_read()
     for (uint32_t i = 0; i < BDPP_MAX_RX_PACKETS; i++) {
         auto dma = &uhci_obj->rx_dma[i];
         auto packet = &uhci_obj->rx_pkt[i];
+        auto alloc_size = Packet::get_alloc_size(BDPP_MAX_PACKET_DATA_SIZE);
         dma->buf = (volatile uint8_t *) packet;
         dma->eof = 1;
         dma->owner = 1;
-        dma->size = BDPP_MAX_PACKET_DATA_SIZE;
+        dma->size = alloc_size;
         dma->length = 0;
         dma->offset = 0;
         dma->sosf = 0;
