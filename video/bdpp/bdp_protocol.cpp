@@ -99,6 +99,7 @@ bool bdpp_rx_packet_available(uint8_t stream_index) {
 
 // Get a received packet.
 UhciPacket* bdpp_get_rx_packet(uint8_t stream_index) {
+	debug_log("@%i\n",__LINE__);
 	UhciPacket* packet = NULL;
 	auto old_int = uhci_disable_interrupts();
 	auto queue = &bdpp_rx_queue[stream_index];
@@ -107,5 +108,6 @@ UhciPacket* bdpp_get_rx_packet(uint8_t stream_index) {
 		queue->pop();
 	}
 	uhci_enable_interrupts(old_int);
+	debug_log("@%i\n",__LINE__);
 	return packet;
 }

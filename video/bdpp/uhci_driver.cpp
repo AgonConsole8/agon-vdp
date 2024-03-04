@@ -44,64 +44,85 @@ extern std::queue<UhciPacket*> bdpp_rx_queue[BDPP_MAX_STREAMS]; // Receive (RX) 
 #define DMA_TX_BUF_SIZE  (256)
 
 typedef struct {
+    Packet*             tx_pkt;
+
+    union {
+    uint32_t            align1;
+    lldesc_t            tx_dma;
+    };
+
+    union {
+    uint32_t            align2;
+    lldesc_t            rx_dma[BDPP_MAX_RX_PACKETS];
+    };
+
+    union {
+    uint32_t            align3;
+    UhciPacket          rx_pkt[BDPP_MAX_RX_PACKETS];
+    };
+
     uart_hal_context_t  uart_hal;
     uhci_hal_context_t  uhci_hal;
     intr_handle_t       intr_handle;
     int                 uhci_num;
-    lldesc_t            tx_dma;
-    Packet*             tx_pkt;
-    lldesc_t            rx_dma[BDPP_MAX_RX_PACKETS];
-    UhciPacket          rx_pkt[BDPP_MAX_RX_PACKETS];
 } uhci_obj_t;
 
-DRAM_ATTR uhci_obj_t uhci_obj = {0};
+uhci_obj_t* uhci_obj = NULL;
 extern void debug_log(const char* f, ...);
 int last_dma_index = -1;
 static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 {
     while (1) {
-        uint32_t intr_mask = uhci_hal_get_intr(&(uhci_obj.uhci_hal));
+        uint32_t intr_mask = uhci_hal_get_intr(&(uhci_obj->uhci_hal));
         if (intr_mask == 0) {
             break;
         }
-        uhci_hal_clear_intr(&(uhci_obj.uhci_hal), intr_mask);
+        uhci_hal_clear_intr(&(uhci_obj->uhci_hal), intr_mask);
 
         // handle RX interrupt */
         if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG)) {
-            lldesc_t* descr = (lldesc_t*) uhci_obj.uhci_hal.dev->dma_in_suc_eof_des_addr;
-            int dma_index = descr - uhci_obj.rx_dma;
+            //debug_log("@%i\n",__LINE__);
+            lldesc_t* descr = (lldesc_t*) uhci_obj->uhci_hal.dev->dma_in_suc_eof_des_addr;
+            int dma_index = descr - uhci_obj->rx_dma;
             last_dma_index = dma_index;
-            if (descr->length >= sizeof(UhciPacket)-1) {
+            debug_log("@%i %i %u\n",__LINE__,dma_index,descr->length);
+            if (descr->length >= sizeof(UhciPacket)-BDPP_MAX_PACKET_DATA_SIZE) {
                 // provide this packet to the app
-                auto packet = &uhci_obj.rx_pkt[dma_index];
+            //debug_log("@%i\n",__LINE__);
+                auto packet = &uhci_obj->rx_pkt[dma_index];
+            debug_log("@%i (%u) %02hX %02hX %hu\n",__LINE__,descr->length,packet->flags,packet->indexes,packet->act_size);
                 packet->set_flags(BDPP_PKT_FLAG_DONE);
+            //debug_log("@%i\n",__LINE__);
                 packet->clear_flags(BDPP_PKT_FLAG_READY);
+            //debug_log("@%i\n",__LINE__);
                 bdpp_rx_queue[packet->get_stream_index()].push(packet);                
+            //debug_log("@%i\n",__LINE__);
             }
+            //debug_log("@%i\n",__LINE__);
         }
 
         /* handle TX interrupt */
         if (intr_mask & (UHCI_INTR_OUT_EOF)) {
             debug_log("@%i\n",__LINE__);
-            auto packet = uhci_obj.tx_pkt;
+            auto packet = uhci_obj->tx_pkt;
             if (packet) {
             //debug_log("@%i\n",__LINE__);
                 packet->get_uhci_packet()->clear_flags(BDPP_PKT_FLAG_READY);
                 packet->get_uhci_packet()->set_flags(BDPP_PKT_FLAG_DONE);
                 delete packet;
-                uhci_obj.tx_pkt = NULL;
+                uhci_obj->tx_pkt = NULL;
             }
             //debug_log("@%i\n",__LINE__);
             if (bdpp_tx_queue.size()) {
             //debug_log("@%i\n",__LINE__);
                     auto packet = bdpp_tx_queue.front();
                     bdpp_tx_queue.pop();
-                    uhci_obj.tx_pkt = packet;
+                    uhci_obj->tx_pkt = packet;
                     uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(),
                         packet->get_uhci_packet()->get_transfer_size()); 
             } else {
             //debug_log("@%i\n",__LINE__);
-                    uhci_hal_disable_intr(&uhci_obj.uhci_hal, UHCI_INTR_OUT_EOF);
+                    uhci_hal_disable_intr(&uhci_obj->uhci_hal, UHCI_INTR_OUT_EOF);
             }
             debug_log("@%i\n",__LINE__);
         }
@@ -110,11 +131,9 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 
 void uart_dma_read()
 {
-    auto hal = &(uhci_obj.uhci_hal);
-
     for (uint32_t i = 0; i < BDPP_MAX_RX_PACKETS; i++) {
-        auto dma = &uhci_obj.rx_dma[i];
-        auto packet = &uhci_obj.rx_pkt[i];
+        auto dma = &uhci_obj->rx_dma[i];
+        auto packet = &uhci_obj->rx_pkt[i];
         dma->buf = (volatile uint8_t *) packet;
         dma->eof = 1;
         dma->owner = 1;
@@ -123,12 +142,13 @@ void uart_dma_read()
         dma->offset = 0;
         dma->sosf = 0;
         auto next = (i >= BDPP_MAX_RX_PACKETS-1 ? 0 : i + 1);
-        dma->empty = (uint32_t) &uhci_obj.rx_dma[next]; // actually, 'qe' field
+        dma->empty = (uint32_t) &uhci_obj->rx_dma[next]; // actually, 'qe' field
         packet->flags = BDPP_PKT_FLAG_FOR_RX | BDPP_PKT_FLAG_READY;
     }
 
+    auto hal = &(uhci_obj->uhci_hal);
     uhci_hal_rx_dma_restart(hal);
-    uhci_hal_set_rx_dma(hal, (uint32_t)(&(uhci_obj.rx_dma[0])));
+    uhci_hal_set_rx_dma(hal, (uint32_t)(uhci_obj->rx_dma));
 
     uhci_enable_interrupts(UHCI_INTR_IN_DONE|UHCI_INTR_IN_SUC_EOF|UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG);
     uhci_hal_rx_dma_start(hal);
@@ -136,25 +156,25 @@ void uart_dma_read()
 
 int uart_dma_write(int uhci_num, uint8_t *pbuf, size_t wr)
 {
-    uhci_obj.tx_dma.owner = 1;
-    uhci_obj.tx_dma.eof = 1;
-    uhci_obj.tx_dma.buf = pbuf;
-    uhci_obj.tx_dma.length = wr;
-    uhci_obj.tx_dma.size = (wr+3)&0xFFFFFFFC;
-    uhci_obj.tx_dma.empty = 0; // actually 'qe' (ptr to next descr)
-    auto hal = &(uhci_obj.uhci_hal);
-    uhci_hal_set_tx_dma(hal, (uint32_t)(&(uhci_obj.tx_dma)));
+    uhci_obj->tx_dma.owner = 1;
+    uhci_obj->tx_dma.eof = 1;
+    uhci_obj->tx_dma.buf = pbuf;
+    uhci_obj->tx_dma.length = wr;
+    uhci_obj->tx_dma.size = (wr+3)&0xFFFFFFFC;
+    uhci_obj->tx_dma.empty = 0; // actually 'qe' (ptr to next descr)
+    auto hal = &(uhci_obj->uhci_hal);
+    uhci_hal_set_tx_dma(hal, (uint32_t)(&(uhci_obj->tx_dma)));
     uhci_hal_tx_dma_start(hal);
     return 0;
 }
 
 void uart_dma_start_transmitter() {
         auto old_int = uhci_disable_interrupts();
-        if (!uhci_obj.tx_pkt) {
+        if (!uhci_obj->tx_pkt) {
                 if (bdpp_tx_queue.size()) {
                         auto packet = bdpp_tx_queue.front();
                         bdpp_tx_queue.pop();
-                        uhci_obj.tx_pkt = packet;
+                        uhci_obj->tx_pkt = packet;
                         uart_dma_write(UHCI_NUM_0, packet->get_uhci_data(),
                             packet->get_uhci_packet()->get_transfer_size());             
                         old_int |= UHCI_INTR_OUT_EOF;
@@ -165,17 +185,19 @@ void uart_dma_start_transmitter() {
 
 esp_err_t uhci_driver_install(int uhci_num, int intr_flag)
 {
-    uhci_obj.uhci_num = uhci_num;
+    uhci_obj = (uhci_obj_t*) heap_caps_malloc(sizeof(uhci_obj_t), MALLOC_CAP_DMA | MALLOC_CAP_32BIT | MALLOC_CAP_8BIT);
+    memset(uhci_obj, 0, sizeof(uhci_obj_t));
+    uhci_obj->uhci_num = uhci_num;
     periph_module_enable(PERIPH_UHCI0_MODULE);
     return esp_intr_alloc(ETS_UHCI0_INTR_SOURCE, intr_flag, &uhci_isr_handler_for_bdpp,
-                            &uhci_obj, &uhci_obj.intr_handle);
+                            uhci_obj, &uhci_obj->intr_handle);
 }
 
 esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t *uart_config)
 {
     {
         // Configure UART params
-        auto hal = &(uhci_obj.uart_hal);
+        auto hal = &(uhci_obj->uart_hal);
         hal->dev = UART_LL_GET_HW(uart_num);
         uart_hal_init(hal, uart_num);
         periph_module_enable(uart_periph_signal[uart_num].module);
@@ -189,7 +211,7 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
     {
         //Configure UHCI param
         uhci_seper_chr_t seper_char = { 0x89, 0x8B, 0x8A, 0x8B, 0x8D, 0x01 };
-        auto hal = &(uhci_obj.uhci_hal);
+        auto hal = &(uhci_obj->uhci_hal);
         uhci_hal_init(hal, uhci_num);
         uhci_hal_disable_intr(hal, UHCI_INTR_MASK);
         uhci_hal_set_eof_mode(hal, UHCI_RX_EOF_MAX);
@@ -203,13 +225,13 @@ esp_err_t uhci_attach_uart_port(int uhci_num, int uart_num, const uart_config_t 
 }
 
 uint32_t uhci_disable_interrupts() {
-	auto hal = &(uhci_obj.uhci_hal);
+	auto hal = &(uhci_obj->uhci_hal);
 	auto old_int = uhci_hal_get_enabled_intr(hal);
         uhci_hal_disable_intr(hal, ~0);
         return old_int;
 }
 
 void uhci_enable_interrupts(uint32_t old_int) {
-	auto hal = &(uhci_obj.uhci_hal);
+	auto hal = &(uhci_obj->uhci_hal);
         uhci_hal_enable_intr(hal, old_int);
 }
