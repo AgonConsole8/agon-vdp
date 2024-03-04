@@ -42,7 +42,7 @@ void bdpp_initialize_driver() {
 #if DEBUG_BDPP
 	debug_log("Activating BDPP.\n");
 #endif
-
+//bdpp_initialized = true; return;
 	// Initialize the UART2/UHCI hardware.
 	//while (Serial2.available()) {
 	//	debug_log("Toss: %02hX\n", Serial2.read());

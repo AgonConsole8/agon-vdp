@@ -69,6 +69,7 @@ typedef struct {
 
 uhci_obj_t* uhci_obj = NULL;
 extern void debug_log(const char* f, ...);
+extern void show_rx_packet(UhciPacket* packet);
 int last_dma_index = -1;
 static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
 {
@@ -83,22 +84,22 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
         if (intr_mask & (UHCI_INTR_IN_DONE | UHCI_INTR_IN_SUC_EOF | UHCI_INTR_TX_HUNG|UHCI_INTR_RX_HUNG)) {
             //debug_log("@%i\n",__LINE__);
             lldesc_t* descr = (lldesc_t*) uhci_obj->uhci_hal.dev->dma_in_suc_eof_des_addr;
-            int dma_index = descr - uhci_obj->rx_dma;
-            last_dma_index = dma_index;
-            debug_log("@%i %i %u\n",__LINE__,dma_index,descr->length);
-            if (descr->length >= sizeof(UhciPacket)-BDPP_MAX_PACKET_DATA_SIZE) {
-                // provide this packet to the app
-            //debug_log("@%i\n",__LINE__);
-                auto packet = &uhci_obj->rx_pkt[dma_index];
-            debug_log("@%i (%u) %02hX %02hX %hu\n",__LINE__,descr->length,packet->flags,packet->indexes,packet->act_size);
-                packet->set_flags(BDPP_PKT_FLAG_DONE);
-            //debug_log("@%i\n",__LINE__);
-                packet->clear_flags(BDPP_PKT_FLAG_READY);
-            //debug_log("@%i\n",__LINE__);
-                bdpp_rx_queue[packet->get_stream_index()].push(packet);                
-            //debug_log("@%i\n",__LINE__);
+            if (descr) {
+                int dma_index = descr - uhci_obj->rx_dma;
+                if (dma_index <= BDPP_MAX_RX_PACKETS) {
+                    last_dma_index = dma_index;
+                    debug_log("@%i %i %X\n",__LINE__,dma_index,descr);
+                    if (descr->length >= sizeof(UhciPacket)-BDPP_MAX_PACKET_DATA_SIZE) {
+                        // provide this packet to the app
+                        auto packet = &uhci_obj->rx_pkt[dma_index];
+                        //show_rx_packet(packet);
+                        //debug_log("@%i (%u) %02hX %02hX %hu\n",__LINE__,descr->length,packet->flags,packet->indexes,packet->act_size);
+                        packet->set_flags(BDPP_PKT_FLAG_DONE);
+                        packet->clear_flags(BDPP_PKT_FLAG_READY);
+                        bdpp_rx_queue[packet->get_stream_index()].push(packet);                
+                    }
+                }
             }
-            //debug_log("@%i\n",__LINE__);
         }
 
         /* handle TX interrupt */
@@ -143,6 +144,7 @@ void uart_dma_read()
         dma->sosf = 0;
         auto next = (i >= BDPP_MAX_RX_PACKETS-1 ? 0 : i + 1);
         dma->empty = (uint32_t) &uhci_obj->rx_dma[next]; // actually, 'qe' field
+        debug_log("dma[%u]=%X, pkt=%X, data=%X, next=%X\n", i, dma, packet, packet->data, dma->empty);
         packet->flags = BDPP_PKT_FLAG_FOR_RX | BDPP_PKT_FLAG_READY;
     }
 

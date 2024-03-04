@@ -14,6 +14,27 @@
 
 extern void debug_log(const char* f, ...);
 
+void show_rx_packet(UhciPacket* packet) {
+    auto act_size = packet->get_actual_data_size();
+    auto data = packet->get_data();
+    debug_log("RX pkt: fl %02hX pi %02hX si %02hX sz %02hX %02hX (%u): ",
+        packet->get_flags(),
+        packet->get_packet_index(),
+        packet->get_stream_index(),
+        act_size & 0xFF, act_size >> 8, act_size);
+    for (uint16_t i = 0; i < act_size; i++) {
+        auto ch = data[i];
+        if (ch == 0x20) {
+            debug_log("-");
+        } else if (ch > 0x20 && ch < 0x7E) {
+            debug_log("%c", ch);
+        } else {
+            debug_log("[%02hX]", ch);
+        }
+    }
+    debug_log("\n");
+}
+
 // This class represents a stream of data coming from BDPP.
 //
 class BdppStream : public Stream {
@@ -68,28 +89,9 @@ class BdppStream : public Stream {
                 rx_packet = bdpp_get_rx_packet(stream_index);
 
                 // DEBUG ONLY
+                show_rx_packet(rx_packet);
+
                 auto act_size = rx_packet->get_actual_data_size();
-                auto data = rx_packet->get_data();
-
-                debug_log("\nRX pkt: %02hX %02hX %02hX %02hX %02hX (%u): ",
-                    rx_packet->get_flags(),
-                    rx_packet->get_packet_index(),
-                    rx_packet->get_stream_index(),
-                    act_size & 0xFF, act_size >> 8, act_size);
-                for (uint16_t i = 0; i < act_size; i++) {
-                    auto ch = data[i];
-                    if (ch == 0x20) {
-                        debug_log("-");
-                    } else if (ch > 0x20 && ch < 0x7E) {
-                        debug_log("%c", ch);
-                    } else {
-                        debug_log("[%02hX]", ch);
-                    }
-                }
-                //debug_log(" (%hu)\n", act_size);
-                //debug_log(" %02hX(%hu)",rx_packet->get_packet_index(),act_size);
-                debug_log("\n");
-
                 if (act_size) {
                     data_index = 0;
                     return act_size;
