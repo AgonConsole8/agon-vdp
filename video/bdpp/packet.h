@@ -30,7 +30,7 @@
 #define BDPP_PKT_FLAG_FIRST				0x04	// Indicates packet is first part of a message
 #define BDPP_PKT_FLAG_MIDDLE			0x00	// Indicates packet is middle part of a message
 #define BDPP_PKT_FLAG_LAST				0x08	// Indicates packet is last part of a message
-#define BDPP_PKT_FLAG_READY				0x10	// Indicates packet is ready for transmission or reception
+#define BDPP_PKT_FLAG_ENHANCED  		0x10	// Indicates packet is enhanced in some way
 #define BDPP_PKT_FLAG_DONE				0x20	// Indicates packet was transmitted or received
 #define BDPP_PKT_FLAG_FOR_RX			0x40	// Indicates packet is for reception, not transmission
 #define BDPP_PKT_FLAG_DRIVER_OWNED		0x00	// Indicates packet is owned by the driver

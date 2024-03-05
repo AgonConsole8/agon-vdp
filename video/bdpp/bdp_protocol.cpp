@@ -83,7 +83,6 @@ void bdpp_queue_tx_packet(Packet* packet) {
 	debug_log("\n");
 
 	auto old_int = uhci_disable_interrupts();
-	uhci_packet->set_flags(BDPP_PKT_FLAG_READY);
 	bdpp_tx_queue.push(packet);
 	uhci_enable_interrupts(old_int);
 	uart_dma_start_transmitter();

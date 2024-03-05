@@ -95,7 +95,6 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
                         //show_rx_packet(packet);
                         //debug_log("@%i (%u) %02hX %02hX %hu\n",__LINE__,descr->length,packet->flags,packet->indexes,packet->act_size);
                         packet->set_flags(BDPP_PKT_FLAG_DONE);
-                        packet->clear_flags(BDPP_PKT_FLAG_READY);
                         bdpp_rx_queue[packet->get_stream_index()].push(packet);                
                     }
                 }
@@ -108,7 +107,6 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
             auto packet = uhci_obj->tx_pkt;
             if (packet) {
             //debug_log("@%i\n",__LINE__);
-                packet->get_uhci_packet()->clear_flags(BDPP_PKT_FLAG_READY);
                 packet->get_uhci_packet()->set_flags(BDPP_PKT_FLAG_DONE);
                 delete packet;
                 uhci_obj->tx_pkt = NULL;
@@ -146,7 +144,7 @@ void uart_dma_read()
         auto next = (i >= BDPP_MAX_RX_PACKETS-1 ? 0 : i + 1);
         dma->empty = (uint32_t) &uhci_obj->rx_dma[next]; // actually, 'qe' field
         //debug_log("dma[%u]=%X, pkt=%X, data=%X, next=%X\n", i, dma, packet, packet->data, dma->empty);
-        packet->flags = BDPP_PKT_FLAG_FOR_RX | BDPP_PKT_FLAG_READY;
+        packet->flags = BDPP_PKT_FLAG_FOR_RX;
     }
 
     auto hal = &(uhci_obj->uhci_hal);
