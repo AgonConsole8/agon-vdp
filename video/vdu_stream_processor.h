@@ -251,16 +251,16 @@ uint32_t VDUStreamProcessor::discardBytes(uint32_t length, uint16_t timeout = CO
 // Send a packet of data to the MOS
 //
 void VDUStreamProcessor::send_packet(uint8_t code, uint16_t len, uint8_t data[]) {
-	debug_log("Send Pkt @%i: ",__LINE__);
-	debug_log(" %02hX", code + 0x80);
-	debug_log(" %02hX", len);
+	//debug_log("Send Pkt @%i: ",__LINE__);
+	//debug_log(" %02hX", code + 0x80);
+	//debug_log(" %02hX", len);
 	writeByte(code + 0x80);
 	writeByte(len);
 	for (int i = 0; i < len; i++) {
 		writeByte(data[i]);
-		debug_log(" %02hX", data[i]);
+		//debug_log(" %02hX", data[i]);
 	}
-	debug_log("\n");
+	//debug_log("\n");
 	outputStream->flush();
 }
 

@@ -105,7 +105,6 @@ void setup() {
 
 // The main loop
 //
-extern int last_dma_index;
 void loop() {
 	bool drawCursor = false;
 	auto cursorTime = millis();
@@ -139,11 +138,6 @@ void loop() {
 			}
 
 			// Handle incoming data on all BDPP streams.
-			auto inx = last_dma_index;
-			if (inx >= 0) {
-				last_dma_index = -1;
-				debug_log(" dma %i: ",inx);
-			}
 			for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
 				auto bdpp_proc = bdpp_processor[s];
 				bdpp_proc->processAllAvailable();
@@ -158,27 +152,6 @@ void loop() {
 				processor->processNext();
 			}
 		}
-		/*if (bdpp_is_initialized()) {
-			if (VDPSerial.available()) {
-				auto ch = VDPSerial.read();
-				if (ch > 0x20 && ch <= 0x7E) {
-					debug_log("%c", ch);
-				} else if (ch == 0x20) {
-					debug_log("-");
-				} else {
-					debug_log("[%02hX]", ch);
-					if (ch == 0x0A || ch == 0x0D || ch == 0x89) {
-						debug_log("\n");
-					}
-				}
-			}
-		} else if (processor->byteAvailable()) {
-			if (drawCursor) {
-				drawCursor = false;
-				do_cursor();
-			}
-			processor->processNext();
-		}*/
 	}
 }
 

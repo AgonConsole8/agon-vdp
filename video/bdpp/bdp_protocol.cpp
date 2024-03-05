@@ -42,11 +42,7 @@ void bdpp_initialize_driver() {
 #if DEBUG_BDPP
 	debug_log("Activating BDPP.\n");
 #endif
-//bdpp_initialized = true; return;
-	// Initialize the UART2/UHCI hardware.
-	//while (Serial2.available()) {
-	//	debug_log("Toss: %02hX\n", Serial2.read());
-	//}
+
 	Serial2.end(); // stop existing communication
 
     uart_config_t uart_config = {
@@ -71,16 +67,6 @@ void bdpp_initialize_driver() {
 void bdpp_queue_tx_packet(Packet* packet) {
 	auto uhci_packet = packet->get_uhci_packet();
 	auto act_size = packet->get_uhci_packet()->get_actual_data_size();
-	debug_log("Queue TX pkt: %02hX %02hX %02hX (%hu):",
-		uhci_packet->get_flags(),
-		uhci_packet->indexes,
-		uhci_packet->act_size, act_size);
-	auto data = uhci_packet->get_data();
-	for (uint16_t i = 0; i < act_size; i++) {
-		debug_log(" %02hX", data[i]);
-	}
-	debug_log("\n");
-
 	auto old_int = uhci_disable_interrupts();
 	bdpp_tx_queue.push(packet);
 	uhci_enable_interrupts(old_int);
@@ -97,7 +83,6 @@ bool bdpp_rx_packet_available(uint8_t stream_index) {
 
 // Get a received packet.
 UhciPacket* bdpp_get_rx_packet(uint8_t stream_index) {
-	//debug_log("@%i\n",__LINE__);
 	UhciPacket* packet = NULL;
 	auto old_int = uhci_disable_interrupts();
 	auto queue = &bdpp_rx_queue[stream_index];
@@ -106,6 +91,5 @@ UhciPacket* bdpp_get_rx_packet(uint8_t stream_index) {
 		queue->pop();
 	}
 	uhci_enable_interrupts(old_int);
-	//debug_log("@%i\n",__LINE__);
 	return packet;
 }
