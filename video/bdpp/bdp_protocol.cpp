@@ -71,11 +71,10 @@ void bdpp_initialize_driver() {
 void bdpp_queue_tx_packet(Packet* packet) {
 	auto uhci_packet = packet->get_uhci_packet();
 	auto act_size = packet->get_uhci_packet()->get_actual_data_size();
-	debug_log("Queue TX pkt: %02hX %02hX %02hX %02hX %02hX (%hu):",
+	debug_log("Queue TX pkt: %02hX %02hX %02hX (%hu):",
 		uhci_packet->get_flags(),
-		uhci_packet->get_packet_index(),
-		uhci_packet->get_stream_index(),
-		act_size & 0xFF, act_size >> 8, act_size);
+		uhci_packet->indexes,
+		uhci_packet->act_size, act_size);
 	auto data = uhci_packet->get_data();
 	for (uint16_t i = 0; i < act_size; i++) {
 		debug_log(" %02hX", data[i]);

@@ -14,7 +14,7 @@
 #include <string.h>
 #include "esp_heap_caps.h"
 
-#define BDPP_MAX_PACKET_DATA_SIZE       512     // Maximum size of the data in one packet
+#define BDPP_MAX_PACKET_DATA_SIZE       256     // Maximum size of the data in one packet
 #define BDPP_SMALL_PACKET_DATA_SIZE		32		// Maximum payload data length for small packet
 #define BDPP_MAX_DRIVER_PACKETS			16		// Maximum number of driver-owned small packets
 #define BDPP_MAX_APP_PACKETS			16		// Maximum number of app-owned packets
@@ -44,8 +44,9 @@
 typedef struct tagUhciPacket {
 	uint8_t     flags;	// Flags describing the packet
 	uint8_t     indexes; // Index of the packet (lower nibble) & stream (upper nibble)
-	uint16_t	act_size; // Actual size of the data portion
+	uint8_t	    act_size; // Actual size of the data portion
 	uint8_t     data[BDPP_MAX_PACKET_DATA_SIZE]; // The real data bytes
+    uint8_t     dummy; // Padding to even multiple of 4 bytes
 
     // Test whether a flag is set.
     inline bool is_flag_set(uint8_t flag) { return ((flags & flag) != 0); }
@@ -63,11 +64,11 @@ typedef struct tagUhciPacket {
     inline uint8_t get_stream_index() { return (indexes >> 4); }
 
     // Get the actual data size.
-    inline uint16_t get_actual_data_size() { return act_size; }
+    inline uint16_t get_actual_data_size() { return (act_size ? act_size : 256); }
 
     // Get the transfer packet size.
     uint16_t get_transfer_size() {
-        return (sizeof(tagUhciPacket) - BDPP_MAX_PACKET_DATA_SIZE + act_size);
+        return (get_actual_data_size() + 3);
     }
 
     // Get a pointer to the data.
@@ -81,12 +82,14 @@ typedef struct tagUhciPacket {
 
     // Append a data byte to the packet.
     void append_data(uint8_t data_byte) {
+        // The size will wrap to zero if it becomes 256.
         data[act_size++] = data_byte;
     }
 
     // Append multiple data bytes to the packet.
     void append_data(const uint8_t* data_bytes, uint16_t count) {
         memcpy((void*) &data[act_size], data_bytes, count);
+        // The size will wrap to zero if it becomes 256.
         act_size += count;
     }
 } UhciPacket;
@@ -133,7 +136,7 @@ class Packet {
 
     // Get the allocated memory size.
     static uint16_t get_alloc_size(uint16_t max_size) {
-        return ((sizeof(UhciPacket) - BDPP_MAX_PACKET_DATA_SIZE + max_size + 3) & 0xFFFFFFFC) + 4;
+        return ((3 + max_size + 3) & 0xFFFFFFFC) + 4;
     }
 
     // Determine whether the packet is full of data.

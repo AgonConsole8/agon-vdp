@@ -93,7 +93,6 @@ static void IRAM_ATTR uhci_isr_handler_for_bdpp(void *param)
                         // provide this packet to the app
                         auto packet = &uhci_obj->rx_pkt[dma_index];
                         //show_rx_packet(packet);
-                        //debug_log("@%i (%u) %02hX %02hX %hu\n",__LINE__,descr->length,packet->flags,packet->indexes,packet->act_size);
                         packet->set_flags(BDPP_PKT_FLAG_DONE);
                         bdpp_rx_queue[packet->get_stream_index()].push(packet);                
                     }

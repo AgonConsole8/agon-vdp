@@ -17,11 +17,10 @@ extern void debug_log(const char* f, ...);
 void show_rx_packet(UhciPacket* packet) {
     auto act_size = packet->get_actual_data_size();
     auto data = packet->get_data();
-    debug_log("RX pkt: fl %02hX pi %02hX si %02hX sz %02hX %02hX (%u): ",
+    debug_log("RX pkt: %02hX %02hX %02hX (%u): ",
         packet->get_flags(),
-        packet->get_packet_index(),
-        packet->get_stream_index(),
-        act_size & 0xFF, act_size >> 8, act_size);
+        packet->indexes,
+        packet->act_size, act_size);
     for (uint16_t i = 0; i < act_size; i++) {
         auto ch = data[i];
         if (ch == 0x20) {
