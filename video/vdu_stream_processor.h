@@ -54,6 +54,7 @@ class VDUStreamProcessor {
 		void vdu_sys_cursorBehaviour();
 		void vdu_sys_udg(char c);
 		void vdu_sys_bdpp();
+		void vdu_sys_otf();
 
 		void vdu_sys_audio();
 		void sendAudioStatus(uint8_t channel, uint8_t status);
@@ -102,6 +103,8 @@ class VDUStreamProcessor {
 		void unlock();
 		void receiveFirmware();
 		void switchFirmware();
+
+		void bdppEcho();
 
 	public:
 		uint16_t id = 65535;

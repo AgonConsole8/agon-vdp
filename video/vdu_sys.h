@@ -100,6 +100,9 @@ void VDUStreamProcessor::vdu_sys() {
 			case 0x1C: {					// VDU 23, 28
 				vdu_sys_hexload();
 			}	break;
+			case 0x1E: {					// VDU 23, 30, ...
+				vdu_sys_otf();
+			}	break;
 		}
 	}
 	//
@@ -187,8 +190,8 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_UPDATER: {				// VDU 23, 0, &A1, command, <args>
 			vdu_sys_updater();
 		}	break;
-		case VDP_BDPP: {				// VDU 23, 0, &A2
-			vdu_sys_bdpp();				// Enable BDPP mode
+		case VDP_BDPP: {				// VDU 23, 0, &A2, command, <args>
+			vdu_sys_bdpp();
 		}	break;
 		case VDP_LOGICALCOORDS: {		// VDU 23, 0, &C0, n
 			auto b = readByte_t();		// Set logical coord mode
@@ -576,6 +579,29 @@ void VDUStreamProcessor::vdu_sys_udg(char c) {
 	}
 
 	redefineCharacter(c, buffer);
+}
+
+// VDU 23, 0, &A2, command, <args>
+void VDUStreamProcessor::vdu_sys_bdpp() {
+	auto cmd = readByte_t();
+	switch(cmd) {
+		case 0: { // VDU 23, 0, &A2, 0
+			bdpp_initialize_driver();
+		} break;
+		case 1: { // VDU 23, 0, &A2, packet_index, echo_data
+			auto packet_index = readByte_t();
+			auto echo_data = readByte_t();
+			auto stream = (BdppStream*) ((Stream*) outputStream.get());
+			stream->start_app_response_packet(packet_index);
+			writeByte(echo_data);
+			stream->flush();
+		} break;
+	}
+}
+
+// VDU 23, 30, ...
+void VDUStreamProcessor::vdu_sys_otf() {
+	// placeholder for future OTF support
 }
 
 #endif // VDU_SYS_H

@@ -4,6 +4,7 @@
 #include "vdu_stream_processor.h"
 #include <cstdint>
 #include "esp_ota_ops.h"
+#include "bdpp/bdp_stream.h"
 
 extern void printFmt(const char *format, ...);
 extern void print(const char * text);
@@ -164,10 +165,6 @@ void VDUStreamProcessor::vdu_sys_updater() {
 			switchFirmware();
 		} break;
 	}
-}
-
-void VDUStreamProcessor::vdu_sys_bdpp() {
-	bdpp_initialize_driver();
 }
 
 #endif // UPDATER_H

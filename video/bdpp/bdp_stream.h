@@ -115,8 +115,8 @@ class BdppStream : public Stream {
     virtual size_t write(uint8_t data_byte) {
         if (!tx_packet) {
             tx_packet = Packet::create_driver_tx_packet(
-                BDPP_PKT_FLAG_COMMAND | BDPP_PKT_FLAG_DRIVER_OWNED |
-                BDPP_PKT_FLAG_MIDDLE, packet_index++, stream_index);
+                BDPP_PKT_FLAG_COMMAND | BDPP_PKT_FLAG_MIDDLE,
+                packet_index++, stream_index);
             if (packet_index >= BDPP_MAX_DRIVER_PACKETS) {
                 packet_index = 0;
             }
@@ -144,6 +144,18 @@ class BdppStream : public Stream {
             bdpp_queue_tx_packet(tx_packet);
             tx_packet = NULL;
         }
+    }
+
+    // Start an app-owned packet
+    //
+    // This will flush any existing TX packet, and start a new one,
+    // intended for a particular app-owned packet index at the EZ80.
+    //
+    void start_app_response_packet(uint8_t packet_index) {
+        flush();
+        tx_packet = Packet::create_app_tx_packet(
+            BDPP_PKT_FLAG_COMMAND | BDPP_PKT_FLAG_FIRST | BDPP_PKT_FLAG_RESPONSE,
+            packet_index, stream_index);
     }
 
     protected:

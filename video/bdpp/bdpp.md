@@ -138,7 +138,7 @@ BDPP may be enabled by executing the "bdpp" command in MOS, either at the MOS co
 Once BDPP is enabled, <i>it cannot be disabled,</i> except by resetting (rebooting) the Agon.
 
 When the "bdpp" command is executed, MOS will send a VDU command (equivalent to
-VDU 23,0,&A2) to VDP, telling VDP to switch into BDPP (packet) mode. MOS will then wait a short time before sending any other data to VDP, because once that switch is
+VDU 23,0,&A2,0) to VDP, telling VDP to switch into BDPP (packet) mode. MOS will then wait a short time before sending any other data to VDP, because once that switch is
 made, all communication is in packet mode, not the default raw mode.
 
 ## Packet Flow Diagram
