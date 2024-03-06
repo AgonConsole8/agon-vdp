@@ -67,6 +67,19 @@ void bdpp_initialize_driver() {
 void bdpp_queue_tx_packet(Packet* packet) {
 	auto uhci_packet = packet->get_uhci_packet();
 	auto act_size = packet->get_uhci_packet()->get_actual_data_size();
+
+	{
+		debug_log("Queue TX pkt: %02hX %02hX %02hX (%hu):",
+		uhci_packet->get_flags(),
+		uhci_packet->indexes,
+		uhci_packet->act_size, act_size);
+	auto data = uhci_packet->get_data();
+	for (uint16_t i = 0; i < act_size; i++) {
+		debug_log(" %02hX", data[i]);
+	}
+	debug_log("\n");
+	}
+
 	auto old_int = uhci_disable_interrupts();
 	bdpp_tx_queue.push(packet);
 	uhci_enable_interrupts(old_int);

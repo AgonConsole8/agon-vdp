@@ -3,14 +3,14 @@
 100 REM VDU 23,&89,&70,&80,&60,&10,&EA,&15,&15,&11: REM BDPP_PACKET_START/END_MARKER
 110 REM VDU 23,&8B,&63,&94,&E2,&81,&66,&18,&20,&18: REM BDPP_PACKET_ESCAPE
 130 REM PRINT "After: ": VDU &89,&8B: PRINT "."
-
+190 OSCLI "BDPP"
 200 DIM code% 300
 201 DIM fcn% 1: PRINT "fcn%: ";~fcn%
 202 DIM index% 1: PRINT "index%: ";~index%
 203 DIM flags% 1: PRINT "flags%: ";~flags%
-204 DIM size% 2: PRINT "size%: ";~size%
-205 DIM count% 2: PRINT "count%: ";~count%
-206 DIM data% 2: PRINT "data%: ";~data%
+204 DIM size% 4: PRINT "size%: ";~size%
+205 DIM count% 4: PRINT "count%: ";~count%
+206 DIM data% 4: PRINT "data%: ";~data%
 210 PROC_assemble_bdpp
 220 ?fcn%=0: rc%=USR(bdppFcn1%): PRINT "is_allowed -> ";rc%
 230 ?fcn%=1: rc%=USR(bdppFcn1%): PRINT "is_enabled -> ";rc%
@@ -20,6 +20,20 @@
 253 PRINT ""
 254 PRINT "This needs ESC characters:";
 255 PRINT CHR$(&89);CHR$(&8B);"!"
+300 DIM app_pkt% 1: PRINT "app_pkt%: ";~app_pkt%
+310 ?app_pkt%=0: ?fcn%=6: ?index%=5: !data%=app_pkt%: !size%=1
+311 PRINT "fcn=";?fcn%
+312 PRINT "index=";?index%
+313 PRINT "data=";~!data%
+314 PRINT "size=";~!size%
+320 rc%=USR(bdppFcn6%): PRINT "rx pkt setup -> ";rc%
+325 ?fcn%=&F: CALL bdppFcn3%
+330 VDU 23,0,&A2,1,5,&61
+335 ?fcn%=&F: CALL bdppFcn3%
+340 ?index%=5: ?fcn%=7: rc%=USR(bdppFcn2%)
+350 IF rc%=0 GOTO 340
+360 PRINT "echo -> ";?app_pkt%
+365 ?fcn%=&F: CALL bdppFcn3%
 999 END
 
 49985 REM IX: Data address
@@ -99,7 +113,7 @@
 50140 RET
 50142 ]
 50159 REM -- bdppFcn6% --
-50160 REM BOOL bdpp_prepare_rx_app_packet(BYTE index, WORD size, BYTE* data);
+50160 REM BOOL bdpp_prepare_rx_app_packet(BYTE index, BYTE* data, WORD size);
 50161 bdppFcn6%=P%
 50162 [OPT 2
 50163 LD HL,size%: DEFB &ED: DEFB &37

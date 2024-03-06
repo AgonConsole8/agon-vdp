@@ -591,10 +591,12 @@ void VDUStreamProcessor::vdu_sys_bdpp() {
 		case 1: { // VDU 23, 0, &A2, packet_index, echo_data
 			auto packet_index = readByte_t();
 			auto echo_data = readByte_t();
+			debug_log("pi=%02hX ed=%02hX\n",packet_index,echo_data);
 			auto stream = (BdppStream*) ((Stream*) outputStream.get());
 			stream->start_app_response_packet(packet_index);
 			writeByte(echo_data);
 			stream->flush();
+			debug_log("end echo\n");
 		} break;
 	}
 }
