@@ -176,7 +176,7 @@ void show_rx_packet(UhciPacket* packet) {
     void start_app_response_packet(uint8_t packet_index) {
         flush();
         tx_packet = Packet::create_app_tx_packet(
-            BDPP_PKT_FLAG_COMMAND | BDPP_PKT_FLAG_FIRST | BDPP_PKT_FLAG_RESPONSE,
+            BDPP_PKT_FLAG_PRINT | BDPP_PKT_FLAG_FIRST | BDPP_PKT_FLAG_RESPONSE,
             packet_index, stream_index);
     }
 
