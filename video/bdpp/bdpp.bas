@@ -21,19 +21,31 @@
 254 PRINT "This needs ESC characters:";
 255 PRINT CHR$(&89);CHR$(&8B);"!"
 300 DIM app_pkt% 1: PRINT "app_pkt%: ";~app_pkt%
-310 ?app_pkt%=0: ?fcn%=6: ?index%=5: !data%=app_pkt%: !size%=1
+310 ?app_pkt%=0: ?fcn%=5: ?index%=5: !data%=app_pkt%: !size%=1
 311 PRINT "fcn=";?fcn%
 312 PRINT "index=";?index%
 313 PRINT "data=";~!data%
 314 PRINT "size=";~!size%
-320 rc%=USR(bdppFcn6%): PRINT "rx pkt setup -> ";rc%
-325 ?fcn%=&F: CALL bdppFcn3%
+315 REM hdr%=&0BC5B8
+316 REM FOR pi%=0 TO 15
+317 REM FOR di%=0 TO 11
+318 REM PRINT " ";~?hdr%;: hdr%=hdr%+1
+319 REM NEXT di%: PRINT "": NEXT pi%
+320 rc%=USR(bdppSig6%): PRINT "rx pkt setup -> ";rc%
+322 ?fcn%=&F: CALL bdppFcn3%
+323 REM hdr%=&0BC5B8
+324 REM FOR pi%=0 TO 15
+325 REM FOR di%=0 TO 11
+326 REM PRINT " ";~?hdr%;: hdr%=hdr%+1
+327 REM NEXT di%: PRINT "": NEXT pi%
 330 VDU 23,0,&A2,1,5,&61
 335 ?fcn%=&F: CALL bdppFcn3%
 340 ?index%=5: ?fcn%=7: rc%=USR(bdppFcn2%)
 350 IF rc%=0 GOTO 340
-360 PRINT "echo -> ";?app_pkt%
+360 PRINT "echo returned -> ";~?app_pkt%
 365 ?fcn%=&F: CALL bdppFcn3%
+370 PRINT "need to release pkt"
+375 ?fcn%=&F: CALL bdppFcn3%
 999 END
 
 49985 REM IX: Data address
@@ -106,20 +118,20 @@
 50122 REM void bdpp_write_drv_tx_bytes_with_usage(const BYTE* data, WORD count);
 50124 bdppFcn5%=P%
 50126 [OPT 2
-50128 LD HL,count%: DEFB &ED: DEFB &37
+50128 LD HL,count%: DEFB &ED: DEFB &31
 50130 LD HL,fcn%: LD A,(HL)
-50132 LD HL,data%: DEFB &ED: DEFB &31
+50132 LD HL,data%: DEFB &ED: DEFB &37
 50138 RST.LIL &20
 50140 RET
 50142 ]
-50159 REM -- bdppFcn6% --
+50159 REM -- bdppSig6% --
 50160 REM BOOL bdpp_prepare_rx_app_packet(BYTE index, BYTE* data, WORD size);
-50161 bdppFcn6%=P%
+50161 bdppSig6%=P%
 50162 [OPT 2
-50163 LD HL,size%: DEFB &ED: DEFB &37
+50163 LD HL,size%: DEFB &ED: DEFB &31
 50164 LD HL,index%: LD B,(HL)
 50165 LD HL,fcn%: LD A,(HL)
-50166 LD HL,data%: DEFB &ED: DEFB &31
+50166 LD HL,data%: DEFB &ED: DEFB &37
 50167 RST.LIL &20
 50168 LD L,A
 50169 LD H,0
@@ -135,11 +147,11 @@
 50200 REM BOOL bdpp_queue_tx_app_packet(BYTE indexes, BYTE flags, const BYTE* data, WORD size);
 50201 bdppFcn7%=P%
 50202 [OPT 2
-50203 LD HL,size%: DEFB &ED: DEFB &37
+50203 LD HL,size%: DEFB &ED: DEFB &31
 50204 LD HL,flags%: LD D,(HL)
 50205 LD HL,index%: LD B,(HL)
 50206 LD HL,fcn%: LD A,(HL)
-50207 LD HL,data%: DEFB &ED: DEFB &31
+50207 LD HL,data%: DEFB &ED: DEFB &37
 50208 RST.LIL &20
 50209 LD L,A
 50210 LD H,0
@@ -165,7 +177,7 @@
 50248 PRINT "bdppFcn3% ";~bdppFcn3%
 50250 PRINT "bdppFcn4% ";~bdppFcn4%
 50252 PRINT "bdppFcn5% ";~bdppFcn5%
-50254 PRINT "bdppFcn6% ";~bdppFcn6%
+50254 PRINT "bdppSig6% ";~bdppSig6%
 50256 PRINT "bdppFcn7% ";~bdppFcn7%
 50258 PRINT "total code: ";P%-code%
 50260 ENDPROC

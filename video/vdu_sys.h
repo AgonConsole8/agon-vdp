@@ -588,7 +588,7 @@ void VDUStreamProcessor::vdu_sys_bdpp() {
 		case 0: { // VDU 23, 0, &A2, 0
 			bdpp_initialize_driver();
 		} break;
-		case 1: { // VDU 23, 0, &A2, packet_index, echo_data
+		case 1: { // VDU 23, 0, &A2, 1, packet_index, echo_data
 			auto packet_index = readByte_t();
 			auto echo_data = readByte_t();
 			debug_log("pi=%02hX ed=%02hX\n",packet_index,echo_data);

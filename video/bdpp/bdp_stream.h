@@ -137,7 +137,7 @@ void show_rx_packet(UhciPacket* packet) {
     virtual size_t write(uint8_t data_byte) {
         if (!tx_packet) {
             tx_packet = Packet::create_driver_tx_packet(
-                BDPP_PKT_FLAG_COMMAND | BDPP_PKT_FLAG_MIDDLE,
+                BDPP_PKT_FLAG_PRINT | BDPP_PKT_FLAG_MIDDLE,
                 packet_index++, stream_index);
             if (packet_index >= BDPP_MAX_DRIVER_PACKETS) {
                 packet_index = 0;
