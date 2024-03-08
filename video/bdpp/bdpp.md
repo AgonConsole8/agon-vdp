@@ -302,7 +302,7 @@ void bdpp_fg_flush_drv_tx_packet();
 ```
 
 ### <i>*** OVERALL MANAGEMENT FROM BACKGROUND ***</i>
-NOTE: These functions expect interrupts to be turned off already,j
+NOTE: These functions expect interrupts to be turned off already,
 and may modify certain global variables managed by BDPP. Do not call
 any of these functions with interrupts turned ON!
 ```
@@ -312,7 +312,7 @@ BOOL bdpp_bg_is_busy();
 ```
 
 ### <i>*** PACKET RECEPTION (RX) FROM BACKGROUND (ISR) ***</i>
-NOTE: These functions expect interrupts to be turned off already,j
+NOTE: These functions expect interrupts to be turned off already,
 and may modify certain global variables managed by BDPP. Do not call
 any of these functions with interrupts turned ON!
 ```
@@ -341,7 +341,7 @@ WORD bdpp_bg_get_rx_app_packet_size(BYTE index);
 ```
 
 ### <i>*** PACKET TRANSMISSION (TX) FROM BACKGROUND (ISR) ***</i>
-NOTE: These functions expect interrupts to be turned off already,j
+NOTE: These functions expect interrupts to be turned off already,
 and may modify certain global variables managed by BDPP. Do not call
 any of these functions with interrupts turned ON!
 ```
