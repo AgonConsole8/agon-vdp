@@ -134,14 +134,16 @@ are shared between the CPUs. Just because BDPP is allowed, does not imply that i
 is <i>enabled</i>, and on startup, it is disabled.
 
 If both firmwares support it,
-BDPP may be enabled by executing the "bdpp" command in MOS, either at the MOS command prompt, at the BASIC command prompt via "*bdpp", or in the "autoexec.txt" file.
-Once BDPP is enabled, <i>it cannot be disabled,</i> except by resetting (rebooting) the Agon.
+BDPP may be enabled by executing the "bdpp" command in MOS, either at the MOS command prompt, or in the "autoexec.txt" file.
+BDPP may be enabled at the BASIC command prompt via "*bdpp".
+From within a BASIC program, BDPP may be enabled via the OSCLI statement,
+with a parameter of "bdpp".
+
+NOTE: Once BDPP is enabled, <i>it cannot be disabled,</i> except by resetting (rebooting) the Agon.
 
 When the "bdpp" command is executed, MOS will send a VDU command (equivalent to
 VDU 23,0,&A2,0) to VDP, telling VDP to switch into BDPP (packet) mode. MOS will then wait a short time before sending any other data to VDP, because once that switch is
 made, all communication is in packet mode, not the default raw mode.
-
-## Packet Flow Diagram
 
 ## Driver-owned Packets
 
@@ -157,6 +159,20 @@ packets, in case data bytes are waiting to go out, but have not yet been sent. W
 BDPP is disabled, the above functions and commands send data bytes to VDP immediately,
 or at least relatively soon. When BDPP is enabled, data bytes are buffered, and at some
 point, need to be flushed. For those cases where neither MOS nor BASIC (nor any other language for apps) knows what the programmer intends, and thus do not know when to flush, BDPP publicizes its flush functions, so that an app can flush intentionally. 
+
+## Application-owned Packets
+
+Application-owned packets differ from driver-owned packets in two primary ways.
+First, they are managed by the application, not by the driver. Second, they can contain
+up to 256 data bytes, as opposed to just 32 data bytes.
+
+The application is responsible for allocating, and possibly deallocating, memory for app-owned packets. The app tells BDPP what to do with the app-owned packets, because
+the app is in charge; the driver is not.
+
+Typically, app-owned packets will be used to receive response data from VDP. It is
+essential for each VDU request command that will respond with data to include a
+packet index (0..15) in the request parameters, so that VDU will know which packet
+index to provide in the response.
 
 ## BDPP Functions in MOS
 
@@ -390,14 +406,14 @@ void bdpp_bg_flush_drv_tx_packet();
 
 ## BDPP API in MOS
 
-On the EZ80, most BDPP functions may be access via the BDPP API, using RST &20.
+On the EZ80, most BDPP functions may be accessed via the BDPP API, using RST &20.
 The function codes for the available functions are listed in the comments above.
 Functions are grouped by their type signatures, making it possible to reuse
 assembler code, order to call functions with similar type signatures.
 
-The various BDPP API functions use some or all of the following EZ80
+The RST &20 interfaces to various BDPP API functions use some or all of the following EZ80
 registers as inputs and/or outputs.
-In other words, set these registers before using the RST &20 instruction. The "BOOL"
+In other words, set the appropriate input registers before using the RST &20 instruction, and check the proper output register, if any, after using RST. The "BOOL"
 and "BYTE" types (seen above) are both 8 bits in size, so some functions that return
 "BOOL" use the same type signature as similar functions that return "BYTE".
 
@@ -413,132 +429,239 @@ Outputs:<br>
 C: BOOL indicator<br>
 BC: WORD size<br>
 
-The following sections detail each type signature:
+The following sections detail each type signature, and provide sample RST calls in
+BASIC-24 format, but without the line numbers. Also shown are some common definitions
+that are used throughout the examples. It is assumed that this code runs in EZ80 ADL
+(24-bit registers) mode.
+
+### Common definitions
+
+This code reserves space for parameter variables that can be set as needed in
+the BASIC app, and will be read in the assembler code further below, to setup
+paramer registers for the RST calls. You can omit the PRINT statements,
+if you do not want theetir output on the screen. The procedure call to assemble
+the code for the various type signatures is required.
+````
+DIM code% 200
+DIM fcn% 1: PRINT "fcn%: ";~fcn%
+DIM index% 1: PRINT "index%: ";~index%
+DIM flags% 1: PRINT "flags%: ";~flags%
+DIM size% 4: PRINT "size%: ";~size%
+DIM count% 4: PRINT "count%: ";~count%
+DIM data% 4: PRINT "data%: ";~data%
+PROC_assemble_bdpp
+````
 
 ### Function type signature 1
-BOOL fcn();
-BYTE fcn();
+BOOL bdpp_fg_is_allowed();<br>
+BOOL bdpp_fg_is_enabled();<br>
+BOOL bdpp_fg_is_busy();<br>
+BOOL bdpp_fg_disable();<br>
+BOOL bdpp_bg_is_busy();<br>
+
+This (type signature 1) is the first section of a single BASIC procedure that
+assembles code for all of the type signatures. Further below,
+you will see the end of this procedure (in type signature 8).
+
 ```
+DEF PROC_assemble_bdpp
+P%=code%: bdppSig1%=P%
+[OPT 2
+LD HL,fcn%: LD A,(HL)
+RST.LIL &20
+LD L,A
+LD H,0
+XOR A
+EXX
+XOR A
+LD L,0
+LD H,0
+LD C,A
+RET
+]
 ```
 
 ### Function type signature 2
-BOOL fcn(BYTE index);
-BYTE fcn(BYTE index);
+BOOL bdpp_fg_enable(BYTE stream);<br>
+BOOL bdpp_fg_is_rx_app_packet_done(BYTE index);<br>
+BYTE bdpp_fg_get_rx_app_packet_flags(BYTE index);<br>
+BOOL bdpp_fg_is_tx_app_packet_done(BYTE index);<br>
+BOOL bdpp_fg_stop_using_app_packet(BYTE index);<br>
+BOOL bdpp_bg_is_rx_app_packet_done(BYTE index);<br>
+BYTE bdpp_bg_get_rx_app_packet_flags(BYTE index);<br>
+BOOL bdpp_bg_is_tx_app_packet_done(BYTE index);<br>
+BOOL bdpp_bg_stop_using_app_packet(BYTE index);<br>
 ```
+bdppSig2%=P%
+[OPT 2
+LD HL,index%: LD B,(HL)
+LD HL,fcn%: LD A,(HL)
+RST.LIL &20
+LD L,A
+LD H,0
+XOR A
+EXX
+XOR A
+LD L,0
+LD H,0
+LD C,A
+RET
+]
 ```
 
 ### Function type signature 3
-void fcn();
+void bdpp_fg_flush_drv_tx_packet();<br>
+void bdpp_bg_flush_drv_tx_packet();<br>
 ```
+bdppSig3%=P%
+[OPT 2
+LD HL,fcn%: LD A,(HL)
+RST.LIL &20
+RET
+]
 ```
 
 ### Function type signature 4
-void fcn(BYTE data);
+void bdpp_fg_write_byte_to_drv_tx_packet(BYTE data);<br>
+void bdpp_fg_write_drv_tx_byte_with_usage(BYTE data);<br>
+void bdpp_bg_write_byte_to_drv_tx_packet(BYTE data);<br>
+void bdpp_bg_write_drv_tx_byte_with_usage(BYTE data);<br>
 ```
+bdppSig4%=P%
+[OPT 2
+LD HL,fcn%: LD A,(HL)
+LD HL,data%: LD D,(HL)
+RST.LIL &20
+RET
+]
 ```
 
 ### Function type signature 5
-void fcn(const BYTE* data, WORD size);
+void bdpp_fg_write_bytes_to_drv_tx_packet(const BYTE* data, WORD count);<br>
+void bdpp_fg_write_drv_tx_bytes_with_usage(const BYTE* data, WORD count);<br>
+void bdpp_bg_write_bytes_to_drv_tx_packet(const BYTE* data, WORD count);<br>
+void bdpp_bg_write_drv_tx_bytes_with_usage(const BYTE* data, WORD count);<br>
 ```
+bdppSig5%=P%
+[OPT 2
+LD HL,count%: DEFB &ED: DEFB &31
+LD HL,fcn%: LD A,(HL)
+LD HL,data%: DEFB &ED: DEFB &37
+RST.LIL &20
+RET
+]
 ```
 
 ### Function type signature 6
-BOOL fcn(BYTE index, BYTE* data, WORD size);
+BOOL bdpp_fg_prepare_rx_app_packet(BYTE index, BYTE* data, WORD size);<br>
+BOOL bdpp_bg_prepare_rx_app_packet(BYTE index, BYTE* data, WORD size);<br>
 ```
+bdppSig6%=P%
+[OPT 2
+LD HL,size%: DEFB &ED: DEFB &31
+LD HL,index%: LD B,(HL)
+LD HL,fcn%: LD A,(HL)
+LD HL,data%: DEFB &ED: DEFB &37
+RST.LIL &20
+LD L,A
+LD H,0
+XOR A
+EXX
+XOR A
+LD L,0
+LD H,0
+LD C,A
+RET
+]
 ```
 
 ### Function type signature 7
-BOOL fcn(BYTE indexes, BYTE flags, const BYTE* data, WORD size);
+BOOL bdpp_fg_queue_tx_app_packet(BYTE indexes, BYTE flags, const BYTE* data, WORD size);<br>
+BOOL bdpp_bg_queue_tx_app_packet(BYTE indexes, BYTE flags, const BYTE* data, WORD size);<br>
 ```
+bdppSig7%=P%
+[OPT 2
+LD HL,size%: DEFB &ED: DEFB &31
+LD HL,flags%: LD D,(HL)
+LD HL,index%: LD B,(HL)
+LD HL,fcn%: LD A,(HL)
+LD HL,data%: DEFB &ED: DEFB &37
+RST.LIL &20
+LD L,A
+LD H,0
+XOR A
+EXX
+XOR A
+LD L,0
+LD H,0
+LD C,A
+RET
+]
 ```
 
 ### Function type signature 8
-WORD fcn(BYTE index);
+WORD bdpp_fg_get_rx_app_packet_size(BYTE index);<br>
+WORD bdpp_bg_get_rx_app_packet_size(BYTE index);<br>
 ```
+bdppSig8%=P%
+[OPT 2
+LD HL,index%: LD B,(HL)
+LD HL,fcn%: LD A,(HL)
+RST.LIL &20
+RET
+]
+ENDPROC
 ```
 
-## BDPP Functions in VDP
+## Sample BDPP Function calls in BASIC-24
 
-## Creating Driver-owned Packets
+These samples are shown without line numbers. For most of these calls, BDPP
+must be both allowed (both CPUs support it), and enabled.
 
-### <i>From within EZ80 MS itself (in C)</i>
+Print whether BDPP is allowed, and whether it is enabled. If BDPP is enabled,
+the data sent to VDP will be enclosed in packets. If BDPP is disabled, the
+data will not be enclosed in packets. Notice that this code does not set the
+value of "fcn%"; it sets a memory byte at the location pointed to by
+the address contained in "fcn%"!
+```
+?fcn%=0: rc%=USR(bdppSig1%): PRINT "is_allowed -> ";rc%
+?fcn%=1: rc%=USR(bdppSig1%): PRINT "is_enabled -> ";rc%
+```
+Assuming that BDPP is enabled, this example shows a mixture of PRINT statements
+with a call to buffer a single byte in the current driver-owned packet.
+Notice that this code does not set the
+value of "data%"; it sets a memory byte at the location pointed to by
+the address contained in "data%"! That is typical of the input parameters
+for the RST calls, used in BASIC, as detailed in this document.
+```
+PRINT "<<BDPP mode: This is in a packet!>>"
+PRINT "Printing a 'Q' as one byte:";
+?fcn%=&0D: ?data%=&51: CALL bdppSig4%
+PRINT ""
+PRINT "This needs ESC characters:";
+PRINT CHR$(&89);CHR$(&8B);"!"
+```
 
-### <i>From within an EZ80 BASIC app</i>
+This code prints some text, then flushes any remaining data, to make sure
+that it gets displayed.
+```
+PRINT "some goofy text here"
+?fcn%=&F: CALL bdppSig3%
+```
 
-### <i>From within an EZ80 C app</i>
-
-### <i>From within an EZ80 Assembler app</i>
-
-### <i>From within ESP32 VDP</i>
-
-## Transmitting Driver-owned Packets
-
-### <i>From within EZ80 MS itself (in C)</i>
-
-### <i>From within an EZ80 BASIC app</i>
-
-### <i>From within an EZ80 C app</i>
-
-### <i>From within an EZ80 Assembler app</i>
-
-### <i>From within ESP32 VDP</i>
-
-## Receiving Driver-owned Packets
-
-## Processing Driver-owned Packets
-
-## Application-owned Packets
-
-Application-owned packets differ from driver-owned packets in two primary ways.
-First, they are managed by the application, not by the driver. Second, they can contain
-up to 256 data bytes, as opposed to just 32 data bytes.
-
-The application is responsible for allocating, and possibly deallocating, memory for app-owned packets. The app tells BDPP what to do with the app-owned packets, because
-the app is in charge; the driver is not.
-
-## Creating App-owned Packets
-
-### <i>From within an EZ80 BASIC app</i>
-
-### <i>From within an EZ80 C app</i>
-
-### <i>From within an EZ80 Assembler app</i>
-
-### <i>From within ESP32 VDP</i>
-
-## Transmitting App-owned Packets
-
-### <i>From within an EZ80 BASIC app</i>
-
-### <i>From within an EZ80 C app</i>
-
-### <i>From within an EZ80 Assembler app</i>
-
-### <i>From within ESP32 VDP</i>
-
-## Receiving App-owned Packets
-
-### <i>From within an EZ80 BASIC app</i>
-
-### <i>From within an EZ80 C app</i>
-
-### <i>From within an EZ80 Assembler app</i>
-
-### <i>From within ESP32 VDP</i>
-
-## Processing App-owned Packets
-
-### <i>From within an EZ80 BASIC app</i>
-
-### <i>From within an EZ80 C app</i>
-
-### <i>From within an EZ80 Assembler app</i>
-
-### <i>From within ESP32 VDP</i>
-
-## EZ80 Function Call Tree
-
-## ESP32 Function Call Tree
-
-## BDPP VDU Commands
-
+This code allocates RAM for an app-owned packet, makes an "echo" request to VDP,
+waits for the response packet, and displays the resulting "echo data". Line
+numbers are shown, because of illustrating the loop (via GOTO), but some other
+loop structure could have been used.
+```
+300 DIM app_pkt% 1: PRINT "app_pkt%: ";~app_pkt%
+310 ?app_pkt%=0: ?fcn%=5: ?index%=5: !data%=app_pkt%: !size%=1
+320 rc%=USR(bdppSig6%): PRINT "rx pkt setup -> ";rc%
+322 ?fcn%=&F: CALL bdppSig3%
+330 VDU 23,0,&A2,1,5,&61
+335 ?fcn%=&F: CALL bdppSig3%
+340 ?index%=5: ?fcn%=7: rc%=USR(bdppSig2%)
+350 IF rc%=0 GOTO 340
+360 PRINT "echo returned -> ";~?app_pkt%
+365 ?fcn%=&F: CALL bdppSig3%
+```
