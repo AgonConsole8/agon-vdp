@@ -1,6 +1,5 @@
 # Bidirectional Packet Protocol (BDPP)
 
-
 The Agon, in all of its derivatives, runs by cooperation between its EZ80 CPU
 and its ESP32 CPU. While the former runs the main application program, the
 latter provides peripheral support for video, audio, keyboard, and mouse.
@@ -665,3 +664,38 @@ loop structure could have been used.
 360 PRINT "echo returned -> ";~?app_pkt%
 365 ?fcn%=&F: CALL bdppSig3%
 ```
+## BDPP VDU Commands
+
+The following VDU commands are handled by the BDPP section of the system command handler in the ESP32 stream processor.
+Except the first way (command code 0), these commands all return data via app-owned packets, and thus take a packet index
+as one of the command parameters. The EZ80 app must have setup an RX buffer with the same packet index before invoking
+one of these commands.
+
+### VDU 23, 0, &A2, 0 - enable BDPP by initializing its driver
+
+This command is automatically invoked when the MOS "bdpp" command is executed. Do not invoke this VDU command independently,
+because it only affects the VDP and not MOS itself, and will cause the two CPUs to stop communicating properly.
+
+###  VDU 23, 0, &A2, 1, pkt_idx, echo_data - echo a single byte back to the EZ80
+
+This command takes a single data byte as input and echos it back as output.
+
+###  VDU 23, 0, &A2, 2, pkt_idx, n, caps0; caps1; ... - get amount of free ESP32 RAM with given capabilties
+
+This command inputs one or more sets of ESP32 memory capabilities flags, and determines the amount
+of free memory, based on those flags. It returns a list of 32-bit values with the resulting free memory sizes.
+
+###  VDU 23, 0, &A2, 3, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as bytes (8 bits each)
+
+This command copies data from the ESP32 memory, starting at the given 32-bit address, copying 1 data byte at a time
+into the output packet. The total number of bytes returned equals the value of n.
+
+###  VDU 23, 0, &A2, 4, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as words (16 bits each)
+
+This command copies data from the ESP32 memory, starting at the given 32-bit address, copying 2 data bytes at a time
+into the output packet. The total number of bytes returned equals the value of n times 2.
+
+###  VDU 23, 0, &A2, 5, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as dwords (32 bits each)
+
+This command copies data from the ESP32 memory, starting at the given 32-bit address, copying 4 data bytes at a time
+into the output packet. The total number of bytes returned equals the value of n times 4.

@@ -582,21 +582,102 @@ void VDUStreamProcessor::vdu_sys_udg(char c) {
 }
 
 // VDU 23, 0, &A2, command, <args>
+//
+// VDU 23, 0, &A2, 0 - enable BDPP by initializing its driver
+// VDU 23, 0, &A2, 1, pkt_idx, echo_data - echo a single byte back to the EZ80
+// VDU 23, 0, &A2, 2, pkt_idx, n, caps0; caps1; ... - get amount of free ESP32 RAM with given capabilties
+// VDU 23, 0, &A2, 3, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as bytes (8 bits each)
+// VDU 23, 0, &A2, 4, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as words (16 bits each)
+// VDU 23, 0, &A2, 5, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as dwords (32 bits each)
+//
 void VDUStreamProcessor::vdu_sys_bdpp() {
+	auto bdpp_stream = (BdppStream*) ((Stream*) outputStream.get());
 	auto cmd = readByte_t();
 	switch(cmd) {
-		case 0: { // VDU 23, 0, &A2, 0
+		// VDU 23, 0, &A2, 0 - enable BDPP by initializing its driver
+		case 0: {
 			bdpp_initialize_driver();
 		} break;
-		case 1: { // VDU 23, 0, &A2, 1, packet_index, echo_data
-			auto packet_index = readByte_t();
+
+		// VDU 23, 0, &A2, 1, pkt_idx, echo_data - echo a single byte back to the EZ80
+		case 1: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
 			auto echo_data = readByte_t();
-			debug_log("pi=%02hX ed=%02hX\n",packet_index,echo_data);
-			auto stream = (BdppStream*) ((Stream*) outputStream.get());
-			stream->start_app_response_packet(packet_index);
 			writeByte(echo_data);
-			stream->flush();
-			debug_log("end echo\n");
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 2, pkt_idx, n, caps0; caps1; ... - get amount of free ESP32 RAM with given capabilties
+		case 2: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto n = readByte_t();
+			while (n--) {
+				auto caps = readWord_t();
+				auto size = heap_caps_get_free_size(caps);
+				auto data = (const uint8_t*) &caps;
+				for (int i = 0; i < sizeof(caps); i++) {
+					writeByte(data[i]);
+				}
+			}
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 3, pkt_idx, addr_lo; addr_hi; size; - get ESP32 RAM contents as bytes (8 bits each)
+		case 3: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto addr_lo = readWord_t();
+			auto addr_hi = readWord_t();
+			auto n = readWord_t();
+			if (n <= BDPP_MAX_PACKET_DATA_SIZE) {
+				auto bytes = (const uint8_t*)((((uint32_t)addr_hi) << 16) | ((uint32_t)addr_lo));
+				while (n--) {
+					writeByte(*bytes++);
+				}
+			}
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 4, pkt_idx, addr_lo; addr_hi; size; - get ESP32 RAM contents as words (16 bits each)
+		case 4: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto addr_lo = readWord_t();
+			auto addr_hi = readWord_t();
+			auto n = readWord_t();
+			if (n*sizeof(uint16_t) <= BDPP_MAX_PACKET_DATA_SIZE) {
+				auto words = (const uint16_t*)((((uint32_t)addr_hi) << 16) | ((uint32_t)addr_lo));
+				while (n--) {
+					auto word = *words++;
+					auto data = (const uint8_t*) &word;
+					writeByte(data[0]);
+					writeByte(data[1]);
+				}
+			}
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 5, pkt_idx, addr_lo; addr_hi; size; - get ESP32 RAM contents as dwords (32 bits each)
+		case 5: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto addr_lo = readWord_t();
+			auto addr_hi = readWord_t();
+			auto n = readWord_t();
+			if (n*sizeof(uint16_t) <= BDPP_MAX_PACKET_DATA_SIZE) {
+				auto dwords = (const uint32_t*)((((uint32_t)addr_hi) << 16) | ((uint32_t)addr_lo));
+				while (n--) {
+					auto dword = *dwords++;
+					auto data = (const uint8_t*) &dword;
+					writeByte(data[0]);
+					writeByte(data[1]);
+					writeByte(data[2]);
+					writeByte(data[3]);
+				}
+			}
+			bdpp_stream->flush();
 		} break;
 	}
 }
