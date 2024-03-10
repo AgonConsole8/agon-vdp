@@ -666,7 +666,7 @@ void VDUStreamProcessor::vdu_sys_bdpp() {
 			auto addr_lo = readWord_t();
 			auto addr_hi = readWord_t();
 			auto n = readWord_t();
-			if (n*sizeof(uint16_t) <= BDPP_MAX_PACKET_DATA_SIZE) {
+			if (n*sizeof(uint32_t) <= BDPP_MAX_PACKET_DATA_SIZE) {
 				auto dwords = (const uint32_t*)((((uint32_t)addr_hi) << 16) | ((uint32_t)addr_lo));
 				while (n--) {
 					auto dword = *dwords++;
