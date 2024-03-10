@@ -84,7 +84,7 @@ bool setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
 	auto p1 = translateCanvas(scale(x1, y1));
 	auto p2 = translateCanvas(scale(x2, y2));
 
-	if (p1.X >= 0 && p2.X < canvasW && p1.Y >= 0 && p2.Y < canvasH && p2.X > p1.X && p2.Y > p1.Y) {
+	if (p1.X >= 0 && p2.X < canvasW && p1.Y >= 0 && p2.Y < canvasH && p2.X >= p1.X && p2.Y >= p1.Y) {
 		graphicsViewport = Rect(p1.X, p1.Y, p2.X, p2.Y);
 		useViewports = true;
 		setClippingRect(graphicsViewport);
