@@ -14,6 +14,7 @@
 #include "vdu_buffered.h"
 #include "vdu_sprites.h"
 #include "updater.h"
+#include "version.h"
 
 extern void startTerminal();					// Start the terminal
 extern void setConsoleMode(bool mode);			// Set console mode
@@ -589,6 +590,7 @@ void VDUStreamProcessor::vdu_sys_udg(char c) {
 // VDU 23, 0, &A2, 3, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as bytes (8 bits each)
 // VDU 23, 0, &A2, 4, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as words (16 bits each)
 // VDU 23, 0, &A2, 5, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as dwords (32 bits each)
+// VDU 23, 0, &A2, 6, pkt_idx - get VDP version information
 //
 void VDUStreamProcessor::vdu_sys_bdpp() {
 	auto bdpp_stream = (BdppStream*) ((Stream*) outputStream.get());
@@ -677,6 +679,27 @@ void VDUStreamProcessor::vdu_sys_bdpp() {
 					writeByte(data[3]);
 				}
 			}
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 6, pkt_idx - get VDP version information
+		case 6: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			writeByte(VERSION_MAJOR);
+			writeByte(VERSION_MINOR);
+			writeByte(VERSION_PATCH);
+			writeByte(VERSION_CANDIDATE);
+
+			const char* data = VERSION_TYPE;
+			do {
+				writeByte(*data);
+			} while (*data++);
+
+			data = VERSION_VARIANT;
+			do {
+				writeByte(*data);
+			} while (*data++);
 			bdpp_stream->flush();
 		} break;
 	}

@@ -683,7 +683,27 @@ This command takes a single data byte as input and echos it back as output.
 ###  VDU 23, 0, &A2, 2, pkt_idx, n, caps0; caps1; ... - get amount of free ESP32 RAM with given capabilties
 
 This command inputs one or more sets of ESP32 memory capabilities flags, and determines the amount
-of free memory, based on those flags. It returns a list of 32-bit values with the resulting free memory sizes.
+of free memory, based on those flags. It returns a list of 32-bit values with the resulting free memory sizes. Within each flags set (e.g., 'caps0' parameter), flags may be ORed to indicate
+more than one capability. Here is the list of flags from 'esp_heap_caps.h':
+
+```
+#define MALLOC_CAP_EXEC             (1<<0)  ///< Memory must be able to run executable code
+#define MALLOC_CAP_32BIT            (1<<1)  ///< Memory must allow for aligned 32-bit data accesses
+#define MALLOC_CAP_8BIT             (1<<2)  ///< Memory must allow for 8/16/...-bit data accesses
+#define MALLOC_CAP_DMA              (1<<3)  ///< Memory must be able to accessed by DMA
+#define MALLOC_CAP_PID2             (1<<4)  ///< Memory must be mapped to PID2 memory space (PIDs are not currently used)
+#define MALLOC_CAP_PID3             (1<<5)  ///< Memory must be mapped to PID3 memory space (PIDs are not currently used)
+#define MALLOC_CAP_PID4             (1<<6)  ///< Memory must be mapped to PID4 memory space (PIDs are not currently used)
+#define MALLOC_CAP_PID5             (1<<7)  ///< Memory must be mapped to PID5 memory space (PIDs are not currently used)
+#define MALLOC_CAP_PID6             (1<<8)  ///< Memory must be mapped to PID6 memory space (PIDs are not currently used)
+#define MALLOC_CAP_PID7             (1<<9)  ///< Memory must be mapped to PID7 memory space (PIDs are not currently used)
+#define MALLOC_CAP_SPIRAM           (1<<10) ///< Memory must be in SPI RAM
+#define MALLOC_CAP_INTERNAL         (1<<11) ///< Memory must be internal; specifically it should not disappear when flash/spiram cache is switched off
+#define MALLOC_CAP_DEFAULT          (1<<12) ///< Memory can be returned in a non-capability-specific memory allocation (e.g. malloc(), calloc()) call
+#define MALLOC_CAP_IRAM_8BIT        (1<<13) ///< Memory must be in IRAM and allow unaligned access
+#define MALLOC_CAP_RETENTION        (1<<14) ///< Memory must be able to accessed by retention DMA
+#define MALLOC_CAP_RTCRAM           (1<<15) ///< Memory must be in RTC fast memory
+```
 
 ###  VDU 23, 0, &A2, 3, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as bytes (8 bits each)
 
@@ -699,3 +719,14 @@ into the output packet. The total number of bytes returned equals the value of n
 
 This command copies data from the ESP32 memory, starting at the given 32-bit address, copying 4 data bytes at a time
 into the output packet. The total number of bytes returned equals the value of n times 4.
+
+### VDU 23, 0, &A2, 6, pkt_idx - get VDP version information
+
+This command returns the following VDP version information:
+
+* Major number (1 byte)
+* Minor number (1 byte)
+* Patch number (1 byte)
+* Candidate number (1 byte)
+* Type (null-terminated text string)
+* Variant (null-terminated text string)
