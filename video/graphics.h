@@ -86,10 +86,15 @@ char getScreenChar(uint16_t px, uint16_t py) {
 		}
 		//
 		// Finally try and match with the character set array
+		// starts at space character (32) and goes beyond the normal ASCII range
+		// Character checked is ANDed with 0xFF, so we check 32-255 then 0-31
+		// thus allowing characters 0-31 to be checked after conventional characters
+		// as by default those characters are the same as space
 		//
-		for (auto i = 32; i <= 255; i++) {
-			if (cmpChar(charData, &fabgl::FONT_AGON_DATA[i * 8], 8)) {
-				return i;
+		for (auto i = 32; i <= (255 + 31); i++) {
+			uint8_t c = i & 0xFF;
+			if (cmpChar(charData, &fabgl::FONT_AGON_DATA[c * 8], 8)) {
+				return c;
 			}
 		}
 	}
