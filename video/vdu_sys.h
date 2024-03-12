@@ -299,6 +299,7 @@ void VDUStreamProcessor::sendColour(uint8_t colour) {
 				// Unrecognised colour - no response
 				return;
 		}
+		colour = getPaletteIndex(pixel);
 	}
 
 	uint8_t packet[] = {
