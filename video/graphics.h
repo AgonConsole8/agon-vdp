@@ -16,6 +16,7 @@
 fabgl::PaintOptions			gpofg;				// Graphics paint options foreground
 fabgl::PaintOptions			gpobg;				// Graphics paint options background
 fabgl::PaintOptions			tpo;				// Text paint options
+fabgl::PaintOptions			cpo;				// Cursor paint options
 
 Point			p1, p2, p3;						// Coordinate store for plot
 Point			rp1;							// Relative coordinates store for plot
@@ -238,6 +239,7 @@ void restorePalette() {
 	tfg = colourLookup[0x3F];
 	tbg = colourLookup[0x00];
 	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
+	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
 	gpofg = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 	gpobg = getPaintOptions(fabgl::PaintMode::Set, gpobg);
 }
@@ -626,7 +628,9 @@ void setClippingRect(Rect rect) {
 // Draw cursor
 //
 void drawCursor(Point p) {
-	canvas->swapRectangle(p.X, p.Y, p.X + fontW - 1, p.Y + fontH - 1);
+	canvas->setBrushColor(tfg);
+	canvas->setPaintOptions(cpo);
+	canvas->fillRectangle(p.X, p.Y, p.X + fontW - 1, p.Y + fontH - 1);
 }
 
 
