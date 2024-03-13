@@ -1,5 +1,5 @@
 10 REM Sample program of BDPP data transfer
-20 REM Read 4KB of data from ESP32 SRAM0 memory bank
+20 REM Read packets of data from ESP32 SRAM0 memory bank
 30 REM Illustrates have multiple outstanding requests,
 40 REM and awaiting responses to those requests.
 100 OSCLI "bdpp"
@@ -10,28 +10,29 @@
 204 DIM size% 4: PRINT "size%: ";~size%
 205 DIM count% 4: PRINT "count%: ";~count%
 206 DIM data% 4: PRINT "data%: ";~data%
+207 packet_size%=10
 210 PROC_assemble_bdpp
 215 REM Setup a large (4KB) RX buffer, and divide it
-220 REM into 16 RX packets of 256 bytes each.
-230 DIM buffer% 4096
-235 PRINT "Setting up 16 RX packets of 256 bytes each"
+220 REM into 16 RX packets of packet_size% bytes each.
+230 DIM buffer% 4096: REM Max packet_size% of 256 bytes
+235 PRINT "Setting up 16 RX packets of ";packet_size%;" bytes each"
 240 FOR pi%=0 TO 15
-250 ?fcn%=5: ?index%=pi%: !data%=(buffer%+pi%*256): !size%=256
+250 ?fcn%=5: ?index%=pi%: !data%=(buffer%+pi%*packet_size%): !size%=packet_size%
 260 rc%=USR(bdppSig6%)
 265 PRINT "RX pkt #";pi%;" at ";~!data%;" setup -> ";rc%
 270 ?fcn%=&F: CALL bdppSig3%
 280 NEXT pi%
 282 PRINT " done."
-284 PRINT "Sending 16 requests for 256 bytes each...";
+284 PRINT "Sending 16 requests for ";packet_size%;" bytes each...";
 286 ?fcn%=&F: CALL bdppSig3%
 288 ts=TIME
 300 FOR pi%=0 TO 15
-310 VDU 23,0,&A2,5,pi%,pi%*256;&4007;256;
+310 VDU 23,0,&A2,3,pi%,&E000+pi%*packet_size%;&3FFA;packet_size%;
 320 NEXT pi%
 322 PRINT " done."
 324 ?fcn%=&F: CALL bdppSig3%
 330 FOR pi%=0 TO 15
-340 PRINT "Waiting for RX pkt #";pi%;"..."
+340 PRINT "Waiting for RX pkt #";pi%;"...";
 350 ?fcn%=&F: CALL bdppSig3%
 360 ?index%=pi%: ?fcn%=7
 365 rc%=USR(bdppSig2%)

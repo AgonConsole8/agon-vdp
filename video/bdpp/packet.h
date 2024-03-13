@@ -19,7 +19,7 @@
 #define BDPP_MAX_DRIVER_PACKETS			16		// Maximum number of driver-owned small packets
 #define BDPP_MAX_APP_PACKETS			16		// Maximum number of app-owned packets
 #define BDPP_MAX_STREAMS				16		// Maximum number of command/data streams
-#define BDPP_MAX_RX_PACKETS             16      // Maximum number of packets setup for DMA RX
+#define BDPP_MAX_RX_PACKETS             32      // Maximum number of packets setup for DMA RX
 
 #define BDPP_STREAM_INDEX_BITS			0xF0	// Upper nibble used for stream index
 #define BDPP_PACKET_INDEX_BITS			0x0F	// Lower nibble used for packet index

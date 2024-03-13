@@ -36,13 +36,6 @@
 extern std::queue<Packet*> bdpp_tx_queue; // Transmit (TX) packet queue
 extern std::queue<UhciPacket*> bdpp_rx_queue[BDPP_MAX_STREAMS]; // Receive (RX) packet queue
 
-#define DMA_TX_IDLE_NUM (0)
-#define DMA_RX_IDLE_THRD (20)
-#define DMA_RX_DESC_CNT (4)
-#define DMA_TX_DESC_CNT (1)
-#define DMA_RX_BUF_SZIE (128)
-#define DMA_TX_BUF_SIZE  (256)
-
 typedef struct {
     Packet*             tx_pkt;
 
