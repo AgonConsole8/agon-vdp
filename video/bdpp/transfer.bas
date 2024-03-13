@@ -16,7 +16,7 @@
 230 DIM buffer% 4096
 235 PRINT "Setting up 16 RX packets of 256 bytes each"
 240 FOR pi%=0 TO 15
-250 ?fcn%=5: ?index%=pi%: !data%=buffer%+pi%*256: !size%=256
+250 ?fcn%=5: ?index%=pi%: !data%=(buffer%+pi%*256): !size%=256
 260 rc%=USR(bdppSig6%)
 265 PRINT "RX pkt #";pi%;" at ";~!data%;" setup -> ";rc%
 270 ?fcn%=&F: CALL bdppSig3%
@@ -33,8 +33,9 @@
 330 FOR pi%=0 TO 15
 340 PRINT "Waiting for RX pkt #";pi%;"..."
 350 ?fcn%=&F: CALL bdppSig3%
-360 ?index%=pi%: ?fcn%=7: rc%=USR(bdppSig2%)
-370 IF rc%=0 GOTO 370
+360 ?index%=pi%: ?fcn%=7
+365 rc%=USR(bdppSig2%)
+370 IF rc%=0 GOTO 365
 380 PRINT " arrived!"
 385 ?fcn%=&F: CALL bdppSig3%
 390 NEXT pi%
