@@ -98,6 +98,7 @@ class VDUStreamProcessor {
 		void bufferReverse(uint16_t bufferId, uint8_t options);
 		void bufferCopyRef(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
 		void bufferCopyAndConsolidate(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
+		void bufferGetDataBytes(uint16_t bufferId);
 
 		void vdu_sys_updater();
 		void unlock();

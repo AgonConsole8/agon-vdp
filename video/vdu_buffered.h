@@ -12,6 +12,7 @@
 #include "multi_buffer_stream.h"
 #include "sprites.h"
 #include "types.h"
+#include "bdpp/bdp_stream.h"
 
 // VDU 23, 0, &A0, bufferId; command: Buffered command support
 //
@@ -174,6 +175,9 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 				return;
 			}
 			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
+		}	break;
+		case BUFFERED_GET_DATA_BYTES: {
+			bufferGetDataBytes(bufferId);
 		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
@@ -1060,4 +1064,90 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, std::vector
 	debug_log("bufferCopyAndConsolidate: copied %d bytes into buffer %d\n\r", length, bufferId);
 }
 
+// VDU 23, 0, &A0, bufferId; &1B, packetIndex, offsetLo; offsetHi; n; : Get data bytes from buffer and return BDPP packet(s)
+// Copy data bytes starting at the provided 32-bit offset within the given buffer.
+// If the requested number of bytes ("n") is greater than the maximum BDPP packet size (256 bytes),
+// this command will return multiple packets, up to the limit of 16 packets (the maximum number of
+// app-owned packets allowed by BDPP MOS). Thus, n must range from 1 to 4096. If multiple packets
+// are returned, their successive packet indexes will start at the given packetIndex, and increment
+// for each packet returned, modulo 16 (i.e., after packet #15 is returned, the next is packet #0).
+//
+void VDUStreamProcessor::bufferGetDataBytes(uint16_t bufferId) {
+	if (buffers.find(bufferId) == buffers.end()) {
+		debug_log("bufferGetDataBytes: buffer %d not found\n\r", bufferId);
+		return;
+	}
+
+	auto pkt_idx = readByte_t();
+	if (pkt_idx >= BDPP_MAX_APP_PACKETS) {
+		debug_log("bufferGetDataBytes: packet index %d is invalid\n\r", pkt_idx);
+		return;
+	}
+
+	auto off_lo = readWord_t();
+	auto off_hi = readWord_t();
+	auto offset = (((uint32_t)off_hi) << 16) | ((uint32_t)off_hi);
+	auto n = readWord_t();
+
+	if (n == 0 || n > BDPP_MAX_APP_PACKETS*BDPP_MAX_PACKET_DATA_SIZE) {
+		debug_log("bufferGetDataBytes: byte count of %d is invalid\n\r", n);
+		return;
+	}
+
+	auto multi_buffer_stream = buffers[bufferId];
+	if (offset + n >= multi_buffer_stream.size()) {
+		debug_log("bufferGetDataBytes: index range %d to %d is invalid\n\r", offset, offset+n-1);
+		return;
+	}
+
+	uint32_t block_start = 0;
+	uint32_t pkt_size = 0;
+	uint32_t pkt_offset = 0;
+	auto grab_remainder = (uint32_t)n;
+	auto bdpp_stream = (BdppStream*) ((Stream*) outputStream.get());
+	bool any_output = false;
+
+	for (const auto &block : multi_buffer_stream) {
+		if (!grab_remainder) {
+			break;
+		}
+		auto block_size = block->size();
+		auto block_end = block_start + block_size;
+		debug_log("gr %u, bs %u, be %u\n", grab_remainder, block_size, block_end);
+		if (offset < block_end) {
+			block->rewind();
+			auto block_remainder = block_end - offset;
+			while (block_remainder && grab_remainder) {
+				auto pkt_remainder = BDPP_MAX_PACKET_DATA_SIZE - pkt_offset;
+				auto count = min(block_remainder, pkt_remainder);
+				count = min(count, grab_remainder);
+				debug_log("  br %u, gr %u, pr %u, cnt %u\n", block_remainder, grab_remainder, pkt_remainder, count);
+
+				if (!any_output) {
+					bdpp_stream->start_app_response_packet(pkt_idx);
+					any_output = true;
+				}
+
+				for (auto i = 0; i < count; i++) {
+					writeByte(block->read());
+				}
+
+				block_remainder -= count;
+				grab_remainder -= count;
+				pkt_size += count;
+				if (pkt_size >= BDPP_MAX_PACKET_DATA_SIZE) {
+					// The stream has now flushed a full packet, and is ready to
+					// create a new one with the next packet index, if required.
+					pkt_size = 0;
+				}
+			}
+		}
+		block_start += block_size;
+	}
+
+	// Make sure the last packet goes out.
+	if (pkt_size) {
+		bdpp_stream->flush();
+	}
+}
 #endif // VDU_BUFFERED_H
