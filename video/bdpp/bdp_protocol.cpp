@@ -21,9 +21,11 @@
 
 #define UHCI_NUM  UHCI_NUM_0
 #define UART_NUM  UART_NUM_2
-#define DEBUG_BDPP 1
+#define DEBUG_BDPP 0
 
+#if DEBUG_BDPP
 extern void debug_log(const char* fmt, ...);
+#endif
 
 bool bdpp_initialized; // Whether the driver has been initialized
 std::queue<Packet*> bdpp_tx_queue; // Transmit (TX) packet queue
@@ -68,6 +70,7 @@ void bdpp_queue_tx_packet(Packet* packet) {
 	auto uhci_packet = packet->get_uhci_packet();
 	auto act_size = packet->get_uhci_packet()->get_actual_data_size();
 
+#if DEBUG_BDPP
 	{
 		debug_log("Queue TX pkt: %02hX %02hX %02hX (%hu):",
 		uhci_packet->get_flags(),
@@ -79,7 +82,7 @@ void bdpp_queue_tx_packet(Packet* packet) {
 	}
 	debug_log("\n");
 	}
-
+#endif
 	auto old_int = uhci_disable_interrupts();
 	bdpp_tx_queue.push(packet);
 	uhci_enable_interrupts(old_int);

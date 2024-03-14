@@ -11,7 +11,10 @@
 #pragma once
 #include <Stream.h>
 #include "bdpp/bdp_protocol.h"
+
+#if DEBUG_BDPP
 extern void debug_log(const char* f, ...);
+#endif
 
 // This class represents a stream of data coming from BDPP.
 //
@@ -49,6 +52,7 @@ class BdppStream : public Stream {
     }
 
 
+#if DEBUG_BDPP
 void show_rx_packet(UhciPacket* packet) {
     auto act_size = packet->get_actual_data_size();
     auto data = packet->get_data();
@@ -68,6 +72,8 @@ void show_rx_packet(UhciPacket* packet) {
     }
     debug_log("\n");
 }
+#endif
+
     // Check for available data
     //
     // Data is available if we have a current packet where
@@ -85,7 +91,9 @@ void show_rx_packet(UhciPacket* packet) {
             }
             if (bdpp_rx_packet_available(stream_index)) {
                 rx_packet = bdpp_get_rx_packet(stream_index);
+#if DEBUG_BDPP
                 show_rx_packet(rx_packet);
+#endif
                 auto act_size = rx_packet->get_actual_data_size();
                 if (act_size) {
                     data_index = 0;

@@ -641,7 +641,6 @@ void VDUStreamProcessor::vdu_sys_bdpp() {
 			auto addr_lo = readWord_t();
 			auto addr_hi = readWord_t();
 			auto n = readWord_t();
-			debug_log("%04hX %04hX %hu\n", addr_lo, addr_hi, n);
 			if (n <= BDPP_MAX_PACKET_DATA_SIZE) {
 				auto bytes = (const uint8_t*)((((uint32_t)addr_hi) << 16) | ((uint32_t)addr_lo));
 				while (n--) {
