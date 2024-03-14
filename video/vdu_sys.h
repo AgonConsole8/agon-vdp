@@ -235,12 +235,17 @@ void VDUStreamProcessor::sendGeneralPoll() {
 	uint8_t response = (uint8_t)b;
 	if (b >= 0x04 && b <= 0x0F) {
 		response |= 0x80; // indicates that ESP32 supports BDPP
-		//VDPSerial.setHwFlowCtrlMode(HW_FLOWCTRL_CTS_RTS, 64);
 	}
 	debug_log("sendGeneralPoll: response %02hX\n\r", response);
 
 	uint8_t packet[] = { response };
 	send_packet(PACKET_GP, sizeof packet, packet);
+
+	if (b >= 0x04 && b <= 0x0F) {
+		delay(10); // wait for the packet to go out
+		VDPSerial.setHwFlowCtrlMode(HW_FLOWCTRL_CTS_RTS, 64);
+	}
+
 	initialised = true;
 }
 
