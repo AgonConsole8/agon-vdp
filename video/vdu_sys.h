@@ -228,11 +228,14 @@ void VDUStreamProcessor::sendGeneralPoll() {
 		return;
 	}
 
-	// If the EZ80 supports BDPP, we respond with the upper bit set.
+	// If the EZ80 supports BDPP, we respond with the upper bit set,
+	// and turn on ESP32 CTS usage (RTS is already on).
+	//
 	// If the EZ80 does not support BDPP, we respond with the old echo.
 	uint8_t response = (uint8_t)b;
 	if (b >= 0x04 && b <= 0x0F) {
 		response |= 0x80; // indicates that ESP32 supports BDPP
+		//VDPSerial.setHwFlowCtrlMode(HW_FLOWCTRL_CTS_RTS, 64);
 	}
 	debug_log("sendGeneralPoll: response %02hX\n\r", response);
 
