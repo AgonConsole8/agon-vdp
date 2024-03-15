@@ -12,6 +12,8 @@
 #include <Stream.h>
 #include "bdpp/bdp_protocol.h"
 
+#define DEBUG_BDPP 0
+
 #if DEBUG_BDPP
 extern void debug_log(const char* f, ...);
 #endif

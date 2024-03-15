@@ -1094,55 +1094,47 @@ void VDUStreamProcessor::bufferGetDataBytes(uint16_t bufferId) {
 		return;
 	}
 
-	auto multi_buffer_stream = buffers[bufferId];
-	if (offset + n >= multi_buffer_stream.size()) {
-		debug_log("bufferGetDataBytes: index range %d to %d is invalid\n\r", offset, offset+n-1);
+	auto buffer_stream = buffers[bufferId][0].get();
+	buffer_stream->rewind();
+	auto bs_size = buffer_stream->available();
+	if (offset + n >= bs_size) {
+		debug_log("bufferGetDataBytes: index range %d to %d is invalid for size %d\n\r", offset, offset+n-1, bs_size);
 		return;
 	}
 
-	uint32_t block_start = 0;
 	uint32_t pkt_size = 0;
 	uint32_t pkt_offset = 0;
 	auto grab_remainder = (uint32_t)n;
 	auto bdpp_stream = (BdppStream*) ((Stream*) outputStream.get());
 	bool any_output = false;
 
-	for (const auto &block : multi_buffer_stream) {
-		if (!grab_remainder) {
-			break;
-		}
-		auto block_size = block->size();
-		auto block_end = block_start + block_size;
-		debug_log("gr %u, bs %u, be %u\n", grab_remainder, block_size, block_end);
-		if (offset < block_end) {
-			block->rewind();
-			auto block_remainder = block_end - offset;
-			while (block_remainder && grab_remainder) {
-				auto pkt_remainder = BDPP_MAX_PACKET_DATA_SIZE - pkt_offset;
-				auto count = min(block_remainder, pkt_remainder);
-				count = min(count, grab_remainder);
-				debug_log("  br %u, gr %u, pr %u, cnt %u\n", block_remainder, grab_remainder, pkt_remainder, count);
+	debug_log("gr %u, bs %u\n", grab_remainder, bs_size);
+	if (offset < bs_size) {
+		auto bs_remainder = bs_size - offset;
+		while (bs_remainder && grab_remainder) {
+			auto pkt_remainder = BDPP_MAX_PACKET_DATA_SIZE - pkt_offset;
+			auto count = min(bs_remainder, pkt_remainder);
+			count = min(count, grab_remainder);
+			debug_log("  br %u, gr %u, pr %u, cnt %u\n", bs_remainder, grab_remainder, pkt_remainder, count);
 
-				if (!any_output) {
-					bdpp_stream->start_app_response_packet(pkt_idx);
-					any_output = true;
-				}
+			if (!any_output) {
+				bdpp_stream->start_app_response_packet(pkt_idx);
+				any_output = true;
+			}
 
-				for (auto i = 0; i < count; i++) {
-					writeByte(block->read());
-				}
+			for (auto i = 0; i < count; i++) {
+				writeByte(buffer_stream->read());
+			}
 
-				block_remainder -= count;
-				grab_remainder -= count;
-				pkt_size += count;
-				if (pkt_size >= BDPP_MAX_PACKET_DATA_SIZE) {
-					// The stream has now flushed a full packet, and is ready to
-					// create a new one with the next packet index, if required.
-					pkt_size = 0;
-				}
+			bs_remainder -= count;
+			grab_remainder -= count;
+			pkt_size += count;
+			if (pkt_size >= BDPP_MAX_PACKET_DATA_SIZE) {
+				// The stream has now flushed a full packet, and is ready to
+				// create a new one with the next packet index, if required.
+				pkt_size = 0;
 			}
 		}
-		block_start += block_size;
 	}
 
 	// Make sure the last packet goes out.

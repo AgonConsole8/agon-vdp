@@ -3,7 +3,7 @@
 30 REM Illustrates have multiple outstanding requests,
 40 REM and awaiting responses to those requests.
 100 OSCLI "bdpp"
-200 DIM code% 300
+200 DIM code% 200
 201 DIM fcn% 1: PRINT "fcn%: ";~fcn%
 202 DIM index% 1: PRINT "index%: ";~index%
 203 DIM flags% 1: PRINT "flags%: ";~flags%
