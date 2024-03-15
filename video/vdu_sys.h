@@ -119,6 +119,16 @@ void VDUStreamProcessor::vdu_sys_video() {
 	auto mode = readByte_t();
 
 	switch (mode) {
+		case VDP_CURSOR_VSTART: {		// VDU 23, 0, &0A, offset
+			auto offset = readByte_t();	// Set the vertical start of the cursor
+			if (offset >= 0)
+				cursorVStart = offset & 0x0F;
+		}	break;
+		case VDP_CURSOR_VEND: {			// VDU 23, 0, &0B, offset
+			auto offset = readByte_t();	// Set the vertical end of the cursor
+			if (offset >= 0)
+				cursorVEnd = offset;
+		}	break;
 		case VDP_GP: {					// VDU 23, 0, &80
 			sendGeneralPoll();			// Send a general poll packet
 		}	break;
@@ -152,6 +162,16 @@ void VDUStreamProcessor::vdu_sys_video() {
 		}	break;
 		case VDP_MOUSE: {				// VDU 23, 0, &89, command, <args>
 			vdu_sys_mouse();
+		}	break;
+		case VDP_CURSOR_HSTART: {		// VDU 23, 0, &8A, offset
+			auto offset = readByte_t();	// Set the horizontal start of the cursor
+			if (offset >= 0)
+				cursorHStart = offset & 0x0F;
+		}	break;
+		case VDP_CURSOR_HEND: {			// VDU 23, 0, &8B, offset
+			auto offset = readByte_t();	// Set the vertical end of the cursor
+			if (offset >= 0)
+				cursorHEnd = offset;
 		}	break;
 		case VDP_UDG: {					// VDU 23, 0, &90, c, <args>
 			auto c = readByte_t();		// Redefine a display character

@@ -38,6 +38,8 @@
 
 // Commands for VDU 23, 0, n
 //
+#define VDP_CURSOR_VSTART		0x0A	// Cursor start line offset (0-15)
+#define VDP_CURSOR_VEND			0x0B	// Cursor end line offset
 #define VDP_GP					0x80	// General poll data
 #define VDP_KEYCODE				0x81	// Keyboard data
 #define VDP_CURSOR				0x82	// Cursor positions
@@ -48,6 +50,8 @@
 #define VDP_RTC					0x87	// RTC
 #define VDP_KEYSTATE			0x88	// Keyboard repeat rate and LED status
 #define VDP_MOUSE				0x89	// Mouse data
+#define VDP_CURSOR_HSTART		0x8A	// Cursor start row offset (0-15)
+#define VDP_CURSOR_HEND			0x8B	// Cursor end row offset
 #define VDP_UDG					0x90	// User defined characters
 #define VDP_UDG_RESET			0x91	// Reset UDGs
 #define VDP_MAP_CHAR_TO_BITMAP	0x92	// Map a character to a bitmap

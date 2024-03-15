@@ -28,6 +28,10 @@ RGB888			tfg, tbg;						// Text foreground and background colour
 uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
 uint8_t			fontW;							// Font width
 uint8_t			fontH;							// Font height
+uint8_t			cursorVStart;					// Cursor vertical start offset
+uint8_t			cursorVEnd;						// Cursor vertical end
+uint8_t			cursorHStart;					// Cursor horizontal start offset
+uint8_t			cursorHEnd;						// Cursor horizontal end
 uint8_t			videoMode;						// Current video mode
 bool			legacyModes = false;			// Default legacy modes being false
 bool			rectangularPixels = false;		// Pixels are square by default
@@ -669,7 +673,7 @@ void setClippingRect(Rect rect) {
 void drawCursor(Point p) {
 	canvas->setBrushColor(tfg);
 	canvas->setPaintOptions(cpo);
-	canvas->fillRectangle(p.X, p.Y, p.X + fontW - 1, p.Y + fontH - 1);
+	canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + cursorHEnd, p.Y + cursorVEnd);
 }
 
 
@@ -854,6 +858,10 @@ int8_t change_mode(uint8_t mode) {
 	rectangularPixels = ((float)canvasW / (float)canvasH) > 2;
 	fontW = canvas->getFontInfo()->width;
 	fontH = canvas->getFontInfo()->height;
+	cursorVStart = 0;
+	cursorVEnd = fontH - 1;
+	cursorHStart = 0;
+	cursorHEnd = fontW - 1;
 	viewportReset();
 	setOrigin(0,0);
 	pushPoint(0,0);
