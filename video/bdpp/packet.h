@@ -92,6 +92,13 @@ typedef struct tagUhciPacket {
         // The size will wrap to zero if it becomes 256.
         act_size += count;
     }
+
+    // Set the actual size.
+    //
+    // This may be used after using get_data() to write to the packet directly.
+    inline void set_size(uint16_t size) {
+        act_size = size;
+    }
 } UhciPacket;
 #pragma pack(pop)
 
