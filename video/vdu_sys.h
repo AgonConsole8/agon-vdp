@@ -15,7 +15,6 @@
 #include "vdu_sprites.h"
 #include "updater.h"
 #include "version.h"
-#include "bdpp/banked_ram.h"
 
 extern void startTerminal();					// Start the terminal
 extern void setConsoleMode(bool mode);			// Set console mode
@@ -42,8 +41,6 @@ typedef union {
 // Wait for eZ80 to initialise
 //
 void VDUStreamProcessor::wait_eZ80() {
-	banked_ram_initialize(); // might need this for BDPP data transfers
-
 	if(esp_reset_reason() == ESP_RST_SW) {
 		return;
 	}
@@ -712,25 +709,6 @@ void VDUStreamProcessor::vdu_sys_bdpp() {
 				writeByte(*data);
 			} while (*data++);
 			bdpp_stream->flush();
-		} break;
-
-		// VDU 23, 0, &A2, 7, pkt_idx, offset_lo; offset_hi; - read ESP32 HIMEM page
-		case 7: {
-			auto pkt_idx = readByte_t();
-			auto tx_pkt = bdpp_stream->start_app_response_packet(pkt_idx);
-			auto uhci_pkt = tx_pkt->get_uhci_packet();
-			auto data = uhci_pkt->get_data();
-			auto offset_lo = readWord_t();
-			auto offset_hi = readWord_t();
-			auto offset = ((((uint32_t)offset_hi) << 16) | ((uint32_t)offset_lo));
-			banked_ram_read(offset, data, BDPP_MAX_PACKET_DATA_SIZE);
-			uhci_pkt->set_size(BDPP_MAX_PACKET_DATA_SIZE);
-			bdpp_stream->flush();
-		} break;
-
-		// VDU 23, 0, &A2, 8, offset_lo; offset_hi; data0, data1, ... - write ESP32 HIMEM page
-		case 8: {
-
 		} break;
 	}
 }

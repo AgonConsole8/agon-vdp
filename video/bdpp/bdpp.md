@@ -730,14 +730,3 @@ This command returns the following VDP version information:
 * Candidate number (1 byte)
 * Type (null-terminated text string)
 * Variant (null-terminated text string)
-
-###  VDU 23, 0, &A2, 7, pkt_idx, offset_lo; offset_hi; - read ESP32 HIMEM page
-
-This command copies data from the ESP32 SPI RAM, above 4MB, starting at the given 32-bit offset.
-The total number of bytes returned always equals 256.
-
-###  VDU 23, 0, &A2, 8, offset_lo; offset_hi; data0, data1, ... - write ESP32 HIMEM page
-
-This command copies data into the ESP32 SPI RAM, above 4MB, starting at the given 32-bit offset.
-The total number of bytes written always equals 256.
-
