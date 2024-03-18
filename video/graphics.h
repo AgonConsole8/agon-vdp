@@ -626,8 +626,8 @@ void plotCharacter(char c) {
 	if (ttxtMode) {
 		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, c);
 	} else {
-		if (pendingNewline) {
-			cursorScrollOrWrap(true);
+		if (cursorBehaviour.scrollProtect) {
+			cursorAutoNewline();
 		}
 		bool isTextCursor = textCursorActive();
 		auto bitmap = getBitmapFromChar(c);
@@ -648,7 +648,7 @@ void plotCharacter(char c) {
 		}
 	}
 	if (!cursorBehaviour.xHold) {
-		cursorRight();
+		cursorRight(cursorBehaviour.scrollProtect);
 	}
 }
 
