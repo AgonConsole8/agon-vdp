@@ -31,6 +31,8 @@ typedef union {
 Point			textCursor;						// Text cursor
 Point *			activeCursor = &textCursor;		// Pointer to the active text cursor (textCursor or p1)
 bool			cursorEnabled = true;			// Cursor visibility
+bool			cursorFlashing = true;			// Cursor is flashing
+uint16_t		cursorFlashRate = CURSOR_PHASE;	// Cursor flash rate
 CursorBehaviour cursorBehaviour;				// New cursor behavior
 bool 			pagedMode = false;				// Is output paged or not? Set by VDU 14 and 15
 uint8_t			pagedModeCount = 0;				// Scroll counter for paged mode

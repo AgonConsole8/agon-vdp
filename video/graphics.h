@@ -1,6 +1,7 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include <algorithm>
 #include <vector>
 
 #include <fabgl.h>
@@ -681,9 +682,11 @@ void setClippingRect(Rect rect) {
 //
 void drawCursor(Point p) {
 	if (textCursorActive()) {
-		canvas->setBrushColor(tfg);
-		canvas->setPaintOptions(cpo);
-		canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + cursorHEnd, p.Y + cursorVEnd);
+		if (cursorHStart < fontW && cursorHStart <= cursorHEnd && cursorVStart < fontH && cursorVStart <= cursorVEnd) {
+			canvas->setBrushColor(tfg);
+			canvas->setPaintOptions(cpo);
+			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
+		}
 	}
 }
 

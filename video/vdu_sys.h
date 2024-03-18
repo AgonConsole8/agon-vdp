@@ -80,6 +80,12 @@ void VDUStreamProcessor::vdu_sys() {
 				auto b = readByte_t();		// Cursor control
 				if (b >= 0) {
 					enableCursor((bool) b);
+					if (b == 2) {
+						cursorFlashing = false;
+					}
+					if (b == 3) {
+						cursorFlashing = true;
+					}
 				}
 			}	break;
 			case 0x07: {					// VDU 23, 7
@@ -121,13 +127,32 @@ void VDUStreamProcessor::vdu_sys_video() {
 	switch (mode) {
 		case VDP_CURSOR_VSTART: {		// VDU 23, 0, &0A, offset
 			auto offset = readByte_t();	// Set the vertical start of the cursor
-			if (offset >= 0)
-				cursorVStart = offset & 0x0F;
+			if (offset >= 0) {
+				cursorVStart = offset & 0x1F;
+				auto appearance = (offset & 0x60) >> 5;
+				switch (appearance) {
+					case 0:		// cursor steady
+						cursorFlashing = false;
+						break;
+					case 1:		// cursor off
+						cursorEnabled = false;
+						break;
+					case 2:		// fast flash
+						cursorFlashRate = CURSOR_FAST_PHASE;
+						cursorFlashing = true;
+						break;
+					case 3:		// slow flash
+						cursorFlashRate = CURSOR_PHASE;
+						cursorFlashing = true;
+						break;
+				}
+			}
 		}	break;
 		case VDP_CURSOR_VEND: {			// VDU 23, 0, &0B, offset
 			auto offset = readByte_t();	// Set the vertical end of the cursor
-			if (offset >= 0)
+			if (offset >= 0) {
 				cursorVEnd = offset;
+			}
 		}	break;
 		case VDP_GP: {					// VDU 23, 0, &80
 			sendGeneralPoll();			// Send a general poll packet

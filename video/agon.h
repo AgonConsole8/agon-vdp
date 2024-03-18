@@ -34,7 +34,8 @@
 
 #define GPIO_ITRP				17		// VSync Interrupt Pin - for reference only
 
-#define CURSOR_PHASE			800		// Cursor blink phase (ms)
+#define CURSOR_PHASE			640		// Cursor blink phase (ms)
+#define CURSOR_FAST_PHASE		320		// Cursor blink phase (ms)
 
 // Commands for VDU 23, 0, n
 //
