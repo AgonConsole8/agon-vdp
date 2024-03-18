@@ -257,10 +257,35 @@ void VDUStreamProcessor::vdu_sys_video_kblayout() {
 // VDU 23, 0, &82: Send the cursor position back to MOS
 //
 void VDUStreamProcessor::sendCursorPosition() {
-	uint8_t packet[] = {
-		(uint8_t) ((textCursor.X - textViewport.X1)/ fontW),
-		(uint8_t) ((textCursor.Y - textViewport.Y1)/ fontH),
-	};
+	// cursor position varies depending on behaviour
+	// so if x/y are inverted, we need to invert them
+	// and if x/y are swapped, we need to swap them
+	uint8_t x, y;
+
+	if (cursorBehaviour.flipXY) {
+		if (cursorBehaviour.invertHorizontal) {
+			x = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / fontH);
+		} else {
+			x = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / fontH);
+		}
+		if (cursorBehaviour.invertVertical) {
+			y = (uint8_t) ((activeViewport->X2 - activeCursor->X) / fontW);
+		} else {
+			y = (uint8_t) ((activeCursor->X - activeViewport->X1) / fontW);
+		}
+	} else {
+		if (cursorBehaviour.invertHorizontal) {
+			x = (uint8_t) ((activeViewport->X2 - activeCursor->X) / fontW);
+		} else {
+			x = (uint8_t) ((activeCursor->X - activeViewport->X1) / fontW);
+		}
+		if (cursorBehaviour.invertVertical) {
+			y = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / fontH);
+		} else {
+			y = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / fontH);
+		}
+	}
+	uint8_t packet[] = { x, y };
 	send_packet(PACKET_CURSOR, sizeof packet, packet);
 }
 
@@ -350,13 +375,16 @@ void VDUStreamProcessor::sendTime() {
 // VDU 23, 0, &86: Send MODE information (screen details)
 //
 void VDUStreamProcessor::sendModeInformation() {
+	// TODO consider whether charsX and charsY should be based on the active viewport
+	uint8_t charsX = canvasW / fontW;
+	uint8_t charsY = canvasH / fontH;
 	uint8_t packet[] = {
 		(uint8_t) (canvasW & 0xFF),			// Width in pixels (L)
 		(uint8_t) ((canvasW >> 8) & 0xFF),	// Width in pixels (H)
 		(uint8_t) (canvasH & 0xFF),			// Height in pixels (L)
 		(uint8_t) ((canvasH >> 8) & 0xFF),	// Height in pixels (H)
-		(uint8_t) (canvasW / fontW),		// Width in characters (byte)
-		(uint8_t) (canvasH / fontH),		// Height in characters (byte)
+		(uint8_t) cursorBehaviour.flipXY ? charsY : charsX,		// Width in characters (byte)
+		(uint8_t) cursorBehaviour.flipXY ? charsX : charsY,		// Height in characters (byte)
 		getVGAColourDepth(),				// Colour depth
 		videoMode,							// The video mode number
 	};
@@ -568,6 +596,7 @@ void VDUStreamProcessor::vdu_sys_cursorBehaviour() {
 	auto mask = readByte_t();		if (mask == -1) return;
 
 	setCursorBehaviour((uint8_t) setting, (uint8_t) mask);
+	sendModeInformation();
 }
 
 // VDU 23, c, n1, n2, n3, n4, n5, n6, n7, n8: Redefine a display character

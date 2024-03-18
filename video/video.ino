@@ -115,6 +115,7 @@ void loop() {
 
 		if (processor->byteAvailable()) {
 			if (drawCursor) {
+				cursorTime = millis();
 				drawCursor = false;
 				do_cursor();
 			}

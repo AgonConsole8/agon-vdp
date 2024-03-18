@@ -325,9 +325,12 @@ void clearViewport(Rect * viewport) {
 //
 void pushPoint(Point p) {
 	rp1 = Point(p.X - p1.X, p.Y - p1.Y);
-	p3 = p2;
-	p2 = p1;
-	p1 = p;
+	p3.X = p2.X;
+	p3.Y = p2.Y;
+	p2.X = p1.X;
+	p2.Y = p1.Y;
+	p1.X = p.X;
+	p1.Y = p.Y;
 }
 void pushPoint(uint16_t x, uint16_t y) {
 	up1 = Point(x, y);
@@ -623,6 +626,9 @@ void plotCharacter(char c) {
 	if (ttxtMode) {
 		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, c);
 	} else {
+		if (pendingNewline) {
+			cursorScrollOrWrap(true);
+		}
 		bool isTextCursor = textCursorActive();
 		auto bitmap = getBitmapFromChar(c);
 		if (isTextCursor) {
@@ -641,12 +647,15 @@ void plotCharacter(char c) {
 			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
 		}
 	}
-	cursorRight();
+	if (!cursorBehaviour.xHold) {
+		cursorRight();
+	}
 }
 
 // Backspace plot
 //
 void plotBackspace() {
+	debug_log("plotBackspace\n\r");
 	cursorLeft();
 	if (ttxtMode) {
 		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, ' ');
@@ -671,9 +680,11 @@ void setClippingRect(Rect rect) {
 // Draw cursor
 //
 void drawCursor(Point p) {
-	canvas->setBrushColor(tfg);
-	canvas->setPaintOptions(cpo);
-	canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + cursorHEnd, p.Y + cursorVEnd);
+	if (textCursorActive()) {
+		canvas->setBrushColor(tfg);
+		canvas->setPaintOptions(cpo);
+		canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + cursorHEnd, p.Y + cursorVEnd);
+	}
 }
 
 
@@ -696,7 +707,7 @@ void cls(bool resetViewports) {
 		activateSprites(0);
 		clearViewport(getViewport(VIEWPORT_TEXT));
 	}
-	homeCursor();
+	cursorHome();
 	setPagedMode();
 }
 
@@ -869,7 +880,7 @@ int8_t change_mode(uint8_t mode) {
 	pushPoint(0,0);
 	moveTo();
 	resetCursor();
-	homeCursor();
+	cursorHome();
 	if (isDoubleBuffered()) {
 		switchBuffer();
 		cls(false);
@@ -910,6 +921,7 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 		if (direction == 3) ttxt_instance.scroll();
 	} else {
 		canvas->setPenColor(tbg);
+		canvas->setBrushColor(tbg);
 		canvas->setPaintOptions(tpo);
 		auto moveX = 0;
 		auto moveY = 0;
@@ -927,16 +939,32 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 				moveY = -1;
 				break;
 			case 4:		// positive X
-				moveX = cursorBehaviour & 0x02 ? -1 : 1;
+				if (cursorBehaviour.flipXY) {
+					moveY = cursorBehaviour.invertHorizontal ? -1 : 1;
+				} else {
+					moveX = cursorBehaviour.invertHorizontal ? -1 : 1;
+				}
 				break;
 			case 5:		// negative X
-				moveX = cursorBehaviour & 0x02 ? 1 : -1;
+				if (cursorBehaviour.flipXY) {
+					moveY = cursorBehaviour.invertHorizontal ? 1 : -1;
+				} else {
+					moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
+				}
 				break;
 			case 6:		// positive Y
-				moveY = cursorBehaviour & 0x04 ? -1 : 1;
+				if (cursorBehaviour.flipXY) {
+					moveX = cursorBehaviour.invertVertical ? -1 : 1;
+				} else {
+					moveY = cursorBehaviour.invertVertical ? -1 : 1;
+				}
 				break;
 			case 7:		// negative Y
-				moveY = cursorBehaviour & 0x04 ? 1 : -1;
+				if (cursorBehaviour.flipXY) {
+					moveX = cursorBehaviour.invertVertical ? 1 : -1;
+				} else {
+					moveY = cursorBehaviour.invertVertical ? 1 : -1;
+				}
 				break;
 		}
 		if (moveX != 0 || moveY != 0) {
