@@ -656,7 +656,6 @@ void plotCharacter(char c) {
 // Backspace plot
 //
 void plotBackspace() {
-	debug_log("plotBackspace\n\r");
 	cursorLeft();
 	if (ttxtMode) {
 		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, ' ');

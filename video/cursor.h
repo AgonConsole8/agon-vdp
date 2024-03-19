@@ -93,9 +93,7 @@ bool cursorScrollOrWrap() {
 		return false;
 	}
 
-	debug_log("cursorScrollOrWrap: cursor: %d,%d viewport %d,%d -> %d,%d\n\r", activeCursor->X, activeCursor->Y, activeViewport->X1, activeViewport->Y1, activeViewport->X2, activeViewport->Y2);
 	if (textCursorActive() && !cursorBehaviour.yWrap) {
-		debug_log("text cursor check for wrap\n\r");
 		// text cursor, scrolling for our Y direction is enabled
 		if (cursorBehaviour.flipXY && outsideX || !cursorBehaviour.flipXY && outsideY) {
 			// we are outside of our cursor vertical direction
@@ -111,7 +109,6 @@ bool cursorScrollOrWrap() {
 				}
 			} else {
 				if (activeCursor->Y < activeViewport->Y1) {
-					// TODO verify that these should really be invertHorizontal
 					scrollRegion(activeViewport, cursorBehaviour.invertHorizontal ? 7 : 6, 0);
 					activeCursor->Y = activeViewport->Y1;
 				} else {
@@ -123,15 +120,16 @@ bool cursorScrollOrWrap() {
 		}
 	}
 
-	// graphics cursor, or text cursor with wrap enabled
+	// if we get here we have a graphics cursor, or text cursor with wrap enabled
+
 	if (!textCursorActive() && cursorBehaviour.grNoSpecialActions) {
-		debug_log("no wrap\n\r");
 		return false;
 	}
 
-	debug_log("wrapping\n\r");
 	// here we just wrap everything
 	// TODO these don't work properly if our viewport isn't a multiple of fontW or fontH
+	// NB this will only be a potential problem if we're using a graphics cursor with a restricted viewport
+	// or potentially if we're using an oddly sized font
 	if (activeCursor->X < activeViewport->X1) {
 		activeCursor->X = activeViewport->X2 + 1 - fontW;
 	}
@@ -144,6 +142,12 @@ bool cursorScrollOrWrap() {
 	if (activeCursor->Y >= activeViewport->Y2) {
 		activeCursor->Y = activeViewport->Y1;
 	}
+
+	// alignment to a multiple of fontW can go _something_ like this
+	// but needs to bear in mind that our axis might be inverted
+	// int16_t xOffset = (activeCursor->X - activeViewport->X1) % fontW;
+	// activeCursor->X = activeCursor->X + xOffset;
+
 	return true;
 }
 
@@ -186,15 +190,6 @@ void cursorDown() {
 	// Check if scroll required
 	//
 	cursorScrollOrWrap();
-	// if (activeCursor->Y + fontH - 1 > activeViewport->Y2) {
-	// 	activeCursor->Y -= fontH;
-	// 	if (~cursorBehaviour & 0x01) {
-	// 		scrollRegion(activeViewport, 3, fontH);
-	// 	}
-	// 	else {
-	// 		activeCursor->X = activeViewport->X2 + 1;
-	// 	}
-	// }
 }
 
 // Move the active cursor up a line
@@ -232,6 +227,7 @@ void cursorAutoNewline() {
 // Advance the active cursor right one character
 //
 void cursorRight(bool scrollProtect = false) {
+	// deal with any pending newline that we may have
 	cursorAutoNewline();
 
 	if (cursorBehaviour.flipXY) {
@@ -239,31 +235,20 @@ void cursorRight(bool scrollProtect = false) {
 	} else {
 		activeCursor->X += (cursorBehaviour.invertHorizontal ? -fontW : fontW);
 	}
-	debug_log("cursorRight: %d %d\n\r", activeCursor->X, activeCursor->Y);
 	if (!scrollProtect) {
 		cursorAutoNewline();
 	}
-
-	// if (cursorScrollOrWrap()) {	// we have scrolled or wrapped to opposite edge, so may need to move cursor down
-	// 	if (textCursorActive() && !cursorBehaviour.yWrap) {
-	// 		cursorDown();
-	// 	}
-	// 	// if (textCursorActive() || (~cursorBehaviour & 0x40)) {		// If it is a text cursor or VDU 5 CR/LF is enabled then
-	// 	// 	cursorCR();												// Do carriage return
-	// 	// 	cursorDown();											// and line feed
-	// 	// }
-	// }
 }
 
 // Move the active cursor to the top-left position in the viewport
 //
-void cursorHome() {
+void cursorHome(Point * cursor = activeCursor, Rect * viewport = activeViewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? (activeViewport->X2 + 1 - fontW) : activeViewport->X1;
-		activeCursor->Y = cursorBehaviour.invertVertical ? (activeViewport->Y2 + 1 - fontH) : activeViewport->Y1;
+		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - fontW) : viewport->X1;
+		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - fontH) : viewport->Y1;
 	} else {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? (activeViewport->X2 + 1 - fontW) : activeViewport->X1;
-		activeCursor->Y = cursorBehaviour.invertVertical ? (activeViewport->Y2 + 1 - fontH) : activeViewport->Y1;
+		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - fontW) : viewport->X1;
+		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - fontH) : viewport->Y1;
 	}
 }
 
@@ -319,13 +304,12 @@ inline void enableCursor(bool enable = true) {
 }
 
 void ensureCursorInViewport(Rect viewport) {
-	if (activeCursor->X < viewport.X1
-		|| activeCursor->X > viewport.X2
-		|| activeCursor->Y < viewport.Y1
-		|| activeCursor->Y > viewport.Y2
-		) {
-		activeCursor->X = viewport.X1;
-		activeCursor->Y = viewport.Y1;
+	if (textCursor.X < viewport.X1
+		|| textCursor.X > viewport.X2
+		|| textCursor.Y < viewport.Y1
+		|| textCursor.Y > viewport.Y2
+	) {
+		cursorHome(&textCursor, &viewport);
 	}
 }
 

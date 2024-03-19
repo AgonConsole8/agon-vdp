@@ -191,7 +191,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_CURSOR_HSTART: {		// VDU 23, 0, &8A, offset
 			auto offset = readByte_t();	// Set the horizontal start of the cursor
 			if (offset >= 0)
-				cursorHStart = offset & 0x0F;
+				cursorHStart = offset;
 		}	break;
 		case VDP_CURSOR_HEND: {			// VDU 23, 0, &8B, offset
 			auto offset = readByte_t();	// Set the vertical end of the cursor
