@@ -400,9 +400,10 @@ void VDUStreamProcessor::sendTime() {
 // VDU 23, 0, &86: Send MODE information (screen details)
 //
 void VDUStreamProcessor::sendModeInformation() {
-	// TODO consider whether charsX and charsY should be based on the active viewport
-	uint8_t charsX = canvasW / fontW;
-	uint8_t charsY = canvasH / fontH;
+	// our character dimensions are for the currently active viewport
+	// needed as MOS's line editing system uses these
+	uint8_t charsX = activeViewport->width() / fontW;
+	uint8_t charsY = activeViewport->height() / fontH;
 	uint8_t packet[] = {
 		(uint8_t) (canvasW & 0xFF),			// Width in pixels (L)
 		(uint8_t) ((canvasW >> 8) & 0xFF),	// Width in pixels (H)
