@@ -9,7 +9,7 @@
 180 DATA "| (2) Capture a portion of the screen into a buffer on the ESP32       |"
 190 DATA "| (3) Setup BDPP RX packets on the EZ80                                |"
 200 DATA "| (4) Tell the ESP32 to transmit the buffer contents to the EZ80       |"
-210 DATA "| (5) Draw an image that is 1/4 the size of the captured image         |"
+210 DATA "| (5) Draw the captured image upside-down at the bottom of the screen  |"
 215 DATA "*----------------------------------------------------------------------*"
 220 DATA ""
 300 READ T$: IF T$="" GOTO 350
@@ -38,17 +38,37 @@
 550 rc%=USR(bdppSig6%)
 560 NEXT pi%
 
-600 capWidth%=72*8: capHeight%=9*8: bufferId%=64001
-610 MOVE 0,0: DRAW capWidth%,capHeight%
+600 capWidth%=72*8: capHeight%=9*8: bufferId%=64001: lineBufferId%=64002
+610 MOVE 0,0: DRAW capWidth%-1,capHeight%-1
 620 VDU 23,27,1,bufferId%,0,0;
 630 ?fcn%=&F: CALL bdppSig3%
 
-700 packetIndex%=0: offsetLo%=0: offsetHi%=0: n%=256
-710 VDU 23,0,&A0,bufferId%;&1B,packetIndex%,offsetLo%;offsetHi%;n%;
-720 ?fcn%=&F: CALL bdppSig3%
-730 ?index%=packetIndex%: ?fcn%=7
-740 rc%=USR(bdppSig2%)
-750 IF rc%=0 GOTO 740
+700 packetIndex%=0: offsetLo%=0: offsetHi%=0
+710 FOR i%=0 TO capHeight%-1
+720 rem%=capWidth
+730 IF rem%>256 THEN chunk%=256 ELSE chunk%=rem%
+740 VDU 23,0,&A0,bufferId%;&1B,packetIndex%,offsetLo%;offsetHi%;chunk%;
+750 ?fcn%=&F: CALL bdppSig3%
+760 offsetLo%=offsetLo%+chunk%: packetIndex%=packetIndex%+1
+770 rem%=rem%-chunk%
+
+780 ?index%=packetIndex%: ?fcn%=7
+790 rc%=USR(bdppSig2%)
+
+800 VDU 23,0,&A0,lineBufferId%;0,chunk%;
+810 address%=(buffer%+packetIndex%*packet_size%)
+820 FOR B%=1 TO chunk%
+830 VDU ?address%: address%=address%+1
+840 NEXT B%
+850 ?fcn%=&F: CALL bdppSig3%
+
+800 IF rc%=0 GOTO 790
+
+820 IF rem%>0 GOTO 730
+VDU 23, 27, &20, bufferId;              : REM Select bitmap (using a buffer ID)
+VDU 23, 27, &21, width; height; format  : REM Create bitmap from buffer
+830 VDU 23,0,&A0,lineBufferId%; SHOW BITMAP at 310-i%,0
+840 NEXT i%
 
 999 END
 
