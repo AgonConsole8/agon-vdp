@@ -1,6 +1,7 @@
-10 REM
-20 REM
-30 REM
+10 REM This program writes colored text onto the screen,
+20 REM reads it using BDPP, and writes it back onto the screen.
+30 REM It illustrates the use of BDPP, but does not use buffers
+40 REM or packets in the most efficient manner.
 100 MODE 3
 140 DATA "*----------------------------------------------------------------------*"
 150 DATA "| GRABBUFFER.BAS - Sample app shows using BDPP to grab VDP buffer data |"
@@ -17,9 +18,10 @@
 320 FOR I%=1 TO L%
 330 COLOUR RND(63): PRINT MID$(T$,I%,1);
 340 NEXT I%: PRINT "": GOTO 300
-350 VDU 23,0,&C0,0
-360 OSCLI "BDPP"
+350 VDU 23,0,&C0,0: REM Use normal (not logical) coordinates
+360 OSCLI "BDPP": REM Turn on BDPP
 
+390 REM Assemble the interfaces to the BDPP API
 400 DIM code% 200
 401 DIM fcn% 1
 402 DIM index% 1
@@ -30,43 +32,44 @@
 407 packet_size%=256
 410 PROC_assemble_bdpp
 
-500 REM Setup a large (4KB) RX buffer, and divide it
-510 REM into 16 RX packets of packet_size% bytes each.
-520 DIM buffer% 4096: REM Max packet_size% of 256 bytes
-530 FOR pi%=0 TO 15
-540 ?fcn%=5: ?index%=pi%: !data%=(buffer%+pi%*packet_size%): !size%=packet_size%
+510 REM Setup a local RX packet buffer
+520 DIM buffer% 256
+530 packetIndex%=0
+540 ?fcn%=5: ?index%=packetIndex%: !data%=buffer%: !size%=packet_size%
 550 rc%=USR(bdppSig6%)
-560 NEXT pi%
 
+590 REM Capture upper portion of screen (the colored text)
 600 capWidth%=72*8: capHeight%=9*8: bufferId%=64001: lineBufferId%=64002
-610 MOVE 0,0: DRAW capWidth%-1,capHeight%-1
+610 MOVE 0,0: MOVE capWidth%-1,capHeight%-1
 620 VDU 23,27,1,bufferId%,0,0;
 630 ?fcn%=&F: CALL bdppSig3%
 
-700 packetIndex%=0: offsetLo%=0: offsetHi%=0
+700 offsetHi%=0
 710 FOR i%=0 TO capHeight%-1
-720 rem%=capWidth
+720 rem%=capWidth: offsetLo%=0
 730 IF rem%>256 THEN chunk%=256 ELSE chunk%=rem%
+735 REM Request a section of the captured pixels
 740 VDU 23,0,&A0,bufferId%;&1B,packetIndex%,offsetLo%;offsetHi%;chunk%;
 750 ?fcn%=&F: CALL bdppSig3%
-760 offsetLo%=offsetLo%+chunk%: packetIndex%=packetIndex%+1
+760 offsetLo%=offsetLo%+chunk%
 770 rem%=rem%-chunk%
-
+775 REM Wait for the response packet with pixel data
 780 ?index%=packetIndex%: ?fcn%=7
 790 rc%=USR(bdppSig2%)
+792 IF rc%=0 GOTO 790
 
+795 REM Write the chunk of pixels to a single line buffer
 800 VDU 23,0,&A0,lineBufferId%;0,chunk%;
-810 address%=(buffer%+packetIndex%*packet_size%)
+810 address%=buffer%
 820 FOR B%=1 TO chunk%
 830 VDU ?address%: address%=address%+1
 840 NEXT B%
 850 ?fcn%=&F: CALL bdppSig3%
+860 REM Go get the rest of one line of pixels
+870 IF rem%>0 GOTO 730
 
-800 IF rc%=0 GOTO 790
-
-820 IF rem%>0 GOTO 730
-VDU 23, 27, &20, bufferId;              : REM Select bitmap (using a buffer ID)
-VDU 23, 27, &21, width; height; format  : REM Create bitmap from buffer
+900 VDU 23,27,&20,lineBufferId%;: REM Select bitmap (using a buffer ID)
+910 VDU 23,27,&21,capWidth%;capHeight%;1: REM Create bitmap from buffer
 830 VDU 23,0,&A0,lineBufferId%; SHOW BITMAP at 310-i%,0
 840 NEXT i%
 
