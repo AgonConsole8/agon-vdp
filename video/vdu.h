@@ -252,7 +252,7 @@ void VDUStreamProcessor::vdu_plot() {
 
 	debug_log("vdu_plot: operation: %X, mode %d, lastPlotCommand %X, (%d,%d) -> (%d,%d)\n\r", operation, mode, lastPlotCommand, x, y, p1.X, p1.Y);
 
-	if (((lastPlotCommand & 0xF8) == 0xD8) && (lastPlotCommand != command)) {
+	if (((lastPlotCommand & 0xF8) == 0xD8) && ((lastPlotCommand & 0xFB) != (command & 0xFB))) {
 		debug_log("vdu_plot: last plot was a path, but different command detected\n\r");
 		// We're not doing a path any more - so commit it
 		plotPath(0, lastPlotCommand & 0x03);
