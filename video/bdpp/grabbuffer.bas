@@ -70,8 +70,8 @@
 
 900 VDU 23,27,&20,lineBufferId%;: REM Select bitmap (using a buffer ID)
 910 VDU 23,27,&21,capWidth%;capHeight%;1: REM Create bitmap from buffer
-830 VDU 23,0,&A0,lineBufferId%; SHOW BITMAP at 310-i%,0
-840 NEXT i%
+920 VDU 25,&ED,0;(310-i%);: REM Show the bitmap on the screen line
+960 NEXT i%
 
 999 END
 
