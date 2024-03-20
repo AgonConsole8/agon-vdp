@@ -484,7 +484,7 @@ void plotPath(uint8_t mode, uint8_t lastMode) {
 		}
 		debug_log("plotPath: setting graphics fill with lastMode %d\n\r", lastMode);
 		// i'm not entirely sure yet whether this is needed
-		// setGraphicsOptions(lastMode);
+		setGraphicsOptions(lastMode);
 		setGraphicsFill(lastMode);
 		canvas->fillPath(pathPoints.data(), pathPoints.size());
 		pathPoints.clear();
