@@ -240,8 +240,8 @@ void VDUStreamProcessor::vdu_plot() {
 	auto mode = command & 0x07;
 	auto operation = command & 0xF8;
 
-	auto x = readWord_t(); if (x == -1) return; else x = (short)x;
-	auto y = readWord_t(); if (y == -1) return; else y = (short)y;
+	auto x = readWord_t(); if (x == -1) return; else x = (int16_t)x;
+	auto y = readWord_t(); if (y == -1) return; else y = (int16_t)y;
 	if (ttxtMode) return;
 
 	if (mode < 4) {
