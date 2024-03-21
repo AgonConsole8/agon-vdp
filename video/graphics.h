@@ -528,6 +528,24 @@ void plotCircle(bool filled = false) {
 	}
 }
 
+// Arc plot
+void plotArc() {
+	debug_log("plotArc: (%d,%d) -> (%d,%d), (%d,%d)\n\r", p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+	canvas->drawArc(p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+}
+
+// Segment plot
+void plotSegment() {
+	debug_log("plotSegment: (%d,%d) -> (%d,%d), (%d,%d)\n\r", p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+	canvas->fillSegment(p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+}
+
+// Sector plot
+void plotSector() {
+	debug_log("plotSector: (%d,%d) -> (%d,%d), (%d,%d)\n\r", p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+	canvas->fillSector(p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+}
+
 // Copy or move a rectangle
 //
 void plotCopyMove(uint8_t mode) {

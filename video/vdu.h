@@ -342,10 +342,15 @@ void VDUStreamProcessor::vdu_plot() {
 				plotCircle(true);
 				break;
 			case 0xA0:	// circular arc
+				plotArc();
+				break;
 			case 0xA8:	// circular segment
+				setGraphicsFill(mode);
+				plotSegment();
+				break;
 			case 0xB0:	// circular sector
-				// fab-gl has no arc or segment operations, only simple ellipse (squashable circle)
-				debug_log("plot circular arc/segment/sector not implemented\n\r");
+				setGraphicsFill(mode);
+				plotSector();
 				break;
 			case 0xB8:	// copy/move
 				plotCopyMove(mode);
