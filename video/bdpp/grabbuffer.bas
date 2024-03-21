@@ -40,23 +40,25 @@
 
 590 REM Capture upper portion of screen (the colored text)
 600 capWidth%=72*8: capHeight%=9*8: bufferId%=64001: lineBufferId%=64002
-610 MOVE 0,0: MOVE capWidth%-1,capHeight%-1
+610 MOVE 0,0: DRAW capWidth%-1,capHeight%-1
 620 VDU 23,27,1,bufferId%,0,0;
 630 ?fcn%=&F: CALL bdppSig3%
 
 700 offsetHi%=0
 710 FOR i%=0 TO capHeight%-1
-720 rem%=capWidth: offsetLo%=0
-730 IF rem%>256 THEN chunk%=256 ELSE chunk%=rem%
+720 rcnt%=capWidth%: offsetLo%=0
+730 IF rcnt%>256 THEN chunk%=256 ELSE chunk%=rcnt%
 735 REM Request a section of the captured pixels
 740 VDU 23,0,&A0,bufferId%;&1B,packetIndex%,offsetLo%;offsetHi%;chunk%;
 750 ?fcn%=&F: CALL bdppSig3%
 760 offsetLo%=offsetLo%+chunk%
-770 rem%=rem%-chunk%
+770 rcnt%=rcnt%-chunk%
 775 REM Wait for the response packet with pixel data
 780 ?index%=packetIndex%: ?fcn%=7
 790 rc%=USR(bdppSig2%)
 792 IF rc%=0 GOTO 790
+
+793 PRINT "<";?buffer%;">": END
 
 795 REM Write the chunk of pixels to a single line buffer
 800 VDU 23,0,&A0,lineBufferId%;0,chunk%;
@@ -66,10 +68,17 @@
 840 NEXT B%
 850 ?fcn%=&F: CALL bdppSig3%
 860 REM Go get the rest of one line of pixels
-870 IF rem%>0 GOTO 730
+870 IF rcnt%>0 GOTO 730
+
+871 address%=buffer%: PRINT i%;": ";
+872 FOR B%=0 TO 15
+873 PRINT STR$(?address%);" ";: address%=address%+1
+874 NEXT B%
+875 PRINT ""
+876 ?fcn%=&F: CALL bdppSig3%
 
 900 VDU 23,27,&20,lineBufferId%;: REM Select bitmap (using a buffer ID)
-910 VDU 23,27,&21,capWidth%;capHeight%;1: REM Create bitmap from buffer
+910 VDU 23,27,&21,capWidth%;1;1: REM Create bitmap from buffer
 920 VDU 25,&ED,0;(310-i%);: REM Show the bitmap on the screen line
 960 NEXT i%
 
