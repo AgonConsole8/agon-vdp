@@ -246,15 +246,10 @@ void VDUStreamProcessor::vdu_graphicsViewport() {
 
 // VDU 25 Handle PLOT
 //
-void VDUStreamProcessor::vdu_plot() {
+void IRAM_ATTR VDUStreamProcessor::vdu_plot() {
 	auto command = readByte_t(); if (command == -1) return;
 	auto mode = command & 0x07;
 	auto operation = command & 0xF8;
-
-	if (!textCursorActive()) {
-		// if we're in graphics mode, we need to move the cursor to the last point
-		moveTo();
-	}
 
 	auto x = readWord_t(); if (x == -1) return; else x = (int16_t)x;
 	auto y = readWord_t(); if (y == -1) return; else y = (int16_t)y;
@@ -288,8 +283,8 @@ void VDUStreamProcessor::vdu_plot() {
 			case 0x10:	// dot-dash line
 				plotLine(false, false, true);
 				break;
-			case 0x18:	// dot-dash line, omitting first point
-				plotLine(true, false, true);
+			case 0x18:	// dot-dash line, omitting last point
+				plotLine(false, true, true);
 				break;
 			case 0x30:	// dot-dash line, omitting first, pattern continued
 				plotLine(true, false, true, false);

@@ -405,6 +405,11 @@ void moveTo() {
 // Line plot
 //
 void plotLine(bool omitFirstPoint = false, bool omitLastPoint = false, bool usePattern = false, bool resetPattern = true) {
+	if (!textCursorActive()) {
+		// if we're in graphics mode, we need to move the cursor to the last point
+		canvas->moveTo(p2.X, p2.Y);
+	}
+
 	auto lineOptions = fabgl::LineOptions();
 	lineOptions.omitFirst = omitFirstPoint;
 	lineOptions.omitLast = omitLastPoint;
