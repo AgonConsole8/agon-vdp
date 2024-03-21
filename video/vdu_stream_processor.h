@@ -254,9 +254,10 @@ uint32_t VDUStreamProcessor::discardBytes(uint32_t length, uint16_t timeout = CO
 // returns -1 if timed out, or the byte value (0 to 255)
 //
 int16_t VDUStreamProcessor::peekByte_t(uint16_t timeout = COMMS_TIMEOUT) {
-	auto t = millis();
+	auto start = xTaskGetTickCountFromISR();
+	const auto timeCheck = pdMS_TO_TICKS(timeout);
 
-	while (millis() - t <= timeout) {
+	while (xTaskGetTickCountFromISR() - start < timeCheck) {
 		if (inputStream->available() > 0) {
 			return inputStream->peek();
 		}
