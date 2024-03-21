@@ -67,12 +67,14 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			setCharacterOverwrite(true);
 			setActiveCursor(getTextCursor());
 			setActiveViewport(VIEWPORT_TEXT);
+			sendModeInformation();
 			break;
 		case 0x05:
 			// enable graphics cursor
 			setCharacterOverwrite(false);
 			setActiveCursor(getGraphicsCursor());
 			setActiveViewport(VIEWPORT_GRAPHICS);
+			sendModeInformation();
 			break;
 		case 0x06:
 			// Resume VDU system
@@ -81,7 +83,13 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			playNote(0, 100, 750, 125);
 			break;
 		case 0x08:	// Cursor Left
-			cursorLeft();
+			if (!textCursorActive() && peekByte_t(20) == 0x20) {
+				// left followed by a space is almost certainly a backspace
+				// but MOS doesn't send backspaces to delete characters on line edits
+				plotBackspace();
+			} else {
+				cursorLeft();
+			}
 			break;
 		case 0x09:	// Cursor Right
 			cursorRight();
@@ -130,12 +138,14 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			break;
 		case 0x18:	// Define a graphics viewport
 			vdu_graphicsViewport();
+			sendModeInformation();
 			break;
 		case 0x19:	// PLOT
 			vdu_plot();
 			break;
 		case 0x1A:	// Reset text and graphics viewports
 			vdu_resetViewports();
+			sendModeInformation();
 			break;
 		case 0x1B: { // VDU 27
 			auto b = readByte_t();	if (b == -1) return;
@@ -144,6 +154,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		}	break;
 		case 0x1C:	// Define a text viewport
 			vdu_textViewport();
+			sendModeInformation();
 			break;
 		case 0x1D:	// VDU_29
 			vdu_origin();
@@ -239,6 +250,11 @@ void VDUStreamProcessor::vdu_plot() {
 	auto command = readByte_t(); if (command == -1) return;
 	auto mode = command & 0x07;
 	auto operation = command & 0xF8;
+
+	if (!textCursorActive()) {
+		// if we're in graphics mode, we need to move the cursor to the last point
+		moveTo();
+	}
 
 	auto x = readWord_t(); if (x == -1) return; else x = (int16_t)x;
 	auto y = readWord_t(); if (y == -1) return; else y = (int16_t)y;

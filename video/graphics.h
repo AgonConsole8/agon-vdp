@@ -1,6 +1,7 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include <algorithm>
 #include <vector>
 
 #include <fabgl.h>
@@ -18,6 +19,7 @@
 fabgl::PaintOptions			gpofg;				// Graphics paint options foreground
 fabgl::PaintOptions			gpobg;				// Graphics paint options background
 fabgl::PaintOptions			tpo;				// Text paint options
+fabgl::PaintOptions			cpo;				// Cursor paint options
 
 Point			p1, p2, p3;						// Coordinate store for plot
 Point			rp1;							// Relative coordinates store for plot
@@ -27,6 +29,10 @@ RGB888			tfg, tbg;						// Text foreground and background colour
 uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
 uint8_t			fontW;							// Font width
 uint8_t			fontH;							// Font height
+uint8_t			cursorVStart;					// Cursor vertical start offset
+uint8_t			cursorVEnd;						// Cursor vertical end
+uint8_t			cursorHStart;					// Cursor horizontal start offset
+uint8_t			cursorHEnd;						// Cursor horizontal end
 uint8_t			videoMode;						// Current video mode
 bool			legacyModes = false;			// Default legacy modes being false
 bool			rectangularPixels = false;		// Pixels are square by default
@@ -241,6 +247,7 @@ void restorePalette() {
 	tfg = colourLookup[0x3F];
 	tbg = colourLookup[0x00];
 	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
+	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
 	gpofg = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 	gpobg = getPaintOptions(fabgl::PaintMode::Set, gpobg);
 }
@@ -319,9 +326,12 @@ void clearViewport(Rect * viewport) {
 //
 void pushPoint(Point p) {
 	rp1 = Point(p.X - p1.X, p.Y - p1.Y);
-	p3 = p2;
-	p2 = p1;
-	p1 = p;
+	p3.X = p2.X;
+	p3.Y = p2.Y;
+	p2.X = p1.X;
+	p2.Y = p1.Y;
+	p1.X = p.X;
+	p1.Y = p.Y;
 }
 void pushPoint(uint16_t x, uint16_t y) {
 	up1 = Point(x, y);
@@ -617,6 +627,9 @@ void plotCharacter(char c) {
 	if (ttxtMode) {
 		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, c);
 	} else {
+		if (cursorBehaviour.scrollProtect) {
+			cursorAutoNewline();
+		}
 		bool isTextCursor = textCursorActive();
 		auto bitmap = getBitmapFromChar(c);
 		if (isTextCursor) {
@@ -635,7 +648,9 @@ void plotCharacter(char c) {
 			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
 		}
 	}
-	cursorRight();
+	if (!cursorBehaviour.xHold) {
+		cursorRight(cursorBehaviour.scrollProtect);
+	}
 }
 
 // Backspace plot
@@ -665,7 +680,13 @@ void setClippingRect(Rect rect) {
 // Draw cursor
 //
 void drawCursor(Point p) {
-	canvas->swapRectangle(p.X, p.Y, p.X + fontW - 1, p.Y + fontH - 1);
+	if (textCursorActive()) {
+		if (cursorHStart < fontW && cursorHStart <= cursorHEnd && cursorVStart < fontH && cursorVStart <= cursorVEnd) {
+			canvas->setBrushColor(tfg);
+			canvas->setPaintOptions(cpo);
+			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
+		}
+	}
 }
 
 
@@ -688,7 +709,7 @@ void cls(bool resetViewports) {
 		activateSprites(0);
 		clearViewport(getViewport(VIEWPORT_TEXT));
 	}
-	homeCursor();
+	cursorHome();
 	setPagedMode();
 }
 
@@ -850,6 +871,10 @@ int8_t change_mode(uint8_t mode) {
 	rectangularPixels = ((float)canvasW / (float)canvasH) > 2;
 	fontW = canvas->getFontInfo()->width;
 	fontH = canvas->getFontInfo()->height;
+	cursorVStart = 0;
+	cursorVEnd = fontH - 1;
+	cursorHStart = 0;
+	cursorHEnd = fontW - 1;
 	viewportReset();
 	setOrigin(0,0);
 	pushPoint(0,0);
@@ -857,7 +882,7 @@ int8_t change_mode(uint8_t mode) {
 	pushPoint(0,0);
 	moveTo();
 	resetCursor();
-	homeCursor();
+	cursorHome();
 	if (isDoubleBuffered()) {
 		switchBuffer();
 		cls(false);
@@ -898,6 +923,7 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 		if (direction == 3) ttxt_instance.scroll();
 	} else {
 		canvas->setPenColor(tbg);
+		canvas->setBrushColor(tbg);
 		canvas->setPaintOptions(tpo);
 		auto moveX = 0;
 		auto moveY = 0;
@@ -915,16 +941,32 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 				moveY = -1;
 				break;
 			case 4:		// positive X
-				moveX = cursorBehaviour & 0x02 ? -1 : 1;
+				if (cursorBehaviour.flipXY) {
+					moveY = cursorBehaviour.invertHorizontal ? -1 : 1;
+				} else {
+					moveX = cursorBehaviour.invertHorizontal ? -1 : 1;
+				}
 				break;
 			case 5:		// negative X
-				moveX = cursorBehaviour & 0x02 ? 1 : -1;
+				if (cursorBehaviour.flipXY) {
+					moveY = cursorBehaviour.invertHorizontal ? 1 : -1;
+				} else {
+					moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
+				}
 				break;
 			case 6:		// positive Y
-				moveY = cursorBehaviour & 0x04 ? -1 : 1;
+				if (cursorBehaviour.flipXY) {
+					moveX = cursorBehaviour.invertVertical ? -1 : 1;
+				} else {
+					moveY = cursorBehaviour.invertVertical ? -1 : 1;
+				}
 				break;
 			case 7:		// negative Y
-				moveY = cursorBehaviour & 0x04 ? 1 : -1;
+				if (cursorBehaviour.flipXY) {
+					moveX = cursorBehaviour.invertVertical ? 1 : -1;
+				} else {
+					moveY = cursorBehaviour.invertVertical ? 1 : -1;
+				}
 				break;
 		}
 		if (moveX != 0 || moveY != 0) {
