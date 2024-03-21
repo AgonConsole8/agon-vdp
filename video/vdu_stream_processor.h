@@ -16,6 +16,7 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
 		bool commandsEnabled = true;
+		uint8_t lastPlotCommand = 0;
 
 		int16_t readByte_t(uint16_t timeout);
 		int32_t readWord_t(uint16_t timeout);
@@ -23,6 +24,7 @@ class VDUStreamProcessor {
 		uint8_t readByte_b();
 		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
 		uint32_t discardBytes(uint32_t length, uint16_t timeout);
+		int16_t peekByte_t(uint16_t timeout);
 
 		void vdu_colour();
 		void vdu_gcol();
@@ -30,6 +32,7 @@ class VDUStreamProcessor {
 		void vdu_mode();
 		void vdu_graphicsViewport();
 		void vdu_plot();
+		void vdu_plotPath(uint8_t mode);
 		void vdu_resetViewports();
 		void vdu_textViewport();
 		void vdu_origin();
@@ -245,6 +248,20 @@ uint32_t VDUStreamProcessor::discardBytes(uint32_t length, uint16_t timeout = CO
 		remaining -= readSize;
 	}
 	return remaining;
+}
+
+// Peek at the next byte in the command stream
+// returns -1 if timed out, or the byte value (0 to 255)
+//
+int16_t VDUStreamProcessor::peekByte_t(uint16_t timeout = COMMS_TIMEOUT) {
+	auto t = millis();
+
+	while (millis() - t <= timeout) {
+		if (inputStream->available() > 0) {
+			return inputStream->peek();
+		}
+	}
+	return -1;
 }
 
 // Send a packet of data to the MOS

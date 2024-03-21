@@ -249,9 +249,16 @@ void VDUStreamProcessor::vdu_plot() {
 	} else {
 		pushPoint(x, y);
 	}
-	setGraphicsOptions(mode);
 
-	debug_log("vdu_plot: operation: %X, mode %d, (%d,%d) -> (%d,%d)\n\r", operation, mode, x, y, p1.X, p1.Y);
+	debug_log("vdu_plot: operation: %X, mode %d, lastPlotCommand %X, (%d,%d) -> (%d,%d)\n\r", operation, mode, lastPlotCommand, x, y, p1.X, p1.Y);
+
+	if (((lastPlotCommand & 0xF8) == 0xD8) && ((lastPlotCommand & 0xFB) != (command & 0xFB))) {
+		debug_log("vdu_plot: last plot was a path, but different command detected\n\r");
+		// We're not doing a path any more - so commit it
+		plotPath(0, lastPlotCommand & 0x03);
+	}
+
+	setGraphicsOptions(mode);
 
 	// if (mode != 0 && mode != 4) {
 	if (mode & 0x03) {
@@ -326,13 +333,43 @@ void VDUStreamProcessor::vdu_plot() {
 				// fab-gl's ellipse isn't compatible with BBC BASIC
 				debug_log("plot ellipse not implemented\n\r");
 				break;
+			case 0xD8:	// plot path (unassigned on Acorn and other BBC BASIC versions)
+				vdu_plotPath(mode);
+				break;
+			case 0xD0:	// unassigned ("Font printing" (do not use) in RISC OS)
+			case 0xE0:	// unassigned
+				debug_log("plot operation unassigned\n\r");
+				break;
 			case 0xE8:	// Bitmap plot
 				plotBitmap(mode);
 				break;
+			case 0xF0:	// unassigned
+			case 0xF8:	// Swap rectangle (BBC Basic for Windows extension)
+				// only actually supports "foreground" codes &F9 and &FD
+				debug_log("plot swap rectangle not implemented\n\r");
+				break;
 		}
-
 	}
+	lastPlotCommand = command;
 	moveTo();
+}
+
+// Plot path handler
+//
+void VDUStreamProcessor::vdu_plotPath(uint8_t mode) {
+	auto lastMode = lastPlotCommand & 0x03;
+	// call the graphics handler for plotPath
+	plotPath(mode, lastMode);
+
+	// work out if our next VDU command byte is another PLOT command
+	// if it isn't, then we should commit the path
+	auto peeked = peekByte_t(FAST_COMMS_TIMEOUT);
+	if (peeked == -1 || peeked != 25) {
+		// timed out, or not a plot command, so commit the path
+		debug_log("vdu_plotPath: committing path on timeout or no subsequent plot (peeked = %d)\n\r", peeked);
+		plotPath(0, mode);
+	}
+	// otherwise just continue
 }
 
 // VDU 26 Reset graphics and text viewports
