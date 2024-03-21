@@ -201,10 +201,12 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_UDG: {					// VDU 23, 0, &90, c, <args>
 			auto c = readByte_t();		// Redefine a display character
 			if (c >= 0) {
+				waitPlotCompletion();
 				vdu_sys_udg(c);
 			}
 		}	break;
 		case VDP_UDG_RESET: {			// VDU 23, 0, &91
+			waitPlotCompletion();
 			copy_font();				// Reset UDGs
 		}	break;
 		case VDP_MAP_CHAR_TO_BITMAP: {	// VDU 23, 0, &92, c, bitmapId;
