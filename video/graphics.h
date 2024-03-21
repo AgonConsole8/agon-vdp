@@ -404,36 +404,17 @@ void moveTo() {
 
 // Line plot
 //
-void plotLine(bool omitFirstPoint = false, bool omitLastPoint = false) {
-	RGB888 firstPixelColour;
-	RGB888 lastPixelColour;
-	if (omitFirstPoint) {
-		if (p2.X >= 0 && p2.X < canvasW && p2.Y >= 0 && p2.Y < canvasH) {
-			canvas->waitCompletion(false);
-			firstPixelColour = canvas->getPixel(p2.X, p2.Y);
-		} else {
-			omitFirstPoint = false;
-		}
+void plotLine(bool omitFirstPoint = false, bool omitLastPoint = false, bool usePattern = false, bool resetPattern = true) {
+	auto lineOptions = fabgl::LineOptions();
+	lineOptions.omitFirst = omitFirstPoint;
+	lineOptions.omitLast = omitLastPoint;
+	lineOptions.usePattern = usePattern;
+	if (resetPattern) {
+		canvas->setLinePatternOffset(0);
 	}
-	if (omitLastPoint) {
-		if (p1.X >= 0 && p1.X < canvasW && p1.Y >= 0 && p1.Y < canvasH) {
-			canvas->waitCompletion(false);
-			lastPixelColour = canvas->getPixel(p1.X, p1.Y);
-		} else {
-			omitLastPoint = false;
-		}
-	}
+	canvas->setLineOptions(lineOptions);
+
 	canvas->lineTo(p1.X, p1.Y);
-	if (omitFirstPoint) {
-		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpofg);
-		canvas->setPaintOptions(paintOptions);
-		canvas->setPixel(p2, firstPixelColour);
-	}
-	if (omitLastPoint) {
-		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpofg);
-		canvas->setPaintOptions(paintOptions);
-		canvas->setPixel(p1, lastPixelColour);
-	}
 }
 
 // Fill horizontal line
@@ -989,6 +970,23 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 
 void setLineThickness(uint8_t thickness) {
 	canvas->setPenWidth(thickness);
+}
+
+void setDottedLinePattern(uint8_t pattern[8]) {
+	auto linePattern = fabgl::LinePattern();
+	linePattern.setPattern(pattern);
+	canvas->setLinePattern(linePattern);
+}
+
+void setDottedLinePatternLength(uint8_t length) {
+	if (length == 0) {
+		// reset the line pattern
+		auto linePattern = fabgl::LinePattern();
+		canvas->setLinePattern(linePattern);
+		canvas->setLinePatternLength(8);
+		return;
+	}
+	canvas->setLinePatternLength(length);
 }
 
 #endif
