@@ -1,6 +1,9 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include <algorithm>
+#include <vector>
+
 #include <fabgl.h>
 
 #include "agon.h"
@@ -16,6 +19,7 @@
 fabgl::PaintOptions			gpofg;				// Graphics paint options foreground
 fabgl::PaintOptions			gpobg;				// Graphics paint options background
 fabgl::PaintOptions			tpo;				// Text paint options
+fabgl::PaintOptions			cpo;				// Cursor paint options
 
 Point			p1, p2, p3;						// Coordinate store for plot
 Point			rp1;							// Relative coordinates store for plot
@@ -25,10 +29,15 @@ RGB888			tfg, tbg;						// Text foreground and background colour
 uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
 uint8_t			fontW;							// Font width
 uint8_t			fontH;							// Font height
+uint8_t			cursorVStart;					// Cursor vertical start offset
+uint8_t			cursorVEnd;						// Cursor vertical end
+uint8_t			cursorHStart;					// Cursor horizontal start offset
+uint8_t			cursorHEnd;						// Cursor horizontal end
 uint8_t			videoMode;						// Current video mode
 bool			legacyModes = false;			// Default legacy modes being false
 bool			rectangularPixels = false;		// Pixels are square by default
 uint8_t			palette[64];					// Storage for the palette
+std::vector<Point>	pathPoints;					// Storage for path points
 
 extern bool ttxtMode;							// Teletext mode
 extern agon_ttxt ttxt_instance;					// Teletext instance
@@ -86,10 +95,15 @@ char getScreenChar(uint16_t px, uint16_t py) {
 		}
 		//
 		// Finally try and match with the character set array
+		// starts at space character (32) and goes beyond the normal ASCII range
+		// Character checked is ANDed with 0xFF, so we check 32-255 then 0-31
+		// thus allowing characters 0-31 to be checked after conventional characters
+		// as by default those characters are the same as space
 		//
-		for (auto i = 32; i <= 255; i++) {
-			if (cmpChar(charData, &fabgl::FONT_AGON_DATA[i * 8], 8)) {
-				return i;
+		for (auto i = 32; i <= (255 + 31); i++) {
+			uint8_t c = i & 0xFF;
+			if (cmpChar(charData, &fabgl::FONT_AGON_DATA[c * 8], 8)) {
+				return c;
 			}
 		}
 	}
@@ -238,6 +252,7 @@ void restorePalette() {
 	tfg = colourLookup[0x3F];
 	tbg = colourLookup[0x00];
 	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
+	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
 	gpofg = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 	gpobg = getPaintOptions(fabgl::PaintMode::Set, gpobg);
 }
@@ -316,9 +331,12 @@ void clearViewport(Rect * viewport) {
 //
 void pushPoint(Point p) {
 	rp1 = Point(p.X - p1.X, p.Y - p1.Y);
-	p3 = p2;
-	p2 = p1;
-	p1 = p;
+	p3.X = p2.X;
+	p3.Y = p2.Y;
+	p2.X = p1.X;
+	p2.Y = p1.Y;
+	p1.X = p.X;
+	p1.Y = p.Y;
 }
 void pushPoint(uint16_t x, uint16_t y) {
 	up1 = Point(x, y);
@@ -386,36 +404,22 @@ void moveTo() {
 
 // Line plot
 //
-void plotLine(bool omitFirstPoint = false, bool omitLastPoint = false) {
-	RGB888 firstPixelColour;
-	RGB888 lastPixelColour;
-	if (omitFirstPoint) {
-		if (p2.X >= 0 && p2.X < canvasW && p2.Y >= 0 && p2.Y < canvasH) {
-			canvas->waitCompletion(false);
-			firstPixelColour = canvas->getPixel(p2.X, p2.Y);
-		} else {
-			omitFirstPoint = false;
-		}
+void plotLine(bool omitFirstPoint = false, bool omitLastPoint = false, bool usePattern = false, bool resetPattern = true) {
+	if (!textCursorActive()) {
+		// if we're in graphics mode, we need to move the cursor to the last point
+		canvas->moveTo(p2.X, p2.Y);
 	}
-	if (omitLastPoint) {
-		if (p1.X >= 0 && p1.X < canvasW && p1.Y >= 0 && p1.Y < canvasH) {
-			canvas->waitCompletion(false);
-			lastPixelColour = canvas->getPixel(p1.X, p1.Y);
-		} else {
-			omitLastPoint = false;
-		}
+
+	auto lineOptions = fabgl::LineOptions();
+	lineOptions.omitFirst = omitFirstPoint;
+	lineOptions.omitLast = omitLastPoint;
+	lineOptions.usePattern = usePattern;
+	if (resetPattern) {
+		canvas->setLinePatternOffset(0);
 	}
+	canvas->setLineOptions(lineOptions);
+
 	canvas->lineTo(p1.X, p1.Y);
-	if (omitFirstPoint) {
-		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpofg);
-		canvas->setPaintOptions(paintOptions);
-		canvas->setPixel(p2, firstPixelColour);
-	}
-	if (omitLastPoint) {
-		auto paintOptions = getPaintOptions(fabgl::PaintMode::Set, gpofg);
-		canvas->setPaintOptions(paintOptions);
-		canvas->setPixel(p1, lastPixelColour);
-	}
 }
 
 // Fill horizontal line
@@ -461,6 +465,42 @@ void plotTriangle() {
 	canvas->fillPath(p, 3);
 }
 
+// Path plot
+//
+void plotPath(uint8_t mode, uint8_t lastMode) {
+	debug_log("plotPath: mode %d, lastMode %d, pathPoints.size() %d\n\r", mode, lastMode, pathPoints.size());
+	// if the mode indicates a "move", then this is a "commit" command
+	// so we should draw the path and clear the pathPoints array
+	if ((mode & 0x03) == 0) {
+		if (pathPoints.size() < 3) {
+			// we need at least three points to draw a path
+			debug_log("plotPath: not enough points to draw a path - clearing\n\r");
+			pathPoints.clear();
+			return;
+		}
+		debug_log("plotPath: drawing path\n\r");
+		// iterate over our pathPoints and output in debug statement
+		for (auto p : pathPoints) {
+			debug_log("plotPath: (%d,%d)\n\r", p.X, p.Y);
+		}
+		debug_log("plotPath: setting graphics fill with lastMode %d\n\r", lastMode);
+		// i'm not entirely sure yet whether this is needed
+		setGraphicsOptions(lastMode);
+		setGraphicsFill(lastMode);
+		canvas->fillPath(pathPoints.data(), pathPoints.size());
+		pathPoints.clear();
+		return;
+	}
+
+	// if we have an empty pathPoints list, then push two points
+	if (pathPoints.size() == 0) {
+		pathPoints.push_back(p3);
+		pathPoints.push_back(p2);
+	}
+	// push latest point
+	pathPoints.push_back(p1);
+}
+
 // Rectangle plot
 //
 void plotRectangle() {
@@ -491,6 +531,24 @@ void plotCircle(bool filled = false) {
 	} else {
 		canvas->drawEllipse(p2.X, p2.Y, size, rectangularPixels ? size / 2 : size);
 	}
+}
+
+// Arc plot
+void plotArc() {
+	debug_log("plotArc: (%d,%d) -> (%d,%d), (%d,%d)\n\r", p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+	canvas->drawArc(p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+}
+
+// Segment plot
+void plotSegment() {
+	debug_log("plotSegment: (%d,%d) -> (%d,%d), (%d,%d)\n\r", p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+	canvas->fillSegment(p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+}
+
+// Sector plot
+void plotSector() {
+	debug_log("plotSector: (%d,%d) -> (%d,%d), (%d,%d)\n\r", p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
+	canvas->fillSector(p3.X, p3.Y, p2.X, p2.Y, p1.X, p1.Y);
 }
 
 // Copy or move a rectangle
@@ -578,6 +636,9 @@ void plotCharacter(char c) {
 	if (ttxtMode) {
 		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, c);
 	} else {
+		if (cursorBehaviour.scrollProtect) {
+			cursorAutoNewline();
+		}
 		bool isTextCursor = textCursorActive();
 		auto bitmap = getBitmapFromChar(c);
 		if (isTextCursor) {
@@ -596,7 +657,9 @@ void plotCharacter(char c) {
 			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
 		}
 	}
-	cursorRight();
+	if (!cursorBehaviour.xHold) {
+		cursorRight(cursorBehaviour.scrollProtect);
+	}
 }
 
 // Backspace plot
@@ -626,7 +689,13 @@ void setClippingRect(Rect rect) {
 // Draw cursor
 //
 void drawCursor(Point p) {
-	canvas->swapRectangle(p.X, p.Y, p.X + fontW - 1, p.Y + fontH - 1);
+	if (textCursorActive()) {
+		if (cursorHStart < fontW && cursorHStart <= cursorHEnd && cursorVStart < fontH && cursorVStart <= cursorVEnd) {
+			canvas->setBrushColor(tfg);
+			canvas->setPaintOptions(cpo);
+			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
+		}
+	}
 }
 
 
@@ -649,7 +718,7 @@ void cls(bool resetViewports) {
 		activateSprites(0);
 		clearViewport(getViewport(VIEWPORT_TEXT));
 	}
-	homeCursor();
+	cursorHome();
 	setPagedMode();
 }
 
@@ -811,6 +880,10 @@ int8_t change_mode(uint8_t mode) {
 	rectangularPixels = ((float)canvasW / (float)canvasH) > 2;
 	fontW = canvas->getFontInfo()->width;
 	fontH = canvas->getFontInfo()->height;
+	cursorVStart = 0;
+	cursorVEnd = fontH - 1;
+	cursorHStart = 0;
+	cursorHEnd = fontW - 1;
 	viewportReset();
 	setOrigin(0,0);
 	pushPoint(0,0);
@@ -818,7 +891,7 @@ int8_t change_mode(uint8_t mode) {
 	pushPoint(0,0);
 	moveTo();
 	resetCursor();
-	homeCursor();
+	cursorHome();
 	if (isDoubleBuffered()) {
 		switchBuffer();
 		cls(false);
@@ -859,6 +932,7 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 		if (direction == 3) ttxt_instance.scroll();
 	} else {
 		canvas->setPenColor(tbg);
+		canvas->setBrushColor(tbg);
 		canvas->setPaintOptions(tpo);
 		auto moveX = 0;
 		auto moveY = 0;
@@ -876,16 +950,32 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 				moveY = -1;
 				break;
 			case 4:		// positive X
-				moveX = cursorBehaviour & 0x02 ? -1 : 1;
+				if (cursorBehaviour.flipXY) {
+					moveY = cursorBehaviour.invertHorizontal ? -1 : 1;
+				} else {
+					moveX = cursorBehaviour.invertHorizontal ? -1 : 1;
+				}
 				break;
 			case 5:		// negative X
-				moveX = cursorBehaviour & 0x02 ? 1 : -1;
+				if (cursorBehaviour.flipXY) {
+					moveY = cursorBehaviour.invertHorizontal ? 1 : -1;
+				} else {
+					moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
+				}
 				break;
 			case 6:		// positive Y
-				moveY = cursorBehaviour & 0x04 ? -1 : 1;
+				if (cursorBehaviour.flipXY) {
+					moveX = cursorBehaviour.invertVertical ? -1 : 1;
+				} else {
+					moveY = cursorBehaviour.invertVertical ? -1 : 1;
+				}
 				break;
 			case 7:		// negative Y
-				moveY = cursorBehaviour & 0x04 ? 1 : -1;
+				if (cursorBehaviour.flipXY) {
+					moveX = cursorBehaviour.invertVertical ? 1 : -1;
+				} else {
+					moveY = cursorBehaviour.invertVertical ? 1 : -1;
+				}
 				break;
 		}
 		if (moveX != 0 || moveY != 0) {
@@ -903,6 +993,23 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 
 void setLineThickness(uint8_t thickness) {
 	canvas->setPenWidth(thickness);
+}
+
+void setDottedLinePattern(uint8_t pattern[8]) {
+	auto linePattern = fabgl::LinePattern();
+	linePattern.setPattern(pattern);
+	canvas->setLinePattern(linePattern);
+}
+
+void setDottedLinePatternLength(uint8_t length) {
+	if (length == 0) {
+		// reset the line pattern
+		auto linePattern = fabgl::LinePattern();
+		canvas->setLinePattern(linePattern);
+		canvas->setLinePatternLength(8);
+		return;
+	}
+	canvas->setLinePatternLength(length);
 }
 
 #endif

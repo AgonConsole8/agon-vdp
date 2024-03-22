@@ -16,6 +16,7 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
 		bool commandsEnabled = true;
+		uint8_t lastPlotCommand = 0;
 
 		int16_t readByte_t(uint16_t timeout);
 		int32_t readWord_t(uint16_t timeout);
@@ -23,6 +24,7 @@ class VDUStreamProcessor {
 		uint8_t readByte_b();
 		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
 		uint32_t discardBytes(uint32_t length, uint16_t timeout);
+		int16_t peekByte_t(uint16_t timeout);
 
 		void vdu_colour();
 		void vdu_gcol();
@@ -30,6 +32,7 @@ class VDUStreamProcessor {
 		void vdu_mode();
 		void vdu_graphicsViewport();
 		void vdu_plot();
+		void vdu_plotPath(uint8_t mode);
 		void vdu_resetViewports();
 		void vdu_textViewport();
 		void vdu_origin();
@@ -138,15 +141,23 @@ class VDUStreamProcessor {
 // Returns:
 // - Byte value (0 to 255) if value read, otherwise -1
 //
-int16_t VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) {
-	auto t = millis();
-
-	while (millis() - t <= timeout) {
-		if (byteAvailable()) {
-			return readByte();
-		}
+int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) {
+	auto read = inputStream->read();
+	if (read != -1) {
+		return read;
 	}
-	return -1;
+
+	auto start = xTaskGetTickCountFromISR();
+	const auto timeCheck = pdMS_TO_TICKS(timeout);
+
+	do {
+		read = inputStream->read();
+		if (read != -1) {
+			return read;
+		}
+	} while (xTaskGetTickCountFromISR() - start < timeCheck);
+
+	return read;
 }
 
 // Read an unsigned word from the serial port, with a timeout
@@ -155,9 +166,9 @@ int16_t VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 //
 int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto l = readByte_t(timeout);
-	if (l >= 0) {
+	if (l != -1) {
 		auto h = readByte_t(timeout);
-		if (h >= 0) {
+		if (h != -1) {
 			return (h << 8) | l;
 		}
 	}
@@ -170,11 +181,11 @@ int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
 //
 int32_t VDUStreamProcessor::read24_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto l = readByte_t(timeout);
-	if (l >= 0) {
+	if (l != -1) {
 		auto m = readByte_t(timeout);
-		if (m >= 0) {
+		if (m != -1) {
 			auto h = readByte_t(timeout);
-			if (h >= 0) {
+			if (h != -1) {
 				return (h << 16) | (m << 8) | l;
 			}
 		}
@@ -200,27 +211,19 @@ uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length, u
 		debug_log("readIntoBuffer: buffer is null\n\r");
 		return remaining;
 	}
-	auto t = xTaskGetTickCountFromISR();
-	auto now = t;
-	auto timeCheck = pdMS_TO_TICKS(timeout);
 
 	while (remaining > 0) {
-		now = xTaskGetTickCountFromISR();
-		if (now - t > timeCheck) {
-			debug_log("readIntoBuffer: timed out\n\r");
-			return remaining;
-		}
-		auto available = inputStream->available();
-		if (available > 0) {
-			if (available > remaining) {
-				available = remaining;
+		auto read = inputStream->readBytes(buffer, remaining);
+		if (read == 0) {
+			// timed out - perform a single retry
+			read = inputStream->readBytes(buffer, remaining);
+			if (read == 0) {
+				debug_log("readIntoBuffer: timed out\n\r");
+				return remaining;
 			}
-			// debug_log("readIntoBuffer: reading %d bytes\n\r", available);
-			inputStream->readBytes(buffer, available);
-			buffer += available;
-			remaining -= available;
-			t = now;
 		}
+		buffer += read;
+		remaining -= read;
 	}
 	return remaining;
 }
@@ -245,6 +248,21 @@ uint32_t VDUStreamProcessor::discardBytes(uint32_t length, uint16_t timeout = CO
 		remaining -= readSize;
 	}
 	return remaining;
+}
+
+// Peek at the next byte in the command stream
+// returns -1 if timed out, or the byte value (0 to 255)
+//
+int16_t VDUStreamProcessor::peekByte_t(uint16_t timeout = COMMS_TIMEOUT) {
+	auto start = xTaskGetTickCountFromISR();
+	const auto timeCheck = pdMS_TO_TICKS(timeout);
+
+	while (xTaskGetTickCountFromISR() - start < timeCheck) {
+		if (inputStream->available() > 0) {
+			return inputStream->peek();
+		}
+	}
+	return -1;
 }
 
 // Send a packet of data to the MOS
