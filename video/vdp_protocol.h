@@ -24,6 +24,7 @@ void setupVDPProtocol() {
 	VDPSerial.begin(UART_BR, SERIAL_8N1, UART_RX, UART_TX);
 	VDPSerial.setHwFlowCtrlMode(HW_FLOWCTRL_RTS, 64);			// Can be called whenever
 	VDPSerial.setPins(UART_NA, UART_NA, UART_CTS, UART_RTS);	// Must be called after begin
+	VDPSerial.setTimeout(COMMS_TIMEOUT);
 }
 
 // TODO remove the following - it's only here for cursor.h to send escape key when doing paged mode handling

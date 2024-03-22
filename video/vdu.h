@@ -67,12 +67,14 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			setCharacterOverwrite(true);
 			setActiveCursor(getTextCursor());
 			setActiveViewport(VIEWPORT_TEXT);
+			sendModeInformation();
 			break;
 		case 0x05:
 			// enable graphics cursor
 			setCharacterOverwrite(false);
 			setActiveCursor(getGraphicsCursor());
 			setActiveViewport(VIEWPORT_GRAPHICS);
+			sendModeInformation();
 			break;
 		case 0x06:
 			// Resume VDU system
@@ -81,7 +83,13 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			playNote(0, 100, 750, 125);
 			break;
 		case 0x08:	// Cursor Left
-			cursorLeft();
+			if (!textCursorActive() && peekByte_t(20) == 0x20) {
+				// left followed by a space is almost certainly a backspace
+				// but MOS doesn't send backspaces to delete characters on line edits
+				plotBackspace();
+			} else {
+				cursorLeft();
+			}
 			break;
 		case 0x09:	// Cursor Right
 			cursorRight();
@@ -130,12 +138,14 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			break;
 		case 0x18:	// Define a graphics viewport
 			vdu_graphicsViewport();
+			sendModeInformation();
 			break;
 		case 0x19:	// PLOT
 			vdu_plot();
 			break;
 		case 0x1A:	// Reset text and graphics viewports
 			vdu_resetViewports();
+			sendModeInformation();
 			break;
 		case 0x1B: { // VDU 27
 			auto b = readByte_t();	if (b == -1) return;
@@ -144,6 +154,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		}	break;
 		case 0x1C:	// Define a text viewport
 			vdu_textViewport();
+			sendModeInformation();
 			break;
 		case 0x1D:	// VDU_29
 			vdu_origin();
@@ -235,13 +246,13 @@ void VDUStreamProcessor::vdu_graphicsViewport() {
 
 // VDU 25 Handle PLOT
 //
-void VDUStreamProcessor::vdu_plot() {
+void IRAM_ATTR VDUStreamProcessor::vdu_plot() {
 	auto command = readByte_t(); if (command == -1) return;
 	auto mode = command & 0x07;
 	auto operation = command & 0xF8;
 
-	auto x = readWord_t(); if (x == -1) return; else x = (short)x;
-	auto y = readWord_t(); if (y == -1) return; else y = (short)y;
+	auto x = readWord_t(); if (x == -1) return; else x = (int16_t)x;
+	auto y = readWord_t(); if (y == -1) return; else y = (int16_t)y;
 	if (ttxtMode) return;
 
 	if (mode < 4) {
@@ -249,9 +260,16 @@ void VDUStreamProcessor::vdu_plot() {
 	} else {
 		pushPoint(x, y);
 	}
-	setGraphicsOptions(mode);
 
-	debug_log("vdu_plot: operation: %X, mode %d, (%d,%d) -> (%d,%d)\n\r", operation, mode, x, y, p1.X, p1.Y);
+	debug_log("vdu_plot: operation: %X, mode %d, lastPlotCommand %X, (%d,%d) -> (%d,%d)\n\r", operation, mode, lastPlotCommand, x, y, p1.X, p1.Y);
+
+	if (((lastPlotCommand & 0xF8) == 0xD8) && ((lastPlotCommand & 0xFB) != (command & 0xFB))) {
+		debug_log("vdu_plot: last plot was a path, but different command detected\n\r");
+		// We're not doing a path any more - so commit it
+		plotPath(0, lastPlotCommand & 0x03);
+	}
+
+	setGraphicsOptions(mode);
 
 	// if (mode != 0 && mode != 4) {
 	if (mode & 0x03) {
@@ -263,10 +281,16 @@ void VDUStreamProcessor::vdu_plot() {
 				plotLine(false, true);
 				break;
 			case 0x10:	// dot-dash line
-			case 0x18:	// dot-dash line, omitting first point
+				plotLine(false, false, true);
+				break;
+			case 0x18:	// dot-dash line, omitting last point
+				plotLine(false, true, true);
+				break;
 			case 0x30:	// dot-dash line, omitting first, pattern continued
+				plotLine(true, false, true, false);
+				break;
 			case 0x38:	// dot-dash line, omitting both, pattern continued
-				debug_log("plot dot-dash line not implemented\n\r");
+				plotLine(true, true, true, false);
 				break;
 			case 0x20:	// solid line, first point omitted
 				plotLine(true, false);
@@ -313,10 +337,15 @@ void VDUStreamProcessor::vdu_plot() {
 				plotCircle(true);
 				break;
 			case 0xA0:	// circular arc
+				plotArc();
+				break;
 			case 0xA8:	// circular segment
+				setGraphicsFill(mode);
+				plotSegment();
+				break;
 			case 0xB0:	// circular sector
-				// fab-gl has no arc or segment operations, only simple ellipse (squashable circle)
-				debug_log("plot circular arc/segment/sector not implemented\n\r");
+				setGraphicsFill(mode);
+				plotSector();
 				break;
 			case 0xB8:	// copy/move
 				plotCopyMove(mode);
@@ -326,13 +355,43 @@ void VDUStreamProcessor::vdu_plot() {
 				// fab-gl's ellipse isn't compatible with BBC BASIC
 				debug_log("plot ellipse not implemented\n\r");
 				break;
+			case 0xD8:	// plot path (unassigned on Acorn and other BBC BASIC versions)
+				vdu_plotPath(mode);
+				break;
+			case 0xD0:	// unassigned ("Font printing" (do not use) in RISC OS)
+			case 0xE0:	// unassigned
+				debug_log("plot operation unassigned\n\r");
+				break;
 			case 0xE8:	// Bitmap plot
 				plotBitmap(mode);
 				break;
+			case 0xF0:	// unassigned
+			case 0xF8:	// Swap rectangle (BBC Basic for Windows extension)
+				// only actually supports "foreground" codes &F9 and &FD
+				debug_log("plot swap rectangle not implemented\n\r");
+				break;
 		}
-
 	}
+	lastPlotCommand = command;
 	moveTo();
+}
+
+// Plot path handler
+//
+void VDUStreamProcessor::vdu_plotPath(uint8_t mode) {
+	auto lastMode = lastPlotCommand & 0x03;
+	// call the graphics handler for plotPath
+	plotPath(mode, lastMode);
+
+	// work out if our next VDU command byte is another PLOT command
+	// if it isn't, then we should commit the path
+	auto peeked = peekByte_t(FAST_COMMS_TIMEOUT);
+	if (peeked == -1 || peeked != 25) {
+		// timed out, or not a plot command, so commit the path
+		debug_log("vdu_plotPath: committing path on timeout or no subsequent plot (peeked = %d)\n\r", peeked);
+		plotPath(0, mode);
+	}
+	// otherwise just continue
 }
 
 // VDU 26 Reset graphics and text viewports

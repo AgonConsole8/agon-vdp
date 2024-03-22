@@ -114,7 +114,7 @@ void loop() {
 		if (processTerminal()) {
 			continue;
 		}
-		if (millis() - cursorTime > CURSOR_PHASE) {
+		if (cursorFlashing && (millis() - cursorTime > cursorFlashRate)) {
 			cursorTime = millis();
 			drawCursor = !drawCursor;
 			if (ttxtMode) {
@@ -146,10 +146,13 @@ void loop() {
 			// For legacy, use Serial2.
 			if (processor->byteAvailable()) {
 				if (drawCursor) {
-					drawCursor = false;
 					do_cursor();
 				}
 				processor->processNext();
+				if (drawCursor || !cursorFlashing) {
+					drawCursor = true;
+					do_cursor();
+				}
 			}
 		}
 	}
