@@ -1096,7 +1096,6 @@ void VDUStreamProcessor::bufferGetDataBytes(uint16_t bufferId) {
 
 	auto buffer_stream = buffers[bufferId][0].get();
 	auto bs_size = buffer_stream->available();
-	debug_log("Seek to %u\n", offset);
 	buffer_stream->seekTo(offset);
 	if (n > bs_size) {
 		debug_log("bufferGetDataBytes: size %d is larger than remaining size %d\n\r", n, bs_size);
@@ -1109,14 +1108,11 @@ void VDUStreamProcessor::bufferGetDataBytes(uint16_t bufferId) {
 	auto bdpp_stream = (BdppStream*) ((Stream*) outputStream.get());
 	bool any_output = false;
 
-	debug_log("gr %u, bs %u\n", grab_remainder, bs_size);
-
 	auto bs_remainder = (uint32_t) bs_size;
 	while (bs_remainder && grab_remainder) {
 		auto pkt_remainder = BDPP_MAX_PACKET_DATA_SIZE - pkt_offset;
 		auto count = min(bs_remainder, pkt_remainder);
 		count = min(count, grab_remainder);
-		debug_log("  br %u, gr %u, pr %u, cnt %u\n", bs_remainder, grab_remainder, pkt_remainder, count);
 
 		if (!any_output) {
 			bdpp_stream->start_app_response_packet(pkt_idx);

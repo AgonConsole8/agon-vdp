@@ -21,7 +21,7 @@
 
 #define UHCI_NUM  UHCI_NUM_0
 #define UART_NUM  UART_NUM_2
-#define DEBUG_BDPP 1
+#define DEBUG_BDPP 0
 
 #if DEBUG_BDPP
 extern void debug_log(const char* fmt, ...);
