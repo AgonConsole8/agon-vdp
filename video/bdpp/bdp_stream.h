@@ -12,7 +12,7 @@
 #include <Stream.h>
 #include "bdpp/bdp_protocol.h"
 
-#define DEBUG_BDPP 0
+#define DEBUG_BDPP 1
 
 #if DEBUG_BDPP
 extern void debug_log(const char* f, ...);

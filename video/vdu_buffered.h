@@ -1086,7 +1086,7 @@ void VDUStreamProcessor::bufferGetDataBytes(uint16_t bufferId) {
 
 	auto off_lo = readWord_t();
 	auto off_hi = readWord_t();
-	auto offset = (((uint32_t)off_hi) << 16) | ((uint32_t)off_hi);
+	auto offset = (((uint32_t)off_hi) << 16) | ((uint32_t)off_lo);
 	auto n = readWord_t();
 
 	if (n == 0 || n > BDPP_MAX_APP_PACKETS*BDPP_MAX_PACKET_DATA_SIZE) {
@@ -1095,12 +1095,14 @@ void VDUStreamProcessor::bufferGetDataBytes(uint16_t bufferId) {
 	}
 
 	auto buffer_stream = buffers[bufferId][0].get();
-	buffer_stream->rewind();
 	auto bs_size = buffer_stream->available();
 	if (offset + n >= bs_size) {
 		debug_log("bufferGetDataBytes: index range %d to %d is invalid for size %d\n\r", offset, offset+n-1, bs_size);
 		return;
 	}
+
+	debug_log("Seek to %u\n", offset);
+	buffer_stream->seekTo(offset);
 
 	uint32_t pkt_size = 0;
 	uint32_t pkt_offset = 0;
