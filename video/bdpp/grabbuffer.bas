@@ -32,48 +32,52 @@
 407 packet_size%=256
 410 PROC_assemble_bdpp
 
-510 REM Create a local RX packet buffer
-520 DIM buffer% 256
-530 packetIndex%=0
+510 REM Create a local RX packet buffer for a scan line (576 bytes)
+520 DIM buffer% 576
 
 590 REM Capture upper portion of screen (the colored text)
-600 capWidth%=72*8: capHeight%=1*8: bufferId%=64001: lineBufferId%=64002
-605 MOVE 0,0: DRAW 10,0
-610 MOVE 0,0: DRAW capWidth%-1,capHeight%-1
+600 capWidth%=72*8: capHeight%=9*8: bufferId%=64001: lineBufferId%=64002
+610 MOVE 0,0: MOVE capWidth%-1,capHeight%-1
 620 VDU 23,27,1,bufferId%,0,0;
 630 ?fcn%=&F: CALL bdppSig3%
 
 700 offsetHi%=0: offsetLo%=0
 710 FOR i%=0 TO capHeight%-1
 715 PRINT "(";i%;")";: ?fcn%=&F: CALL bdppSig3%
-720 rcnt%=capWidth%
-730 IF rcnt%>256 THEN chunk%=256 ELSE chunk%=rcnt%
-732 REM Request a section of the captured pixels
-734 ?fcn%=5: ?index%=packetIndex%: !data%=buffer%: !size%=chunk%
-736 rc%=USR(bdppSig6%)
-740 VDU 23,0,&A0,bufferId%;&1B,packetIndex%,offsetLo%;offsetHi%;chunk%;
+
+731 REM Request 3 sections of the captured pixels
+732 ?fcn%=5: ?index%=0: !data%=buffer%: !size%=256
+733 rc%=USR(bdppSig6%)
+734 ?fcn%=5: ?index%=1: !data%=buffer%+256: !size%=256
+735 rc%=USR(bdppSig6%)
+736 ?fcn%=5: ?index%=2: !data%=buffer%+512: !size%=64
+737 rc%=USR(bdppSig6%)
+
+740 VDU 23,0,&A0,bufferId%;&1B,0,offsetLo%;offsetHi%;256;
+742 VDU 23,0,&A0,bufferId%;&1B,1,offsetLo%+256;offsetHi%;256;
+744 VDU 23,0,&A0,bufferId%;&1B,2,offsetLo%+512;offsetHi%;64;
 750 ?fcn%=&F: CALL bdppSig3%
-760 offsetLo%=offsetLo%+chunk%
-770 rcnt%=rcnt%-chunk%
-775 REM Wait for the response packet with pixel data
-776 wcnt%=0
-780 wcnt%=wcnt%+1: IF wcnt%<1000 GOTO 784
-782 PRINT ".";: ?fcn%=&F: CALL bdppSig3%
-784 ?index%=packetIndex%: ?fcn%=7
-790 rc%=USR(bdppSig2%)
-792 IF rc%=0 GOTO 780
+
+760 offsetLo%=offsetLo%+capWidth%
+
+770 REM Wait for the response packets with pixel data
+772 ?index%=0: ?fcn%=7
+774 rc%=USR(bdppSig2%): IF rc%=0 GOTO 774
+776 ?index%=1: ?fcn%=7
+778 rc%=USR(bdppSig2%): IF rc%=0 GOTO 778
+780 ?index%=2: ?fcn%=7
+782 rc%=USR(bdppSig2%): IF rc%=0 GOTO 782
 
 793 REM PRINT "<";?buffer%;">": END
 
-795 REM Write the chunk of pixels to a single line buffer
-800 VDU 23,0,&A0,lineBufferId%;0,chunk%;
-810 address%=buffer%
-820 FOR B%=1 TO chunk%
-830 VDU ?address%: address%=address%+1
-840 NEXT B%
-850 ?fcn%=&F: CALL bdppSig3%
-860 REM Go get the rest of one line of pixels
-870 IF rcnt%>0 GOTO 730
+795 REM Write the pixels to a single line buffer
+800 VDU 23,0,&A0,lineBufferId%;0,capWidth%;
+
+802 address%=buffer%
+804 FOR B%=1 TO capWidth%
+806 VDU ?address%: address%=address%+1
+808 NEXT B%
+810 ?fcn%=&F: CALL bdppSig3%
 
 871 REM address%=buffer%: PRINT i%;": ";
 872 REM FOR B%=0 TO 15
@@ -84,7 +88,8 @@
 
 900 VDU 23,27,&20,lineBufferId%;: REM Select bitmap (using a buffer ID)
 910 VDU 23,27,&21,capWidth%;1;1: REM Create bitmap from buffer
-920 VDU 25,&ED,0;(310-i%);: REM Show the bitmap on the screen line
+920 VDU 25,&ED,0;(230-i%);: REM Show the bitmap on the screen line
+930 lineBufferId%=lineBufferId%+1
 960 NEXT i%
 
 999 END
