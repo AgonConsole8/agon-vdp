@@ -14,6 +14,7 @@
 #include "vdu_buffered.h"
 #include "vdu_sprites.h"
 #include "updater.h"
+#include "version.h"
 
 extern void startTerminal();					// Start the terminal
 extern void setConsoleMode(bool mode);			// Set console mode
@@ -112,6 +113,9 @@ void VDUStreamProcessor::vdu_sys() {
 			}	break;
 			case 0x1C: {					// VDU 23, 28
 				vdu_sys_hexload();
+			}	break;
+			case 0x1E: {					// VDU 23, 30, ...
+				vdu_sys_otf();
 			}	break;
 		}
 	}
@@ -241,6 +245,9 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_UPDATER: {				// VDU 23, 0, &A1, command, <args>
 			vdu_sys_updater();
 		}	break;
+		case VDP_BDPP: {				// VDU 23, 0, &A2, command, <args>
+			vdu_sys_bdpp();
+		}	break;
 		case VDP_LOGICALCOORDS: {		// VDU 23, 0, &C0, n
 			auto b = readByte_t();		// Set logical coord mode
 			if (b >= 0) {
@@ -280,10 +287,25 @@ void VDUStreamProcessor::sendGeneralPoll() {
 		debug_log("sendGeneralPoll: Timeout\n\r");
 		return;
 	}
-	uint8_t packet[] = {
-		(uint8_t) (b & 0xFF),
-	};
+
+	// If the EZ80 supports BDPP, we respond with the upper bit set,
+	// and turn on ESP32 CTS usage (RTS is already on).
+	//
+	// If the EZ80 does not support BDPP, we respond with the old echo.
+	uint8_t response = (uint8_t)b;
+	if (b >= 0x04 && b <= 0x0F) {
+		response |= 0x80; // indicates that ESP32 supports BDPP
+	}
+	debug_log("sendGeneralPoll: response %02hX\n\r", response);
+
+	uint8_t packet[] = { response };
 	send_packet(PACKET_GP, sizeof packet, packet);
+
+	if (b >= 0x04 && b <= 0x0F) {
+		delay(10); // wait for the packet to go out
+		VDPSerial.setHwFlowCtrlMode(HW_FLOWCTRL_CTS_RTS, 64);
+	}
+
 	initialised = true;
 }
 
@@ -657,6 +679,134 @@ void VDUStreamProcessor::vdu_sys_udg(char c) {
 	}
 
 	redefineCharacter(c, buffer);
+}
+
+// VDU 23, 0, &A2, command, <args>
+//
+// VDU 23, 0, &A2, 0 - enable BDPP by initializing its driver
+// VDU 23, 0, &A2, 1, pkt_idx, echo_data - echo a single byte back to the EZ80
+// VDU 23, 0, &A2, 2, pkt_idx, n, caps0; caps1; ... - get amount of free ESP32 RAM with given capabilties
+// VDU 23, 0, &A2, 3, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as bytes (8 bits each)
+// VDU 23, 0, &A2, 4, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as words (16 bits each)
+// VDU 23, 0, &A2, 5, pkt_idx, addr_lo; addr_hi; n; - get ESP32 RAM contents as dwords (32 bits each)
+// VDU 23, 0, &A2, 6, pkt_idx - get VDP version information
+//
+void VDUStreamProcessor::vdu_sys_bdpp() {
+	auto bdpp_stream = (BdppStream*) ((Stream*) outputStream.get());
+	auto cmd = readByte_t();
+	switch(cmd) {
+		// VDU 23, 0, &A2, 0 - enable BDPP by initializing its driver
+		case 0: {
+			bdpp_initialize_driver();
+		} break;
+
+		// VDU 23, 0, &A2, 1, pkt_idx, echo_data - echo a single byte back to the EZ80
+		case 1: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto echo_data = readByte_t();
+			writeByte(echo_data);
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 2, pkt_idx, n, caps0; caps1; ... - get amount of free ESP32 RAM with given capabilties
+		case 2: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto n = readByte_t();
+			while (n--) {
+				auto caps = readWord_t();
+				auto size = heap_caps_get_free_size(caps);
+				auto data = (const uint8_t*) &caps;
+				for (int i = 0; i < sizeof(caps); i++) {
+					writeByte(data[i]);
+				}
+			}
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 3, pkt_idx, addr_lo; addr_hi; size; - get ESP32 RAM contents as bytes (8 bits each)
+		case 3: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto addr_lo = readWord_t();
+			auto addr_hi = readWord_t();
+			auto n = readWord_t();
+			if (n <= BDPP_MAX_PACKET_DATA_SIZE) {
+				auto bytes = (const uint8_t*)((((uint32_t)addr_hi) << 16) | ((uint32_t)addr_lo));
+				while (n--) {
+					writeByte(*bytes++);
+				}
+			}
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 4, pkt_idx, addr_lo; addr_hi; size; - get ESP32 RAM contents as words (16 bits each)
+		case 4: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto addr_lo = readWord_t();
+			auto addr_hi = readWord_t();
+			auto n = readWord_t();
+			if (n*sizeof(uint16_t) <= BDPP_MAX_PACKET_DATA_SIZE) {
+				auto words = (const uint16_t*)((((uint32_t)addr_hi) << 16) | ((uint32_t)addr_lo));
+				while (n--) {
+					auto word = *words++;
+					auto data = (const uint8_t*) &word;
+					writeByte(data[0]);
+					writeByte(data[1]);
+				}
+			}
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 5, pkt_idx, addr_lo; addr_hi; size; - get ESP32 RAM contents as dwords (32 bits each)
+		case 5: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			auto addr_lo = readWord_t();
+			auto addr_hi = readWord_t();
+			auto n = readWord_t();
+			if (n*sizeof(uint32_t) <= BDPP_MAX_PACKET_DATA_SIZE) {
+				auto dwords = (const uint32_t*)((((uint32_t)addr_hi) << 16) | ((uint32_t)addr_lo));
+				while (n--) {
+					auto dword = *dwords++;
+					auto data = (const uint8_t*) &dword;
+					writeByte(data[0]);
+					writeByte(data[1]);
+					writeByte(data[2]);
+					writeByte(data[3]);
+				}
+			}
+			bdpp_stream->flush();
+		} break;
+
+		// VDU 23, 0, &A2, 6, pkt_idx - get VDP version information
+		case 6: {
+			auto pkt_idx = readByte_t();
+			bdpp_stream->start_app_response_packet(pkt_idx);
+			writeByte(VERSION_MAJOR);
+			writeByte(VERSION_MINOR);
+			writeByte(VERSION_PATCH);
+			writeByte(VERSION_CANDIDATE);
+
+			const char* data = VERSION_TYPE;
+			do {
+				writeByte(*data);
+			} while (*data++);
+
+			data = VERSION_VARIANT;
+			do {
+				writeByte(*data);
+			} while (*data++);
+			bdpp_stream->flush();
+		} break;
+	}
+}
+
+// VDU 23, 30, ...
+void VDUStreamProcessor::vdu_sys_otf() {
+	// placeholder for future OTF support
 }
 
 #endif // VDU_SYS_H

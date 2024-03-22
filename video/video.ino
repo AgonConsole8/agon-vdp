@@ -6,7 +6,7 @@
 //					Igor Chaves Cananea (vdp-gl maintenance)
 //					Steve Sims (Audio enhancements, refactoring, bug fixes)
 // Created:			22/03/2022
-// Last Updated:	12/09/2023
+// Last Updated:	14/02/2024
 //
 // Modinfo:
 // 11/07/2022:		Baud rate tweaked for Agon Light, HW Flow Control temporarily commented out
@@ -44,12 +44,13 @@
 // 05/09/2023:					+ New audio enhancements, improved mode change code
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
+// 14/02/2024:		CW Add support for BDPP streams
 
 #include <WiFi.h>
 #include <HardwareSerial.h>
 #include <fabgl.h>
 
-#define	DEBUG			0						// Serial Debug Mode: 1 = enable
+#define	DEBUG			1						// Serial Debug Mode: 1 = enable
 #define SERIALBAUDRATE	115200
 
 HardwareSerial	DBGSerial(0);
@@ -70,9 +71,13 @@ bool			controlKeys = true;				// Control keys enabled
 #include "vdp_protocol.h"						// VDP Protocol
 #include "vdu_stream_processor.h"
 #include "hexload.h"
+#include "bdpp/bdp_stream.h"					// BDPP Stream support
 
 std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
-VDUStreamProcessor *	processor;				// VDU Stream Processor
+VDUStreamProcessor * processor;					// VDU Stream Processor
+BdppStream bdpp_stream[BDPP_MAX_STREAMS];		// Set of BDPP data streams
+VDUStreamProcessor * bdpp_processor[BDPP_MAX_STREAMS]; // Set of BDPP stream processors
+Stream * default_stream;						// Default VDU Stream
 
 #include "zdi.h"								// ZDI debugging console
 
@@ -83,6 +88,7 @@ void setup() {
 	copy_font();
 	set_mode(1);
 	setupVDPProtocol();
+	default_stream = &VDPSerial;
 	processor = new VDUStreamProcessor(&VDPSerial);
 	initAudio();
 	processor->wait_eZ80();
@@ -90,6 +96,11 @@ void setup() {
 	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	processor->sendModeInformation();
 	boot_screen();
+
+	// Get ready in case BDPP gets activated.
+	for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+		bdpp_stream[s].set_stream_index(s);
+	}
 }
 
 // The main loop
@@ -97,6 +108,7 @@ void setup() {
 void loop() {
 	bool drawCursor = false;
 	auto cursorTime = millis();
+	auto bdpp_active = false;
 
 	while (true) {
 		if (processTerminal()) {
@@ -113,14 +125,34 @@ void loop() {
 		do_keyboard();
 		do_mouse();
 
-		if (processor->byteAvailable()) {
-			if (drawCursor) {
-				do_cursor();
+		if (bdpp_is_initialized()) {
+			if (!bdpp_active) {
+				// Setup the BDPP stream processors.
+				bdpp_active = true;
+				//delete processor;
+				for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+					bdpp_processor[s] = new VDUStreamProcessor(&bdpp_stream[s]);
+				}
+				processor = bdpp_processor[0];
+				default_stream = &bdpp_stream[0];
 			}
-			processor->processNext();
-			if (drawCursor || !cursorFlashing) {
-				drawCursor = true;
-				do_cursor();
+
+			// Handle incoming data on all BDPP streams.
+			for (uint8_t s = 0; s < BDPP_MAX_STREAMS; s++) {
+				auto bdpp_proc = bdpp_processor[s];
+				bdpp_proc->processAllAvailable();
+			}
+		} else {
+			// For legacy, use Serial2.
+			if (processor->byteAvailable()) {
+				if (drawCursor) {
+					do_cursor();
+				}
+				processor->processNext();
+				if (drawCursor || !cursorFlashing) {
+					drawCursor = true;
+					do_cursor();
+				}
 			}
 		}
 	}

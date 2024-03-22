@@ -56,6 +56,8 @@ class VDUStreamProcessor {
 		void vdu_sys_scroll();
 		void vdu_sys_cursorBehaviour();
 		void vdu_sys_udg(char c);
+		void vdu_sys_bdpp();
+		void vdu_sys_otf();
 
 		void vdu_sys_audio();
 		void sendAudioStatus(uint8_t channel, uint8_t status);
@@ -99,11 +101,14 @@ class VDUStreamProcessor {
 		void bufferReverse(uint16_t bufferId, uint8_t options);
 		void bufferCopyRef(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
 		void bufferCopyAndConsolidate(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
+		void bufferGetDataBytes(uint16_t bufferId);
 
 		void vdu_sys_updater();
 		void unlock();
 		void receiveFirmware();
 		void switchFirmware();
+
+		void bdppEcho();
 
 	public:
 		uint16_t id = 65535;
@@ -268,11 +273,17 @@ int16_t VDUStreamProcessor::peekByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 // Send a packet of data to the MOS
 //
 void VDUStreamProcessor::send_packet(uint8_t code, uint16_t len, uint8_t data[]) {
+	//debug_log("Send Pkt @%i: ",__LINE__);
+	//debug_log(" %02hX", code + 0x80);
+	//debug_log(" %02hX", len);
 	writeByte(code + 0x80);
 	writeByte(len);
 	for (int i = 0; i < len; i++) {
 		writeByte(data[i]);
+		//debug_log(" %02hX", data[i]);
 	}
+	//debug_log("\n");
+	outputStream->flush();
 }
 
 void VDUStreamProcessor::sendMouseData(MouseDelta * delta = nullptr) {
