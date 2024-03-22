@@ -226,7 +226,7 @@ void cursorAutoNewline() {
 
 // Advance the active cursor right one character
 //
-void cursorRight(bool scrollProtect = false) {
+void cursorRight(bool scrollProtect) {
 	// deal with any pending newline that we may have
 	cursorAutoNewline();
 
@@ -242,7 +242,7 @@ void cursorRight(bool scrollProtect = false) {
 
 // Move the active cursor to the top-left position in the viewport
 //
-void cursorHome(Point * cursor = activeCursor, Rect * viewport = activeViewport) {
+void cursorHome(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
 		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - fontW) : viewport->X1;
 		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - fontH) : viewport->Y1;
