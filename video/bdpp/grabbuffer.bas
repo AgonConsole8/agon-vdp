@@ -32,11 +32,9 @@
 407 packet_size%=256
 410 PROC_assemble_bdpp
 
-510 REM Setup a local RX packet buffer
+510 REM Create a local RX packet buffer
 520 DIM buffer% 256
 530 packetIndex%=0
-540 ?fcn%=5: ?index%=packetIndex%: !data%=buffer%: !size%=packet_size%
-550 rc%=USR(bdppSig6%)
 
 590 REM Capture upper portion of screen (the colored text)
 600 capWidth%=72*8: capHeight%=1*8: bufferId%=64001: lineBufferId%=64002
@@ -47,17 +45,23 @@
 
 700 offsetHi%=0: offsetLo%=0
 710 FOR i%=0 TO capHeight%-1
+715 PRINT "(";i%;")";: ?fcn%=&F: CALL bdppSig3%
 720 rcnt%=capWidth%
 730 IF rcnt%>256 THEN chunk%=256 ELSE chunk%=rcnt%
-735 REM Request a section of the captured pixels
+732 REM Request a section of the captured pixels
+734 ?fcn%=5: ?index%=packetIndex%: !data%=buffer%: !size%=chunk%
+736 rc%=USR(bdppSig6%)
 740 VDU 23,0,&A0,bufferId%;&1B,packetIndex%,offsetLo%;offsetHi%;chunk%;
 750 ?fcn%=&F: CALL bdppSig3%
 760 offsetLo%=offsetLo%+chunk%
 770 rcnt%=rcnt%-chunk%
 775 REM Wait for the response packet with pixel data
-780 ?index%=packetIndex%: ?fcn%=7
+776 wcnt%=0
+780 wcnt%=wcnt%+1: IF wcnt%<1000 GOTO 784
+782 PRINT ".";: ?fcn%=&F: CALL bdppSig3%
+784 ?index%=packetIndex%: ?fcn%=7
 790 rc%=USR(bdppSig2%)
-792 IF rc%=0 GOTO 790
+792 IF rc%=0 GOTO 780
 
 793 REM PRINT "<";?buffer%;">": END
 
