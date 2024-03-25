@@ -55,23 +55,14 @@ typedef struct {
 } DecompressionData;
 
 void agon_init_compression(CompressionData* cd, void* context, WriteCompressedByte write_fcn) {
+    memset(cd, 0, sizeof(CompressionData));
     cd->context = context;
     cd->write_fcn = write_fcn;
-    cd->window_size = 0;
-    cd->window_write_index = 0;
-    cd->string_size = 0;
-    cd->string_read_index = 0;
-    cd->string_write_index = 0;
-    cd->input_count = 0;
-    cd->output_count = 0;
-    cd->out_byte = 0;
-    cd->out_bits = 0;
 }
 
 void agon_write_compressed_bit(CompressionData* cd, uint8_t comp_bit) {
     cd->out_byte = (cd->out_byte << 1) | comp_bit;
     if (++(cd->out_bits) >= 8) {
-        cd->output_count++;
         (*cd->write_fcn)(cd, cd->out_byte);
         cd->out_byte = 0;
         cd->out_bits = 0;
@@ -196,20 +187,14 @@ void agon_finish_compression(CompressionData* cd) {
         cd->string_read_index &= (COMPRESSION_STRING_SIZE - 1);
     }
     if (cd->out_bits) {
-        cd->output_count++;
         (*cd->write_fcn)(cd, (cd->out_byte << (8 - cd->out_bits))); // Output final bits
     }
 }
 
 void agon_init_decompression(DecompressionData* dd, void* context, WriteDecompressedByte write_fcn) {
+    memset(dd, 0, sizeof(DecompressionData));
     dd->context = context;
     dd->write_fcn = write_fcn;
-    dd->window_size = 0;
-    dd->window_write_index = 0;
-    dd->input_count = 0;
-    dd->output_count = 0;
-    dd->code = 0;
-    dd->code_bits = 0;
 }
 
 void agon_decompress_byte(DecompressionData* dd, uint8_t comp_byte) {
@@ -233,7 +218,6 @@ void agon_decompress_byte(DecompressionData* dd, uint8_t comp_byte) {
                 if (dd->window_size < COMPRESSION_WINDOW_SIZE) {
                     (dd->window_size)++;
                 }
-                dd->output_count++;
                 (*(dd->write_fcn))(dd, value);
                 continue;
 
@@ -257,7 +241,6 @@ void agon_decompress_byte(DecompressionData* dd, uint8_t comp_byte) {
                 uint8_t out_byte = dd->window_data[wi++];
                 wi &= (COMPRESSION_WINDOW_SIZE - 1);
                 string_data[si] = out_byte;
-                dd->output_count++;
                 (*(dd->write_fcn))(dd, out_byte);
             }
         }
