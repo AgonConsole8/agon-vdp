@@ -19,7 +19,17 @@
 
 #define COMPRESSION_WINDOW_SIZE 256     // power of 2
 #define COMPRESSION_STRING_SIZE 16      // power of 2
+#define COMPRESSION_TYPE_TURBO  'T'     // TurboVega-style compression
 #define TEMP_BUFFER_SIZE        256
+
+#pragma pack(push, 1)
+typedef struct {
+    uint8_t     marker[3];
+    uint8_t     type;
+    uint32_t    orig_size;
+} CompressionFileHeader;
+#pragma pack(pop)
+
 
 typedef void (*WriteCompressedByte)(void*, uint8_t);
 typedef void (*WriteDecompressedByte)(void*, uint8_t);
