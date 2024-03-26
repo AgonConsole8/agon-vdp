@@ -1133,6 +1133,19 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 		CompressionData cd;
 		agon_init_compression(&cd, &p_temp, &local_write_compressed_byte);
 
+		// Output the compression header
+		CompressionFileHeader hdr;
+		hdr.marker[0] = 'C';
+		hdr.marker[1] = 'm';
+		hdr.marker[2] = 'p';
+		hdr.type = COMPRESSION_TYPE_TURBO;
+		hdr.orig_size = buffers[sourceBufferId].size();
+
+		auto p_hdr = hdr.marker;
+		for (int i = 0; i < sizeof(hdr); i++) {
+			local_write_compressed_byte(&cd, *p_hdr++);
+		}
+
 		// loop thru blocks stored against the source buffer ID
 		for (const auto &block : buffers[sourceBufferId]) {
 			// compress the block into our temporary buffer
@@ -1177,6 +1190,21 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 // If target buffer is included in the source list it will be skipped.
 //
 void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId) {
+	// Validate the compression header
+	if (buffers[sourceBufferId][0]->size() < sizeof(CompressionFileHeader)) {
+		debug_log("bufferDecompress: buffer too small for header\n\r");
+		return;
+	}
+	
+	auto p_hdr = (const CompressionFileHeader*) buffers[sourceBufferId][0]->getBuffer();
+	if (p_hdr->marker[0] != 'C' ||
+		p_hdr->marker[1] != 'm' ||
+		p_hdr->marker[2] != 'p' ||
+		p_hdr->type != COMPRESSION_TYPE_TURBO) {
+		debug_log("bufferDecompress: header is invalid\n\r");
+		return;
+	}
+
 	buffers[bufferId].clear();
 	debug_log("Decompressing into buffer %u\n\r", bufferId);
 
@@ -1188,10 +1216,12 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 		agon_init_decompression(&dd, &p_temp, &local_write_decompressed_byte);
 
 		// loop thru blocks stored against the source buffer ID
+		uint32_t skip_hdr = sizeof(CompressionFileHeader);
 		for (const auto &block : buffers[sourceBufferId]) {
 			// decompress the block into our temporary buffer
 			auto bufferLength = block->size();
-			auto p_data = block->getBuffer();
+			auto p_data = block->getBuffer() + skip_hdr;
+			skip_hdr = 0;
 			debug_log(" from buffer %u [%08X] %u bytes\n\r", sourceBufferId, p_data, bufferLength);
 			debug_log(" %02hX %02hX %02hX %02hX\n\r",
 						p_data[0], p_data[1], p_data[2], p_data[3]);
@@ -1218,6 +1248,11 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 		uint32_t pct = (dd.output_count * 100) / dd.input_count;
 		printf("Decompressed %u input bytes to %u output bytes (%u%%) at %08X\n\r",
 				dd.input_count, dd.output_count, pct, destination);
+
+		if (dd.output_count != p_hdr->orig_size) {
+			printf("Decompressed buffer size %u does not equal original size %u\r\n",
+					dd.output_count, p_hdr->orig_size);
+		}
 	} else {
 		debug_log("bufferDecompress: cannot allocate temporary buffer of %d bytes\n\r", COMPRESSION_OUTPUT_CHUNK_SIZE);
 	}
