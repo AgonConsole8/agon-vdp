@@ -44,7 +44,7 @@
 // 05/09/2023:					+ New audio enhancements, improved mode change code
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
-// 03/01/2024:    CW Support early version of OTF.
+// 03/01/2024:		CW Support early version of OTF.
 // 14/02/2024:		CW Add support for BDPP streams
 
 #include <WiFi.h>

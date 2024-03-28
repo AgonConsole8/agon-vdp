@@ -8468,6 +8468,8 @@ fcn_100_100_100_100:
   copy_4_pixels_at_offset 0
   ret
 
+//-----------------------------------------
+
   .macro tbl_op_fcn3 op0,op1,op2,op3
   .word fcn\()\op0\()\op1\()\op2\()\op3
   .endm
