@@ -214,6 +214,8 @@ enum AudioState : uint8_t {	// Audio channel state
 #define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
 #define BUFFERED_GET_DATA_BYTES			0x1B	// Get data bytes and return them in a BDPP packet
+#define BUFFERED_COMPRESS				0x1C	// Compress blocks from multiple buffers into one buffer
+#define BUFFERED_DECOMPRESS				0x1D	// Decompress blocks from multiple buffers into one buffer
 
 #define BUFFERED_DEBUG_INFO				0x20	// Get debug info about a buffer
 
