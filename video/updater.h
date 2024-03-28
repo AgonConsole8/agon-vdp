@@ -4,9 +4,11 @@
 #include "vdu_stream_processor.h"
 #include <cstdint>
 #include "esp_ota_ops.h"
+#include "bdpp/bdp_stream.h"
 
 extern void printFmt(const char *format, ...);
 extern void print(const char * text);
+extern void bdpp_initialize_driver();
 
 namespace Updater {
 	static constexpr uint8_t unlockCode[] = "unlock";

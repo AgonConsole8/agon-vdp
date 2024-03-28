@@ -60,6 +60,7 @@
 #define VDP_CONTROLKEYS			0x98	// Control keys on/off
 #define VDP_BUFFERED			0xA0	// Buffered commands
 #define VDP_UPDATER				0xA1	// Update VDP
+#define VDP_BDPP				0xA2	// Enable BDPP
 #define VDP_LOGICALCOORDS		0xC0	// Switch BBC Micro style logical coords on and off
 #define VDP_LEGACYMODES			0xC1	// Switch VDP 1.03 compatible modes on and off
 #define VDP_SWITCHBUFFER		0xC3	// Double buffering control
@@ -212,6 +213,7 @@ enum AudioState : uint8_t {	// Audio channel state
 #define BUFFERED_REVERSE				0x18	// Reverse the order of data in a buffer
 #define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
+#define BUFFERED_GET_DATA_BYTES			0x1B	// Get data bytes and return them in a BDPP packet
 
 #define BUFFERED_DEBUG_INFO				0x20	// Get debug info about a buffer
 

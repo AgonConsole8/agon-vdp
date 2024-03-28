@@ -16,6 +16,8 @@
 
 #define VDPSerial Serial2
 
+extern Stream * default_stream;					// Default VDU Stream
+
 void setupVDPProtocol() {
 	VDPSerial.end();
 	VDPSerial.setRxBufferSize(UART_RX_SIZE);					// Can't be called when running
@@ -28,17 +30,20 @@ void setupVDPProtocol() {
 // TODO remove the following - it's only here for cursor.h to send escape key when doing paged mode handling
 
 inline void writeByte(uint8_t b) {
-	VDPSerial.write(b);
+	default_stream->write(b);
 }
 
 // Send a packet of data to the MOS
 //
 void send_packet(uint8_t code, uint16_t len, uint8_t data[]) {
+	debug_log("@%i\n",__LINE__);
 	writeByte(code + 0x80);
 	writeByte(len);
 	for (int i = 0; i < len; i++) {
 		writeByte(data[i]);
 	}
+	default_stream->flush();
+	debug_log("@%i\n",__LINE__);
 }
 
 #endif // AGON_VDP_PROTOCOL_H
