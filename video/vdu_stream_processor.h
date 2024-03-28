@@ -90,15 +90,15 @@ class VDUStreamProcessor {
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
 		void bufferJump(uint16_t bufferId, uint32_t offset);
-		void bufferCopy(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
+		void bufferCopy(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds);
 		void bufferConsolidate(uint16_t bufferId);
-		void bufferSplitInto(uint16_t bufferId, uint16_t length, std::vector<uint16_t> newBufferIds, bool iterate);
-		void bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, std::vector<uint16_t> newBufferIds, bool iterate);
-		void bufferSpreadInto(uint16_t bufferId, std::vector<uint16_t> newBufferIds, bool iterate);
+		void bufferSplitInto(uint16_t bufferId, uint16_t length, const std::vector<uint16_t> &newBufferIds, bool iterate);
+		void bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, const std::vector<uint16_t> &newBufferIds, bool iterate);
+		void bufferSpreadInto(uint16_t bufferId, const std::vector<uint16_t> &newBufferIds, bool iterate);
 		void bufferReverseBlocks(uint16_t bufferId);
 		void bufferReverse(uint16_t bufferId, uint8_t options);
-		void bufferCopyRef(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
-		void bufferCopyAndConsolidate(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
+		void bufferCopyRef(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds);
+		void bufferCopyAndConsolidate(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds);
 
 		void vdu_sys_updater();
 		void unlock();
@@ -109,9 +109,9 @@ class VDUStreamProcessor {
 		uint16_t id = 65535;
 
 		VDUStreamProcessor(std::shared_ptr<Stream> input, std::shared_ptr<Stream> output, uint16_t bufferId) :
-			inputStream(input), outputStream(output), originalOutputStream(output), id(bufferId) {}
+			inputStream(std::move(input)), outputStream(std::move(output)), originalOutputStream(outputStream), id(bufferId) {}
 		VDUStreamProcessor(Stream *input) :
-			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {}
+			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(outputStream) {}
 
 		inline bool byteAvailable() {
 			return inputStream->available() > 0;
