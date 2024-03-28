@@ -12,6 +12,11 @@
 
 class VDUStreamProcessor {
 	private:
+		struct AdvancedOffset {
+			uint32_t blockOffset = 0;
+			size_t blockIndex = 0;
+		};
+
 		std::shared_ptr<Stream> inputStream;
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
@@ -79,17 +84,17 @@ class VDUStreamProcessor {
 
 		void vdu_sys_buffered();
 		uint32_t bufferWrite(uint16_t bufferId, uint32_t size);
-		void bufferCall(uint16_t bufferId, uint32_t offset);
+		void bufferCall(uint16_t bufferId, AdvancedOffset offset);
 		void bufferClear(uint16_t bufferId);
 		std::shared_ptr<WritableBufferStream> bufferCreate(uint16_t bufferId, uint32_t size);
 		void setOutputStream(uint16_t bufferId);
-		uint32_t getOffsetFromStream(uint16_t bufferId, bool isAdvanced);
+		AdvancedOffset getOffsetFromStream(bool isAdvanced);
 		std::vector<uint16_t> getBufferIdsFromStream();
-		int16_t getBufferByte(uint16_t bufferId, uint32_t offset);
-		bool setBufferByte(uint8_t value, uint16_t bufferId, uint32_t offset);
+		int16_t getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
+		bool setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
-		void bufferJump(uint16_t bufferId, uint32_t offset);
+		void bufferJump(uint16_t bufferId, AdvancedOffset offset);
 		void bufferCopy(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds);
 		void bufferConsolidate(uint16_t bufferId);
 		void bufferSplitInto(uint16_t bufferId, uint16_t length, const std::vector<uint16_t> &newBufferIds, bool iterate);

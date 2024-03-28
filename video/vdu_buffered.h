@@ -25,7 +25,7 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			bufferWrite(bufferId, length);
 		}	break;
 		case BUFFERED_CALL: {
-			bufferCall(bufferId, 0);
+			bufferCall(bufferId, {});
 		}	break;
 		case BUFFERED_CLEAR: {
 			bufferClear(bufferId);
@@ -47,41 +47,45 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 		case BUFFERED_COND_CALL: {
 			// VDU 23, 0, &A0, bufferId; 6, <conditional arguments>  : Conditional call
 			if (bufferConditional()) {
-				bufferCall(bufferId, 0);
+				bufferCall(bufferId, {});
 			}
 		}	break;
 		case BUFFERED_JUMP: {
 			// VDU 23, 0, &A0, bufferId; 7: Jump to buffer
 			// a "jump" (without an offset) to buffer 65535 (-1) indicates a "jump to end"
-			bufferJump(bufferId, bufferId == 65535 ? -1 : 0);
+			AdvancedOffset offset = {};
+			offset.blockIndex = bufferId == 65535 ? -1 : 0;
+			bufferJump(bufferId, offset);
 		}	break;
 		case BUFFERED_COND_JUMP: {
 			// VDU 23, 0, &A0, bufferId; 8, <conditional arguments>  : Conditional jump
 			if (bufferConditional()) {
 				// ensure offset-less jump to buffer 65535 (-1) is treated as a "jump to end"
-				bufferJump(bufferId, bufferId == 65535 ? -1 : 0);
+				AdvancedOffset offset = {};
+				offset.blockIndex = bufferId == 65535 ? -1 : 0;
+				bufferJump(bufferId, offset);
 			}
 		}	break;
 		case BUFFERED_OFFSET_JUMP: {
 			// VDU 23, 0, &A0, bufferId; 9, offset; offsetHighByte  : Offset jump
-			auto offset = getOffsetFromStream(bufferId, true); if (offset == -1) return;
+			auto offset = getOffsetFromStream(true); if (offset.blockOffset == -1) return;
 			bufferJump(bufferId, offset);
 		}	break;
 		case BUFFERED_OFFSET_COND_JUMP: {
 			// VDU 23, 0, &A0, bufferId; &0A, offset; offsetHighByte, <conditional arguments>  : Conditional jump with offset
-			auto offset = getOffsetFromStream(bufferId, true); if (offset == -1) return;
+			auto offset = getOffsetFromStream(true); if (offset.blockOffset == -1) return;
 			if (bufferConditional()) {
 				bufferJump(bufferId, offset);
 			}
 		}	break;
 		case BUFFERED_OFFSET_CALL: {
 			// VDU 23, 0, &A0, bufferId; &0B, offset; offsetHighByte  : Offset call
-			auto offset = getOffsetFromStream(bufferId, true); if (offset == -1) return;
+			auto offset = getOffsetFromStream(true); if (offset.blockOffset == -1) return;
 			bufferCall(bufferId, offset);
 		}	break;
 		case BUFFERED_OFFSET_COND_CALL: {
 			// VDU 23, 0, &A0, bufferId; &0C, offset; offsetHighByte, <conditional arguments>  : Conditional call with offset
-			auto offset = getOffsetFromStream(bufferId, true); if (offset == -1) return;
+			auto offset = getOffsetFromStream(true); if (offset.blockOffset == -1) return;
 			if (bufferConditional()) {
 				bufferCall(bufferId, offset);
 			}
@@ -230,7 +234,7 @@ uint32_t VDUStreamProcessor::bufferWrite(uint16_t bufferId, uint32_t length) {
 // VDU 23, 0, &A0, bufferId; &0B, offset; offsetHighByte  : Offset call
 // Processes all commands from the streams stored against the given bufferId
 //
-void VDUStreamProcessor::bufferCall(uint16_t callBufferId, uint32_t offset) {
+void VDUStreamProcessor::bufferCall(uint16_t callBufferId, AdvancedOffset offset) {
 	debug_log("bufferCall: buffer %d\n\r", callBufferId);
 	auto bufferId = resolveBufferId(callBufferId, id);
 	if (bufferId == -1) {
@@ -249,8 +253,8 @@ void VDUStreamProcessor::bufferCall(uint16_t callBufferId, uint32_t offset) {
 	}
 	auto &streams = bufferIter->second;
 	auto multiBufferStream = make_shared_psram<MultiBufferStream>(streams);
-	if (offset) {
-		multiBufferStream->seekTo(offset);
+	if (offset.blockOffset != 0 || offset.blockIndex != 0) {
+		multiBufferStream->seekTo(offset.blockOffset, offset.blockIndex);
 	}
 	auto streamProcessor = make_unique_psram<VDUStreamProcessor>(std::move(multiBufferStream), outputStream, bufferId);
 	if (streamProcessor) {
@@ -335,39 +339,23 @@ void VDUStreamProcessor::setOutputStream(uint16_t bufferId) {
 }
 
 // Utility call to read offset from stream, supporting advanced offsets
-uint32_t VDUStreamProcessor::getOffsetFromStream(uint16_t bufferId, bool isAdvanced) {
+VDUStreamProcessor::AdvancedOffset VDUStreamProcessor::getOffsetFromStream(bool isAdvanced) {
+	AdvancedOffset offset = {};
 	if (isAdvanced) {
-		auto offset = read24_t();
-		if (offset == -1) {
-			return -1;
+		offset.blockOffset = read24_t();
+		if (offset.blockOffset != -1 && offset.blockOffset & 0x00800000) {
+			// top bit of 24-bit offset is set, so we have a block index too
+			auto blockIndex = readWord_t();
+			if (blockIndex == -1) {
+				offset.blockOffset = -1;
+			} else {
+				offset.blockIndex = blockIndex;
+			}
 		}
-		if (offset & 0x00800000) {
-			// top bit of 24-bit offset is set, so we have a block offset too
-			auto blockOffset = readWord_t();
-			if (blockOffset == -1) {
-				return -1;
-			}
-			auto bufferIter = buffers.find(bufferId);
-			if (bufferIter == buffers.end()) {
-				debug_log("getOffsetFromStream: buffer %d not found\n\r", bufferId);
-				return -1;
-			}
-			auto &buffer = bufferIter->second;
-			if (blockOffset >= buffer.size()) {
-				debug_log("getOffsetFromStream: block offset %d is greater than number of blocks %d\n\r", blockOffset, buffer.size());
-				return -1;
-			}
-			// calculate our true offset
-			// by counting up sizes of all blocks before the one we want
-			auto trueOffset = offset & 0x007FFFFF;
-			for (auto i = 0; i < blockOffset; i++) {
-				trueOffset += buffer[i]->size();
-			}
-			return trueOffset;
-		}
-		return offset;
+	} else {
+		offset.blockOffset = readWord_t();
 	}
-	return readWord_t();
+	return offset;
 }
 
 // Utility call to read a sequence of buffer IDs from the stream
@@ -392,40 +380,39 @@ std::vector<uint16_t> VDUStreamProcessor::getBufferIdsFromStream() {
 }
 
 // Utility call to read a byte from a buffer at the given offset
-int16_t VDUStreamProcessor::getBufferByte(uint16_t bufferId, uint32_t offset) {
-	auto bufferIter = buffers.find(bufferId);
-	if (bufferIter != buffers.end()) {
-		// loop thru blocks stored against this ID to find data at offset
-		auto currentOffset = offset;
-		for (const auto &block : bufferIter->second) {
-			auto bufferLength = block->size();
-			if (currentOffset < bufferLength) {
-				return block->getBuffer()[currentOffset];
-			}
-			currentOffset -= bufferLength;
-		}
+int16_t VDUStreamProcessor::getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
+	// if offset exceeds the block size, loop to find the correct block
+	while (offset.blockIndex < buffer.size() && offset.blockOffset >= buffer[offset.blockIndex]->size()) {
+		offset.blockOffset -= buffer[offset.blockIndex]->size();
+		offset.blockIndex++;
 	}
-	// buffer doesn't exist, or offset not found
-	return -1;
+	if (offset.blockIndex >= buffer.size()) {
+		// offset not found in buffer
+		return -1;
+	}
+	auto value = buffer[offset.blockIndex]->getBuffer()[offset.blockOffset];
+	if (iterate) {
+		offset.blockOffset++;
+	}
+	return value;
 }
 
 // Utility call to set a byte in a buffer at the given offset
-bool VDUStreamProcessor::setBufferByte(uint8_t value, uint16_t bufferId, uint32_t offset) {
-	auto bufferIter = buffers.find(bufferId);
-	if (bufferIter != buffers.end()) {
-		// find the block containing the offset
-		auto currentOffset = offset;
-		for (const auto &block : bufferIter->second) {
-			auto bufferLength = block->size();
-			if (currentOffset < bufferLength) {
-				block->writeBufferByte(value, currentOffset);
-				return true;
-			}
-			currentOffset -= bufferLength;
-		}
+bool VDUStreamProcessor::setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
+	// if offset exceeds the block size, loop to find the correct block
+	while (offset.blockIndex < buffer.size() && offset.blockOffset >= buffer[offset.blockIndex]->size()) {
+		offset.blockOffset -= buffer[offset.blockIndex]->size();
+		offset.blockIndex++;
 	}
-	// buffer didn't exist, or offset not found
-	return false;
+	if (offset.blockIndex >= buffer.size()) {
+		// offset not found in buffer
+		return false;
+	}
+	buffer[offset.blockIndex]->getBuffer()[offset.blockOffset] = value;
+	if (iterate) {
+		offset.blockOffset++;
+	}
+	return true;
 }
 
 // VDU 23, 0, &A0, bufferId; 5, operation, offset; [count;] [operand]: Adjust buffer
@@ -441,8 +428,6 @@ bool VDUStreamProcessor::setBufferByte(uint8_t value, uint16_t bufferId, uint32_
 void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 	auto command = readByte_t();
 
-	auto bufferId = resolveBufferId(adjustBufferId, id);
-	// at this point bufferId could be -1, but that's OK - we will fail later
 	bool useAdvancedOffsets = command & ADJUST_ADVANCED_OFFSETS;
 	bool useBufferValue = command & ADJUST_BUFFER_VALUE;
 	bool useMultiTarget = command & ADJUST_MULTI_TARGET;
@@ -451,9 +436,10 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 	// Operators that are greater than NEG have an operand value
 	bool hasOperand = op > ADJUST_NEG;
 
-	auto offset = getOffsetFromStream(bufferId, useAdvancedOffsets);
+	auto offset = getOffsetFromStream(useAdvancedOffsets);
+	const std::vector<std::shared_ptr<BufferStream>> * operandBuffer = nullptr;
 	auto operandBufferId = 0;
-	auto operandOffset = 0;
+	AdvancedOffset operandOffset = {};
 	auto count = 1;
 
 	if (useMultiTarget || useMultiOperand) {
@@ -461,10 +447,32 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 	}
 	if (useBufferValue && hasOperand) {
 		operandBufferId = resolveBufferId(readWord_t(), id);
-		operandOffset = getOffsetFromStream(operandBufferId, useAdvancedOffsets);
+		operandOffset = getOffsetFromStream(useAdvancedOffsets);
+		if (operandBufferId == -1) {
+			debug_log("bufferAdjust: no operand buffer ID\n\r");
+			return;
+		}
+		auto operandBufferIter = buffers.find(operandBufferId);
+		if (operandBufferIter == buffers.end()) {
+			debug_log("bufferAdjust: buffer %d not found\n\r", operandBufferId);
+			return;
+		}
+		operandBuffer = &operandBufferIter->second;
 	}
 
-	if (command == -1 || count == -1 || offset == -1 || operandBufferId == -1 || operandOffset == -1) {
+	auto bufferId = resolveBufferId(adjustBufferId, id);
+	if (bufferId == -1) {
+		debug_log("bufferAdjust: no target buffer ID\n\r");
+		return;
+	}
+	auto bufferIter = buffers.find(bufferId);
+	if (bufferIter == buffers.end()) {
+		debug_log("bufferAdjust: buffer %d not found\n\r", bufferId);
+		return;
+	}
+	auto &buffer = bufferIter->second;
+
+	if (command == -1 || count == -1 || offset.blockOffset == -1 || operandOffset.blockOffset == -1) {
 		debug_log("bufferAdjust: invalid command, count, offset or operand value\n\r");
 		return;
 	}
@@ -484,11 +492,11 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 
 	if (!useMultiTarget) {
 		// we have a singular source value
-		sourceValue = getBufferByte(bufferId, offset);
+		sourceValue = getBufferByte(buffer, offset);
 	}
 	if (hasOperand && !useMultiOperand) {
 		// we have a singular operand value
-		operandValue = useBufferValue ? getBufferByte(operandBufferId, operandOffset) : readByte_t();
+		operandValue = operandBuffer ? getBufferByte(*operandBuffer, operandOffset) : readByte_t();
 	}
 
 	debug_log("bufferAdjust: command %d, offset %d, count %d, operandBufferId %d, operandOffset %d, sourceValue %d, operandValue %d\n\r", command, offset, count, operandBufferId, operandOffset, sourceValue, operandValue);
@@ -497,10 +505,10 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 	for (auto i = 0; i < count; i++) {
 		if (useMultiTarget) {
 			// multiple source values will change
-			sourceValue = getBufferByte(bufferId, offset + i);
+			sourceValue = getBufferByte(buffer, offset);
 		}
 		if (hasOperand && useMultiOperand) {
-			operandValue = useBufferValue ? getBufferByte(operandBufferId, operandOffset + i) : readByte_t();
+			operandValue = operandBuffer ? getBufferByte(*operandBuffer, operandOffset, true) : readByte_t();
 		}
 		if (sourceValue == -1 || operandValue == -1) {
 			debug_log("bufferAdjust: invalid source or operand value\n\r");
@@ -546,23 +554,24 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 
 		if (useMultiTarget) {
 			// multiple source/target values updating, so store inside loop
-			if (!setBufferByte(sourceValue, bufferId, offset + i)) {
-				debug_log("bufferAdjust: failed to set result %d at offset %d\n\r", sourceValue, offset + i);
+			if (!setBufferByte(sourceValue, buffer, offset, true)) {
+				debug_log("bufferAdjust: failed to set result %d at offset %d:%d\n\r", sourceValue, (int)offset.blockIndex, offset.blockOffset);
 				return;
 			}
 		}
 	}
 	if (!useMultiTarget) {
 		// single source/target value updating, so store outside loop
-		if (!setBufferByte(sourceValue, bufferId, offset)) {
-			debug_log("bufferAdjust: failed to set result %d at offset %d\n\r", sourceValue, offset);
+		// also increment offset in case carry is used
+		if (!setBufferByte(sourceValue, buffer, offset, true)) {
+			debug_log("bufferAdjust: failed to set result %d at offset %d:%d\n\r", sourceValue, (int)offset.blockIndex, offset.blockOffset);
 			return;
 		}
 	}
 	if (usingCarry) {
 		// if we were using carry, store the final carry value
-		if (!setBufferByte(carryValue, bufferId, offset + count)) {
-			debug_log("bufferAdjust: failed to set carry value %d at offset %d\n\r", carryValue, offset + count);
+		if (!setBufferByte(carryValue, buffer, offset)) {
+			debug_log("bufferAdjust: failed to set carry value %d at offset %d:%d\n\r", carryValue, (int)offset.blockIndex, offset.blockOffset);
 			return;
 		}
 	}
@@ -587,27 +596,45 @@ bool VDUStreamProcessor::bufferConditional() {
 	// conditional operators that are greater than NOT_EXISTS require an operand
 	bool hasOperand = op > COND_NOT_EXISTS;
 
-	auto offset = getOffsetFromStream(checkBufferId, useAdvancedOffsets);
+	auto offset = getOffsetFromStream(useAdvancedOffsets);
+	const std::vector<std::shared_ptr<BufferStream>> * operandBuffer = nullptr;
 	auto operandBufferId = 0;
-	auto operandOffset = 0;
+	AdvancedOffset operandOffset = {};
 
-	if (useBufferValue) {
+	if (useBufferValue && hasOperand) {
 		operandBufferId = resolveBufferId(readWord_t(), id);
-		operandOffset = getOffsetFromStream(operandBufferId, useAdvancedOffsets);
+		operandOffset = getOffsetFromStream(useAdvancedOffsets);
+		if (operandBufferId == -1) {
+			debug_log("bufferConditional: no operand buffer ID\n\r");
+			return false;
+		}
+		auto operandBufferIter = buffers.find(operandBufferId);
+		if (operandBufferIter == buffers.end()) {
+			debug_log("bufferConditional: buffer %d not found\n\r", operandBufferId);
+			return false;
+		}
+		operandBuffer = &operandBufferIter->second;
 	}
 
-	if (command == -1 || checkBufferId == -1 || offset == -1 || operandBufferId == -1 || operandOffset == -1) {
+	if (command == -1 || checkBufferId == -1 || offset.blockOffset == -1 || operandOffset.blockOffset == -1) {
 		debug_log("bufferConditional: invalid command, checkBufferId, offset or operand value\n\r");
 		return false;
 	}
 
-	auto sourceValue = getBufferByte(checkBufferId, offset);
+	auto checkBufferIter = buffers.find(checkBufferId);
+	if (checkBufferIter == buffers.end()) {
+		debug_log("bufferConditional: buffer %d not found\n\r", checkBufferId);
+		return false;
+	}
+	auto &checkBuffer = checkBufferIter->second;
+	auto sourceValue = getBufferByte(checkBuffer, offset);
 	int16_t operandValue = 0;
 	if (hasOperand) {
-		operandValue = useBufferValue ? getBufferByte(operandBufferId, operandOffset) : readByte_t();
+		operandValue = operandBuffer ? getBufferByte(*operandBuffer, operandOffset) : readByte_t();
 	}
 
-	debug_log("bufferConditional: command %d, checkBufferId %d, offset %d, operandBufferId %d, operandOffset %d, sourceValue %d, operandValue %d\n\r", command, checkBufferId, offset, operandBufferId, operandOffset, sourceValue, operandValue);
+	debug_log("bufferConditional: command %d, checkBufferId %d, offset %d:%d, operandBufferId %d, operandOffset %d:%d, sourceValue %d, operandValue %d\n\r",
+		command, checkBufferId, (int)offset.blockIndex, offset.blockOffset, operandBufferId, (int)operandOffset.blockIndex, operandOffset.blockOffset, sourceValue, operandValue);
 
 	if (sourceValue == -1 || operandValue == -1) {
 		debug_log("bufferConditional: invalid source or operand value\n\r");
@@ -658,7 +685,7 @@ bool VDUStreamProcessor::bufferConditional() {
 // VDU 23, 0, &A0, bufferId; 9, offset; offsetHighByte : Jump to (advanced) offset within buffer
 // Change execution to given buffer (from beginning or at an offset)
 //
-void VDUStreamProcessor::bufferJump(uint16_t bufferId, uint32_t offset) {
+void VDUStreamProcessor::bufferJump(uint16_t bufferId, AdvancedOffset offset) {
 	debug_log("bufferJump: buffer %d\n\r", bufferId);
 	if (id == 65535) {
 		// we're currently the top-level stream, so we can't jump
@@ -668,7 +695,7 @@ void VDUStreamProcessor::bufferJump(uint16_t bufferId, uint32_t offset) {
 	if (bufferId == 65535 || bufferId == id) {
 		// a buffer ID of 65535 is used to indicate current buffer, so we seek to offset
 		auto instream = (MultiBufferStream *)inputStream.get();
-		instream->seekTo(offset);
+		instream->seekTo(offset.blockOffset, offset.blockIndex);
 		return;
 	}
 	auto bufferIter = buffers.find(bufferId);
@@ -679,8 +706,8 @@ void VDUStreamProcessor::bufferJump(uint16_t bufferId, uint32_t offset) {
 	// replace our input stream with a new one
 	auto &streams = bufferIter->second;
 	auto multiBufferStream = make_shared_psram<MultiBufferStream>(streams);
-	if (offset) {
-		multiBufferStream->seekTo(offset);
+	if (offset.blockOffset != 0 || offset.blockIndex != 0) {
+		multiBufferStream->seekTo(offset.blockOffset, offset.blockIndex);
 	}
 	inputStream = std::move(multiBufferStream);
 }
