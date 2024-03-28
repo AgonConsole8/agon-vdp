@@ -349,6 +349,7 @@ VDUStreamProcessor::AdvancedOffset VDUStreamProcessor::getOffsetFromStream(bool 
 			if (blockIndex == -1) {
 				offset.blockOffset = -1;
 			} else {
+				offset.blockOffset &= 0x007FFFFF;
 				offset.blockIndex = blockIndex;
 			}
 		}
