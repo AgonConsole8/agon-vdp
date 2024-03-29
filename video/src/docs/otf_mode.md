@@ -82,6 +82,7 @@ been implemented yet, and the sections are subject to change!</b>
 <br>[OTF Critical Section](otf_critical.md)
 <br>[OTF Strategy](otf_strategy.md)
 <br>[Point Primitive](otf_point.md)
+<br>[Primitive Commands](otf_primitive.md)
 <br>[Primitive Flags](otf_flags.md)
 <br>[Rectangle Primitive](otf_rectangle.md)
 <br>[Text Area Primitive](otf_text_area.md)
