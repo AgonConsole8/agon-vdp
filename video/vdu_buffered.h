@@ -908,18 +908,25 @@ void VDUStreamProcessor::bufferSpreadInto(uint16_t bufferId, tcb::span<uint16_t>
 		return;
 	}
 	auto &buffer = bufferIter->second;
+	// swap the source buffer contents into a local vector so it can be iterated safely even if it's a target
+	std::vector<std::shared_ptr<BufferStream>> localBuffer;
+	localBuffer.swap(buffer);
 	if (!iterate) {
 		clearTargets(newBufferIds);
 	}
 	// iterate over its blocks and send to targets
 	auto targetIter = newBufferIds.begin();
-	for (const auto &block : buffer) {
+	for (const auto &block : localBuffer) {
 		auto targetId = *targetIter;
 		if (iterate) {
 			clearTarget(targetId);
 		}
 		buffers[targetId].push_back(block);
 		iterate = updateTarget(newBufferIds, targetIter, iterate);
+	}
+	// if the source buffer is still empty, move the original contents back
+	if (buffer.empty()) {
+		buffer = std::move(localBuffer);
 	}
 }
 
