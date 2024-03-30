@@ -11,6 +11,11 @@
 
 extern uint8_t	fontW;
 extern uint8_t	fontH;
+extern uint8_t	cursorVStart;
+extern uint8_t	cursorVEnd;
+extern uint8_t	cursorHStart;
+extern uint8_t	cursorHEnd;
+
 extern void drawCursor(Point p);
 extern void scrollRegion(Rect * r, uint8_t direction, int16_t amount);
 
