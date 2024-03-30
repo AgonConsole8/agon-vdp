@@ -691,9 +691,14 @@ void setClippingRect(Rect rect) {
 void drawCursor(Point p) {
 	if (textCursorActive()) {
 		if (cursorHStart < fontW && cursorHStart <= cursorHEnd && cursorVStart < fontH && cursorVStart <= cursorVEnd) {
-			canvas->setBrushColor(tfg);
 			canvas->setPaintOptions(cpo);
+			canvas->setBrushColor(tbg);
 			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
+			canvas->setBrushColor(tfg);
+			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
+			if (ttxtMode) {
+				canvas->setPaintOptions(tpo);
+			}
 		}
 	}
 }
@@ -880,10 +885,6 @@ int8_t change_mode(uint8_t mode) {
 	rectangularPixels = ((float)canvasW / (float)canvasH) > 2;
 	fontW = canvas->getFontInfo()->width;
 	fontH = canvas->getFontInfo()->height;
-	cursorVStart = 0;
-	cursorVEnd = fontH - 1;
-	cursorHStart = 0;
-	cursorHEnd = fontW - 1;
 	viewportReset();
 	setOrigin(0,0);
 	pushPoint(0,0);
@@ -891,7 +892,6 @@ int8_t change_mode(uint8_t mode) {
 	pushPoint(0,0);
 	moveTo();
 	resetCursor();
-	cursorHome();
 	if (isDoubleBuffered()) {
 		switchBuffer();
 		cls(false);
@@ -928,12 +928,14 @@ void setLegacyModes(bool legacy) {
 
 void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 	canvas->setScrollingRegion(region->X1, region->Y1, region->X2, region->Y2);
+	canvas->setPenColor(tbg);
+	canvas->setBrushColor(tbg);
+	canvas->setPaintOptions(tpo);
 	if (ttxtMode) {
-		if (direction == 3) ttxt_instance.scroll();
+		if (direction & 3 == 3) {
+			ttxt_instance.scroll();
+		}
 	} else {
-		canvas->setPenColor(tbg);
-		canvas->setBrushColor(tbg);
-		canvas->setPaintOptions(tpo);
 		auto moveX = 0;
 		auto moveY = 0;
 		switch (direction) {
