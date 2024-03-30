@@ -52,6 +52,8 @@
 #define	DEBUG			1						// Serial Debug Mode: 1 = enable
 #define SERIALBAUDRATE	115200
 
+extern uint32_t startup_screen_mode; /* in rust_glue.cpp */
+
 HardwareSerial	DBGSerial(0);
 
 #include "agon.h"								// Configuration file
@@ -83,7 +85,7 @@ void setup() {
 	disableCore1WDT(); delay(200);
 	DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
 	copy_font();
-	set_mode(1);
+	set_mode(startup_screen_mode);
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
 	initAudio();
