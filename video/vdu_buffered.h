@@ -104,7 +104,7 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 		}	break;
 		case BUFFERED_SPLIT: {
 			auto length = readWord_t(); if (length == -1) return;
-			std::vector<uint16_t> target { (uint16_t)bufferId };
+			uint16_t target[] = { (uint16_t)bufferId };
 			bufferSplitInto(bufferId, length, target, false);
 		}	break;
 		case BUFFERED_SPLIT_INTO: {
@@ -119,13 +119,13 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 		case BUFFERED_SPLIT_FROM: {
 			auto length = readWord_t(); if (length == -1) return;
 			auto targetStart = readWord_t(); if (targetStart == -1 || targetStart == 65535) return;
-			std::vector<uint16_t> target { (uint16_t)targetStart };
+			uint16_t target[] = { (uint16_t)targetStart };
 			bufferSplitInto(bufferId, length, target, true);
 		}	break;
 		case BUFFERED_SPLIT_BY: {
 			auto width = readWord_t(); if (width == -1) return;
 			auto chunks = readWord_t(); if (chunks == -1) return;
-			std::vector<uint16_t> target { (uint16_t)bufferId };
+			uint16_t target[] = { (uint16_t)bufferId };
 			bufferSplitByInto(bufferId, width, chunks, target, false);
 		}	break;
 		case BUFFERED_SPLIT_BY_INTO: {
@@ -142,7 +142,7 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			auto width = readWord_t(); if (width == -1) return;
 			auto chunks = readWord_t(); if (chunks == -1) return;
 			auto targetStart = readWord_t(); if (targetStart == -1 || targetStart == 65535) return;
-			std::vector<uint16_t> target { (uint16_t)targetStart };
+			uint16_t target[] = { (uint16_t)targetStart };
 			bufferSplitByInto(bufferId, width, chunks, target, true);
 		}	break;
 		case BUFFERED_SPREAD_INTO: {
@@ -155,7 +155,7 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 		}	break;
 		case BUFFERED_SPREAD_FROM: {
 			auto targetStart = readWord_t(); if (targetStart == -1 || targetStart == 65535) return;
-			std::vector<uint16_t> target { (uint16_t)targetStart };
+			uint16_t target[] = { (uint16_t)targetStart };
 			bufferSpreadInto(bufferId, target, true);
 		}	break;
 		case BUFFERED_REVERSE_BLOCKS: {
@@ -721,7 +721,7 @@ void VDUStreamProcessor::bufferJump(uint16_t bufferId, AdvancedOffset offset) {
 // which can be used to construct more complex commands
 // Target buffer ID can be included in the source list
 //
-void VDUStreamProcessor::bufferCopy(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds) {
+void VDUStreamProcessor::bufferCopy(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds) {
 	if (bufferId == 65535) {
 		debug_log("bufferCopy: ignoring buffer %d\n\r", bufferId);
 		return;
@@ -783,13 +783,17 @@ void VDUStreamProcessor::bufferConsolidate(uint16_t bufferId) {
 	debug_log("bufferConsolidate: consolidated %d streams into buffer %d\n\r", buffer.size(), bufferId);
 }
 
-void clearTargets(const std::vector<uint16_t> &targets) {
+void clearTarget(uint16_t target) {
+	auto bufferIter = buffers.find(target);
+	if (bufferIter != buffers.end()) {
+		bufferIter->second.clear();
+	}
+	clearBitmap(target);
+}
+
+void clearTargets(tcb::span<const uint16_t> targets) {
 	for (const auto target : targets) {
-		auto bufferIter = buffers.find(target);
-		if (bufferIter != buffers.end()) {
-			bufferIter->second.clear();
-		}
-		clearBitmap(target);
+		clearTarget(target);
 	}
 }
 
@@ -799,7 +803,7 @@ void clearTargets(const std::vector<uint16_t> &targets) {
 // Split a buffer into multiple blocks/streams to new buffers
 // Will overwrite any existing buffers
 //
-void VDUStreamProcessor::bufferSplitInto(uint16_t bufferId, uint16_t length, const std::vector<uint16_t> &newBufferIds, bool iterate) {
+void VDUStreamProcessor::bufferSplitInto(uint16_t bufferId, uint16_t length, tcb::span<uint16_t> newBufferIds, bool iterate) {
 	auto bufferIter = buffers.find(bufferId);
 	if (bufferIter == buffers.end()) {
 		debug_log("bufferSplitInto: buffer %d not found\n\r", bufferId);
@@ -821,14 +825,14 @@ void VDUStreamProcessor::bufferSplitInto(uint16_t bufferId, uint16_t length, con
 		return;
 	}
 	// distribute our chunks to destination buffers
-	uint16_t newBufferIdIndex = 0;
-	auto targetId = newBufferIds[newBufferIdIndex];
-	for (const auto &chunk : chunks) {
+	auto targetIter = newBufferIds.begin();
+	for (auto &chunk : chunks) {
+		auto targetId = *targetIter;
 		if (iterate) {
-			clearTargets({ targetId });
+			clearTarget(targetId);
 		}
-		buffers[targetId].push_back(chunk);
-		updateTarget(newBufferIds, targetId, newBufferIdIndex, iterate);
+		buffers[targetId].push_back(std::move(chunk));
+		iterate = updateTarget(newBufferIds, targetIter, iterate);
 	}
 	debug_log("bufferSplitInto: split buffer %d into %d blocks of length %d\n\r", bufferId, chunks.size(), length);
 }
@@ -839,7 +843,7 @@ void VDUStreamProcessor::bufferSplitInto(uint16_t bufferId, uint16_t length, con
 // Split a buffer into multiple blocks/streams to new buffers/chunks by width
 // Will overwrite any existing buffers
 //
-void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, const std::vector<uint16_t> &newBufferIds, bool iterate) {
+void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, tcb::span<uint16_t> newBufferIds, bool iterate) {
 	auto bufferIter = buffers.find(bufferId);
 	if (bufferIter == buffers.end()) {
 		debug_log("bufferSplitByInto: buffer %d not found\n\r", bufferId);
@@ -876,11 +880,11 @@ void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, ui
 	}
 
 	// consolidate our chunks, and distribute to buffers
-	uint16_t newBufferIndex = 0;
-	auto targetId = newBufferIds[newBufferIndex];
+	auto targetIter = newBufferIds.begin();
 	for (auto &stream : chunks) {
+		auto targetId = *targetIter;
 		if (iterate) {
-			clearTargets({ targetId });
+			clearTarget(targetId);
 		}
 		auto chunk = consolidateBuffers(stream);
 		if (!chunk) {
@@ -888,7 +892,7 @@ void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, ui
 			return;
 		}
 		buffers[targetId].push_back(std::move(chunk));
-		updateTarget(newBufferIds, targetId, newBufferIndex, iterate);
+		iterate = updateTarget(newBufferIds, targetIter, iterate);
 	}
 
 	debug_log("bufferSplitByInto: split buffer %d into %d chunks of width %d\n\r", bufferId, chunkCount, width);
@@ -897,7 +901,7 @@ void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, ui
 // VDU 23, 0, &A0, bufferId; &15, <bufferIds>; 65535; : Spread blocks from buffer into new buffers
 // VDU 23, 0, &A0, bufferId; &16, targetBufferId; : Spread blocks from target buffer onwards
 //
-void VDUStreamProcessor::bufferSpreadInto(uint16_t bufferId, const std::vector<uint16_t> &newBufferIds, bool iterate) {
+void VDUStreamProcessor::bufferSpreadInto(uint16_t bufferId, tcb::span<uint16_t> newBufferIds, bool iterate) {
 	auto bufferIter = buffers.find(bufferId);
 	if (bufferIter == buffers.end()) {
 		debug_log("bufferSpreadInto: buffer %d not found\n\r", bufferId);
@@ -908,14 +912,14 @@ void VDUStreamProcessor::bufferSpreadInto(uint16_t bufferId, const std::vector<u
 		clearTargets(newBufferIds);
 	}
 	// iterate over its blocks and send to targets
-	uint16_t newBufferIndex = 0;
-	auto targetId = newBufferIds[newBufferIndex];
+	auto targetIter = newBufferIds.begin();
 	for (const auto &block : buffer) {
+		auto targetId = *targetIter;
 		if (iterate) {
-			clearTargets({ targetId });
+			clearTarget(targetId);
 		}
 		buffers[targetId].push_back(block);
-		updateTarget(newBufferIds, targetId, newBufferIndex, iterate);
+		iterate = updateTarget(newBufferIds, targetIter, iterate);
 	}
 }
 
@@ -1022,7 +1026,7 @@ void VDUStreamProcessor::bufferReverse(uint16_t bufferId, uint8_t options) {
 // This is useful to construct a single buffer from multiple buffers without the copy overhead
 // If target buffer is included in the source list it will be skipped to prevent a reference loop
 //
-void VDUStreamProcessor::bufferCopyRef(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds) {
+void VDUStreamProcessor::bufferCopyRef(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds) {
 	if (bufferId == 65535) {
 		debug_log("bufferCopyRef: ignoring buffer %d\n\r", bufferId);
 		return;
@@ -1056,7 +1060,7 @@ void VDUStreamProcessor::bufferCopyRef(uint16_t bufferId, const std::vector<uint
 // This is useful for constructing bitmaps from multiple buffers without needing an extra consolidate step
 // If target buffer is included in the source list it will be skipped.
 //
-void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds) {
+void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds) {
 	if (bufferId == 65535) {
 		debug_log("bufferCopyAndConsolidate: ignoring buffer %d\n\r", bufferId);
 		return;

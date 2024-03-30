@@ -7,6 +7,7 @@
 #include "agon.h"
 #include "agon_ps2.h"
 #include "buffer_stream.h"
+#include "span.h"
 #include "types.h"
 #include "viewport.h"
 
@@ -95,15 +96,15 @@ class VDUStreamProcessor {
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
 		void bufferJump(uint16_t bufferId, AdvancedOffset offset);
-		void bufferCopy(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds);
+		void bufferCopy(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferConsolidate(uint16_t bufferId);
-		void bufferSplitInto(uint16_t bufferId, uint16_t length, const std::vector<uint16_t> &newBufferIds, bool iterate);
-		void bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, const std::vector<uint16_t> &newBufferIds, bool iterate);
-		void bufferSpreadInto(uint16_t bufferId, const std::vector<uint16_t> &newBufferIds, bool iterate);
+		void bufferSplitInto(uint16_t bufferId, uint16_t length, tcb::span<uint16_t> newBufferIds, bool iterate);
+		void bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, tcb::span<uint16_t> newBufferIds, bool iterate);
+		void bufferSpreadInto(uint16_t bufferId, tcb::span<uint16_t> newBufferIds, bool iterate);
 		void bufferReverseBlocks(uint16_t bufferId);
 		void bufferReverse(uint16_t bufferId, uint8_t options);
-		void bufferCopyRef(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds);
-		void bufferCopyAndConsolidate(uint16_t bufferId, const std::vector<uint16_t> &sourceBufferIds);
+		void bufferCopyRef(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
+		void bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 
 		void vdu_sys_updater();
 		void unlock();

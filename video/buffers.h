@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "buffer_stream.h"
+#include "span.h"
 
 std::unordered_map<uint16_t, std::vector<std::shared_ptr<BufferStream>>> buffers;
 
@@ -51,19 +52,25 @@ void reverseValues(uint8_t * data, uint32_t length, uint16_t valueSize) {
 }
 
 // Work out which buffer to use next
-void updateTarget(const std::vector<uint16_t> &targets, uint16_t &target, uint16_t &index, bool iterate) {
+// Returns whether to continue iterating, which the caller uses to decide whether to clear buffers
+bool updateTarget(tcb::span<uint16_t> targets, tcb::span<uint16_t>::iterator &targetIter, bool iterate) {
 	if (iterate) {
 		// if the iterate flag is set, we just use the next buffer
-		if (target < 65535) {
-			target++;
+		auto &targetId = *targetIter;
+		if (targetId >= 65534) {
+			// in future iterations, loop over the single buffer in the list and don't clear it
+			return false;
 		}
+		// update the list in-place
+		targetId++;
+		return true;
 	} else {
 		// use the next buffer in the list, or loop back to the start
-		index++;
-		if (index >= targets.size()) {
-			index = 0;
+		targetIter++;
+		if (targetIter == targets.end()) {
+			targetIter = targets.begin();
 		}
-		target = targets[index];
+		return false;
 	}
 }
 
