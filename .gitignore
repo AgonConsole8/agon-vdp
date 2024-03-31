@@ -2,3 +2,7 @@
 .vscode
 .DS_Store
 video/build
+.cproject
+.project
+.settings/
+.venv/
