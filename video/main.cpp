@@ -192,7 +192,7 @@ void do_keyboard_terminal() {
 	}
 }
 
-
+// Handle the mouse
 //
 void do_mouse() {
 	// get mouse delta, if the mouse is active
