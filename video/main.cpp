@@ -44,7 +44,9 @@
 // 05/09/2023:					+ New audio enhancements, improved mode change code
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
+// 31/03/2024:					+ rename video.ino to main.cpp, add function definitions
 
+#include <Arduino.h>
 #include <WiFi.h>
 #include <HardwareSerial.h>
 #include <fabgl.h>
@@ -75,6 +77,23 @@ std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
 VDUStreamProcessor *	processor;				// VDU Stream Processor
 
 #include "zdi.h"								// ZDI debugging console
+
+                                                // Function definitions
+
+void do_keyboard();                             // Handle the keyboard: BBC VDU Mode
+void do_keyboard_terminal();                    // Handle the keyboard: CP/M Terminal Mode
+void do_mouse();                                // Handle the mouse
+void boot_screen();                             // The boot screen
+void debug_log(const char *format, ...);        // Debug printf to PC
+void setConsoleMode(bool mode) ;                // Set console mode
+void startTerminal();                           // Terminal mode state machine transition calls
+void stopTerminal();
+void suspendTerminal();
+void suspendTerminal();
+bool processTerminal();                         // Process terminal state machine
+void print(char const * text);
+void printFmt(const char *format, ...);
+
 
 void setup() {
 	disableCore0WDT(); delay(200);				// Disable the watchdog timers
@@ -173,7 +192,7 @@ void do_keyboard_terminal() {
 	}
 }
 
-// Handle the mouse
+
 //
 void do_mouse() {
 	// get mouse delta, if the mouse is active
