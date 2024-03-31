@@ -4,7 +4,5 @@
 video/build
 .cproject
 .project
-.settings/PlatformIO Debugger.launch
-.settings/language.settings.xml
-.settings/org.eclipse.cdt.core.prefs
+.settings/
 .venv/
