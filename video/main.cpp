@@ -44,7 +44,7 @@
 // 05/09/2023:					+ New audio enhancements, improved mode change code
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
-// 31/03/2024:					+ rename video.ino to main.cpp, add function definitions
+// 31/03/2024:					+ Rename video.ino to main.cpp, add function definitions
 
 #include <WiFi.h>
 #include <HardwareSerial.h>
