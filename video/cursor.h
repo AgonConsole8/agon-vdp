@@ -9,8 +9,7 @@
 // TODO remove this, somehow
 #include "vdp_protocol.h"
 
-extern uint8_t	fontW;
-extern uint8_t	fontH;
+extern const fabgl::FontInfo * font;
 extern uint8_t	cursorVStart;
 extern uint8_t	cursorVEnd;
 extern uint8_t	cursorHStart;
@@ -71,11 +70,11 @@ inline void setCursorBehaviour(uint8_t setting, uint8_t mask = 0xFF) {
 
 // Adjustments to ensure cursor position sits at the nearest character boundary
 int getXAdjustment() {
-	return activeViewport->width() % fontW;
+	return activeViewport->width() % font->width;
 }
 
 int getYAdjustment() {
-	return activeViewport->height() % fontH;
+	return activeViewport->height() % font->height;
 }
 
 Point getNormalisedCursorPosition(Point * cursor = activeCursor) {
@@ -118,13 +117,13 @@ int getNormalisedViewportHeight() {
 	if (cursorBehaviour.flipXY) {
 		auto height = activeViewport->width() - getXAdjustment();
 		if (!cursorBehaviour.invertHorizontal) {
-			height -= fontW - 1;
+			height -= font->width - 1;
 		}
 		return height;
 	}
 	auto height = activeViewport->height() - getYAdjustment();
 	if (!cursorBehaviour.invertVertical) {
-		height -= fontH - 1;
+		height -= font->height - 1;
 	}
 	return height;
 }
@@ -149,33 +148,33 @@ bool cursorIsOffBottom() {
 //
 void cursorCR(Rect * viewport = activeViewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - fontH - getYAdjustment()) : viewport->Y1;
+		activeCursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - font->height - getYAdjustment()) : viewport->Y1;
 	} else {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - fontW - getXAdjustment()) : viewport->X1;
+		activeCursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - font->width - getXAdjustment()) : viewport->X1;
 	}
 }
 
 void cursorEndRow(Rect * viewport = activeViewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - fontH - getYAdjustment());
+		activeCursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - font->height - getYAdjustment());
 	} else {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - fontW - getXAdjustment());
+		activeCursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - font->width - getXAdjustment());
 	}
 }
 
 void cursorTop(Rect * viewport = activeViewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - fontW - getXAdjustment()) : viewport->X1;
+		activeCursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - font->width - getXAdjustment()) : viewport->X1;
 	} else {
-		activeCursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - fontH - getYAdjustment()) : viewport->Y1;
+		activeCursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - font->height - getYAdjustment()) : viewport->Y1;
 	}
 }
 
 void cursorEndCol(Rect * viewport = activeViewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - fontW - getXAdjustment());
+		activeCursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - font->width - getXAdjustment());
 	} else {
-		activeCursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - fontH - getYAdjustment());
+		activeCursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - font->height - getYAdjustment());
 	}
 }
 
@@ -238,9 +237,9 @@ bool cursorScrollOrWrap() {
 //
 void cursorDown(bool moveOnly = false) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->X += (cursorBehaviour.invertHorizontal ? -fontW : fontW);
+		activeCursor->X += (cursorBehaviour.invertHorizontal ? -font->width : font->width);
 	} else {
-		activeCursor->Y += (cursorBehaviour.invertVertical ? -fontH : fontH);
+		activeCursor->Y += (cursorBehaviour.invertVertical ? -font->height : font->height);
 	}
 	if (moveOnly) {
 		return;
@@ -251,8 +250,8 @@ void cursorDown(bool moveOnly = false) {
 	if (textCursorActive() && pagedMode) {
 		pagedModeCount++;
 		if (pagedModeCount >= (
-				cursorBehaviour.flipXY ? (activeViewport->width()) / fontW
-					: (activeViewport->height()) / fontH
+				cursorBehaviour.flipXY ? (activeViewport->width()) / font->width
+					: (activeViewport->height()) / font->height
 			)
 		) {
 			pagedModeCount = 0;
@@ -282,9 +281,9 @@ void cursorDown(bool moveOnly = false) {
 //
 void cursorUp(bool moveOnly = false) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->X += (cursorBehaviour.invertHorizontal ? fontW : -fontW);
+		activeCursor->X += (cursorBehaviour.invertHorizontal ? font->width : -font->width);
 	} else {
-		activeCursor->Y += (cursorBehaviour.invertVertical ? fontH : -fontH);
+		activeCursor->Y += (cursorBehaviour.invertVertical ? font->height : -font->height);
 	}
 	if (moveOnly) {
 		return;
@@ -296,9 +295,9 @@ void cursorUp(bool moveOnly = false) {
 //
 void cursorLeft() {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->Y += (cursorBehaviour.invertVertical ? fontH : -fontH);
+		activeCursor->Y += (cursorBehaviour.invertVertical ? font->height : -font->height);
 	} else {
-		activeCursor->X += (cursorBehaviour.invertHorizontal ? fontW : -fontW);
+		activeCursor->X += (cursorBehaviour.invertHorizontal ? font->width : -font->width);
 	}
 	if (cursorScrollOrWrap()) {
 		// wrapped, so move cursor up a line
@@ -320,9 +319,9 @@ void cursorRight(bool scrollProtect = false) {
 	cursorAutoNewline();
 
 	if (cursorBehaviour.flipXY) {
-		activeCursor->Y += (cursorBehaviour.invertVertical ? -fontH : fontH);
+		activeCursor->Y += (cursorBehaviour.invertVertical ? -font->height : font->height);
 	} else {
-		activeCursor->X += (cursorBehaviour.invertHorizontal ? -fontW : fontW);
+		activeCursor->X += (cursorBehaviour.invertHorizontal ? -font->width : font->width);
 	}
 	if (!scrollProtect) {
 		cursorAutoNewline();
@@ -342,25 +341,25 @@ void cursorTab(uint8_t x, uint8_t y) {
 	int xPos, yPos;
 	if (cursorBehaviour.flipXY) {
 		if (cursorBehaviour.invertHorizontal) {
-			xPos = activeViewport->X2 - ((y + 1) * fontW) - getXAdjustment();
+			xPos = activeViewport->X2 - ((y + 1) * font->width) - getXAdjustment();
 		} else {
-			xPos = activeViewport->X1 + (y * fontW);
+			xPos = activeViewport->X1 + (y * font->width);
 		}
 		if (cursorBehaviour.invertVertical) {
-			yPos = activeViewport->Y2 - ((x + 1) * fontH) - getYAdjustment();
+			yPos = activeViewport->Y2 - ((x + 1) * font->height) - getYAdjustment();
 		} else {
-			yPos = activeViewport->Y1 + (x * fontH);
+			yPos = activeViewport->Y1 + (x * font->height);
 		}
 	} else {
 		if (cursorBehaviour.invertHorizontal) {
-			xPos = activeViewport->X2 - ((x + 1) * fontW) - getXAdjustment();
+			xPos = activeViewport->X2 - ((x + 1) * font->width) - getXAdjustment();
 		} else {
-			xPos = activeViewport->X1 + (x * fontW);
+			xPos = activeViewport->X1 + (x * font->width);
 		}
 		if (cursorBehaviour.invertVertical) {
-			yPos = activeViewport->Y2 - ((y + 1) * fontH) - getYAdjustment();
+			yPos = activeViewport->Y2 - ((y + 1) * font->height) - getYAdjustment();
 		} else {
-			yPos = activeViewport->Y1 + (y * fontH);
+			yPos = activeViewport->Y1 + (y * font->height);
 		}
 	}
 	if (activeViewport->X1 <= xPos
@@ -388,9 +387,9 @@ void resetCursor() {
 	cursorFlashing = true;
 	cursorFlashRate = CURSOR_PHASE;
 	cursorVStart = 0;
-	cursorVEnd = fontH - 1;
+	cursorVEnd = font->height - 1;
 	cursorHStart = 0;
-	cursorHEnd = fontW - 1;
+	cursorHEnd = font->width - 1;
 	// cursor behaviour however is _not_ reset here
 	cursorHome();
 	setPagedMode(false);

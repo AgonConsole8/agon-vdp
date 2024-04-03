@@ -304,25 +304,25 @@ void VDUStreamProcessor::sendCursorPosition() {
 
 	if (cursorBehaviour.flipXY) {
 		if (cursorBehaviour.invertHorizontal) {
-			x = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / fontH);
+			x = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);
 		} else {
-			x = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / fontH);
+			x = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / font->height);
 		}
 		if (cursorBehaviour.invertVertical) {
-			y = (uint8_t) ((activeViewport->X2 - activeCursor->X) / fontW);
+			y = (uint8_t) ((activeViewport->X2 - activeCursor->X) / font->width);
 		} else {
-			y = (uint8_t) ((activeCursor->X - activeViewport->X1) / fontW);
+			y = (uint8_t) ((activeCursor->X - activeViewport->X1) / font->width);
 		}
 	} else {
 		if (cursorBehaviour.invertHorizontal) {
-			x = (uint8_t) ((activeViewport->X2 - activeCursor->X) / fontW);
+			x = (uint8_t) ((activeViewport->X2 - activeCursor->X) / font->width);
 		} else {
-			x = (uint8_t) ((activeCursor->X - activeViewport->X1) / fontW);
+			x = (uint8_t) ((activeCursor->X - activeViewport->X1) / font->width);
 		}
 		if (cursorBehaviour.invertVertical) {
-			y = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / fontH);
+			y = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);
 		} else {
-			y = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / fontH);
+			y = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / font->height);
 		}
 	}
 	uint8_t packet[] = { x, y };
@@ -333,8 +333,8 @@ void VDUStreamProcessor::sendCursorPosition() {
 //
 void VDUStreamProcessor::sendScreenChar(uint16_t x, uint16_t y) {
 	waitPlotCompletion();
-	uint16_t px = x * fontW;
-	uint16_t py = y * fontH;
+	uint16_t px = x * font->width;
+	uint16_t py = y * font->height;
 	char c = getScreenChar(px, py);
 	uint8_t packet[] = {
 		c,
@@ -418,8 +418,8 @@ void VDUStreamProcessor::sendTime() {
 void VDUStreamProcessor::sendModeInformation() {
 	// our character dimensions are for the currently active viewport
 	// needed as MOS's line editing system uses these
-	uint8_t charsX = activeViewport->width() / fontW;
-	uint8_t charsY = activeViewport->height() / fontH;
+	uint8_t charsX = activeViewport->width() / font->width;
+	uint8_t charsY = activeViewport->height() / font->height;
 	uint8_t packet[] = {
 		(uint8_t) (canvasW & 0xFF),			// Width in pixels (L)
 		(uint8_t) ((canvasW >> 8) & 0xFF),	// Width in pixels (H)
