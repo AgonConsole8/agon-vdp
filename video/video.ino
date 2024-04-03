@@ -95,18 +95,19 @@ void setup() {
 // The main loop
 //
 void loop() {
-	bool drawCursor = false;
+	bool cursorShowing = false;
+	bool cursorTemporarilyHidden = false;
 	auto cursorTime = millis();
 
 	while (true) {
 		if (processTerminal()) {
 			continue;
 		}
-		if (cursorFlashing && (millis() - cursorTime > cursorFlashRate)) {
+		if (!cursorTemporarilyHidden && cursorFlashing && (millis() - cursorTime > cursorFlashRate)) {
 			cursorTime = millis();
-			drawCursor = !drawCursor;
+			cursorShowing = !cursorShowing;
 			if (ttxtMode) {
-				ttxt_instance.flash(drawCursor);
+				ttxt_instance.flash(cursorShowing);
 			}
 			do_cursor();
 		}
@@ -114,12 +115,14 @@ void loop() {
 		do_mouse();
 
 		if (processor->byteAvailable()) {
-			if (drawCursor) {
+			if (!cursorTemporarilyHidden && cursorShowing) {
+				cursorTemporarilyHidden = true;
 				do_cursor();
 			}
 			processor->processNext();
-			if (drawCursor || !cursorFlashing) {
-				drawCursor = true;
+			if (!processor->byteAvailable() && (cursorTemporarilyHidden || !cursorFlashing)) {
+				cursorShowing = true;
+				cursorTemporarilyHidden = false;
 				do_cursor();
 			}
 		}
