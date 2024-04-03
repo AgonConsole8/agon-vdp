@@ -21,14 +21,14 @@ fabgl::PaintOptions			gpobg;				// Graphics paint options background
 fabgl::PaintOptions			tpo;				// Text paint options
 fabgl::PaintOptions			cpo;				// Cursor paint options
 
+const fabgl::FontInfo		* font;				// Current active font
+
 Point			p1, p2, p3;						// Coordinate store for plot
 Point			rp1;							// Relative coordinates store for plot
 Point			up1;							// Unscaled coordinates store for plot
 RGB888			gfg, gbg;						// Graphics foreground and background colour
 RGB888			tfg, tbg;						// Text foreground and background colour
 uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
-uint8_t			fontW;							// Font width
-uint8_t			fontH;							// Font height
 uint8_t			cursorVStart;					// Cursor vertical start offset
 uint8_t			cursorVEnd;						// Cursor vertical end
 uint8_t			cursorHStart;					// Cursor horizontal start offset
@@ -652,7 +652,7 @@ void plotCharacter(char c) {
 			canvas->setPaintOptions(gpofg);
 		}
 		if (bitmap) {
-			canvas->drawBitmap(activeCursor->X, activeCursor->Y + fontH - bitmap->height, bitmap.get());
+			canvas->drawBitmap(activeCursor->X, activeCursor->Y + font->height - bitmap->height, bitmap.get());
 		} else {
 			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
 		}
@@ -670,7 +670,7 @@ void plotBackspace() {
 		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, ' ');
 	} else {
 		canvas->setBrushColor(textCursorActive() ? tbg : gbg);
-		canvas->fillRectangle(activeCursor->X, activeCursor->Y, activeCursor->X + fontW - 1, activeCursor->Y + fontH - 1);
+		canvas->fillRectangle(activeCursor->X, activeCursor->Y, activeCursor->X + font->width - 1, activeCursor->Y + font->height - 1);
 	}
 }
 
@@ -690,17 +690,16 @@ void setClippingRect(Rect rect) {
 //
 void drawCursor(Point p) {
 	if (textCursorActive()) {
-		if (cursorHStart < fontW && cursorHStart <= cursorHEnd && cursorVStart < fontH && cursorVStart <= cursorVEnd) {
+		if (cursorHStart < font->width && cursorHStart <= cursorHEnd && cursorVStart < font->height && cursorVStart <= cursorVEnd) {
 			canvas->setPaintOptions(cpo);
 			canvas->setBrushColor(tbg);
-			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
+			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), font->width - 1), p.Y + std::min(((int)cursorVEnd), font->height - 1));
 			canvas->setBrushColor(tfg);
-			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
+			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), font->width - 1), p.Y + std::min(((int)cursorVEnd), font->height - 1));
 			canvas->setPaintOptions(tpo);
 		}
 	}
 }
-
 
 // Clear the screen
 //
@@ -881,8 +880,7 @@ int8_t change_mode(uint8_t mode) {
 	setCanvasWH(canvas->getWidth(), canvas->getHeight());
 	// simple heuristic to determine rectangular pixels
 	rectangularPixels = ((float)canvasW / (float)canvasH) > 2;
-	fontW = canvas->getFontInfo()->width;
-	fontH = canvas->getFontInfo()->height;
+	font = canvas->getFontInfo();
 	viewportReset();
 	setOrigin(0,0);
 	pushPoint(0,0);
@@ -978,9 +976,9 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 		} else {
 			if (movement == 0) {
 				if (moveX != 0) {
-					movement = fontW;
+					movement = font->width;
 				} else {
-					movement = fontH;
+					movement = font->height;
 				}
 			}
 			canvas->scroll(movement * moveX, movement * moveY);

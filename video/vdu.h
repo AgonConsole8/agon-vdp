@@ -415,10 +415,10 @@ void VDUStreamProcessor::vdu_textViewport() {
 	auto cy2 = readByte_t();
 	auto cx2 = readByte_t();
 	auto cy1 = readByte_t();
-	auto x1 = cx1 * fontW;				// Left
-	auto y2 = (cy2 + 1) * fontH - 1;	// Bottom
-	auto x2 = (cx2 + 1) * fontW - 1;	// Right
-	auto y1 = cy1 * fontH;				// Top
+	auto x1 = cx1 * font->width;				// Left
+	auto y2 = (cy2 + 1) * font->height - 1;		// Bottom
+	auto x2 = (cx2 + 1) * font->width - 1;		// Right
+	auto y1 = cy1 * font->height;				// Top
 
 	if (ttxtMode) {
 		if (cx2 > 39) cx2 = 39;
