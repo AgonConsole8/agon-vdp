@@ -696,9 +696,7 @@ void drawCursor(Point p) {
 			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
 			canvas->setBrushColor(tfg);
 			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), fontW - 1), p.Y + std::min(((int)cursorVEnd), fontH - 1));
-			if (ttxtMode) {
-				canvas->setPaintOptions(tpo);
-			}
+			canvas->setPaintOptions(tpo);
 		}
 	}
 }
