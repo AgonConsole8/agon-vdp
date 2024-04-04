@@ -8,6 +8,7 @@
 #include "graphics.h"
 #include "sprites.h"
 #include "types.h"
+#include "vdu_stream_processor.h"
 
 // Sprite Engine, VDU command handler
 //

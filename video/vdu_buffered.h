@@ -12,6 +12,7 @@
 #include "multi_buffer_stream.h"
 #include "sprites.h"
 #include "types.h"
+#include "vdu_stream_processor.h"
 
 // VDU 23, 0, &A0, bufferId; command: Buffered command support
 //
