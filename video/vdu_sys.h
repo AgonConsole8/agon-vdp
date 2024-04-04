@@ -12,8 +12,10 @@
 #include "graphics.h"
 #include "vdu_audio.h"
 #include "vdu_buffered.h"
+#include "vdu_fonts.h"
 #include "vdu_sprites.h"
 #include "updater.h"
+#include "vdu_stream_processor.h"
 
 extern void startTerminal();					// Start the terminal
 extern void setConsoleMode(bool mode);			// Set console mode
@@ -205,8 +207,15 @@ void VDUStreamProcessor::vdu_sys_video() {
 			if (offset >= 0)
 				cursorHEnd = offset;
 		}	break;
+		case VDP_CURSOR_MOVE: {			// VDU 23, 0, &8C, x, y
+			auto x = readByte_t();		// Relative move of current active cursor by x, y pixels
+			if (x == -1) return;
+			auto y = readByte_t();
+			if (y == -1) return;
+			cursorRelativeMove((int8_t) x, (int8_t) y);
+		}	break;
 		case VDP_UDG: {					// VDU 23, 0, &90, c, <args>
-			auto c = readByte_t();		// Redefine a display character
+			auto c = readByte_t();		// Redefine a display character (system font only)
 			if (c >= 0) {
 				waitPlotCompletion();
 				vdu_sys_udg(c);
@@ -214,7 +223,8 @@ void VDUStreamProcessor::vdu_sys_video() {
 		}	break;
 		case VDP_UDG_RESET: {			// VDU 23, 0, &91
 			waitPlotCompletion();
-			copy_font();				// Reset UDGs
+			// TODO should this reset to system font?
+			copy_font();				// Reset UDGs (system font only)
 		}	break;
 		case VDP_MAP_CHAR_TO_BITMAP: {	// VDU 23, 0, &92, c, bitmapId;
 			auto c = readByte_t();		// Map a character to a bitmap
@@ -222,6 +232,9 @@ void VDUStreamProcessor::vdu_sys_video() {
 			if (c >= 0 && bitmapId >= 0) {
 				mapCharToBitmap(c, bitmapId);
 			}
+		}	break;
+		case VDP_FONT: {				// VDU 23, 0, &93, bufferId, command, [<args>]
+			vdu_sys_font();				// Font management
 		}	break;
 		case VDP_READ_COLOUR: {			// VDU 23, 0, &94, index
 			auto index = readByte_t();	// Read colour from palette

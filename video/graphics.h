@@ -42,6 +42,18 @@ std::vector<Point>	pathPoints;					// Storage for path points
 extern bool ttxtMode;							// Teletext mode
 extern agon_ttxt ttxt_instance;					// Teletext instance
 
+// Change the currently selected font
+//
+void changeFont(const fabgl::FontInfo * f) {
+	if (!ttxtMode) {
+		// adjust our cursor position so baseline matches new font
+		cursorRelativeMove(0, font->ascent - f->ascent);
+		debug_log("changeFont - y adjustment is %d\n\r", font->ascent - f->ascent);
+		font = f;
+		canvas->selectFont(f);
+	}
+}
+
 // Copy the AGON font data from Flash to RAM
 //
 void copy_font() {
@@ -51,7 +63,11 @@ void copy_font() {
 // Redefine a character in the font
 //
 void redefineCharacter(uint8_t c, uint8_t * data) {
-	memcpy(&fabgl::FONT_AGON_DATA[c * 8], data, 8);
+	if (font == &fabgl::FONT_AGON) {
+		memcpy(&fabgl::FONT_AGON_DATA[c * 8], data, 8);
+	} else {
+		debug_log("redefineCharacter: alternate font redefinition not supported with this API\n\r");
+	}
 }
 
 bool cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len) {
@@ -68,14 +84,17 @@ bool cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len) {
 char getScreenChar(uint16_t px, uint16_t py) {
 	RGB888	pixel;
 	uint8_t	charRow;
-	uint8_t	charData[8];
+	uint8_t	charData[font->height];
 	uint8_t R = tbg.R;
 	uint8_t G = tbg.G;
 	uint8_t B = tbg.B;
 
+	// TODO charRow and charData here are tied to font dimensions
+	// so charRow will need to adjust depending on font width
+
 	// Do some bounds checking first
 	//
-	if (px >= canvasW - 8 || py >= canvasH - 8) {
+	if (px >= canvasW - font->width || py >= canvasH - font->height) {
 		return 0;
 	}
 	if (ttxtMode) {
@@ -83,9 +102,9 @@ char getScreenChar(uint16_t px, uint16_t py) {
 	} else {
 		// Now scan the screen and get the 8 byte pixel representation in charData
 		//
-		for (uint8_t y = 0; y < 8; y++) {
+		for (uint8_t y = 0; y < font->height; y++) {
 			charRow = 0;
-			for (uint8_t x = 0; x < 8; x++) {
+			for (uint8_t x = 0; x < font->width; x++) {
 				pixel = canvas->getPixel(px + x, py + y);
 				if (!(pixel.R == R && pixel.G == G && pixel.B == B)) {
 					charRow |= (0x80 >> x);
@@ -102,6 +121,8 @@ char getScreenChar(uint16_t px, uint16_t py) {
 		//
 		for (auto i = 32; i <= (255 + 31); i++) {
 			uint8_t c = i & 0xFF;
+			// TODO charData here is tied to font dimensions
+			// - we should have a function to get a pointer to the font character data
 			if (cmpChar(charData, &fabgl::FONT_AGON_DATA[c * 8], 8)) {
 				return c;
 			}

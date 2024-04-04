@@ -53,9 +53,11 @@
 #define VDP_MOUSE				0x89	// Mouse data
 #define VDP_CURSOR_HSTART		0x8A	// Cursor start row offset (0-15)
 #define VDP_CURSOR_HEND			0x8B	// Cursor end row offset
+#define VDP_CURSOR_MOVE			0x8C	// Cursor relative move
 #define VDP_UDG					0x90	// User defined characters
 #define VDP_UDG_RESET			0x91	// Reset UDGs
 #define VDP_MAP_CHAR_TO_BITMAP	0x92	// Map a character to a bitmap
+#define VDP_FONT				0x93	// Font management commands
 #define VDP_READ_COLOUR			0x94	// Read colour
 #define VDP_CONTROLKEYS			0x98	// Control keys on/off
 #define VDP_BUFFERED			0xA0	// Buffered commands
@@ -183,6 +185,27 @@ enum AudioState : uint8_t {	// Audio channel state
 #define MOUSE_DEFAULT_SCALING		1;		// Default mouse scaling (1:1)
 #define MOUSE_DEFAULT_ACCELERATION	180;	// Default mouse acceleration 
 #define MOUSE_DEFAULT_WHEELACC		60000;	// Default mouse wheel acceleration
+
+// Font management commands
+#define FONT_SELECT						0		// Select a font (by buffer ID, 65535 for system font)
+#define FONT_FROM_BUFFER				1		// Load/define a font from a buffer
+#define FONT_SET_INFO					2		// Set font information
+#define FONT_SET_NAME					3		// Set font name
+#define FONT_SELECT_BY_NAME				0x10	// Select a font by name
+#define FONT_DEBUG_INFO					0x20	// Get debug info about a font
+// Future commands may include ability to search for fonts based on their info settings
+
+#define FONT_INFO_WIDTH					0		// Font width
+#define FONT_INFO_HEIGHT				1		// Font height
+#define FONT_INFO_ASCENT				2		// Font ascent
+#define FONT_INFO_FLAGS					3		// Font flags
+#define FONT_INFO_CHARPTRS_BUFFER		4		// Font character pointers (for variable width fonts)
+#define FONT_INFO_POINTSIZE				5		// Font point size
+#define FONT_INFO_INLEADING				6		// Font inleading
+#define FONT_INFO_EXLEADING				7		// Font exleading
+#define FONT_INFO_WEIGHT				8		// Font weight
+#define FONT_INFO_CHARSET				9		// Font character set ??
+#define FONT_INFO_CODEPAGE				10		// Font code page
 
 // Buffered commands
 #define BUFFERED_WRITE					0x00	// Write to a numbered buffer

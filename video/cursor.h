@@ -372,6 +372,25 @@ void cursorTab(uint8_t x, uint8_t y) {
 	}
 }
 
+void cursorRelativeMove(int8_t x, int8_t y) {
+	if (cursorBehaviour.flipXY) {
+		activeCursor->X += cursorBehaviour.invertHorizontal ? -y : y;
+		activeCursor->Y += cursorBehaviour.invertVertical ? -x : x;
+	} else {
+		activeCursor->X += cursorBehaviour.invertHorizontal ? -x : x;
+		activeCursor->Y += cursorBehaviour.invertVertical ? -y : y;
+	}
+
+	// TODO think more about this logic
+	if (!textCursorActive() || !cursorBehaviour.scrollProtect) {
+		if (cursorIsOffRight()) {
+			cursorAutoNewline();
+		} else {
+			cursorScrollOrWrap();
+		}
+	}
+}
+
 void setPagedMode(bool mode = pagedMode) {
 	pagedMode = mode;
 	pagedModeCount = 0;
@@ -387,9 +406,9 @@ void resetCursor() {
 	cursorFlashing = true;
 	cursorFlashRate = CURSOR_PHASE;
 	cursorVStart = 0;
-	cursorVEnd = font->height - 1;
+	cursorVEnd = 255;
 	cursorHStart = 0;
-	cursorHEnd = font->width - 1;
+	cursorHEnd = 255;
 	// cursor behaviour however is _not_ reset here
 	cursorHome();
 	setPagedMode(false);
