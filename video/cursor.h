@@ -373,13 +373,11 @@ void cursorTab(uint8_t x, uint8_t y) {
 }
 
 void cursorRelativeMove(int8_t x, int8_t y) {
-	if (cursorBehaviour.flipXY) {
-		activeCursor->X += cursorBehaviour.invertHorizontal ? -y : y;
-		activeCursor->Y += cursorBehaviour.invertVertical ? -x : x;
-	} else {
-		activeCursor->X += cursorBehaviour.invertHorizontal ? -x : x;
-		activeCursor->Y += cursorBehaviour.invertVertical ? -y : y;
-	}
+	// perform a pixel-relative movement of the cursor
+	// does _not_ obey cursor behaviour for directions
+	// but does for wrapping and scrolling
+	activeCursor->X += x;
+	activeCursor->Y += y;
 
 	// TODO think more about this logic
 	if (!textCursorActive() || !cursorBehaviour.scrollProtect) {

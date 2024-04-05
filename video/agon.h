@@ -207,6 +207,8 @@ enum AudioState : uint8_t {	// Audio channel state
 #define FONT_INFO_CHARSET				9		// Font character set ??
 #define FONT_INFO_CODEPAGE				10		// Font code page
 
+#define FONT_SELECTFLAG_ADJUSTBASE		0x01	// Adjust font baseline, based on ascent
+
 // Buffered commands
 #define BUFFERED_WRITE					0x00	// Write to a numbered buffer
 #define BUFFERED_CALL					0x01	// Call buffered commands
