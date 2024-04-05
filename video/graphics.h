@@ -44,6 +44,10 @@ extern agon_ttxt ttxt_instance;					// Teletext instance
 //
 void changeFont(const fabgl::FontInfo * f) {
 	if (!ttxtMode) {
+		if (f->flags & FONTINFOFLAGS_VARWIDTH) {
+			debug_log("changeFont: variable width fonts not supported - yet\n\r");
+			return;
+		}
 		// adjust our cursor position so baseline matches new font
 		// TODO this movement will need to bear in mind cursor behaviour
 		// as if our cursor is moving right to left we'll also need to adjust our x position
@@ -52,6 +56,11 @@ void changeFont(const fabgl::FontInfo * f) {
 		cursorRelativeMove(0, font->ascent - f->ascent);
 		debug_log("changeFont - y adjustment is %d\n\r", font->ascent - f->ascent);
 		font = f;
+		if (textCursorActive()) {
+			textFont = f;
+		} else {
+			graphicsFont = f;
+		}
 		canvas->selectFont(f);
 	}
 }
@@ -888,6 +897,8 @@ int8_t change_mode(uint8_t mode) {
 	// simple heuristic to determine rectangular pixels
 	rectangularPixels = ((float)canvasW / (float)canvasH) > 2;
 	font = canvas->getFontInfo();
+	textFont = font;
+	graphicsFont = font;
 	viewportReset();
 	setOrigin(0,0);
 	pushPoint(0,0);
