@@ -21,8 +21,6 @@ fabgl::PaintOptions			gpobg;				// Graphics paint options background
 fabgl::PaintOptions			tpo;				// Text paint options
 fabgl::PaintOptions			cpo;				// Cursor paint options
 
-const fabgl::FontInfo		* font;				// Current active font
-
 Point			p1, p2, p3;						// Coordinate store for plot
 Point			rp1;							// Relative coordinates store for plot
 Point			up1;							// Unscaled coordinates store for plot
@@ -47,26 +45,14 @@ extern agon_ttxt ttxt_instance;					// Teletext instance
 void changeFont(const fabgl::FontInfo * f) {
 	if (!ttxtMode) {
 		// adjust our cursor position so baseline matches new font
+		// TODO this movement will need to bear in mind cursor behaviour
+		// as if our cursor is moving right to left we'll also need to adjust our x position
+		// if we're moving bottom to top we'll need to adjust our y position, based on height rather than ascent
+		// and may not want to adjust our y position if we're moving top to bottom
 		cursorRelativeMove(0, font->ascent - f->ascent);
 		debug_log("changeFont - y adjustment is %d\n\r", font->ascent - f->ascent);
 		font = f;
 		canvas->selectFont(f);
-	}
-}
-
-// Copy the AGON font data from Flash to RAM
-//
-void copy_font() {
-	memcpy(fabgl::FONT_AGON_DATA, fabgl::FONT_AGON_BITMAP, sizeof(fabgl::FONT_AGON_BITMAP));
-}
-
-// Redefine a character in the font
-//
-void redefineCharacter(uint8_t c, uint8_t * data) {
-	if (font == &fabgl::FONT_AGON) {
-		memcpy(&fabgl::FONT_AGON_DATA[c * 8], data, 8);
-	} else {
-		debug_log("redefineCharacter: alternate font redefinition not supported with this API\n\r");
 	}
 }
 
@@ -123,7 +109,7 @@ char getScreenChar(uint16_t px, uint16_t py) {
 			uint8_t c = i & 0xFF;
 			// TODO charData here is tied to font dimensions
 			// - we should have a function to get a pointer to the font character data
-			if (cmpChar(charData, &fabgl::FONT_AGON_DATA[c * 8], 8)) {
+			if (cmpChar(charData, &FONT_AGON_DATA[c * 8], 8)) {
 				return c;
 			}
 		}
@@ -894,7 +880,7 @@ int8_t change_mode(uint8_t mode) {
 	}
 	restorePalette();
 	if (!ttxtMode) {
-		canvas->selectFont(&fabgl::FONT_AGON);
+		canvas->selectFont(&FONT_AGON);
 	}
 	setCharacterOverwrite(true);
 	canvas->setPenWidth(1);

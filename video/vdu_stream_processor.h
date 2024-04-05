@@ -75,8 +75,6 @@ class VDUStreamProcessor {
 		uint8_t setParameter(uint8_t channel, uint8_t parameter, uint16_t value);
 
 		void vdu_sys_font();
-		void createFontFromBuffer(uint16_t bufferId, uint8_t width, uint8_t height, uint8_t ascent, uint8_t flags);
-		void setFontInfo(uint16_t bufferId, uint8_t field, uint16_t value);
 
 		void vdu_sys_sprites();
 		void receiveBitmap(uint16_t bufferId, uint16_t width, uint16_t height);
