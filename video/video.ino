@@ -100,9 +100,8 @@ void setup() {
 //
 void loop() {
 	uint32_t count = 0;						// Generic counter, incremented every loop iteration
-	bool cursorShowing = false;
-	bool cursorTemporarilyHidden = false;
-	auto cursorTime = millis();
+	bool cursorVisible = false;
+	bool cursorState = false;
 
 	while (true) {
  		if ((count & 0x7f) == 0) delay(1 /* -TM- ms */);
@@ -111,29 +110,23 @@ void loop() {
 		if (processTerminal()) {
 			continue;
 		}
-		if (!cursorTemporarilyHidden && cursorFlashing && (millis() - cursorTime > cursorFlashRate)) {
-			cursorTime = millis();
-			cursorShowing = !cursorShowing;
-			if (ttxtMode) {
-				ttxt_instance.flash(cursorShowing);
-			}
+		cursorVisible = ((count & 0xFFFF) == 0);
+		if (cursorVisible) {
+    		if (!cursorState && ttxtMode) ttxt_instance.flash(true);
+			cursorState = !cursorState;
 			do_cursor();
+      		if (!cursorState && ttxtMode) ttxt_instance.flash(false);
 		}
 		do_keyboard();
 		do_mouse();
 
 		if (processor->byteAvailable()) {
-			if (!cursorTemporarilyHidden && cursorShowing) {
-				cursorTemporarilyHidden = true;
+			if (cursorState) {
+				cursorState = false;
 				do_cursor();
 			}
-			cursorTime = 0;
+			count = -1;
 			processor->processNext();
-			if (!processor->byteAvailable() && (cursorTemporarilyHidden || !cursorFlashing)) {
-				cursorShowing = true;
-				cursorTemporarilyHidden = false;
-				do_cursor();
-			}
 		}
 	}
 }
