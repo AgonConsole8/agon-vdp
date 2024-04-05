@@ -64,15 +64,17 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			break;
 		case 0x04:
 			// enable text cursor
-			setCharacterOverwrite(true);
 			setActiveCursor(getTextCursor());
+			changeFont(textFont);
+			setCharacterOverwrite(true);
 			setActiveViewport(VIEWPORT_TEXT);
 			sendModeInformation();
 			break;
 		case 0x05:
 			// enable graphics cursor
-			setCharacterOverwrite(false);
 			setActiveCursor(getGraphicsCursor());
+			changeFont(graphicsFont);
+			setCharacterOverwrite(false);
 			setActiveViewport(VIEWPORT_GRAPHICS);
 			sendModeInformation();
 			break;

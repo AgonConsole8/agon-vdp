@@ -45,6 +45,8 @@
 #include "types.h"
 
 const fabgl::FontInfo		* font;				// Current active font
+const fabgl::FontInfo		* textFont;			// Current active font for text cursor
+const fabgl::FontInfo		* graphicsFont;		// Current active font for graphics cursor
 
 std::unordered_map<uint16_t, std::shared_ptr<fabgl::FontInfo>> fonts;	// Storage for our fonts
 
@@ -330,13 +332,14 @@ extern const fabgl::FontInfo FONT_AGON = {
 	.codepage  = 1252,
 };
 
-// Copy the AGON font data from Flash to RAM
+// Copy the AGON font data (system font) from Flash to RAM
 //
 void copy_font() {
 	memcpy(FONT_AGON_DATA, FONT_AGON_BITMAP, sizeof(FONT_AGON_BITMAP));
 }
 
 // Redefine a character in the font
+// Applies only when the system font is selected
 //
 void redefineCharacter(uint8_t c, uint8_t * data) {
 	if (font == &FONT_AGON) {
