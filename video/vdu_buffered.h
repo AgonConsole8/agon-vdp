@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "agon.h"
+#include "agon_fonts.h"
 #include "buffers.h"
 #include "buffer_stream.h"
 #include "multi_buffer_stream.h"
@@ -265,6 +266,7 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 	if (bufferId == 65535) {
 		buffers.clear();
 		resetBitmaps();
+		resetFonts();
 		resetSamples();
 		return;
 	}
@@ -274,6 +276,7 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 	}
 	buffers.erase(bufferId);
 	clearBitmap(bufferId);
+	clearFont(bufferId);
 	clearSample(bufferId);
 	debug_log("bufferClear: cleared buffer %d\n\r", bufferId);
 }
@@ -750,10 +753,11 @@ void VDUStreamProcessor::bufferConsolidate(uint16_t bufferId) {
 
 void clearTargets(std::vector<uint16_t> targets) {
 	for (const auto target : targets) {
+		clearBitmap(target);
+		clearFont(target);
 		if (buffers.find(target) != buffers.end()) {
 			buffers[target].clear();
 		}
-		clearBitmap(target);
 	}
 }
 
