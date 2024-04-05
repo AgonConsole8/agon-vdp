@@ -456,3 +456,11 @@ void clearFont(uint16_t bufferId) {
 void resetFonts() {
 	fonts.clear();
 }
+
+uint8_t * getCharPtr(const fabgl::FontInfo * font, uint8_t c) {
+	if (font->chptr == nullptr) {
+		return (uint8_t *) (font->data + (c * font->height * ((font->width + 7) >> 3)));
+	} else {
+		return (uint8_t *) (font->data + font->chptr[c]);
+	}
+}

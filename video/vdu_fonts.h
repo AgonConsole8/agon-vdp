@@ -8,14 +8,14 @@
 #include "vdu_stream_processor.h"
 
 
-// VDU 23, 0, &93, command, [<args>]: Font management command support
+// VDU 23, 0, &95, command, [<args>]: Font management command support
 //
 void VDUStreamProcessor::vdu_sys_font() {
 	auto command = readByte_t(); if (command == -1) return;
     
     switch (command) {
         case FONT_SELECT: {
-            // VDU 23, 0, &93, 0, bufferId; flags  - Select font by bufferId
+            // VDU 23, 0, &95, 0, bufferId; flags  - Select font by bufferId
             auto bufferId = readWord_t(); if (bufferId == -1) return;
             auto flags = readByte_t(); if (flags == -1) return;
             if (bufferId == 65535) {
@@ -31,7 +31,7 @@ void VDUStreamProcessor::vdu_sys_font() {
             sendModeInformation();
         } break;
         case FONT_FROM_BUFFER: {
-            // VDU 23, 0, &93, 1, bufferId; width, height, ascent, flags  - Load font from buffer
+            // VDU 23, 0, &95, 1, bufferId; width, height, ascent, flags  - Load font from buffer
             // maybe add on chptrbuffer at the end? for var-width fonts??
             auto bufferId = readWord_t(); if (bufferId == -1) return;
             auto width = readByte_t(); if (width == -1) return;
@@ -41,25 +41,25 @@ void VDUStreamProcessor::vdu_sys_font() {
             createFontFromBuffer(bufferId, width, height, ascent, flags);
         } break;
         case FONT_SET_INFO: {
-            // VDU 23, 0, &93, 2, bufferId; field, value;  - Set font info
+            // VDU 23, 0, &95, 2, bufferId; field, value;  - Set font info
             auto bufferId = readWord_t(); if (bufferId == -1) return;
             auto field = readByte_t(); if (field == -1) return;
             auto value = readWord_t(); if (value == -1) return;
             setFontInfo(bufferId, field, value);
         } break;
         case FONT_SET_NAME: {
-            // either it will be: VDU 23, 0, &93, 3, bufferId; <ZeroTerminatedString>  - Set font name
-            // or VDU 23, 0, &93, bufferId; 3, namefield, <ZeroTerminatedString>  - Set font name
+            // either it will be: VDU 23, 0, &95, 3, bufferId; <ZeroTerminatedString>  - Set font name
+            // or VDU 23, 0, &95, bufferId; 3, namefield, <ZeroTerminatedString>  - Set font name
             // use of a field identifier allows for future expansion ??? not sure what for tho
         	auto bufferId = readWord_t(); if (bufferId == -1) return;
             debug_log("fontSetName: not yet implemented\n\r");
         } break;
         case FONT_SELECT_BY_NAME: {
-            // VDU 23, 0, &93, &10, <ZeroTerminatedString>  - Select font by name
+            // VDU 23, 0, &95, &10, <ZeroTerminatedString>  - Select font by name
             debug_log("fontSelectByName: not yet implemented\n\r");
         } break;
         case FONT_DEBUG_INFO: {
-            // VDU 23, 0, &93, &20, bufferId;  - Get font debug info
+            // VDU 23, 0, &95, &20, bufferId;  - Get font debug info
             auto bufferId = readWord_t(); if (bufferId == -1) return;
             if (fonts.find(bufferId) == fonts.end()) {
                 debug_log("fontDebugInfo: font %d not found\n\r", bufferId);
