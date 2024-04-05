@@ -42,7 +42,7 @@ extern agon_ttxt ttxt_instance;					// Teletext instance
 
 // Change the currently selected font
 //
-void changeFont(const fabgl::FontInfo * f) {
+void changeFont(const fabgl::FontInfo * f, uint8_t flags = 0) {
 	if (!ttxtMode) {
 		if (f->flags & FONTINFOFLAGS_VARWIDTH) {
 			debug_log("changeFont: variable width fonts not supported - yet\n\r");
@@ -53,8 +53,30 @@ void changeFont(const fabgl::FontInfo * f) {
 		// as if our cursor is moving right to left we'll also need to adjust our x position
 		// if we're moving bottom to top we'll need to adjust our y position, based on height rather than ascent
 		// and may not want to adjust our y position if we're moving top to bottom
-		cursorRelativeMove(0, font->ascent - f->ascent);
-		debug_log("changeFont - y adjustment is %d\n\r", font->ascent - f->ascent);
+		if (flags & FONT_SELECTFLAG_ADJUSTBASE) {
+			int8_t x = 0;
+			int8_t y = 0;
+			if (cursorBehaviour.flipXY) {
+				// cursor is moving vertically, so we need to adjust y by font height
+				if (cursorBehaviour.invertHorizontal) {
+					y = font->height - f->height;
+				}
+				if (cursorBehaviour.invertVertical) {
+					// cursor x movement is right to left, so we need to adjust x by font width
+					x = font->width - f->width;
+				}
+			} else {
+				// normal x and y movement
+				// so we always need to adjust our y position
+				y = font->ascent - f->ascent;
+				if (cursorBehaviour.invertHorizontal) {
+					// cursor is moving right to left, so we need to adjust x by font width
+					x = font->width - f->width;
+				}
+			}
+			cursorRelativeMove(x, y);
+			debug_log("changeFont - relative adjustment is %d, %d\n\r", x, y);
+		}
 		font = f;
 		if (textCursorActive()) {
 			textFont = f;
