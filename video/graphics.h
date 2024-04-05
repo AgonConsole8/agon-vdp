@@ -99,15 +99,10 @@ bool cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len) {
 // Try and match a character at given pixel position
 //
 char getScreenChar(uint16_t px, uint16_t py) {
-	RGB888	pixel;
-	uint8_t	charRow;
-	uint8_t	charData[font->height];
-	uint8_t R = tbg.R;
-	uint8_t G = tbg.G;
-	uint8_t B = tbg.B;
-
-	// TODO charRow and charData here are tied to font dimensions
-	// so charRow will need to adjust depending on font width
+	if (font->flags & FONTINFOFLAGS_VARWIDTH) {
+		debug_log("getScreenChar: variable width fonts not supported\n\r");
+		return 0;
+	}
 
 	// Do some bounds checking first
 	//
@@ -117,19 +112,32 @@ char getScreenChar(uint16_t px, uint16_t py) {
 	if (ttxtMode) {
 		return ttxt_instance.get_screen_char(px,py);
 	} else {
+		uint8_t charWidthBytes = (font->width + 7) / 8;
+		uint8_t charSize = charWidthBytes * font->height;
+		uint8_t	charData[charSize];
+		uint8_t R = tbg.R;
+		uint8_t G = tbg.G;
+		uint8_t B = tbg.B;
+
 		// Now scan the screen and get the 8 byte pixel representation in charData
 		//
 		for (uint8_t y = 0; y < font->height; y++) {
-			charRow = 0;
+			uint8_t readByte = 0;
 			for (uint8_t x = 0; x < font->width; x++) {
-				pixel = canvas->getPixel(px + x, py + y);
+				if ((x % 8) == 0) {
+					readByte = 0;
+				}
+				RGB888 pixel = canvas->getPixel(px + x, py + y);
 				if (!(pixel.R == R && pixel.G == G && pixel.B == B)) {
-					charRow |= (0x80 >> x);
+					readByte |= (0x80 >> (x % 8));
+				}
+				if ((x % 8) == 7) {
+					charData[(y * charWidthBytes) + (x / 8)] = readByte;
 				}
 			}
-			charData[y] = charRow;
+			charData[((y + 1) * charWidthBytes) - 1] = readByte;
 		}
-		//
+
 		// Finally try and match with the character set array
 		// starts at space character (32) and goes beyond the normal ASCII range
 		// Character checked is ANDed with 0xFF, so we check 32-255 then 0-31
@@ -138,9 +146,8 @@ char getScreenChar(uint16_t px, uint16_t py) {
 		//
 		for (auto i = 32; i <= (255 + 31); i++) {
 			uint8_t c = i & 0xFF;
-			// TODO charData here is tied to font dimensions
-			// - we should have a function to get a pointer to the font character data
-			if (cmpChar(charData, &FONT_AGON_DATA[c * 8], 8)) {
+			if (cmpChar(charData, getCharPtr(font, c), charSize)) {
+				debug_log("getScreenChar: matched character %d\n\r", c);
 				return c;
 			}
 		}

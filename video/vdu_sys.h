@@ -174,12 +174,18 @@ void VDUStreamProcessor::vdu_sys_video() {
 		}	break;
 		case VDP_SCRCHAR: {				// VDU 23, 0, &83, x; y;
 			auto x = readWord_t();		// Get character at screen position x, y
+			if (x == -1) return;
 			auto y = readWord_t();
-			sendScreenChar(x, y);
+			if (y == -1) return;
+			uint16_t px = x * (font->width == 0 ? 8 : font->width);
+			uint16_t py = y * font->height;
+			sendScreenChar(px, py);
 		}	break;
 		case VDP_SCRPIXEL: {			// VDU 23, 0, &84, x; y;
 			auto x = readWord_t();		// Get pixel value at screen position x, y
+			if (x == -1) return;
 			auto y = readWord_t();
+			if (y == -1) return;
 			sendScreenPixel((short)x, (short)y);
 		}	break;
 		case VDP_AUDIO: {				// VDU 23, 0, &85, channel, command, <args>
@@ -233,14 +239,21 @@ void VDUStreamProcessor::vdu_sys_video() {
 				mapCharToBitmap(c, bitmapId);
 			}
 		}	break;
-		case VDP_FONT: {				// VDU 23, 0, &93, bufferId, command, [<args>]
-			vdu_sys_font();				// Font management
+		case VDP_SCRCHAR_PIXEL: {		// VDU 23, 0, &83, x; y;
+			auto x = readWord_t();		// Get character at screen position x, y
+			if (x == -1) return;
+			auto y = readWord_t();
+			if (y == -1) return;
+			sendScreenChar(x, y);
 		}	break;
 		case VDP_READ_COLOUR: {			// VDU 23, 0, &94, index
 			auto index = readByte_t();	// Read colour from palette
 			if (index >= 0) {
 				sendColour(index);
 			}
+		}	break;
+		case VDP_FONT: {				// VDU 23, 0, &95, command, [bufferId;] [<args>]
+			vdu_sys_font();				// Font management
 		}	break;
 		case VDP_CONTROLKEYS: {			// VDU 23, 0, &98, n
 			auto b = readByte_t();		// Set control keys,  0 = off, 1 = on (default)
@@ -342,13 +355,11 @@ void VDUStreamProcessor::sendCursorPosition() {
 	send_packet(PACKET_CURSOR, sizeof packet, packet);
 }
 
-// VDU 23, 0, &83 Send a character back to MOS
+// VDU 23, 0, &83 / &93 Send a character back to MOS
 //
 void VDUStreamProcessor::sendScreenChar(uint16_t x, uint16_t y) {
 	waitPlotCompletion();
-	uint16_t px = x * font->width;
-	uint16_t py = y * font->height;
-	char c = getScreenChar(px, py);
+	char c = getScreenChar(x, y);
 	uint8_t packet[] = {
 		c,
 	};

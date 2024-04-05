@@ -57,8 +57,9 @@
 #define VDP_UDG					0x90	// User defined characters
 #define VDP_UDG_RESET			0x91	// Reset UDGs
 #define VDP_MAP_CHAR_TO_BITMAP	0x92	// Map a character to a bitmap
-#define VDP_FONT				0x93	// Font management commands
+#define VDP_SCRCHAR_PIXEL		0x93	// Character read from screen at pixel coordinates
 #define VDP_READ_COLOUR			0x94	// Read colour
+#define VDP_FONT				0x95	// Font management commands
 #define VDP_CONTROLKEYS			0x98	// Control keys on/off
 #define VDP_BUFFERED			0xA0	// Buffered commands
 #define VDP_UPDATER				0xA1	// Update VDP
