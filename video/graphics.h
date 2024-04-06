@@ -951,28 +951,28 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 				break;
 			case 4:		// positive X
 				if (cursorBehaviour.flipXY) {
-					moveY = cursorBehaviour.invertHorizontal ? -1 : 1;
+					moveY = cursorBehaviour.invertVertical ? -1 : 1;
 				} else {
 					moveX = cursorBehaviour.invertHorizontal ? -1 : 1;
 				}
 				break;
 			case 5:		// negative X
 				if (cursorBehaviour.flipXY) {
-					moveY = cursorBehaviour.invertHorizontal ? 1 : -1;
+					moveY = cursorBehaviour.invertVertical ? 1 : -1;
 				} else {
 					moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
 				}
 				break;
 			case 6:		// positive Y
 				if (cursorBehaviour.flipXY) {
-					moveX = cursorBehaviour.invertVertical ? -1 : 1;
+					moveX = cursorBehaviour.invertHorizontal ? -1 : 1;
 				} else {
 					moveY = cursorBehaviour.invertVertical ? -1 : 1;
 				}
 				break;
 			case 7:		// negative Y
 				if (cursorBehaviour.flipXY) {
-					moveX = cursorBehaviour.invertVertical ? 1 : -1;
+					moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
 				} else {
 					moveY = cursorBehaviour.invertVertical ? 1 : -1;
 				}
