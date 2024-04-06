@@ -3,7 +3,7 @@
 
 #define		VERSION_MAJOR		2
 #define		VERSION_MINOR		7
-#define		VERSION_PATCH		2
+#define		VERSION_PATCH		3
 #define		VERSION_CANDIDATE	0			// Optional
 #define		VERSION_TYPE		"Release"	// RC, Alpha, Beta, etc.
 

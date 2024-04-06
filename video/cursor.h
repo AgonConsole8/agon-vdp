@@ -81,15 +81,16 @@ int getYAdjustment() {
 Point getNormalisedCursorPosition(Point * cursor = activeCursor) {
 	Point p;
 	if (cursorBehaviour.flipXY) {
+		// our normalised Y needs to take values from X and vice versa
 		if (cursorBehaviour.invertHorizontal) {
-			p.X = activeViewport->Y2 - cursor->Y;
-		} else {
-			p.X = cursor->Y - activeViewport->Y1;
-		}
-		if (cursorBehaviour.invertVertical) {
 			p.Y = activeViewport->X2 - cursor->X;
 		} else {
 			p.Y = cursor->X - activeViewport->X1;
+		}
+		if (cursorBehaviour.invertVertical) {
+			p.X = activeViewport->Y2 - cursor->Y;
+		} else {
+			p.X = cursor->Y - activeViewport->Y1;
 		}
 	} else {
 		if (cursorBehaviour.invertHorizontal) {
@@ -108,16 +109,24 @@ Point getNormalisedCursorPosition(Point * cursor = activeCursor) {
 
 int getNormalisedViewportWidth() {
 	if (cursorBehaviour.flipXY) {
-		return activeViewport->height() - getYAdjustment() - (fontH - 1);
+		return activeViewport->height() - getYAdjustment();
 	}
 	return activeViewport->width() - getXAdjustment();
 }
 
 int getNormalisedViewportHeight() {
 	if (cursorBehaviour.flipXY) {
-		return activeViewport->width() - getXAdjustment() - (fontW - 1);
+		auto height = activeViewport->width() - getXAdjustment();
+		if (!cursorBehaviour.invertHorizontal) {
+			height -= fontW - 1;
+		}
+		return height;
 	}
-	return activeViewport->height() - getYAdjustment() - (fontH - 1);
+	auto height = activeViewport->height() - getYAdjustment();
+	if (!cursorBehaviour.invertVertical) {
+		height -= fontH - 1;
+	}
+	return height;
 }
 
 bool cursorIsOffRight() {
@@ -198,7 +207,7 @@ bool cursorScrollOrWrap() {
 			scrollRegion(activeViewport, 7, 0);
 			// move cursor up until it's within the viewport
 			do {
-				cursorUp(false);
+				cursorUp(true);
 			} while (cursorIsOffBottom());
 			return false;
 		}
