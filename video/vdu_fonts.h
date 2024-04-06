@@ -54,6 +54,34 @@ void VDUStreamProcessor::vdu_sys_font() {
         	auto bufferId = readWord_t(); if (bufferId == -1) return;
             debug_log("fontSetName: not yet implemented\n\r");
         } break;
+        case FONT_CLEAR: {
+            // VDU 23, 0, &95, 4, bufferId;  - Clear font
+            auto bufferId = readWord_t(); if (bufferId == -1) return;
+            if (bufferId == 65535) {
+                // clear all fonts
+                resetFonts();
+            } else {
+                clearFont(bufferId);
+            }
+        } break;
+        case FONT_COPY_SYSTEM: {
+            // VDU 23, 0, &95, 5, bufferId;  - Copy system font
+            auto bufferId = readWord_t(); if (bufferId == -1) return;
+            bufferClear(bufferId);
+            auto size = 256 * (((FONT_AGON.width + 7) >> 3) * FONT_AGON.height);
+            auto buff = bufferCreate(bufferId, size);
+            if (buff == nullptr) {
+                debug_log("fontCopySystem: failed to create buffer %d\n\r", bufferId);
+                return;
+            }
+            memcpy(buff->getBuffer(), FONT_AGON.data, size);
+            auto fontCopy = createFontFromBuffer(bufferId, FONT_AGON.width, FONT_AGON.height, FONT_AGON.ascent, FONT_AGON.flags);
+            if (fontCopy == nullptr) {
+                debug_log("fontCopySystem: failed to create font %d\n\r", bufferId);
+                return;
+            }
+            fontCopy->pointSize = FONT_AGON.pointSize;
+        } break;
         case FONT_SELECT_BY_NAME: {
             // VDU 23, 0, &95, &10, <ZeroTerminatedString>  - Select font by name
             debug_log("fontSelectByName: not yet implemented\n\r");
