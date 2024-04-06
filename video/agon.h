@@ -193,6 +193,8 @@ enum AudioState : uint8_t {	// Audio channel state
 #define FONT_FROM_BUFFER				1		// Load/define a font from a buffer
 #define FONT_SET_INFO					2		// Set font information
 #define FONT_SET_NAME					3		// Set font name
+#define FONT_CLEAR						4		// Clear a font
+#define FONT_COPY_SYSTEM				5		// Copy system font to a buffer
 #define FONT_SELECT_BY_NAME				0x10	// Select a font by name
 #define FONT_DEBUG_INFO					0x20	// Get debug info about a font
 // Future commands may include ability to search for fonts based on their info settings

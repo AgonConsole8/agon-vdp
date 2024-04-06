@@ -349,14 +349,14 @@ void redefineCharacter(uint8_t c, uint8_t * data) {
 	}
 }
 
-void createFontFromBuffer(uint16_t bufferId, uint8_t width, uint8_t height, uint8_t ascent, uint8_t flags) {
+std::shared_ptr<fabgl::FontInfo> createFontFromBuffer(uint16_t bufferId, uint8_t width, uint8_t height, uint8_t ascent, uint8_t flags) {
 	if (bufferId == 65535 || (buffers.find(bufferId) == buffers.end())) {
 		debug_log("createFontFromBuffer: buffer %d not found\n\r", bufferId);
-		return;
+		return nullptr;
 	}
 	if (buffers[bufferId].size() != 1) {
 		debug_log("createFontFromBuffer: buffer %d is not a singular buffer and cannot be used for a font source\n\r", bufferId);
-		return;
+		return nullptr;
 	}
 
 	if (~flags & FONTINFOFLAGS_VARWIDTH) {
@@ -364,12 +364,12 @@ void createFontFromBuffer(uint16_t bufferId, uint8_t width, uint8_t height, uint
 		auto size = ((width + 7) >> 3) * height * 256;
 		if (buffers[bufferId][0]->size() != size) {
 			debug_log("createFontFromBuffer: buffer %d is not the correct size for a fixed width font\n\r", bufferId);
-			return;
+			return nullptr;
 		}
 	} else {
 		// Variable width fonts not yet supported - will be in the future
 		debug_log("createFontFromBuffer: variable width fonts not yet supported\n\r");
-		return;
+		return nullptr;
 	}
 
 	auto data = buffers[bufferId][0]->getBuffer();
@@ -388,9 +388,11 @@ void createFontFromBuffer(uint16_t bufferId, uint8_t width, uint8_t height, uint
 	font->exleading = 0;
 	font->weight = 400;
 	font->charset = 255;
-	font->codepage = 1215;
+	font->codepage = 1252;
 
 	fonts[bufferId] = font;
+
+	return font;
 }
 
 void setFontInfo(uint16_t bufferId, uint8_t field, uint16_t value) {
