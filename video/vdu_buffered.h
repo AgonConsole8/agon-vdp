@@ -380,18 +380,30 @@ std::vector<uint16_t> VDUStreamProcessor::getBufferIdsFromStream() {
 	return bufferIds;
 }
 
-// Utility call to read a byte from a buffer at the given offset
-int16_t VDUStreamProcessor::getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
-	// if offset exceeds the block size, loop to find the correct block
-	while (offset.blockIndex < buffer.size() && offset.blockOffset >= buffer[offset.blockIndex]->size()) {
-		offset.blockOffset -= buffer[offset.blockIndex]->size();
+// Get the longest contiguous span at the given buffer offset. Updates the offset to the correct block index.
+tcb::span<uint8_t> VDUStreamProcessor::getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset) {
+	while (offset.blockIndex < buffer.size()) {
+		// check for available bytes in the current block
+		auto &block = buffer[offset.blockIndex];
+		if (offset.blockOffset < block->size()) {
+			return { block->getBuffer() + offset.blockOffset, block->size() - offset.blockOffset };
+		}
+		// if offset exceeds the block size, loop to find the correct block
+		offset.blockOffset -= block->size();
 		offset.blockIndex++;
 	}
-	if (offset.blockIndex >= buffer.size()) {
+	// offset not found in buffer
+	return {};
+}
+
+// Utility call to read a byte from a buffer at the given offset
+int16_t VDUStreamProcessor::getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
+	auto bufferSpan = getBufferSpan(buffer, offset);
+	if (bufferSpan.empty()) {
 		// offset not found in buffer
 		return -1;
 	}
-	auto value = buffer[offset.blockIndex]->getBuffer()[offset.blockOffset];
+	auto value = bufferSpan.front();
 	if (iterate) {
 		offset.blockOffset++;
 	}
@@ -400,21 +412,171 @@ int16_t VDUStreamProcessor::getBufferByte(const std::vector<std::shared_ptr<Buff
 
 // Utility call to set a byte in a buffer at the given offset
 bool VDUStreamProcessor::setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
-	// if offset exceeds the block size, loop to find the correct block
-	while (offset.blockIndex < buffer.size() && offset.blockOffset >= buffer[offset.blockIndex]->size()) {
-		offset.blockOffset -= buffer[offset.blockIndex]->size();
-		offset.blockIndex++;
-	}
-	if (offset.blockIndex >= buffer.size()) {
+	auto bufferSpan = getBufferSpan(buffer, offset);
+	if (bufferSpan.empty()) {
 		// offset not found in buffer
 		return false;
 	}
-	buffer[offset.blockIndex]->getBuffer()[offset.blockOffset] = value;
+	bufferSpan.front() = value;
 	if (iterate) {
 		offset.blockOffset++;
 	}
 	return true;
 }
+
+// Utility classes for specializing buffer adjust operations
+// AdjustSingle must be specialized for every operation type
+// The other classes provide default implementations using AdjustSingle,
+// and may be specialized for specific operation types.
+template<uint8_t Operator>
+struct AdjustSingle {
+	// Default implementation for unimplemented operations
+	static inline uint8_t adjust(uint8_t target, uint8_t, bool &) {
+		return target;
+	}
+};
+template<>
+struct AdjustSingle<ADJUST_NOT> {
+	static inline uint8_t adjust(uint8_t target, uint8_t, bool &) {
+		return ~target;
+	}
+};
+template<>
+struct AdjustSingle<ADJUST_NEG> {
+	static inline uint8_t adjust(uint8_t target, uint8_t, bool &) {
+		return -target;
+	}
+};
+template<>
+struct AdjustSingle<ADJUST_SET> {
+	static inline uint8_t adjust(uint8_t, uint8_t operand, bool &) {
+		return operand;
+	}
+};
+template<>
+struct AdjustSingle<ADJUST_ADD> {
+	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &) {
+		// byte-wise add - no carry, so bytes may overflow
+		return target + operand;
+	}
+};
+template<>
+struct AdjustSingle<ADJUST_ADD_CARRY> {
+	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &carry) {		
+		// byte-wise add with carry
+		// bytes are treated as being in little-endian order
+		uint16_t sum = target + operand + carry;
+		carry = sum >> 8;
+		return sum;
+	}
+};
+template<>
+struct AdjustSingle<ADJUST_AND> {
+	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &) {
+		return target & operand;
+	}
+};
+template<>
+struct AdjustSingle<ADJUST_OR> {
+	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &) {
+		return target | operand;
+	}
+};
+template<>
+struct AdjustSingle<ADJUST_XOR> {
+	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &) {
+		return target ^ operand;
+	}
+};
+template<uint8_t Operator>
+struct AdjustMultiSingle {
+	static void adjust(uint8_t * target, uint8_t operand, bool &carry, size_t count) {
+		for (size_t i = 0; i < count; i++) {
+			target[i] = AdjustSingle<Operator>::adjust(target[i], operand, carry);
+		}
+	}
+};
+template<>
+struct AdjustMultiSingle<ADJUST_SET> {
+	static void adjust(uint8_t * target, uint8_t operand, bool &, size_t count) {
+		memset(target, operand, count);
+	}
+};
+template<uint8_t Operator>
+struct AdjustSingleMulti {
+	static uint8_t adjust(uint8_t target, uint8_t * operand, bool &carry, size_t count) {
+		for (size_t i = 0; i < count; i++) {
+			target = AdjustSingle<Operator>::adjust(target, operand[i], carry);
+		}
+		return target;
+	}
+};
+template<uint8_t Operator>
+struct AdjustMulti {
+	static void adjust(uint8_t * target, uint8_t * operand, bool &carry, size_t count, bool sameBuffer) {
+		(void)sameBuffer;
+		for (size_t i = 0; i < count; i++) {
+			target[i] = AdjustSingle<Operator>::adjust(target[i], operand[i], carry);
+		}
+	}
+};
+template<>
+struct AdjustMulti<ADJUST_SET> {
+	static void adjust(uint8_t * target, uint8_t * operand, bool &, size_t count, bool sameBuffer) {
+		if (!sameBuffer) {
+			memcpy(target, operand, count);
+		} else if (target <= operand) {
+			// memmove gives incorrect results, possibly an issue with the linked libc and PSRAM cache?
+			//memmove(target, operand, count);
+			if (target + count <= operand) {
+				memcpy(target, operand, count);
+			} else {
+				for (size_t i = 0; i < count; i++) {
+					target[i] = operand[i];
+				}
+			}
+		} else {
+			size_t safeCount = target - operand;
+			while (safeCount < count) {
+				memcpy(target, operand, safeCount);
+				target += safeCount;
+				count -= safeCount;
+				safeCount += safeCount;
+			}
+			memcpy(target, operand, count);
+		}
+	}
+};
+
+// Automatically generates a function table for all operators. Would be easier with C++14
+template <template<uint8_t> typename T>
+class AdjustFuncTable {
+	using FuncPtr = decltype(T<ADJUST_NOT>::adjust)*;
+	std::array<FuncPtr, ADJUST_OP_MASK+1> table;
+
+	template<uint8_t... Operator>
+	struct operator_sequence {};
+	template<size_t N, uint8_t... Operator>
+	struct make_operator_sequence : make_operator_sequence<N-1, N-1, Operator...> {};
+	template<uint8_t... Operator>
+	struct make_operator_sequence<0, Operator...> : operator_sequence<Operator...> {};
+
+	template<uint8_t... Operator>
+	constexpr AdjustFuncTable(operator_sequence<Operator...>)
+		: table({{ &T<Operator>::adjust... }})
+	{
+	}
+
+public:
+	constexpr AdjustFuncTable()
+		: AdjustFuncTable(make_operator_sequence<ADJUST_OP_MASK+1>{})
+	{
+	}
+
+	constexpr inline FuncPtr operator[](uint8_t op) const {
+		return table[op];
+	}
+};
 
 // VDU 23, 0, &A0, bufferId; 5, operation, offset; [count;] [operand]: Adjust buffer
 // This is used for adjusting the contents of a buffer
@@ -427,15 +589,20 @@ bool VDUStreamProcessor::setBufferByte(uint8_t value, const std::vector<std::sha
 // - whether to use a single operand or multiple operands
 //
 void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
-	auto command = readByte_t();
+	static constexpr AdjustFuncTable<AdjustSingle> adjustSingleFuncs;
+	static constexpr AdjustFuncTable<AdjustMultiSingle> adjustMultiSingleFuncs;
+	static constexpr AdjustFuncTable<AdjustSingleMulti> adjustSingleMultiFuncs;
+	static constexpr AdjustFuncTable<AdjustMulti> adjustMultiFuncs;
 
-	bool useAdvancedOffsets = command & ADJUST_ADVANCED_OFFSETS;
-	bool useBufferValue = command & ADJUST_BUFFER_VALUE;
-	bool useMultiTarget = command & ADJUST_MULTI_TARGET;
-	bool useMultiOperand = command & ADJUST_MULTI_OPERAND;
-	uint8_t op = command & ADJUST_OP_MASK;
+	const auto command = readByte_t();
+
+	const bool useAdvancedOffsets = command & ADJUST_ADVANCED_OFFSETS;
+	const bool useBufferValue = command & ADJUST_BUFFER_VALUE;
+	const bool useMultiTarget = command & ADJUST_MULTI_TARGET;
+	const bool useMultiOperand = command & ADJUST_MULTI_OPERAND;
+	const uint8_t op = command & ADJUST_OP_MASK;
 	// Operators that are greater than NEG have an operand value
-	bool hasOperand = op > ADJUST_NEG;
+	const bool hasOperand = op > ADJUST_NEG;
 
 	auto offset = getOffsetFromStream(useAdvancedOffsets);
 	const std::vector<std::shared_ptr<BufferStream>> * operandBuffer = nullptr;
@@ -478,10 +645,11 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 		return;
 	}
 
-	auto sourceValue = 0;
+	MultiBufferStream * instream = nullptr;
+	tcb::span<uint8_t> targetSpan;
+	uint8_t sourceValue = 0;
 	auto operandValue = 0;
-	auto carryValue = 0;
-	bool usingCarry = false;
+	bool carryValue = false;
 
 	// if useMultiTarget is set, the we're updating multiple source values
 	// if useMultiOperand is also set, we get multiple operand values
@@ -491,93 +659,139 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 	// if useMultiTarget is true and useMultiOperand is false we're adding the same operand to all source values
 	// if both useMultiTarget and useMultiOperand are true we're adding each operand value to the corresponding source value
 
+	if (hasOperand) {
+		if (!useMultiOperand) {
+			// we have a singular operand value
+			operandValue = operandBuffer ? getBufferByte(*operandBuffer, operandOffset) : readByte_t();
+			if (operandValue == -1) {
+				debug_log("bufferAdjust: invalid operand value\n\r");
+				return;
+			}
+		} else if (!useBufferValue && id != 65535) {
+			// multiple inline operands, get the underlying buffer if executing from one
+			instream = (MultiBufferStream *)inputStream.get();
+			operandBuffer = &instream->tellBuffer(operandOffset.blockOffset, operandOffset.blockIndex);
+		}
+	}
 	if (!useMultiTarget) {
-		// we have a singular source value
-		sourceValue = getBufferByte(buffer, offset);
-	}
-	if (hasOperand && !useMultiOperand) {
-		// we have a singular operand value
-		operandValue = operandBuffer ? getBufferByte(*operandBuffer, operandOffset) : readByte_t();
-	}
-
-	debug_log("bufferAdjust: command %d, offset %d, count %d, operandBufferId %d, operandOffset %d, sourceValue %d, operandValue %d\n\r", command, offset, count, operandBufferId, operandOffset, sourceValue, operandValue);
-	debug_log("useMultiTarget %d, useMultiOperand %d, useAdvancedOffsets %d, useBufferValue %d\n\r", useMultiTarget, useMultiOperand, useAdvancedOffsets, useBufferValue);
-
-	for (auto i = 0; i < count; i++) {
-		if (useMultiTarget) {
-			// multiple source values will change
-			sourceValue = getBufferByte(buffer, offset);
-		}
-		if (hasOperand && useMultiOperand) {
-			operandValue = operandBuffer ? getBufferByte(*operandBuffer, operandOffset, true) : readByte_t();
-		}
-		if (sourceValue == -1 || operandValue == -1) {
-			debug_log("bufferAdjust: invalid source or operand value\n\r");
+		// we have a singular target value
+		targetSpan = getBufferSpan(buffer, offset);
+		if (targetSpan.empty()) {
+			debug_log("bufferAdjust: invalid target offset\n\r");
 			return;
 		}
+		sourceValue = targetSpan.front();
+	}
 
-		switch (op) {
-			case ADJUST_NOT: {
-				sourceValue = ~sourceValue;
-			}	break;
-			case ADJUST_NEG: {
-				sourceValue = -sourceValue;
-			}	break;
-			case ADJUST_SET: {
-				sourceValue = operandValue;
-			}	break;
-			case ADJUST_ADD: {
-				// byte-wise add - no carry, so bytes may overflow
-				sourceValue = sourceValue + operandValue;
-			}	break;
-			case ADJUST_ADD_CARRY: {
-				// byte-wise add with carry
-				// bytes are treated as being in little-endian order
-				usingCarry = true;
-				sourceValue = sourceValue + operandValue + carryValue;
-				if (sourceValue > 255) {
-					carryValue = 1;
-					sourceValue -= 256;
-				} else {
-					carryValue = 0;
+	debug_log("bufferAdjust: command %d, offset %d:%d, count %d, operandBufferId %d, operandOffset %d:%d, sourceValue %d, operandValue %d\n\r",
+		command, (int)offset.blockIndex, offset.blockOffset, count, operandBufferId, (int)operandOffset.blockIndex, operandOffset.blockOffset, sourceValue, operandValue);
+	debug_log("useMultiTarget %d, useMultiOperand %d, useAdvancedOffsets %d, useBufferValue %d\n\r", useMultiTarget, useMultiOperand, useAdvancedOffsets, useBufferValue);
+
+	if (!useMultiTarget) {
+		if (!hasOperand || !useMultiOperand) {
+			auto func = adjustSingleFuncs[op];
+			sourceValue = func(sourceValue, operandValue, carryValue);
+		} else if (operandBuffer) {
+			auto func = adjustSingleMultiFuncs[op];
+			while (count > 0) {
+				auto operandSpan = getBufferSpan(*operandBuffer, operandOffset);
+				auto iterCount = std::min<size_t>(operandSpan.size(), count);
+				if (iterCount == 0) {
+					debug_log("bufferAdjust: operand buffer overflow\n\r");
+					if (instream) {
+						instream->seekTo(operandOffset.blockOffset, operandOffset.blockIndex);
+					}
+					return;
 				}
-			}	break;
-			case ADJUST_AND: {
-				sourceValue = sourceValue & operandValue;
-			}	break;
-			case ADJUST_OR: {
-				sourceValue = sourceValue | operandValue;
-			}	break;
-			case ADJUST_XOR: {
-				sourceValue = sourceValue ^ operandValue;
-			}	break;
+				sourceValue = func(sourceValue, operandSpan.data(), carryValue, iterCount);
+				operandOffset.blockOffset += iterCount;
+				count -= iterCount;
+			}
+			if (instream) {
+				instream->seekTo(operandOffset.blockOffset, operandOffset.blockIndex);
+			}
+		} else {
+			auto func = adjustSingleFuncs[op];
+			while (count > 0) {
+				operandValue = readByte_t();
+				if (operandValue == -1) {
+					debug_log("bufferAdjust: operand timeout\n\r");
+					return;
+				}
+				sourceValue = func(sourceValue, operandValue, carryValue);
+				count--;
+			}
 		}
-
-		if (useMultiTarget) {
-			// multiple source/target values updating, so store inside loop
-			if (!setBufferByte(sourceValue, buffer, offset, true)) {
-				debug_log("bufferAdjust: failed to set result %d at offset %d:%d\n\r", sourceValue, (int)offset.blockIndex, offset.blockOffset);
-				return;
+		debug_log("bufferAdjust: result %d\n\r", sourceValue);
+		targetSpan.front() = sourceValue;
+		// increment offset in case carry is used
+		offset.blockOffset++;
+	} else {
+		if (!hasOperand || !useMultiOperand) {
+			auto func = adjustMultiSingleFuncs[op];
+			while (count > 0) {
+				targetSpan = getBufferSpan(buffer, offset);
+				auto iterCount = std::min<size_t>(targetSpan.size(), count);
+				if (iterCount == 0) {
+					debug_log("bufferAdjust: target buffer overflow\n\r");
+					return;
+				}
+				func(targetSpan.data(), operandValue, carryValue, iterCount);
+				offset.blockOffset += iterCount;
+				count -= iterCount;
+			}
+		} else if (operandBuffer) {
+			auto func = adjustMultiFuncs[op];
+			while (count > 0) {
+				targetSpan = getBufferSpan(buffer, offset);
+				auto operandSpan = getBufferSpan(*operandBuffer, operandOffset);
+				auto iterCount = std::min<size_t>(std::min(targetSpan.size(), operandSpan.size()), count);
+				if (iterCount == 0) {
+					debug_log("bufferAdjust: target or operand buffer overflow\n\r");
+					if (instream) {
+						instream->seekTo(operandOffset.blockOffset, operandOffset.blockIndex);
+					}
+					return;
+				}
+				bool sameBuffer = buffer[offset.blockIndex] == (*operandBuffer)[operandOffset.blockIndex];
+				func(targetSpan.data(), operandSpan.data(), carryValue, iterCount, sameBuffer);
+				offset.blockOffset += iterCount;
+				operandOffset.blockOffset += iterCount;
+				count -= iterCount;
+			}
+			if (instream) {
+				instream->seekTo(operandOffset.blockOffset, operandOffset.blockIndex);
+			}
+		} else {
+			auto func = adjustSingleFuncs[op];
+			while (count > 0) {
+				targetSpan = getBufferSpan(buffer, offset);
+				auto iterCount = std::min<size_t>(targetSpan.size(), count);
+				if (iterCount == 0) {
+					debug_log("bufferAdjust: target buffer overflow\n\r");
+					return;
+				}
+				for (size_t i = 0; i < iterCount; i++) {
+					operandValue = readByte_t();
+					if (operandValue == -1) {
+						debug_log("bufferAdjust: operand timeout\n\r");
+						return;
+					}
+					targetSpan[i] = func(targetSpan[i], operandValue, carryValue);
+				}
+				offset.blockOffset += iterCount;
+				count -= iterCount;
 			}
 		}
 	}
-	if (!useMultiTarget) {
-		// single source/target value updating, so store outside loop
-		// also increment offset in case carry is used
-		if (!setBufferByte(sourceValue, buffer, offset, true)) {
-			debug_log("bufferAdjust: failed to set result %d at offset %d:%d\n\r", sourceValue, (int)offset.blockIndex, offset.blockOffset);
-			return;
-		}
-	}
-	if (usingCarry) {
+
+	if (op == ADJUST_ADD_CARRY) {
 		// if we were using carry, store the final carry value
 		if (!setBufferByte(carryValue, buffer, offset)) {
 			debug_log("bufferAdjust: failed to set carry value %d at offset %d:%d\n\r", carryValue, (int)offset.blockIndex, offset.blockOffset);
 			return;
 		}
 	}
-
-	debug_log("bufferAdjust: result %d\n\r", sourceValue);
 }
 
 // returns true or false depending on whether conditions are met

@@ -14,10 +14,15 @@ class MultiBufferStream : public Stream {
 		int available();
 		int read();
 		int peek();
+		virtual size_t readBytes(char * outBuffer, size_t length); // read chars from stream into buffer
+		virtual size_t readBytes(uint8_t * outBuffer, size_t length) {
+			return readBytes((char *)outBuffer, length);
+		}
 		size_t write(uint8_t b);
 		void rewind(size_t bufferIndex = 0);
 		void seekTo(uint32_t position, size_t bufferIndex = 0);
 		uint32_t size();
+		const std::vector<std::shared_ptr<BufferStream>> &tellBuffer(uint32_t &blockOffset, size_t &blockIndex);
 	private:
 		std::vector<std::shared_ptr<BufferStream>> buffers;
 		BufferStream * getBuffer();
@@ -45,6 +50,18 @@ int MultiBufferStream::read() {
 int MultiBufferStream::peek() {
 	auto buffer = getBuffer();
 	return buffer->peek();
+}
+
+size_t MultiBufferStream::readBytes(char * outBuffer, size_t length) {
+	size_t readAmount = 0;
+	while (readAmount < length) {
+		auto buffer = getBuffer();
+		if (!buffer) {
+			break;
+		}
+		readAmount += buffer->readBytes(outBuffer + readAmount, length - readAmount);
+	}
+	return readAmount;
 }
 
 size_t MultiBufferStream::write(uint8_t b) {
@@ -87,6 +104,13 @@ uint32_t MultiBufferStream::size() {
 		totalSize += buffer->size();
 	}
 	return totalSize;
+}
+
+const std::vector<std::shared_ptr<BufferStream>> &MultiBufferStream::tellBuffer(uint32_t &blockOffset, size_t &blockIndex) {
+	auto buffer = getBuffer();
+	blockOffset = buffer ? buffer->tell() : 0;
+	blockIndex = currentBufferIndex;
+	return buffers;
 }
 
 inline BufferStream * MultiBufferStream::getBuffer() {

@@ -91,8 +91,9 @@ class VDUStreamProcessor {
 		void setOutputStream(uint16_t bufferId);
 		AdvancedOffset getOffsetFromStream(bool isAdvanced);
 		std::vector<uint16_t> getBufferIdsFromStream();
-		int16_t getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
-		bool setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
+		static tcb::span<uint8_t> getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset);
+		static int16_t getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
+		static bool setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
 		void bufferJump(uint16_t bufferId, AdvancedOffset offset);
