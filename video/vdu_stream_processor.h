@@ -3,12 +3,11 @@
 
 #include <memory>
 #include <Stream.h>
+#include <fabgl.h>
 
 #include "agon.h"
-#include "agon_ps2.h"
 #include "buffer_stream.h"
 #include "types.h"
-#include "viewport.h"
 
 class VDUStreamProcessor {
 	private:

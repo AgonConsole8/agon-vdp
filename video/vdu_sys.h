@@ -1,6 +1,7 @@
 #ifndef VDU_SYS_H
 #define VDU_SYS_H
 
+#include <algorithm>
 #include <vector>
 
 #include <fabgl.h>
@@ -239,12 +240,13 @@ void VDUStreamProcessor::vdu_sys_video() {
 				mapCharToBitmap(c, bitmapId);
 			}
 		}	break;
-		case VDP_SCRCHAR_PIXEL: {		// VDU 23, 0, &83, x; y;
-			auto x = readWord_t();		// Get character at screen position x, y
+		case VDP_SCRCHAR_GRAPHICS: {	// VDU 23, 0, &93, x; y;
+			auto x = readWord_t();		// Get character at graphics position x, y
 			if (x == -1) return;
 			auto y = readWord_t();
 			if (y == -1) return;
-			sendScreenChar(x, y);
+			Point p = translateCanvas(scale(x, y));
+			sendScreenChar(p.X, p.Y);
 		}	break;
 		case VDP_READ_COLOUR: {			// VDU 23, 0, &94, index
 			auto index = readByte_t();	// Read colour from palette
@@ -260,6 +262,30 @@ void VDUStreamProcessor::vdu_sys_video() {
 			if (b >= 0) {
 				controlKeys = (bool) b;
 			}
+		}	break;
+		case VDP_TEXT_VIEWPORT: {		// VDU 23, 0, &9C, x1; y1; x2; y2;
+			auto x1 = readWord_t();		// Set text viewport using graphics coordinates
+			if (x1 == -1) return;
+			auto y1 = readWord_t();
+			if (y1 == -1) return;
+			auto x2 = readWord_t();
+			if (x2 == -1) return;
+			auto y2 = readWord_t();
+			if (y2 == -1) return;
+			if (ttxtMode) {
+				// We could consider supporting this by dividing points by font size
+				debug_log("vdp_textViewport: Not supported in teletext mode\n\r");
+				return;
+			}
+			Point p1 = translateCanvas(scale(x1, y1));
+			Point p2 = translateCanvas(scale(x2, y2));
+			if (setTextViewport(std::min(p1.X, p2.X), std::min(p1.Y, p2.Y), std::max(p1.X, p2.X), std::max(p1.Y, p2.Y))) {
+				ensureCursorInViewport(textViewport);
+				debug_log("vdp_textViewport: OK %d,%d,%d,%d\n\r", x1, y1, x2, y2);
+			} else {
+				debug_log("vdp_textViewport: Invalid Viewport %d,%d -> %d,%d (%d,%d -> %d,%d)\n\r", x1, y1, x2, y2, p1.X, p1.Y, p2.X, p2.Y);
+			}
+			sendModeInformation();
 		}	break;
 		case VDP_BUFFERED: {			// VDU 23, 0, &A0, bufferId; command, <args>
 			vdu_sys_buffered();
