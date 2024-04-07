@@ -4,6 +4,7 @@
 #include <memory>
 #include <fabgl.h>
 
+#include "agon.h"								// Agon definitions
 #include "agon_palette.h"						// Colour lookup table
 
 std::unique_ptr<fabgl::Canvas>	canvas;			// The canvas class
@@ -14,6 +15,9 @@ uint8_t			_VGAColourDepth = -1;			// Number of colours per pixel (2, 4, 8, 16 or
 uint8_t			palette[64];					// Storage for the palette
 uint16_t		canvasW;						// Canvas width
 uint16_t		canvasH;						// Canvas height
+double			logicalScaleX;					// Scaling factor for logical coordinates
+double			logicalScaleY;
+bool			rectangularPixels = false;		// Pixels are square by default
 uint8_t			videoMode;						// Current video mode
 
 extern void debug_log(const char * format, ...);		// Debug log function
@@ -189,6 +193,13 @@ int8_t change_resolution(uint8_t colours, const char * modeLine, bool doubleBuff
 		heap_caps_get_free_size(MALLOC_CAP_8BIT),
 		heap_caps_get_free_size(MALLOC_CAP_32BIT)
 	);
+
+	canvasW = canvas->getWidth();
+	canvasH = canvas->getHeight();
+	logicalScaleX = LOGICAL_SCRW / (double)canvasW;
+	logicalScaleY = LOGICAL_SCRH / (double)canvasH;
+	rectangularPixels = ((float)canvasW / (float)canvasH) > 2;
+
 	//
 	// Check whether the selected mode has enough memory for the vertical resolution
 	//

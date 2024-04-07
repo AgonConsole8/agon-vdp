@@ -28,9 +28,6 @@ uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor
 // character to bitmap mapping
 std::vector<uint16_t> charToBitmap(255, 65535);
 
-extern fabgl::PaintOptions			gpofg;
-extern fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions priorPaintOptions);
-
 std::shared_ptr<Bitmap> getBitmap(uint16_t id = currentBitmap) {
 	if (bitmaps.find(id) != bitmaps.end()) {
 		return bitmaps[id];

@@ -2,12 +2,8 @@
 #define CONTEXT_H
 
 // Text and graphics system context management
-// This will include all cursor, viewport, and graphics contextual data
+// This includes all cursor, viewport, and graphics contextual data
 //
-// Original sources:
-// cursor.h
-// graphics.h
-// viewport.h
 
 #include <memory>
 #include <vector>
@@ -62,101 +58,131 @@ class Context {
 		bool			cursorFlashing = true;			// Cursor is flashing
 		uint16_t		cursorFlashRate = CURSOR_PHASE;	// Cursor flash rate
 		CursorBehaviour cursorBehaviour;				// New cursor behavior
-		bool 			pagedMode = false;				// Is output paged or not? Set by VDU 14 and 15
-		uint8_t			pagedModeCount = 0;				// Scroll counter for paged mode
 		Point			textCursor;						// Text cursor
 		Point *			activeCursor = &textCursor;		// Pointer to the active text cursor (textCursor or p1)
 
+		// Cursor rendering
+		uint8_t			cursorVStart;					// Cursor vertical start offset
+		uint8_t			cursorVEnd;						// Cursor vertical end
+		uint8_t			cursorHStart;					// Cursor horizontal start offset
+		uint8_t			cursorHEnd;						// Cursor horizontal end
+
+		// Paged mode tracking
+		bool 			pagedMode = false;				// Is output paged or not? Set by VDU 14 and 15
+		uint8_t			pagedModeCount = 0;				// Scroll counter for paged mode
+
 		// Viewport management data
-		Point			origin;							// Screen origin
-		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
-		double			logicalScaleX;					// Scaling factor for logical coordinates
-		double			logicalScaleY;
 		Rect *			activeViewport;					// Pointer to the active text viewport (textViewport or graphicsViewport)
 		Rect			defaultViewport;				// Default viewport
 		Rect			textViewport;					// Text viewport
 		Rect			graphicsViewport;				// Graphics viewport
-		bool			useViewports = false;			// Viewports are enabled
 
 		// Graphics management data
 		fabgl::PaintOptions			gpofg;				// Graphics paint options foreground
 		fabgl::PaintOptions			gpobg;				// Graphics paint options background
 		fabgl::PaintOptions			tpo;				// Text paint options
 		fabgl::PaintOptions			cpo;				// Cursor paint options
-
-		Point			p1, p2, p3;						// Coordinate store for plot (p1 = the graphics cursor)
-		Point			rp1;							// Relative coordinates store for plot
-		Point			up1;							// Unscaled coordinates store for plot
 		RGB888			gfg, gbg;						// Graphics foreground and background colour
 		RGB888			tfg, tbg;						// Text foreground and background colour
 		uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
-		uint8_t			cursorVStart;					// Cursor vertical start offset
-		uint8_t			cursorVEnd;						// Cursor vertical end
-		uint8_t			cursorHStart;					// Cursor horizontal start offset
-		uint8_t			cursorHEnd;						// Cursor horizontal end
+		uint8_t			lineThickness = 1;				// Line thickness
+
+		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
+
+		Point			origin;							// Screen origin
+		Point			p1, p2, p3;						// Coordinate store for plot (p1 = the graphics cursor)
+		Point			rp1;							// Relative coordinates store for plot
+		Point			up1;							// Unscaled coordinates store for plot
 		std::vector<Point>	pathPoints;					// Storage for path points
-		uint8_t			lastPlotCommand = 0;
-		// Potentially move to agon_screen.h
-		bool			rectangularPixels = false;		// Pixels are square by default
+		uint8_t			lastPlotCommand = 0;			// Tracking of last plot command to allow continuing plots
 
 		// Cursor management functions
 		int getXAdjustment();
 		int getYAdjustment();
-		Point getNormalisedCursorPosition();
-		Point getNormalisedCursorPosition(Point * cursor);
 		int getNormalisedViewportWidth();
 		int getNormalisedViewportHeight();
+		Point getNormalisedCursorPosition();
+		Point getNormalisedCursorPosition(Point * cursor);
+
 		bool cursorIsOffRight();
 		bool cursorIsOffLeft();
 		bool cursorIsOffTop();
 		bool cursorIsOffBottom();
+
 		void cursorEndRow();
 		void cursorEndRow(Point * cursor, Rect * viewport);
 		void cursorTop();
 		void cursorTop(Point * cursor, Rect * viewport);
 		void cursorEndCol();
 		void cursorEndCol(Point * cursor, Rect * viewport);
+
 		bool cursorScrollOrWrap();
 		void cursorAutoNewline();
-		void resetCursor();
 		void ensureCursorInViewport(Rect viewport);
+
+		void resetCursor();
 
 		// Viewport management functions
 		Rect * getViewport(ViewportType type);
 		bool setTextViewport(Rect rect);
+		Point scale(int16_t X, int16_t Y);
 
-		// Graphics functions
+		// Font management functions
 		const fabgl::FontInfo * getFont();
 		void changeFont(std::shared_ptr<fabgl::FontInfo> newFont, std::shared_ptr<BufferStream> fontData, uint8_t flags);
 		bool cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len);
+		char getScreenChar(Point p);
+		inline void setCharacterOverwrite(bool overwrite);		// TODO integrate into setActiveCursor?
+
+		// Graphics functions
+		fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions priorPaintOptions);
+		void setGraphicsOptions(uint8_t mode);
+		void setGraphicsFill(uint8_t mode);
+		void setClippingRect(Rect rect);
+
+		void pushPoint(Point p);
+		void pushPointRelative(int16_t x, int16_t y);
+
+		void moveTo();
+		void plotLine(bool omitFirstPoint, bool omitLastPoint, bool usePattern, bool resetPattern);
+		void plotPoint();
+		void fillHorizontalLine(bool scanLeft, bool match, RGB888 matchColor);
+		void plotTriangle();
+		void plotRectangle();
+		void plotParallelogram();
+		void plotCircle(bool filled);
+		void plotArc();
+		void plotSegment();
+		void plotSector();
+		void plotCopyMove(uint8_t mode);
+		void plotPath(uint8_t mode, uint8_t lastMode);
+		void plotBitmap(uint8_t mode);
+
+		void clearViewport(ViewportType viewport);
+		void scrollRegion(Rect * region, uint8_t direction, int16_t movement);
+
 		uint16_t scanH(int16_t x, int16_t y, RGB888 colour, int8_t direction);
 		uint16_t scanHToMatch(int16_t x, int16_t y, RGB888 colour, int8_t direction);
-		fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions priorPaintOptions);
-		void pushPoint(Point p);
-		void setClippingRect(Rect rect);
 
 	public:
 
 		// Cursor management functions
+		void do_cursor();       // TODO remove??
 		inline bool textCursorActive();
 		inline void setActiveCursor(CursorType type);
 		inline void setCursorBehaviour(uint8_t setting, uint8_t mask);
+		inline void enableCursor(uint8_t enable);
 		void setCursorAppearance(uint8_t appearance);
 		void setCursorVStart(uint8_t start);
 		void setCursorVEnd(uint8_t end);
 		void setCursorHStart(uint8_t start);
 		void setCursorHEnd(uint8_t end);
-		CursorBehaviour getCursorBehaviour();
-		uint8_t getNormalisedViewportCharWidth();
-		uint8_t getNormalisedViewportCharHeight();
-		void do_cursor();       // TODO remove??
 		void setPagedMode(bool mode);
-		inline void enableCursor(uint8_t enable);
-		// Cursor movement functions
-		void cursorDown();
-		void cursorDown(bool moveOnly);
+
 		void cursorUp();
 		void cursorUp(bool moveOnly);
+		void cursorDown();
+		void cursorDown(bool moveOnly);
 		void cursorLeft();
 		void cursorRight();
 		void cursorRight(bool scrollProtect);
@@ -171,72 +197,56 @@ class Context {
 		// Viewport management functions
 		void viewportReset();
 		void setActiveViewport(ViewportType type);
-		Point toCurrentCoordinates(int16_t X, int16_t Y);
 		bool setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 		bool setTextViewport(uint8_t cx1, uint8_t cy1, uint8_t cx2, uint8_t cy2);
 		bool setTextViewportAt(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+		uint8_t getNormalisedViewportCharWidth();
+		uint8_t getNormalisedViewportCharHeight();
 		inline void setOrigin(int x, int y);
 		inline void setLogicalCoords(bool b);
-		Point scale(int16_t X, int16_t Y);
-		Point scale(Point p);
-		Point translateCanvas(int16_t X, int16_t Y);
-		Point translateCanvas(Point p);
+		Point toCurrentCoordinates(int16_t X, int16_t Y);
+		Point toScreenCoordinates(int16_t X, int16_t Y);
 
-		// Graphics functions
-		bool plot(int16_t x, int16_t y, uint8_t command);
-		void plotPending(int16_t peeked);
+		// Font management functions
 		void changeFont(uint16_t newFontId, uint8_t flags);
 		bool usingSystemFont();
 		char getScreenChar(uint8_t x, uint8_t y);
 		char getScreenCharAt(uint16_t px, uint16_t py);
-		char getScreenChar(Point p);
-		RGB888 getPixel(uint16_t x, uint16_t y);
-		void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet);
-		void restorePalette();							// TODO split in two, and move half to agon_screen.h
-		void setTextColour(uint8_t colour);
-		void setGraphicsColour(uint8_t mode, uint8_t colour);
-		void clearViewport(ViewportType viewport);
-		void pushPoint(uint16_t x, uint16_t y);
-		void pushPointRelative(int16_t x, int16_t y);
-		Rect getGraphicsRect();
-		void setGraphicsOptions(uint8_t mode);
-		void setGraphicsFill(uint8_t mode);
-		void moveTo();
-		void plotLine(bool omitFirstPoint, bool omitLastPoint, bool usePattern, bool resetPattern);
-		void fillHorizontalLine(bool scanLeft, bool match, RGB888 matchColor);
-		void plotPoint();
-		void plotTriangle();
-		void plotPath(uint8_t mode, uint8_t lastMode);
-		void plotRectangle();
-		void plotParallelogram();
-		void plotCircle(bool filled);
-		void plotArc();
-		void plotSegment();
-		void plotSector();
-		void plotCopyMove(uint8_t mode);
-		void plotBitmap(uint8_t mode);
-		void plotCharacter(char c);
-		void plotBackspace();
-		inline void setCharacterOverwrite(bool overwrite);		// TODO integrate into setActiveCursor
-		void drawCursor(Point p);
-		void cls(bool resetViewports);
-		void clg();
-		void set_mode(uint8_t mode);
-		void scrollRegion(Rect * region, uint8_t direction, int16_t movement);
-		void scrollRegion(ViewportType viewport, uint8_t direction, int16_t movement);
+		
+		// Graphics functions
 		void setLineThickness(uint8_t thickness);
 		void setDottedLinePattern(uint8_t pattern[8]);
 		void setDottedLinePatternLength(uint8_t length);
+
+		void setTextColour(uint8_t colour);
+		void setGraphicsColour(uint8_t mode, uint8_t colour);
+		void restorePalette();							// TODO split in two, and move half to agon_screen.h
 		void updateColours(uint8_t l, uint8_t p);
 		bool getColour(uint8_t colour, RGB888 * pixel);
+		RGB888 getPixel(uint16_t x, uint16_t y);
+
+		void pushPoint(uint16_t x, uint16_t y);
+		Rect getGraphicsRect();							// Used by sprites system to capture screen area
+
+		bool plot(int16_t x, int16_t y, uint8_t command);
+		void plotPending(int16_t peeked);
+
+		void plotCharacter(char c);
+		void plotBackspace();
+		void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet);
+		void drawCursor(Point p);
+
+		void cls(bool resetViewports);
+		void clg();
+		void scrollRegion(ViewportType viewport, uint8_t direction, int16_t movement);
 
 		// Potentially move to agon_screen.h
-		// void setPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b);
-		// void resetPalette(const uint8_t colours[]);
+		void set_mode(uint8_t mode);
 		int8_t change_mode(uint8_t mode);
 };
 
 #include "context/cursor.h"
+#include "context/fonts.h"
 #include "context/graphics.h"
 #include "context/viewport.h"
 

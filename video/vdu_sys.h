@@ -530,7 +530,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			auto x = readWord_t();	if (x == -1) return;
 			auto y = readWord_t();	if (y == -1) return;
 			// normalise coordinates
-			auto p = context->translateCanvas(context->scale(x, y));
+			auto p = context->toScreenCoordinates(x, y);
 
 			// need to update position in mouse status
 			setMousePos(p.X, p.Y);
@@ -630,20 +630,14 @@ void VDUStreamProcessor::vdu_sys_cursorBehaviour() {
 void VDUStreamProcessor::vdu_sys_udg(char c) {
 	uint8_t		buffer[8];
 
-	for (uint8_t i = 0; i < 8; i++) {
-		auto b = readByte_t();
-		if (b == -1) {
-			return;
+	auto read = readIntoBuffer(buffer, 8);
+	if (read == 0) {
+		if (context->usingSystemFont()) {
+			redefineCharacter(c, buffer);
+		} else {
+			debug_log("vdu_sys_udg: system font not active, ignoring\n\r");
 		}
-		buffer[i] = b;
 	}
-
-	if (context->usingSystemFont()) {
-		redefineCharacter(c, buffer);
-	} else {
-		debug_log("vdu_sys_udg: system font not active, ignoring\n\r");
-	}
-
 }
 
 #endif // VDU_SYS_H
