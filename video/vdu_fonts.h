@@ -17,16 +17,7 @@ void VDUStreamProcessor::vdu_sys_font() {
             // VDU 23, 0, &95, 0, bufferId; flags  - Select font by bufferId
             auto bufferId = readWord_t(); if (bufferId == -1) return;
             auto flags = readByte_t(); if (flags == -1) return;
-            if (bufferId == 65535) {
-                // reset to default font
-                context->changeFont(&FONT_AGON, flags);
-            } else {
-                if (fonts.find(bufferId) == fonts.end()) {
-                    debug_log("fontSelect: font %d not found\n\r", bufferId);
-                    return;
-                }
-                context->changeFont(fonts[bufferId].get(), flags);
-            }
+            context->changeFont(bufferId, flags);
             sendModeInformation();
         } break;
         case FONT_FROM_BUFFER: {

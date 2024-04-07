@@ -85,6 +85,7 @@ bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_
 // text coordinates
 //
 bool Context::setTextViewport(uint8_t cx1, uint8_t cy1, uint8_t cx2, uint8_t cy2) {
+	auto font = getFont();
 	auto x1 = cx1 * font->width;				// Left
 	auto y2 = (cy2 + 1) * font->height - 1;		// Bottom
 	auto x2 = (cx2 + 1) * font->width - 1;		// Right

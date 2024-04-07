@@ -451,7 +451,12 @@ void resetFonts() {
 	fonts.clear();
 }
 
-uint8_t * getCharPtr(const fabgl::FontInfo * font, uint8_t c) {
+uint8_t * getCharPtr(std::shared_ptr<fabgl::FontInfo> font, uint8_t c) {
+	if (!font) {
+		// system font
+		return FONT_AGON_DATA + (c * 8);
+	}
+
 	if (font->chptr == nullptr) {
 		return (uint8_t *) (font->data + (c * font->height * ((font->width + 7) >> 3)));
 	} else {

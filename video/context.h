@@ -9,6 +9,9 @@
 // graphics.h
 // viewport.h
 
+#include <memory>
+#include <vector>
+
 #include <fabgl.h>
 
 #include "agon.h"
@@ -46,7 +49,20 @@ enum ViewportType : uint8_t {
 //
 class Context {
 	private:
+		// Font tracking
+		// "activating" a context will need to set the font to the current font
+		std::shared_ptr<fabgl::FontInfo>	font;				// Current active font
+		std::shared_ptr<fabgl::FontInfo>	textFont;			// Current active font for text cursor
+		std::shared_ptr<fabgl::FontInfo>	graphicsFont;		// Current active font for graphics cursor
+		std::shared_ptr<BufferStream>		textFontData;
+		std::shared_ptr<BufferStream>		graphicsFontData;
+
 		// Cursor management data
+		bool			cursorEnabled = true;			// Cursor visibility
+		bool			cursorFlashing = true;			// Cursor is flashing
+		uint16_t		cursorFlashRate = CURSOR_PHASE;	// Cursor flash rate
+		CursorBehaviour cursorBehaviour;				// New cursor behavior
+		bool 			pagedMode = false;				// Is output paged or not? Set by VDU 14 and 15
 		uint8_t			pagedModeCount = 0;				// Scroll counter for paged mode
 		Point			textCursor;						// Text cursor
 		Point *			activeCursor = &textCursor;		// Pointer to the active text cursor (textCursor or p1)
@@ -68,7 +84,7 @@ class Context {
 		fabgl::PaintOptions			tpo;				// Text paint options
 		fabgl::PaintOptions			cpo;				// Cursor paint options
 
-		Point			p1, p2, p3;						// Coordinate store for plot
+		Point			p1, p2, p3;						// Coordinate store for plot (p1 = the graphics cursor)
 		Point			rp1;							// Relative coordinates store for plot
 		Point			up1;							// Unscaled coordinates store for plot
 		RGB888			gfg, gbg;						// Graphics foreground and background colour
@@ -82,8 +98,6 @@ class Context {
 		uint8_t			lastPlotCommand = 0;
 		// Potentially move to agon_screen.h
 		bool			rectangularPixels = false;		// Pixels are square by default
-		// uint8_t			palette[64];					// Storage for the palette
-
 
 		// Cursor management functions
 		int getXAdjustment();
@@ -112,6 +126,8 @@ class Context {
 		bool setTextViewport(Rect rect);
 
 		// Graphics functions
+		const fabgl::FontInfo * getFont();
+		void changeFont(std::shared_ptr<fabgl::FontInfo> newFont, std::shared_ptr<BufferStream> fontData, uint8_t flags);
 		bool cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len);
 		uint16_t scanH(int16_t x, int16_t y, RGB888 colour, int8_t direction);
 		uint16_t scanHToMatch(int16_t x, int16_t y, RGB888 colour, int8_t direction);
@@ -120,23 +136,6 @@ class Context {
 		void setClippingRect(Rect rect);
 
 	public:
-
-		// Font tracking - these will need to change to not be const
-		// and "activating" a context will need to refresh the current active font in the context
-		const fabgl::FontInfo		* font;				// Current active font
-		const fabgl::FontInfo		* textFont;			// Current active font for text cursor
-		const fabgl::FontInfo		* graphicsFont;		// Current active font for graphics cursor
-
-		// Cursor management data
-		bool			cursorEnabled = true;			// Cursor visibility
-		bool			cursorFlashing = true;			// Cursor is flashing
-		uint16_t		cursorFlashRate = CURSOR_PHASE;	// Cursor flash rate
-		CursorBehaviour cursorBehaviour;				// New cursor behavior
-		bool 			pagedMode = false;				// Is output paged or not? Set by VDU 14 and 15
-
-		// Viewport management data
-
-		// Graphics management data
 
 		// Cursor management functions
 		inline bool textCursorActive();
@@ -186,7 +185,7 @@ class Context {
 		// Graphics functions
 		bool plot(int16_t x, int16_t y, uint8_t command);
 		void plotPending(int16_t peeked);
-		void changeFont(const fabgl::FontInfo * f, uint8_t flags);
+		void changeFont(uint16_t newFontId, uint8_t flags);
 		bool usingSystemFont();
 		char getScreenChar(uint8_t x, uint8_t y);
 		char getScreenCharAt(uint16_t px, uint16_t py);

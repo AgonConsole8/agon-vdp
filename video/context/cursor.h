@@ -27,13 +27,13 @@ inline void Context::setActiveCursor(CursorType type) {
 	switch (type) {
 		case CursorType::TextCursor:
 			activeCursor = &textCursor;
-			changeFont(textFont, 0);
+			changeFont(textFont, textFontData, 0);
 			setCharacterOverwrite(true);
 			setActiveViewport(ViewportType::TextViewport);
 			break;
 		case CursorType::GraphicsCursor:
 			activeCursor = &p1;
-			changeFont(graphicsFont, 0);
+			changeFont(graphicsFont, graphicsFontData, 0);
 			setCharacterOverwrite(false);
 			setActiveViewport(ViewportType::GraphicsViewport);
 			break;
@@ -50,11 +50,11 @@ CursorBehaviour Context::getCursorBehaviour() {
 
 // Adjustments to ensure cursor position sits at the nearest character boundary
 int Context::getXAdjustment() {
-	return activeViewport->width() % font->width;
+	return activeViewport->width() % getFont()->width;
 }
 
 int Context::getYAdjustment() {
-	return activeViewport->height() % font->height;
+	return activeViewport->height() % getFont()->height;
 }
 
 Point Context::getNormalisedCursorPosition() {
@@ -98,6 +98,7 @@ int Context::getNormalisedViewportWidth() {
 }
 
 int Context::getNormalisedViewportHeight() {
+	auto font = getFont();
 	if (cursorBehaviour.flipXY) {
 		auto height = activeViewport->width() - getXAdjustment();
 		if (!cursorBehaviour.invertHorizontal) {
@@ -114,16 +115,16 @@ int Context::getNormalisedViewportHeight() {
 
 uint8_t Context::getNormalisedViewportCharWidth() {
 	if (cursorBehaviour.flipXY) {
-		return activeViewport->height() / font->height;
+		return activeViewport->height() / getFont()->height;
 	}
-	return activeViewport->width() / font->width;
+	return activeViewport->width() / getFont()->width;
 }
 
 uint8_t Context::getNormalisedViewportCharHeight() {
 	if (cursorBehaviour.flipXY) {
-		return activeViewport->width() / font->width;
+		return activeViewport->width() / getFont()->width;
 	}
-	return activeViewport->height() / font->height;
+	return activeViewport->height() / getFont()->height;
 }
 
 bool Context::cursorIsOffRight() {
@@ -149,9 +150,9 @@ void Context::cursorCR() {
 }
 void Context::cursorCR(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
-		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - font->height - getYAdjustment()) : viewport->Y1;
+		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - getFont()->height - getYAdjustment()) : viewport->Y1;
 	} else {
-		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - font->width - getXAdjustment()) : viewport->X1;
+		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - getFont()->width - getXAdjustment()) : viewport->X1;
 	}
 }
 
@@ -160,9 +161,9 @@ void Context::cursorEndRow() {
 }
 void Context::cursorEndRow(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
-		cursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - font->height - getYAdjustment());
+		cursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - getFont()->height - getYAdjustment());
 	} else {
-		cursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - font->width - getXAdjustment());
+		cursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - getFont()->width - getXAdjustment());
 	}
 }
 
@@ -171,9 +172,9 @@ void Context::cursorTop() {
 }
 void Context::cursorTop(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
-		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - font->width - getXAdjustment()) : viewport->X1;
+		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - getFont()->width - getXAdjustment()) : viewport->X1;
 	} else {
-		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - font->height - getYAdjustment()) : viewport->Y1;
+		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - getFont()->height - getYAdjustment()) : viewport->Y1;
 	}
 }
 
@@ -182,9 +183,9 @@ void Context::cursorEndCol() {
 }
 void Context::cursorEndCol(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
-		cursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - font->width - getXAdjustment());
+		cursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - getFont()->width - getXAdjustment());
 	} else {
-		cursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - font->height - getYAdjustment());
+		cursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - getFont()->height - getYAdjustment());
 	}
 }
 
@@ -249,6 +250,7 @@ void Context::cursorDown() {
 	cursorDown(false);
 }
 void Context::cursorDown(bool moveOnly) {
+	auto font = getFont();
 	if (cursorBehaviour.flipXY) {
 		activeCursor->X += (cursorBehaviour.invertHorizontal ? -font->width : font->width);
 	} else {
@@ -296,6 +298,7 @@ void Context::cursorUp() {
 	cursorUp(false);
 }
 void Context::cursorUp(bool moveOnly) {
+	auto font = getFont();
 	if (cursorBehaviour.flipXY) {
 		activeCursor->X += (cursorBehaviour.invertHorizontal ? font->width : -font->width);
 	} else {
@@ -310,6 +313,7 @@ void Context::cursorUp(bool moveOnly) {
 // Move the active cursor back one character
 //
 void Context::cursorLeft() {
+	auto font = getFont();
 	if (cursorBehaviour.flipXY) {
 		activeCursor->Y += (cursorBehaviour.invertVertical ? font->height : -font->height);
 	} else {
@@ -334,6 +338,7 @@ void Context::cursorRight() {
 	cursorRight(false);
 }
 void Context::cursorRight(bool scrollProtect) {
+	auto font = getFont();
 	// deal with any pending newline that we may have
 	cursorAutoNewline();
 
@@ -360,6 +365,7 @@ void Context::cursorHome(Point * cursor, Rect * viewport) {
 // TAB(x,y)
 //
 void Context::cursorTab(uint8_t x, uint8_t y) {
+	auto font = getFont();
 	int xPos, yPos;
 	if (cursorBehaviour.flipXY) {
 		if (cursorBehaviour.invertHorizontal) {
@@ -412,6 +418,7 @@ void Context::cursorRelativeMove(int8_t x, int8_t y) {
 }
 
 void Context::getCursorTextPosition(uint8_t * x, uint8_t * y) {
+	auto font = getFont();
 	if (cursorBehaviour.flipXY) {
 		if (cursorBehaviour.invertHorizontal) {
 			*x = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);

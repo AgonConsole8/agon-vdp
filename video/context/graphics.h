@@ -9,9 +9,10 @@
 #include "agon.h"
 #include "agon_ps2.h"
 #include "agon_screen.h"
-#include "agon_fonts.h"							// The Acorn BBC Micro Font
-#include "agon_palette.h"						// Colour lookup table
+#include "agon_fonts.h"
+#include "agon_palette.h"
 #include "agon_ttxt.h"
+#include "buffers.h"
 #include "sprites.h"
 
 // Definitions for the functions we're implementing here
@@ -159,74 +160,78 @@ void Context::plotPending(int16_t peeked) {
 	}
 }
 
-// Plot path handler
+// Get pointer to our currently selected font
 //
-// void Context::vdu_plotPath(uint8_t mode) {
-// 	auto lastMode = lastPlotCommand & 0x03;
-// 	// call the graphics handler for plotPath
-// 	plotPath(mode, lastMode);
-
-// 	// work out if our next VDU command byte is another PLOT command
-// 	// if it isn't, then we should commit the path
-// 	auto peeked = peekByte_t(FAST_COMMS_TIMEOUT);
-// 	if (peeked == -1 || peeked != 25) {
-// 		// timed out, or not a plot command, so commit the path
-// 		debug_log("vdu_plotPath: committing path on timeout or no subsequent plot (peeked = %d)\n\r", peeked);
-// 		plotPath(0, mode);
-// 	}
-// 	// otherwise just continue
-// }
-
+const fabgl::FontInfo * Context::getFont() {
+	return font == nullptr ? &FONT_AGON : font.get();
+}
 
 // Change the currently selected font
 //
-void Context::changeFont(const fabgl::FontInfo * f, uint8_t flags) {
-	if (!ttxtMode) {
-		if (f->flags & FONTINFOFLAGS_VARWIDTH) {
-			debug_log("changeFont: variable width fonts not supported - yet\n\r");
-			return;
-		}
-		// adjust our cursor position so baseline matches new font
-		// TODO this movement will need to bear in mind cursor behaviour
-		// as if our cursor is moving right to left we'll also need to adjust our x position
-		// if we're moving bottom to top we'll need to adjust our y position, based on height rather than ascent
-		// and may not want to adjust our y position if we're moving top to bottom
-		if (flags & FONT_SELECTFLAG_ADJUSTBASE) {
-			int8_t x = 0;
-			int8_t y = 0;
-			if (cursorBehaviour.flipXY) {
-				// cursor is moving vertically, so we need to adjust y by font height
-				if (cursorBehaviour.invertHorizontal) {
-					y = font->height - f->height;
-				}
-				if (cursorBehaviour.invertVertical) {
-					// cursor x movement is right to left, so we need to adjust x by font width
-					x = font->width - f->width;
-				}
-			} else {
-				// normal x and y movement
-				// so we always need to adjust our y position
-				y = font->ascent - f->ascent;
-				if (cursorBehaviour.invertHorizontal) {
-					// cursor is moving right to left, so we need to adjust x by font width
-					x = font->width - f->width;
-				}
+void Context::changeFont(uint16_t newFontId, uint8_t flags) {
+	if (ttxtMode) {
+		debug_log("changeFont: teletext mode does not support font changes\n\r");
+		return;
+	}
+
+	bool isSystemFont = newFontId == 65535;
+	if (!isSystemFont && fonts.find(newFontId) == fonts.end()) {
+		debug_log("changeFont: font %d not found\n\r", newFontId);
+		return;
+	}
+
+	auto newFont = isSystemFont ? nullptr : fonts[newFontId];
+	auto fontData = isSystemFont ? nullptr : buffers[newFontId][0];
+	changeFont(newFont, fontData, flags);
+}
+
+void Context::changeFont(std::shared_ptr<fabgl::FontInfo> newFont, std::shared_ptr<BufferStream> fontData, uint8_t flags) {
+	auto newFontPtr = newFont == nullptr ? &FONT_AGON : newFont.get();
+	auto oldFontPtr = getFont();
+
+	if (newFontPtr->flags & FONTINFOFLAGS_VARWIDTH) {
+		debug_log("changeFont: variable width fonts not supported - yet\n\r");
+		return;
+	}
+	// adjust our cursor position, according to flags
+	if (flags & FONT_SELECTFLAG_ADJUSTBASE) {
+		int8_t x = 0;
+		int8_t y = 0;
+		if (cursorBehaviour.flipXY) {
+			// cursor is moving vertically, so we need to adjust y by font height
+			if (cursorBehaviour.invertHorizontal) {
+				y = oldFontPtr->height - newFontPtr->height;
 			}
-			cursorRelativeMove(x, y);
-			debug_log("changeFont - relative adjustment is %d, %d\n\r", x, y);
-		}
-		font = f;
-		if (textCursorActive()) {
-			textFont = f;
+			if (cursorBehaviour.invertVertical) {
+				// cursor x movement is right to left, so we need to adjust x by font width
+				x = oldFontPtr->width - newFontPtr->width;
+			}
 		} else {
-			graphicsFont = f;
+			// normal x and y movement
+			// so we always need to adjust our y position
+			y = oldFontPtr->ascent - newFontPtr->ascent;
+			if (cursorBehaviour.invertHorizontal) {
+				// cursor is moving right to left, so we need to adjust x by font width
+				x = oldFontPtr->width - newFontPtr->width;
+			}
 		}
-		canvas->selectFont(f);
+		cursorRelativeMove(x, y);
+		debug_log("changeFont - relative adjustment is %d, %d\n\r", x, y);
+	}
+
+	canvas->selectFont(newFontPtr);
+	font = newFont;
+	if (textCursorActive()) {
+		textFont = newFont;
+		textFontData = fontData;
+	} else {
+		graphicsFont = newFont;
+		graphicsFontData = fontData;
 	}
 }
 
 bool Context::usingSystemFont() {
-	return font == &FONT_AGON;
+	return font == nullptr;
 }
 
 bool Context::cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len) {
@@ -241,6 +246,7 @@ bool Context::cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len) {
 // Try and match a character at given text position
 //
 char Context::getScreenChar(uint8_t x, uint8_t y) {
+	auto font = getFont();
 	Point p = { x * (font->width == 0 ? 8 : font->width), y * font->height };
 	
 	return getScreenChar(p);
@@ -253,22 +259,25 @@ char Context::getScreenCharAt(uint16_t px, uint16_t py) {
 }
 
 char Context::getScreenChar(Point p) {
-	if (font->flags & FONTINFOFLAGS_VARWIDTH) {
+	auto fontPtr = getFont();
+	if (fontPtr->flags & FONTINFOFLAGS_VARWIDTH) {
 		debug_log("getScreenChar: variable width fonts not supported\n\r");
 		return 0;
 	}
+	uint8_t fontWidth = fontPtr->width;
+	uint8_t fontHeight = fontPtr->height;
 
 	// Do some bounds checking first
 	//
-	if (p.X >= canvasW - font->width || p.Y >= canvasH - font->height) {
+	if (p.X >= canvasW - fontWidth || p.Y >= canvasH - fontHeight) {
 		return 0;
 	}
 	if (ttxtMode) {
 		return ttxt_instance.get_screen_char(p.X, p.Y);
 	} else {
 		waitPlotCompletion();
-		uint8_t charWidthBytes = (font->width + 7) / 8;
-		uint8_t charSize = charWidthBytes * font->height;
+		uint8_t charWidthBytes = (fontWidth + 7) / 8;
+		uint8_t charSize = charWidthBytes * fontHeight;
 		uint8_t	charData[charSize];
 		uint8_t R = tbg.R;
 		uint8_t G = tbg.G;
@@ -276,9 +285,9 @@ char Context::getScreenChar(Point p) {
 
 		// Now scan the screen and get the 8 byte pixel representation in charData
 		//
-		for (uint8_t y = 0; y < font->height; y++) {
+		for (uint8_t y = 0; y < fontHeight; y++) {
 			uint8_t readByte = 0;
-			for (uint8_t x = 0; x < font->width; x++) {
+			for (uint8_t x = 0; x < fontWidth; x++) {
 				if ((x % 8) == 0) {
 					readByte = 0;
 				}
@@ -840,7 +849,7 @@ void Context::plotCharacter(char c) {
 			canvas->setPaintOptions(gpofg);
 		}
 		if (bitmap) {
-			canvas->drawBitmap(activeCursor->X, activeCursor->Y + font->height - bitmap->height, bitmap.get());
+			canvas->drawBitmap(activeCursor->X, activeCursor->Y + getFont()->height - bitmap->height, bitmap.get());
 		} else {
 			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
 		}
@@ -858,7 +867,7 @@ void Context::plotBackspace() {
 		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, ' ');
 	} else {
 		canvas->setBrushColor(textCursorActive() ? tbg : gbg);
-		canvas->fillRectangle(activeCursor->X, activeCursor->Y, activeCursor->X + font->width - 1, activeCursor->Y + font->height - 1);
+		canvas->fillRectangle(activeCursor->X, activeCursor->Y, activeCursor->X + getFont()->width - 1, activeCursor->Y + getFont()->height - 1);
 	}
 }
 
@@ -878,6 +887,7 @@ void Context::setClippingRect(Rect rect) {
 //
 void Context::drawCursor(Point p) {
 	if (textCursorActive()) {
+		auto font = getFont();
 		if (cursorHStart < font->width && cursorHStart <= cursorHEnd && cursorVStart < font->height && cursorVStart <= cursorVEnd) {
 			canvas->setPaintOptions(cpo);
 			canvas->setBrushColor(tbg);
@@ -1073,9 +1083,10 @@ int8_t Context::change_mode(uint8_t mode) {
 
 	// simple heuristic to determine rectangular pixels
 	rectangularPixels = ((float)canvasW / (float)canvasH) > 2;
-	font = canvas->getFontInfo();
-	textFont = font;
-	graphicsFont = font;
+	// reset our font indicators back to system font
+	font = nullptr;
+	textFont = nullptr;
+	graphicsFont = nullptr;
 	viewportReset();
 	setOrigin(0,0);
 	pushPoint(0,0);
@@ -1172,9 +1183,9 @@ void Context::scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 		} else {
 			if (movement == 0) {
 				if (moveX != 0) {
-					movement = font->width;
+					movement = getFont()->width;
 				} else {
-					movement = font->height;
+					movement = getFont()->height;
 				}
 			}
 			canvas->scroll(movement * moveX, movement * moveY);
