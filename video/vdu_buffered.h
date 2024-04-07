@@ -431,125 +431,273 @@ bool VDUStreamProcessor::setBufferByte(uint8_t value, const std::vector<std::sha
 template<uint8_t Operator>
 struct AdjustSingle {
 	// Default implementation for unimplemented operations
-	static inline uint8_t adjust(uint8_t target, uint8_t, bool &) {
+	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t, bool &) {
+		return target;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t, bool &) {
+		return target;
+	}
+	static inline uint32_t adjustWord(uint32_t target, uint32_t, bool&) {
 		return target;
 	}
 };
 template<>
 struct AdjustSingle<ADJUST_NOT> {
-	static inline uint8_t adjust(uint8_t target, uint8_t, bool &) {
+	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t, bool &) {
+		return ~target;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t, bool &) {
+		return ~target;
+	}
+	static inline uint32_t adjustWord(uint32_t target, uint32_t, bool &) {
 		return ~target;
 	}
 };
 template<>
 struct AdjustSingle<ADJUST_NEG> {
-	static inline uint8_t adjust(uint8_t target, uint8_t, bool &) {
+	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t, bool &) {
 		return -target;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t, bool &) {
+		static constexpr uint_fast16_t CARRY_MASK = 0x100;
+		uint_fast16_t result = -target;
+		return result + ((result ^ target) & CARRY_MASK);
+	}
+	static inline uint32_t adjustWord(uint32_t target, uint32_t, bool &) {
+		static constexpr uint32_t SIGN_MASK = 0x7F7F7F7F;
+		return ((target & SIGN_MASK) + SIGN_MASK) ^ (target | SIGN_MASK);
 	}
 };
 template<>
 struct AdjustSingle<ADJUST_SET> {
-	static inline uint8_t adjust(uint8_t, uint8_t operand, bool &) {
+	static inline uint_fast8_t adjust(uint_fast8_t, uint_fast8_t operand, bool &) {
+		return operand;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t, uint_fast16_t operand, bool &) {
+		return operand;
+	}
+	static inline uint32_t adjustWord(uint32_t, uint32_t operand, bool &) {
 		return operand;
 	}
 };
 template<>
 struct AdjustSingle<ADJUST_ADD> {
-	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &) {
-		// byte-wise add - no carry, so bytes may overflow
+	// byte-wise add - no carry, so bytes may overflow
+	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t operand, bool &) {
 		return target + operand;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t operand, bool &) {
+		static constexpr uint_fast16_t CARRY_MASK = 0x100;
+		uint_fast16_t result = target + operand;
+		return result - ((result ^ target ^ operand) & CARRY_MASK);
+	}
+	static inline uint32_t adjustWord(uint32_t target, uint32_t operand, bool &) {
+		static constexpr uint32_t SIGN_MASK = 0x7F7F7F7F;
+		return ((target & SIGN_MASK) + (operand & SIGN_MASK)) ^ ((target ^ operand) & ~SIGN_MASK);
+	}
+	static inline uint_fast8_t fold(uint32_t accumulator) {
+		static constexpr uint32_t BYTE_MASK = 0x00FF00FF;
+		accumulator = (accumulator & BYTE_MASK) + ((accumulator >> 8) & BYTE_MASK);
+		return accumulator + (accumulator >> 16);
 	}
 };
 template<>
 struct AdjustSingle<ADJUST_ADD_CARRY> {
-	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &carry) {		
-		// byte-wise add with carry
-		// bytes are treated as being in little-endian order
-		uint16_t sum = target + operand + carry;
+	// byte-wise add with carry
+	// bytes are treated as being in little-endian order
+	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t operand, bool &carry) {
+		uint_fast16_t sum = (uint8_t)target + (uint8_t)operand + carry;
 		carry = sum >> 8;
 		return sum;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t operand, bool &carry) {
+		static_assert(XCHAL_HAVE_BE == 0, "Assumes little endian processor");
+		uint32_t sum = (uint16_t)target + (uint16_t)operand + carry;
+		carry = sum >> 16;
+		return sum;
+	}
+	static inline uint32_t adjustWord(uint32_t target, uint32_t operand, bool &carry) {
+		static_assert(XCHAL_HAVE_BE == 0, "Assumes little endian processor");
+		target += operand + carry;
+		carry = target < operand || (target == operand && carry);
+		return target;
 	}
 };
 template<>
 struct AdjustSingle<ADJUST_AND> {
-	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &) {
+	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t operand, bool &) {
 		return target & operand;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t operand, bool &) {
+		return target & operand;
+	}
+	static inline uint32_t adjustWord(uint32_t target, uint32_t operand, bool &) {
+		return target & operand;
+	}
+	static inline uint_fast8_t fold(uint32_t accumulator) {
+		accumulator &= accumulator >> 16;
+		accumulator &= accumulator >> 8;
+		return accumulator;
 	}
 };
 template<>
 struct AdjustSingle<ADJUST_OR> {
-	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &) {
+	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t operand, bool &) {
 		return target | operand;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t operand, bool &) {
+		return target | operand;
+	}
+	static inline uint32_t adjustWord(uint32_t target, uint32_t operand, bool &) {
+		return target | operand;
+	}
+	static inline uint_fast8_t fold(uint32_t accumulator) {
+		accumulator |= accumulator >> 16;
+		accumulator |= accumulator >> 8;
+		return accumulator;
 	}
 };
 template<>
 struct AdjustSingle<ADJUST_XOR> {
-	static inline uint8_t adjust(uint8_t target, uint8_t operand, bool &) {
+	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t operand, bool &) {
 		return target ^ operand;
+	}
+	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t operand, bool &) {
+		return target ^ operand;
+	}
+	static inline uint32_t adjustWord(uint32_t target, uint32_t operand, bool &) {
+		return target ^ operand;
+	}
+	static inline uint_fast8_t fold(uint32_t accumulator) {
+		accumulator ^= accumulator >> 16;
+		accumulator ^= accumulator >> 8;
+		return accumulator;
 	}
 };
 template<uint8_t Operator>
 struct AdjustMultiSingle {
-	static void adjust(uint8_t * target, uint8_t operand, bool &carry, size_t count) {
-		for (size_t i = 0; i < count; i++) {
-			target[i] = AdjustSingle<Operator>::adjust(target[i], operand, carry);
+	typedef uint16_t __attribute__((__may_alias__)) uint16_aliasing;
+	typedef uint32_t __attribute__((__may_alias__)) uint32_aliasing;
+
+	// Input operand is duplicated into all 4 bytes
+	static void adjust(uint8_t * target, uint32_t operand, bool& __restrict carry, size_t count) {
+		if (count >= sizeof(uint32_t)) {
+			if (reinterpret_cast<uintptr_t>(target) & 1) {
+				*target = AdjustSingle<Operator>::adjust(*target, operand, carry);
+				target++, count--;
+			}
+			if (reinterpret_cast<uintptr_t>(target) & 2) {
+				auto targetHalfWord = reinterpret_cast<uint16_aliasing *>(target);
+				*targetHalfWord = AdjustSingle<Operator>::adjustHalfWord(*targetHalfWord, operand, carry);
+				target += sizeof(uint16_t), count -= sizeof(uint16_t);
+			}
+			if (count >= sizeof(uint32_t)) {
+				auto targetWord = reinterpret_cast<uint32_aliasing *>(target);
+				do {
+					*targetWord = AdjustSingle<Operator>::adjustWord(*targetWord, operand, carry);
+					targetWord++, count -= sizeof(uint32_t);
+				} while (count >= sizeof(uint32_t));
+				target = reinterpret_cast<uint8_t *>(targetWord);
+			}
+		}
+		if (count & 2) {
+			static_assert(XCHAL_UNALIGNED_LOAD_HW && XCHAL_UNALIGNED_STORE_HW, "Assumes hardware unaligned loads/stores");
+			auto targetHalfWord = reinterpret_cast<uint16_aliasing *>(target);
+			*targetHalfWord = AdjustSingle<Operator>::adjustHalfWord(*targetHalfWord, operand, carry);
+			target += sizeof(uint16_t);
+		}
+		if (count & 1) {
+			*target = AdjustSingle<Operator>::adjust(*target, operand, carry);
 		}
 	}
 };
-template<>
-struct AdjustMultiSingle<ADJUST_SET> {
-	static void adjust(uint8_t * target, uint8_t operand, bool &, size_t count) {
-		memset(target, operand, count);
-	}
-};
-template<uint8_t Operator>
+template<uint8_t Operator, typename = void>
 struct AdjustSingleMulti {
-	static uint8_t adjust(uint8_t target, uint8_t * operand, bool &carry, size_t count) {
+	static uint_fast8_t adjust(uint_fast8_t target, uint8_t * operand, bool& __restrict carry, size_t count) {
 		for (size_t i = 0; i < count; i++) {
 			target = AdjustSingle<Operator>::adjust(target, operand[i], carry);
 		}
 		return target;
 	}
 };
+// Specialization if a fold operation is provided
+template<uint8_t Operator>
+struct AdjustSingleMulti<Operator, decltype(AdjustSingle<Operator>::fold, void())> {
+	typedef uint32_t __attribute__((__may_alias__)) uint32_aliasing;
+
+	static uint_fast8_t adjust(uint_fast8_t target, uint8_t * operand, bool& __restrict carry, size_t count) {
+		if (count >= sizeof(uint32_t)) {
+			if (reinterpret_cast<uintptr_t>(operand) & 1) {
+				target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+				operand++, count--;
+			}
+			if (reinterpret_cast<uintptr_t>(operand) & 2) {
+				target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+				operand++, count--;
+				target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+				operand++, count--;
+			}
+			if (count >= sizeof(uint32_t)) {
+				auto operandWord = reinterpret_cast<uint32_aliasing *>(operand);
+				uint32_t targetWord = *operandWord;
+				operandWord++, count -= sizeof(uint32_t);
+				while (count >= sizeof(uint32_t)) {
+					targetWord = AdjustSingle<Operator>::adjustWord(targetWord, *operandWord, carry);
+					operandWord++, count -= sizeof(uint32_t);
+				}
+				operand = reinterpret_cast<uint8_t *>(operandWord);
+				target = AdjustSingle<Operator>::adjust(target, AdjustSingle<Operator>::fold(targetWord), carry);
+			}
+		}
+		if (count & 2) {
+			target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+			operand++;
+			target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+			operand++;
+		}
+		if (count & 1) {
+			target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+		}
+		return target;
+	}
+};
 template<uint8_t Operator>
 struct AdjustMulti {
-	static void adjust(uint8_t * target, uint8_t * operand, bool &carry, size_t count, bool sameBuffer) {
-		(void)sameBuffer;
+	typedef uint16_t __attribute__((__may_alias__)) uint16_aliasing;
+	typedef uint32_t __attribute__((__may_alias__)) uint32_aliasing;
+
+	static void adjust(uint8_t * target, uint8_t * operand, bool& __restrict carry, size_t count, bool sameBuffer) {
+		if (count >= sizeof(uint32_t) && (!sameBuffer || target <= operand || target >= operand + sizeof(uint32_t))) {
+			if (reinterpret_cast<uintptr_t>(target) & 1) {
+				*target = AdjustSingle<Operator>::adjust(*target, *operand, carry);
+				target++, operand++, count--;
+			}
+			if (reinterpret_cast<uintptr_t>(target) & 2) {
+				auto targetHalfWord = reinterpret_cast<uint16_aliasing *>(target);
+			    static_assert(XCHAL_UNALIGNED_LOAD_HW, "Assumes hardware unaligned loads");
+				auto operandHalfWord = reinterpret_cast<uint16_aliasing *>(operand);
+				*targetHalfWord = AdjustSingle<Operator>::adjustHalfWord(*targetHalfWord, *operandHalfWord, carry);
+				target += sizeof(uint16_t), operand += sizeof(uint16_t), count -= sizeof(uint16_t);
+			}
+			auto targetWord = reinterpret_cast<uint32_aliasing *>(target);
+			static_assert(XCHAL_UNALIGNED_LOAD_HW, "Assumes hardware unaligned loads");
+			auto operandWord = reinterpret_cast<uint32_aliasing *>(operand);
+			while (count >= sizeof(uint32_t)) {
+				*targetWord = AdjustSingle<Operator>::adjustWord(*targetWord, *operandWord, carry);
+				targetWord++, operandWord++, count -= sizeof(uint32_t);
+			}
+			target = reinterpret_cast<uint8_t *>(targetWord);
+			operand = reinterpret_cast<uint8_t *>(operandWord);
+		}
+		// Target pointer may be immediately ahead of operand pointer, so simply loop bytes
 		for (size_t i = 0; i < count; i++) {
 			target[i] = AdjustSingle<Operator>::adjust(target[i], operand[i], carry);
 		}
 	}
 };
-template<>
-struct AdjustMulti<ADJUST_SET> {
-	static void adjust(uint8_t * target, uint8_t * operand, bool &, size_t count, bool sameBuffer) {
-		if (!sameBuffer) {
-			memcpy(target, operand, count);
-		} else if (target <= operand) {
-			// memmove gives incorrect results, possibly an issue with the linked libc and PSRAM cache?
-			//memmove(target, operand, count);
-			if (target + count <= operand) {
-				memcpy(target, operand, count);
-			} else {
-				for (size_t i = 0; i < count; i++) {
-					target[i] = operand[i];
-				}
-			}
-		} else {
-			size_t safeCount = target - operand;
-			while (safeCount < count) {
-				memcpy(target, operand, safeCount);
-				target += safeCount;
-				count -= safeCount;
-				safeCount += safeCount;
-			}
-			memcpy(target, operand, count);
-		}
-	}
-};
 
 // Automatically generates a function table for all operators. Would be easier with C++14
-template <template<uint8_t> typename T>
+template <template<uint8_t, typename...> typename T>
 class AdjustFuncTable {
 	using FuncPtr = decltype(T<ADJUST_NOT>::adjust)*;
 	std::array<FuncPtr, ADJUST_OP_MASK+1> table;
@@ -647,7 +795,7 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 
 	MultiBufferStream * instream = nullptr;
 	tcb::span<uint8_t> targetSpan;
-	uint8_t sourceValue = 0;
+	uint_fast8_t sourceValue = 0;
 	auto operandValue = 0;
 	bool carryValue = false;
 
@@ -729,6 +877,7 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 	} else {
 		if (!hasOperand || !useMultiOperand) {
 			auto func = adjustMultiSingleFuncs[op];
+			auto operandWord = (uint8_t)operandValue * (uint32_t)0x01010101;
 			while (count > 0) {
 				targetSpan = getBufferSpan(buffer, offset);
 				auto iterCount = std::min<size_t>(targetSpan.size(), count);
@@ -736,7 +885,7 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 					debug_log("bufferAdjust: target buffer overflow\n\r");
 					return;
 				}
-				func(targetSpan.data(), operandValue, carryValue, iterCount);
+				func(targetSpan.data(), operandWord, carryValue, iterCount);
 				offset.blockOffset += iterCount;
 				count -= iterCount;
 			}
