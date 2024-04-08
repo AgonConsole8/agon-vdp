@@ -175,6 +175,9 @@ class Context {
 			reset();
 		};
 
+		// Copy constructor
+		Context(const Context &c);
+
 		// Cursor management functions
 		void hideCursor();
 		void showCursor();
@@ -252,7 +255,74 @@ class Context {
 
 		void resetPaintingInfo();
 		void reset();
+		void activate();
 };
+
+
+ Context::Context(const Context &c) {
+	// Copy all the data
+	font = c.font;
+	textFont = c.textFont;
+	graphicsFont = c.graphicsFont;
+	textFontData = c.textFontData;
+	graphicsFontData = c.graphicsFontData;
+
+	cursorEnabled = c.cursorEnabled;
+	cursorFlashing = c.cursorFlashing;
+	cursorFlashRate = c.cursorFlashRate;
+	cursorBehaviour = c.cursorBehaviour;
+	textCursor = c.textCursor;
+	cursorShowing = c.cursorShowing;
+	cursorTemporarilyHidden = c.cursorTemporarilyHidden;
+	cursorTime = c.cursorTime;
+	cursorVStart = c.cursorVStart;
+	cursorVEnd = c.cursorVEnd;
+	cursorHStart = c.cursorHStart;
+	cursorHEnd = c.cursorHEnd;
+
+	pagedMode = c.pagedMode;
+	pagedModeCount = c.pagedModeCount;
+
+	defaultViewport = c.defaultViewport;
+	textViewport = c.textViewport;
+	graphicsViewport = c.graphicsViewport;
+
+	gpofg = c.gpofg;
+	gpobg = c.gpobg;
+	tpo = c.tpo;
+	cpo = c.cpo;
+	gfg = c.gfg;
+	gbg = c.gbg;
+	tfg = c.tfg;
+	tbg = c.tbg;
+	gfgc = c.gfgc;
+	gbgc = c.gbgc;
+	tfgc = c.tfgc;
+	tbgc = c.tbgc;
+	lineThickness = c.lineThickness;
+	logicalCoords = c.logicalCoords;
+	origin = c.origin;
+	p1 = c.p1;
+	p2 = c.p2;
+	p3 = c.p3;
+	rp1 = c.rp1;
+	up1 = c.up1;
+	pathPoints = c.pathPoints;
+	lastPlotCommand = c.lastPlotCommand;
+
+	if (c.activeCursor == &c.textCursor) {
+		activeCursor = &textCursor;
+	} else {
+		activeCursor = &p1;
+	}
+
+	if (c.activeViewport == &c.graphicsViewport) {
+		activeViewport = &graphicsViewport;
+	} else {
+		activeViewport = &textViewport;
+	}
+}
+
 
 #include "context/cursor.h"
 #include "context/fonts.h"

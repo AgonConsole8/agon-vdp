@@ -887,4 +887,15 @@ void Context::reset() {
 	resetCursor();
 }
 
+// Activate the context, setting up canvas as required
+//
+void Context::activate() {
+	if (!ttxtMode) {
+		canvas->selectFont(font == nullptr ? &FONT_AGON : font.get());
+	}
+	setLineThickness(lineThickness);
+	// reset line pattern
+	moveTo();
+}
+
 #endif // CONTEXT_GRAPHICS_H

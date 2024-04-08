@@ -12,6 +12,7 @@
 #include "agon_screen.h"
 #include "vdu_audio.h"
 #include "vdu_buffered.h"
+#include "vdu_context.h"
 #include "vdu_fonts.h"
 #include "vdu_sprites.h"
 #include "updater.h"
@@ -287,6 +288,9 @@ void VDUStreamProcessor::vdu_sys_video() {
 			if (b >= 0) {
 				context->setDottedLinePatternLength(b);
 			}
+		}	break;
+		case VDP_CONTEXT: {				// VDU 23, 0, &F3, command, [<args>]
+			vdu_sys_context();			// Context management
 		}	break;
 		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
 			auto b = readByte_t();

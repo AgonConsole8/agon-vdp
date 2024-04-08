@@ -69,6 +69,7 @@
 #define VDP_LOGICALCOORDS		0xC0	// Switch BBC Micro style logical coords on and off
 #define VDP_LEGACYMODES			0xC1	// Switch VDP 1.03 compatible modes on and off
 #define VDP_SWITCHBUFFER		0xC3	// Double buffering control
+#define VDP_CONTEXT				0xC8	// Context management commands
 #define VDP_PATTERN_LENGTH		0xF2	// Set pattern length (*FX 163,242,n)
 #define VDP_CONSOLEMODE			0xFE	// Switch console mode on and off
 #define VDP_TERMINALMODE		0xFF	// Switch to terminal mode
@@ -214,6 +215,18 @@ enum AudioState : uint8_t {	// Audio channel state
 #define FONT_INFO_CODEPAGE				10		// Font code page
 
 #define FONT_SELECTFLAG_ADJUSTBASE		0x01	// Adjust font baseline, based on ascent
+
+// Context management commands
+#define CONTEXT_SELECT					0		// Select a context
+#define CONTEXT_RESET					1		// Reset current context
+#define CONTEXT_DELETE					2		// Delete a context
+#define CONTEXT_SAVE					3		// Save a context
+#define CONTEXT_PUSH					4		// Push a context
+#define CONTEXT_PUSH_AND_SELECT			5		// Push and select a context
+#define CONTEXT_POP						6		// Pop a context
+#define CONTEXT_POPALL					7		// Pop all contexts
+#define CONTEXT_DELETESTACK				8		// Delete the context stack
+
 
 // Buffered commands
 #define BUFFERED_WRITE					0x00	// Write to a numbered buffer

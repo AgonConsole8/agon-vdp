@@ -273,12 +273,12 @@ void VDUStreamProcessor::vdu_graphicsViewport() {
 //
 void IRAM_ATTR VDUStreamProcessor::vdu_plot() {
 	auto command = readByte_t(); if (command == -1) return;
+	auto x = readWord_t(); if (x == -1) return;
+	auto y = readWord_t(); if (y == -1) return;
 
-	auto x = readWord_t(); if (x == -1) return; else x = (int16_t)x;
-	auto y = readWord_t(); if (y == -1) return; else y = (int16_t)y;
 	if (ttxtMode) return;
 
-	if (context->plot(x, y, command)) {
+	if (context->plot((int16_t) x, (int16_t) y, command)) {
 		// we have a pending plot command
 		context->plotPending(peekByte_t(FAST_COMMS_TIMEOUT));
 	}

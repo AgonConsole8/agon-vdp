@@ -74,6 +74,17 @@ class VDUStreamProcessor {
 
 		void vdu_sys_font();
 
+		void vdu_sys_context();
+		void selectContext(uint8_t contextId);
+		void resetContext();
+		// void deleteContext(uint8_t contextId);
+		// void saveContext(uint8_t contextId);
+		// void pushContext();
+		// void pushAndSelectContext(uint8_t contextId);
+		// void popContext();
+		// void popAllContexts();
+		// void deleteContextStack();
+
 		void vdu_sys_sprites();
 		void receiveBitmap(uint16_t bufferId, uint16_t width, uint16_t height);
 		void createBitmapFromScreen(uint16_t bufferId);
