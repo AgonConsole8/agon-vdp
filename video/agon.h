@@ -19,6 +19,8 @@
 #define MAX_SPRITES				256		// Maximum number of sprites
 #define MAX_BITMAPS				256		// Maximum number of bitmaps
 
+#define VDP_USE_WDT						// Use the esp watchdog timer (experimental)
+
 #define UART_BR					1152000	// Max baud rate; previous stable value was 384000
 #define UART_NA					-1
 #define UART_TX					2

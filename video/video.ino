@@ -45,8 +45,9 @@
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
 
-#include <WiFi.h>
+#include <esp_task_wdt.h>
 #include <HardwareSerial.h>
+#include <WiFi.h>
 #include <fabgl.h>
 
 #define	DEBUG			0						// Serial Debug Mode: 1 = enable
@@ -76,8 +77,10 @@ VDUStreamProcessor *	processor;				// VDU Stream Processor
 #include "zdi.h"								// ZDI debugging console
 
 void setup() {
-	disableCore0WDT(); delay(200);				// Disable the watchdog timers
-	disableCore1WDT(); delay(200);
+	#ifndef VDP_USE_WDT
+		disableCore0WDT(); delay(200);				// Disable the watchdog timers
+		disableCore1WDT(); delay(200);
+	#endif
 	DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
 	copy_font();
 	setupVDPProtocol();
@@ -101,6 +104,9 @@ void loop() {
 	auto cursorTime = millis();
 
 	while (true) {
+		#ifdef VDP_USE_WDT
+			esp_task_wdt_reset();
+		#endif
 		if (processTerminal()) {
 			continue;
 		}
