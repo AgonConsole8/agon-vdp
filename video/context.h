@@ -166,6 +166,11 @@ class Context {
 
 	public:
 
+		// Constructor
+		Context() {
+			reset();
+		};
+
 		// Cursor management functions
 		void do_cursor();       // TODO remove??
 		inline bool textCursorActive();

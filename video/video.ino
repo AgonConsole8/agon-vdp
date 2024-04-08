@@ -82,18 +82,15 @@ void setup() {
 		disableCore1WDT(); delay(200);
 	#endif
 	DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
+	changeMode(0);
 	copy_font();
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
-	auto context = processor->getContext();
-	changeMode(0);
-	context->reset();
 	initAudio();
+	boot_screen();
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
-	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	processor->sendModeInformation();
-	boot_screen();
 }
 
 // The main loop
