@@ -12,10 +12,14 @@
 // Get pointer to our currently selected font
 //
 const fabgl::FontInfo * Context::getFont() {
-	return font == nullptr ? &FONT_AGON : font.get();
+	return font == nullptr ? canvas->getFontInfo() : font.get();
 }
 
 void Context::changeFont(std::shared_ptr<fabgl::FontInfo> newFont, std::shared_ptr<BufferStream> fontData, uint8_t flags) {
+	if (ttxtMode) {
+		debug_log("changeFont: teletext mode does not support font changes\n\r");
+		return;
+	}
 	auto newFontPtr = newFont == nullptr ? &FONT_AGON : newFont.get();
 	auto oldFontPtr = getFont();
 
