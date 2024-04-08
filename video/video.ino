@@ -96,10 +96,6 @@ void setup() {
 // The main loop
 //
 void loop() {
-	bool cursorShowing = false;
-	bool cursorTemporarilyHidden = false;
-	auto cursorTime = millis();
-
 	while (true) {
 		#ifdef VDP_USE_WDT
 			esp_task_wdt_reset();
@@ -107,28 +103,17 @@ void loop() {
 		if (processTerminal()) {
 			continue;
 		}
-		// if (!cursorTemporarilyHidden && cursorFlashing && (millis() - cursorTime > cursorFlashRate)) {
-		// 	cursorTime = millis();
-		// 	cursorShowing = !cursorShowing;
-		// 	if (ttxtMode) {
-		// 		ttxt_instance.flash(cursorShowing);
-		// 	}
-		// 	do_cursor();
-		// }
+		processor->doCursorFlash();
+
 		do_keyboard();
 		do_mouse();
 
 		if (processor->byteAvailable()) {
-			// if (!cursorTemporarilyHidden && cursorShowing) {
-			// 	cursorTemporarilyHidden = true;
-			// 	do_cursor();
-			// }
+			processor->hideCursor();
 			processor->processNext();
-			// if (!processor->byteAvailable() && (cursorTemporarilyHidden || !cursorFlashing)) {
-			// 	cursorShowing = true;
-			// 	cursorTemporarilyHidden = false;
-			// 	do_cursor();
-			// }
+			if (!processor->byteAvailable()) {
+				processor->showCursor();
+			}
 		}
 	}
 }

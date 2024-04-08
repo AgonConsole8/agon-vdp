@@ -139,6 +139,15 @@ class VDUStreamProcessor {
 
 		void processAllAvailable();
 		void processNext();
+		void doCursorFlash() {
+			context->doCursorFlash();
+		}
+		void hideCursor() {
+			context->hideCursor();
+		}
+		void showCursor() {
+			context->showCursor();
+		}
 
 		void vdu(uint8_t c);
 

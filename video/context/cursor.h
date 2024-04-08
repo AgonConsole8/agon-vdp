@@ -11,14 +11,6 @@
 #include "context.h"
 
 
-// Render a cursor at the current screen position
-//
-void Context::do_cursor() {
-	if (cursorEnabled) {
-		drawCursor(textCursor);
-	}
-}
-
 // Private cursor management functions
 //
 
@@ -228,7 +220,7 @@ void Context::resetCursor() {
 	// visual cursor appearance reset
 	cursorEnabled = true;
 	cursorFlashing = true;
-	cursorFlashRate = CURSOR_PHASE;
+	cursorFlashRate = pdMS_TO_TICKS(CURSOR_PHASE);
 	cursorVStart = 0;
 	cursorVEnd = 255;
 	cursorHStart = 0;
@@ -242,6 +234,39 @@ void Context::resetCursor() {
 //
 
 // Cursor management, behaviour, and appearance
+
+void Context::hideCursor() {
+	if (!cursorTemporarilyHidden && cursorShowing) {
+		cursorTemporarilyHidden = true;
+		if (cursorEnabled) {
+			drawCursor(textCursor);
+		}
+	}
+}
+
+void Context::showCursor() {
+	if (cursorTemporarilyHidden || !cursorFlashing) {
+		cursorShowing = true;
+		cursorTemporarilyHidden = false;
+		if (cursorEnabled) {
+			drawCursor(textCursor);
+		}
+	}
+}
+
+void Context::doCursorFlash() {
+	auto now = xTaskGetTickCountFromISR();
+	if (!cursorTemporarilyHidden && cursorFlashing && (now - cursorTime > cursorFlashRate)) {
+		cursorTime = now;
+		cursorShowing = !cursorShowing;
+		if (ttxtMode) {
+			ttxt_instance.flash(cursorShowing);
+		}
+		if (cursorEnabled) {
+			drawCursor(textCursor);
+		}
+	}
+}
 
 inline bool Context::textCursorActive() {
 	return activeCursor == &textCursor;
@@ -287,11 +312,11 @@ void Context::setCursorAppearance(uint8_t appearance) {
 			cursorEnabled = false;
 			break;
 		case 2:		// fast flash
-			cursorFlashRate = CURSOR_FAST_PHASE;
+			cursorFlashRate = pdMS_TO_TICKS(CURSOR_FAST_PHASE);
 			cursorFlashing = true;
 			break;
 		case 3:		// slow flash
-			cursorFlashRate = CURSOR_PHASE;
+			cursorFlashRate = pdMS_TO_TICKS(CURSOR_PHASE);
 			cursorFlashing = true;
 			break;
 	}

@@ -82,7 +82,7 @@ void VDUStreamProcessor::vdu_sys() {
 			case 0x01: {					// VDU 23, 1
 				auto b = readByte_t();		// Cursor control
 				if (b >= 0) {
-					context->enableCursor((bool) b);
+					context->enableCursor(b);
 				}
 			}	break;
 			case 0x06: {					// VDU 23, 6

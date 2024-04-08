@@ -56,10 +56,13 @@ class Context {
 		// Cursor management data
 		bool			cursorEnabled = true;			// Cursor visibility
 		bool			cursorFlashing = true;			// Cursor is flashing
-		uint16_t		cursorFlashRate = CURSOR_PHASE;	// Cursor flash rate
-		CursorBehaviour cursorBehaviour;				// New cursor behavior
+		uint16_t		cursorFlashRate = pdMS_TO_TICKS(CURSOR_PHASE);	// Cursor flash rate
+		CursorBehaviour cursorBehaviour;				// Cursor behavior byte
 		Point			textCursor;						// Text cursor
 		Point *			activeCursor = &textCursor;		// Pointer to the active text cursor (textCursor or p1)
+		bool			cursorShowing = false;			// Cursor is currently showing on screen
+		bool			cursorTemporarilyHidden = false;	// Cursor is temporarily hidden for command processing
+		TickType_t		cursorTime;						// Time of last cursor flash event
 
 		// Cursor rendering
 		uint8_t			cursorVStart;					// Cursor vertical start offset
@@ -168,11 +171,14 @@ class Context {
 
 		// Constructor
 		Context() {
+			cursorTime = xTaskGetTickCountFromISR();
 			reset();
 		};
 
 		// Cursor management functions
-		void do_cursor();       // TODO remove??
+		void hideCursor();
+		void showCursor();
+		void doCursorFlash();
 		inline bool textCursorActive();
 		inline void setActiveCursor(CursorType type);
 		inline void setCursorBehaviour(uint8_t setting, uint8_t mask);
