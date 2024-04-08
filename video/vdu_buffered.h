@@ -241,26 +241,46 @@ void VDUStreamProcessor::bufferCall(uint16_t callBufferId, AdvancedOffset offset
 		debug_log("bufferCall: no buffer ID\n\r");
 		return;
 	}
+	AdvancedOffset returnOffset;
+	if (id != 65535) {
+		if (inputStream->available() == 0) {
+			// tail-call optimise - turn the call into a jump
+			bufferJump(bufferId, offset);
+			return;
+		}
+		// get the return offset before doing any BufferStream operations
+		auto multiBufferStream = (MultiBufferStream *)inputStream.get();
+		multiBufferStream->tellBuffer(returnOffset.blockOffset, returnOffset.blockIndex);
+		if (id == bufferId) {
+			// calling ourselves, just seek to the old offset after returning
+			multiBufferStream->seekTo(offset.blockOffset, offset.blockIndex);
+			processAllAvailable();
+			multiBufferStream->seekTo(returnOffset.blockOffset, returnOffset.blockIndex);
+			return;
+		}
+	}
 	auto bufferIter = buffers.find(bufferId);
 	if (bufferIter == buffers.end()) {
 		debug_log("bufferCall: buffer %d not found\n\r", bufferId);
 		return;
 	}
-	if (id != 65535 && inputStream->available() == 0) {
-		// tail-call optimise - turn the call into a jump
-		bufferJump(bufferId, offset);
-		return;
-	}
 	auto &streams = bufferIter->second;
-	auto multiBufferStream = make_shared_psram<MultiBufferStream>(streams);
+	std::shared_ptr<Stream> callInputStream = make_shared_psram<MultiBufferStream>(streams);
 	if (offset.blockOffset != 0 || offset.blockIndex != 0) {
+		auto multiBufferStream = (MultiBufferStream *)callInputStream.get();
 		multiBufferStream->seekTo(offset.blockOffset, offset.blockIndex);
 	}
-	auto streamProcessor = make_unique_psram<VDUStreamProcessor>(std::move(multiBufferStream), outputStream, bufferId);
-	if (streamProcessor) {
-		streamProcessor->processAllAvailable();
-	} else {
-		debug_log("bufferCall: failed to create stream processor\n\r");
+	// use the current VDUStreamProcessor, swapping out the stream
+	std::swap(id, callBufferId);
+	std::swap(inputStream, callInputStream);
+	processAllAvailable();
+	// restore the original buffer id and stream
+	id = callBufferId;
+	inputStream = std::move(callInputStream);
+	if (id != 65535) {
+		// return to the appropriate offset
+		auto multiBufferStream = (MultiBufferStream *)inputStream.get();
+		multiBufferStream->seekTo(returnOffset.blockOffset, returnOffset.blockIndex);
 	}
 }
 
@@ -1073,6 +1093,7 @@ void VDUStreamProcessor::bufferJump(uint16_t bufferId, AdvancedOffset offset) {
 	if (offset.blockOffset != 0 || offset.blockIndex != 0) {
 		multiBufferStream->seekTo(offset.blockOffset, offset.blockIndex);
 	}
+	id = bufferId;
 	inputStream = std::move(multiBufferStream);
 }
 
