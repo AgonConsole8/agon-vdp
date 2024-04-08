@@ -118,9 +118,12 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		case 0x13:	// Define Logical Colour
 			vdu_palette();
 			break;
-		case 0x14:	// Reset colours
-			context->restorePalette();
-			break;
+		case 0x14: { // Reset colours
+			restorePalette();
+			// TODO consider if this should iterate over all stored contexts
+			// and if not, how to handle the fact that the palette has changed
+			context->resetPaintingInfo();
+		}	break;
 		case 0x15:
 			commandsEnabled = false;
 			break;
@@ -220,7 +223,29 @@ void VDUStreamProcessor::vdu_mode() {
 	auto mode = readByte_t();
 	debug_log("vdu_mode: %d\n\r", mode);
 	if (mode >= 0) {
-		context->set_mode(mode);
+		// TODO reset to primary context, and clear out all others
+		// clear screen, resetting current viewports
+		context->cls(true);
+		ttxtMode = false;
+		auto errVal = changeMode(mode);
+		if (errVal != 0) {
+			debug_log("vdu_mode: Error %d changing to mode %d\n\r", errVal, mode);
+			errVal = changeMode(videoMode);
+			if (errVal != 0) {
+				debug_log("vdu_mode: Error %d changing back to mode %d\n\r", errVal, videoMode);
+				videoMode = 1;
+				changeMode(1);
+			}
+		}
+		context->reset();
+		if (isDoubleBuffered()) {
+			switchBuffer();
+			context->cls(false);
+		}
+		// reset mouse
+		setMouseCursor();
+		resetMousePositioner(canvasW, canvasH, _VGAController.get());
+		// update MOS with new info
 		sendModeInformation();
 		if (mouseEnabled) {
 			sendMouseData();

@@ -529,31 +529,6 @@ void Context::setGraphicsColour(uint8_t mode, uint8_t colour) {
 	}
 }
 
-// Restore palette to default for current mode
-//
-void Context::restorePalette() {
-	auto depth = getVGAColourDepth();
-	gbgc = tbgc = 0;
-	gfgc = tfgc = 15 % depth;
-	if (!ttxtMode) {
-		switch (depth) {
-			case  2: resetPalette(defaultPalette02); break;
-			case  4: resetPalette(defaultPalette04); break;
-			case  8: resetPalette(defaultPalette08); break;
-			case 16: resetPalette(defaultPalette10); break;
-			case 64: resetPalette(defaultPalette40); break;
-		}
-	}
-	gfg = colourLookup[0x3F];
-	gbg = colourLookup[0x00];
-	tfg = colourLookup[0x3F];
-	tbg = colourLookup[0x00];
-	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
-	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
-	gpofg = getPaintOptions(fabgl::PaintMode::Set, gpofg);
-	gpobg = getPaintOptions(fabgl::PaintMode::Set, gpobg);
-}
-
 // Update selected colours based on palette change in 64 colour modes
 //
 void Context::updateColours(uint8_t l, uint8_t index) {
@@ -873,143 +848,25 @@ void Context::scrollRegion(ViewportType viewport, uint8_t direction, int16_t mov
 }
 
 
-// Do the mode change
-// Parameters:
-// - mode: The video mode
-// Returns:
-// -  0: Successful
-// -  1: Invalid # of colours
-// -  2: Not enough memory for mode
-// - -1: Invalid mode
+// Reset graphics colours and painting options
 //
-int8_t Context::change_mode(uint8_t mode) {
-	int8_t errVal = -1;
+void Context::resetPaintingInfo() {
+	gbgc = tbgc = 0;
+	gfgc = tfgc = 15 % getVGAColourDepth();
+	gfg = colourLookup[0x3F];
+	gbg = colourLookup[0x00];
+	tfg = colourLookup[0x3F];
+	tbg = colourLookup[0x00];
+	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
+	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
+	gpofg = getPaintOptions(fabgl::PaintMode::Set, gpofg);
+	gpobg = getPaintOptions(fabgl::PaintMode::Set, gpobg);
+}
 
-	cls(true);
-	ttxtMode = false;
-	switch (mode) {
-		case 0:
-			if (legacyModes == true) {
-				errVal = change_resolution(2, SVGA_1024x768_60Hz);
-			} else {
-				errVal = change_resolution(16, VGA_640x480_60Hz);	// VDP 1.03 Mode 3, VGA Mode 12h
-			}
-			break;
-		case 1:
-			if (legacyModes == true) {
-				errVal = change_resolution(16, VGA_512x384_60Hz);
-			} else {
-				errVal = change_resolution(4, VGA_640x480_60Hz);
-			}
-			break;
-		case 2:
-			if (legacyModes == true) {
-				errVal = change_resolution(64, VGA_320x200_75Hz);
-			} else {
-				errVal = change_resolution(2, VGA_640x480_60Hz);
-			}
-			break;
-		case 3:
-			if (legacyModes == true) {
-				errVal = change_resolution(16, VGA_640x480_60Hz);
-			} else {
-				errVal = change_resolution(64, VGA_640x240_60Hz);
-			}
-			break;
-		case 4:
-			errVal = change_resolution(16, VGA_640x240_60Hz);
-			break;
-		case 5:
-			errVal = change_resolution(4, VGA_640x240_60Hz);
-			break;
-		case 6:
-			errVal = change_resolution(2, VGA_640x240_60Hz);
-			break;
-		case 7:
-			errVal = change_resolution(16, VGA_640x480_60Hz);
-			if (errVal == 0) {
-				errVal = ttxt_instance.init();
-				if (errVal == 0) ttxtMode = true;
-			}
-			break;
-		case 8:
-			errVal = change_resolution(64, QVGA_320x240_60Hz);		// VGA "Mode X"
-			break;
-		case 9:
-			errVal = change_resolution(16, QVGA_320x240_60Hz);
-			break;
-		case 10:
-			errVal = change_resolution(4, QVGA_320x240_60Hz);
-			break;
-		case 11:
-			errVal = change_resolution(2, QVGA_320x240_60Hz);
-			break;
-		case 12:
-			errVal = change_resolution(64, VGA_320x200_70Hz);		// VGA Mode 13h
-			break;
-		case 13:
-			errVal = change_resolution(16, VGA_320x200_70Hz);
-			break;
-		case 14:
-			errVal = change_resolution(4, VGA_320x200_70Hz);
-			break;
-		case 15:
-			errVal = change_resolution(2, VGA_320x200_70Hz);
-			break;
-		case 16:
-			errVal = change_resolution(4, SVGA_800x600_60Hz);
-			break;
-		case 17:
-			errVal = change_resolution(2, SVGA_800x600_60Hz);
-			break;
-		case 18:
-			errVal = change_resolution(2, SVGA_1024x768_60Hz);		// VDP 1.03 Mode 0
-			break;
-		case 129:
-			errVal = change_resolution(4, VGA_640x480_60Hz, true);
-			break;
-		case 130:
-			errVal = change_resolution(2, VGA_640x480_60Hz, true);
-			break;
-		case 132:
-			errVal = change_resolution(16, VGA_640x240_60Hz, true);
-			break;
-		case 133:
-			errVal = change_resolution(4, VGA_640x240_60Hz, true);
-			break;
-		case 134:
-			errVal = change_resolution(2, VGA_640x240_60Hz, true);
-			break;
-		case 136:
-			errVal = change_resolution(64, QVGA_320x240_60Hz, true);		// VGA "Mode X"
-			break;
-		case 137:
-			errVal = change_resolution(16, QVGA_320x240_60Hz, true);
-			break;
-		case 138:
-			errVal = change_resolution(4, QVGA_320x240_60Hz, true);
-			break;
-		case 139:
-			errVal = change_resolution(2, QVGA_320x240_60Hz, true);
-			break;
-		case 140:
-			errVal = change_resolution(64, VGA_320x200_70Hz, true);		// VGA Mode 13h
-			break;
-		case 141:
-			errVal = change_resolution(16, VGA_320x200_70Hz, true);
-			break;
-		case 142:
-			errVal = change_resolution(4, VGA_320x200_70Hz, true);
-			break;
-		case 143:
-			errVal = change_resolution(2, VGA_320x200_70Hz, true);
-			break;
-	}
-	if (errVal != 0) {
-		return errVal;
-	}
-
-	restorePalette();
+// Reset graphics context, called after a mode change
+//
+void Context::reset() {
+	resetPaintingInfo();
 	if (!ttxtMode) {
 		canvas->selectFont(&FONT_AGON);
 	}
@@ -1017,7 +874,6 @@ int8_t Context::change_mode(uint8_t mode) {
 	setCharacterOverwrite(true);
 	setLineThickness(1);
 
-	// simple heuristic to determine rectangular pixels
 	// reset our font indicators back to system font
 	font = nullptr;
 	textFont = nullptr;
@@ -1029,34 +885,6 @@ int8_t Context::change_mode(uint8_t mode) {
 	pushPoint(0,0);
 	moveTo();
 	resetCursor();
-	if (isDoubleBuffered()) {
-		switchBuffer();
-		cls(false);
-	}
-	resetMousePositioner(canvasW, canvasH, _VGAController.get());
-	setMouseCursor();
-	debug_log("do_modeChange: canvas(%d,%d), scale(%f,%f), mode %d, videoMode %d\n\r", canvasW, canvasH, logicalScaleX, logicalScaleY, mode, videoMode);
-	return 0;
-}
-
-// Change the video mode
-// If there is an error, restore the last mode
-// Parameters:
-// - mode: The video mode
-//
-void Context::set_mode(uint8_t mode) {
-	auto errVal = change_mode(mode);
-	if (errVal != 0) {
-		debug_log("set_mode: error %d\n\r", errVal);
-		errVal = change_mode(videoMode);
-		if (errVal != 0) {
-			debug_log("set_mode: error %d on restoring mode\n\r", errVal);
-			videoMode = 1;
-			change_mode(1);
-		}
-		return;
-	}
-	videoMode = mode;
 }
 
 #endif // CONTEXT_GRAPHICS_H

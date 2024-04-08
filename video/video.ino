@@ -83,7 +83,8 @@ void setup() {
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
 	auto context = processor->getContext();
-	context->set_mode(0);
+	changeMode(0);
+	context->reset();
 	initAudio();
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
@@ -330,7 +331,13 @@ bool processTerminal() {
 			Terminal->deactivate();
 			Terminal = nullptr;
 			auto context = processor->getContext();
-			context->set_mode(0);
+			// reset our screen mode
+			if (changeMode(videoMode) != 0) {
+				debug_log("processTerminal: Error %d changing back to mode %d\n\r", videoMode);
+				videoMode = 1;
+				changeMode(1);
+			}
+			context->reset();
 			processor->sendModeInformation();
 			debug_log("Terminal disabled\n\r");
 			terminalState = TerminalState::Disabled;

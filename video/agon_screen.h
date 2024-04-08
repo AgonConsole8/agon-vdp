@@ -6,9 +6,12 @@
 
 #include "agon.h"								// Agon definitions
 #include "agon_palette.h"						// Colour lookup table
+#include "agon_ps2.h"
 
 std::unique_ptr<fabgl::Canvas>	canvas;			// The canvas class
-std::unique_ptr<fabgl::VGABaseController>	_VGAController;		// Pointer to the current VGA controller class (one of the above)
+std::unique_ptr<fabgl::VGABaseController>	_VGAController;		// Pointer to the current VGA controller class
+
+#include "agon_ttxt.h"
 
 bool			legacyModes = false;			// Default legacy modes being false
 uint8_t			_VGAColourDepth = -1;			// Number of colours per pixel (2, 4, 8, 16 or 64)
@@ -139,6 +142,18 @@ void resetPalette(const uint8_t colours[]) {
 	updateRGB2PaletteLUT();
 }
 
+void restorePalette() {
+	if (!ttxtMode) {
+		switch (getVGAColourDepth()) {
+			case  2: resetPalette(defaultPalette02); break;
+			case  4: resetPalette(defaultPalette04); break;
+			case  8: resetPalette(defaultPalette08); break;
+			case 16: resetPalette(defaultPalette10); break;
+			case 64: resetPalette(defaultPalette40); break;
+		}
+	}
+}
+
 // Update our VGA controller based on number of colours
 // returns true on success, false if the number of colours was invalid
 bool updateVGAController(uint8_t colours) {
@@ -173,7 +188,7 @@ bool updateVGAController(uint8_t colours) {
 // - 1: Invalid # of colours
 // - 2: Not enough memory for mode
 //
-int8_t change_resolution(uint8_t colours, const char * modeLine, bool doubleBuffered = false) {
+int8_t changeResolution(uint8_t colours, const char * modeLine, bool doubleBuffered = false) {
 	if (!updateVGAController(colours)) {			// If we can't update the controller then
 		return 1;									// Return the error
 	}
@@ -183,7 +198,7 @@ int8_t change_resolution(uint8_t colours, const char * modeLine, bool doubleBuff
 	if (modeLine) {									// If modeLine is not a null pointer then
 		_VGAController->setResolution(modeLine, -1, -1, doubleBuffered);	// Set the resolution
 	} else {
-		debug_log("change_resolution: modeLine is null\n\r");
+		debug_log("changeResolution: modeLine is null\n\r");
 	}
 
 	canvas.reset(new fabgl::Canvas(_VGAController.get()));		// Create the new canvas
@@ -206,7 +221,153 @@ int8_t change_resolution(uint8_t colours, const char * modeLine, bool doubleBuff
 	if (_VGAController->getScreenHeight() != _VGAController->getViewPortHeight()) {
 		return 2;
 	}
-	return 0;										// Return with no errors
+	// Return with no errors
+	return 0;
+}
+
+// Do the mode change
+// Parameters:
+// - mode: The video mode
+// Returns:
+// -  0: Successful
+// -  1: Invalid # of colours
+// -  2: Not enough memory for mode
+// - -1: Invalid mode
+//
+int8_t changeMode(uint8_t mode) {
+	int8_t errVal = -1;
+
+	switch (mode) {
+		case 0:
+			if (legacyModes == true) {
+				errVal = changeResolution(2, SVGA_1024x768_60Hz);
+			} else {
+				errVal = changeResolution(16, VGA_640x480_60Hz);	// VDP 1.03 Mode 3, VGA Mode 12h
+			}
+			break;
+		case 1:
+			if (legacyModes == true) {
+				errVal = changeResolution(16, VGA_512x384_60Hz);
+			} else {
+				errVal = changeResolution(4, VGA_640x480_60Hz);
+			}
+			break;
+		case 2:
+			if (legacyModes == true) {
+				errVal = changeResolution(64, VGA_320x200_75Hz);
+			} else {
+				errVal = changeResolution(2, VGA_640x480_60Hz);
+			}
+			break;
+		case 3:
+			if (legacyModes == true) {
+				errVal = changeResolution(16, VGA_640x480_60Hz);
+			} else {
+				errVal = changeResolution(64, VGA_640x240_60Hz);
+			}
+			break;
+		case 4:
+			errVal = changeResolution(16, VGA_640x240_60Hz);
+			break;
+		case 5:
+			errVal = changeResolution(4, VGA_640x240_60Hz);
+			break;
+		case 6:
+			errVal = changeResolution(2, VGA_640x240_60Hz);
+			break;
+		case 7:
+			errVal = changeResolution(16, VGA_640x480_60Hz);
+			if (errVal == 0) {
+				errVal = ttxt_instance.init();
+				if (errVal == 0) {
+					ttxtMode = true;
+				} else {
+					debug_log("changeMode: ttxt_instance.init() failed %d\n\r", errVal);
+				}
+			}
+			break;
+		case 8:
+			errVal = changeResolution(64, QVGA_320x240_60Hz);		// VGA "Mode X"
+			break;
+		case 9:
+			errVal = changeResolution(16, QVGA_320x240_60Hz);
+			break;
+		case 10:
+			errVal = changeResolution(4, QVGA_320x240_60Hz);
+			break;
+		case 11:
+			errVal = changeResolution(2, QVGA_320x240_60Hz);
+			break;
+		case 12:
+			errVal = changeResolution(64, VGA_320x200_70Hz);		// VGA Mode 13h
+			break;
+		case 13:
+			errVal = changeResolution(16, VGA_320x200_70Hz);
+			break;
+		case 14:
+			errVal = changeResolution(4, VGA_320x200_70Hz);
+			break;
+		case 15:
+			errVal = changeResolution(2, VGA_320x200_70Hz);
+			break;
+		case 16:
+			errVal = changeResolution(4, SVGA_800x600_60Hz);
+			break;
+		case 17:
+			errVal = changeResolution(2, SVGA_800x600_60Hz);
+			break;
+		case 18:
+			errVal = changeResolution(2, SVGA_1024x768_60Hz);		// VDP 1.03 Mode 0
+			break;
+		case 129:
+			errVal = changeResolution(4, VGA_640x480_60Hz, true);
+			break;
+		case 130:
+			errVal = changeResolution(2, VGA_640x480_60Hz, true);
+			break;
+		case 132:
+			errVal = changeResolution(16, VGA_640x240_60Hz, true);
+			break;
+		case 133:
+			errVal = changeResolution(4, VGA_640x240_60Hz, true);
+			break;
+		case 134:
+			errVal = changeResolution(2, VGA_640x240_60Hz, true);
+			break;
+		case 136:
+			errVal = changeResolution(64, QVGA_320x240_60Hz, true);		// VGA "Mode X"
+			break;
+		case 137:
+			errVal = changeResolution(16, QVGA_320x240_60Hz, true);
+			break;
+		case 138:
+			errVal = changeResolution(4, QVGA_320x240_60Hz, true);
+			break;
+		case 139:
+			errVal = changeResolution(2, QVGA_320x240_60Hz, true);
+			break;
+		case 140:
+			errVal = changeResolution(64, VGA_320x200_70Hz, true);		// VGA Mode 13h
+			break;
+		case 141:
+			errVal = changeResolution(16, VGA_320x200_70Hz, true);
+			break;
+		case 142:
+			errVal = changeResolution(4, VGA_320x200_70Hz, true);
+			break;
+		case 143:
+			errVal = changeResolution(2, VGA_320x200_70Hz, true);
+			break;
+	}
+
+	debug_log("changeMode: canvas(%d,%d), scale(%f,%f), mode %d, videoMode %d\n\r", canvasW, canvasH, logicalScaleX, logicalScaleY, mode, videoMode);
+	if (errVal == 0) {
+		videoMode = mode;
+	}
+	if (errVal != -1) {
+		restorePalette();
+	}
+	return errVal;
 }
 
 // Ask our screen controller if we're double buffered

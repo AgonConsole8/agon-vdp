@@ -220,7 +220,6 @@ class Context {
 
 		void setTextColour(uint8_t colour);
 		void setGraphicsColour(uint8_t mode, uint8_t colour);
-		void restorePalette();							// TODO split in two, and move half to agon_screen.h
 		void updateColours(uint8_t l, uint8_t p);
 		bool getColour(uint8_t colour, RGB888 * pixel);
 		RGB888 getPixel(uint16_t x, uint16_t y);
@@ -240,9 +239,8 @@ class Context {
 		void clg();
 		void scrollRegion(ViewportType viewport, uint8_t direction, int16_t movement);
 
-		// Potentially move to agon_screen.h
-		void set_mode(uint8_t mode);
-		int8_t change_mode(uint8_t mode);
+		void resetPaintingInfo();
+		void reset();
 };
 
 #include "context/cursor.h"
