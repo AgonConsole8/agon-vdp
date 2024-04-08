@@ -642,7 +642,7 @@ struct AdjustSingleMulti {
 };
 // Specialization if a fold operation is provided
 template<uint8_t Operator>
-struct AdjustSingleMulti<Operator, decltype(AdjustSingle<Operator>::fold, void())> {
+struct AdjustSingleMulti<Operator, decltype(void(AdjustSingle<Operator>::fold))> {
 	typedef uint32_t __attribute__((__may_alias__)) uint32_aliasing;
 
 	static uint_fast8_t adjust(uint_fast8_t target, uint8_t * operand, bool& __restrict carry, size_t count) {
