@@ -488,8 +488,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			if (enableMouse()) {
 				// mouse can be enabled, so set cursor
 				if (!setMouseCursor()) {
-					uint16_t cursor = MOUSE_DEFAULT_CURSOR;
-					setMouseCursor(cursor);
+					setMouseCursor(MOUSE_DEFAULT_CURSOR);
 				}
 				debug_log("vdu_sys_mouse: mouse enabled\n\r");
 			} else {
@@ -515,8 +514,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			if (resetMouse()) {
 				// mouse successfully reset, so set cursor
 				if (!setMouseCursor()) {
-					uint16_t cursor = MOUSE_DEFAULT_CURSOR;
-					setMouseCursor(cursor);
+					setMouseCursor(MOUSE_DEFAULT_CURSOR);
 				}
 			}
 			sendMouseData();

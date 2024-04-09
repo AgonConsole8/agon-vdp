@@ -175,12 +175,12 @@
 #define MOUSE_SET_ACCERATION	9		// Set mouse acceleration (1-2000)
 #define MOUSE_SET_WHEELACC		10		// Set mouse wheel acceleration
 
-#define MOUSE_DEFAULT_CURSOR		0;		// Default mouse cursor
-#define MOUSE_DEFAULT_SAMPLERATE	60;		// Default mouse sample rate
-#define MOUSE_DEFAULT_RESOLUTION	2;		// Default mouse resolution (4 counts/mm)
-#define MOUSE_DEFAULT_SCALING		1;		// Default mouse scaling (1:1)
-#define MOUSE_DEFAULT_ACCELERATION	180;	// Default mouse acceleration 
-#define MOUSE_DEFAULT_WHEELACC		60000;	// Default mouse wheel acceleration
+#define MOUSE_DEFAULT_CURSOR		0		// Default mouse cursor
+#define MOUSE_DEFAULT_SAMPLERATE	60		// Default mouse sample rate
+#define MOUSE_DEFAULT_RESOLUTION	2		// Default mouse resolution (4 counts/mm)
+#define MOUSE_DEFAULT_SCALING		1		// Default mouse scaling (1:1)
+#define MOUSE_DEFAULT_ACCELERATION	180		// Default mouse acceleration 
+#define MOUSE_DEFAULT_WHEELACC		60000	// Default mouse wheel acceleration
 
 // Font management commands
 #define FONT_SELECT						0		// Select a font (by buffer ID, 65535 for system font)

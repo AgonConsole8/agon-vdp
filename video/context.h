@@ -89,6 +89,7 @@ class Context {
 		RGB888			tfg, tbg;						// Text foreground and background colour
 		uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
 		uint8_t			lineThickness = 1;				// Line thickness
+		uint16_t		currentBitmap = BUFFERED_BITMAP_BASEID;	// Current bitmap ID
 
 		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
 
@@ -228,6 +229,13 @@ class Context {
 		char getScreenCharAt(uint16_t px, uint16_t py);
 		
 		// Graphics functions
+		inline void setCurrentBitmap(uint16_t b) {
+			currentBitmap = b;
+		}
+		inline uint16_t getCurrentBitmapId() {
+			return currentBitmap;
+		}
+
 		void setLineThickness(uint8_t thickness);
 		void setDottedLinePattern(uint8_t pattern[8]);
 		void setDottedLinePatternLength(uint8_t length);
@@ -300,6 +308,7 @@ class Context {
 	tfgc = c.tfgc;
 	tbgc = c.tbgc;
 	lineThickness = c.lineThickness;
+	currentBitmap = c.currentBitmap;
 	logicalCoords = c.logicalCoords;
 	origin = c.origin;
 	p1 = c.p1;

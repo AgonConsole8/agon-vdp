@@ -780,7 +780,7 @@ void Context::plotBackspace() {
 // draw bitmap
 //
 void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet) {
-	auto bitmap = getBitmap();
+	auto bitmap = getBitmap(currentBitmap);
 	if (bitmap) {
 		if (forceSet) {
 			auto options = getPaintOptions(fabgl::PaintMode::Set, gpofg);

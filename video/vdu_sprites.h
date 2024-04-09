@@ -18,8 +18,8 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 0: {	// Select bitmap
 			auto rb = readByte_t();
 			if (rb >= 0) {
-				setCurrentBitmap(rb + BUFFERED_BITMAP_BASEID);
-				debug_log("vdu_sys_sprites: bitmap %d selected\n\r", getCurrentBitmapId());
+				context->setCurrentBitmap(rb + BUFFERED_BITMAP_BASEID);
+				debug_log("vdu_sys_sprites: bitmap %d selected\n\r", context->getCurrentBitmapId());
 			}
 		}	break;
 
@@ -35,12 +35,12 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 					createBitmapFromScreen(rw + BUFFERED_BITMAP_BASEID);
 				} else {
 					// invalid bitmap size definition for sending bitmap data stream
-					debug_log("vdu_sys_sprites: bitmap %d - zero size\n\r", getCurrentBitmapId());
+					debug_log("vdu_sys_sprites: bitmap %d - zero size\n\r", context->getCurrentBitmapId());
 				}
 				return;
 			}
 
-			receiveBitmap(getCurrentBitmapId(), rw, rh);
+			receiveBitmap(context->getCurrentBitmapId(), rw, rh);
 		}	break;
 
 		case 2: {	// Define bitmap in single color
@@ -53,7 +53,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 				return;
 			}
 
-			createEmptyBitmap(getCurrentBitmapId(), rw, rh, color);
+			createEmptyBitmap(context->getCurrentBitmapId(), rw, rh, color);
 		}	break;
 
 		case 3: {	// Draw bitmap to screen (x,y)
@@ -61,7 +61,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			auto ry = readWord_t(); if (ry == -1) return;
 
 			context->drawBitmap(rx,ry, false, true);
-			debug_log("vdu_sys_sprites: bitmap %d draw command\n\r", getCurrentBitmapId());
+			debug_log("vdu_sys_sprites: bitmap %d draw command\n\r", context->getCurrentBitmapId());
 		}	break;
 
 	   /*
@@ -147,6 +147,8 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 16: {	// Reset
 			resetSprites();
 			resetBitmaps();
+			// TODO reset current bitmaps in all processors
+			context->setCurrentBitmap(BUFFERED_BITMAP_BASEID);
 			context->cls(false);
 			debug_log("vdu_sys_sprites: reset\n\r");
 		}	break;
@@ -165,8 +167,8 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		// Extended bitmap commands
 		case 0x20: {	// Select bitmap, 16-bit buffer ID
 			auto b = readWord_t(); if (b == -1) return;
-			setCurrentBitmap((uint16_t) b);
-			debug_log("vdu_sys_sprites: bitmap %d selected\n\r", getCurrentBitmapId());
+			context->setCurrentBitmap((uint16_t) b);
+			debug_log("vdu_sys_sprites: bitmap %d selected\n\r", context->getCurrentBitmapId());
 		}	break;
 
 		case 0x21: {	// Create bitmap from buffer
@@ -178,7 +180,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 				createBitmapFromScreen(width);
 			} else {
 				auto format = readByte_t(); if (format == -1) return;
-				createBitmapFromBuffer(getCurrentBitmapId(), format, width, height);
+				createBitmapFromBuffer(context->getCurrentBitmapId(), format, width, height);
 			}
 		}	break;
 
@@ -191,10 +193,10 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 0x40: {	// Setup mouse cursor from current bitmap
 			auto hotX = readByte_t(); if (hotX == -1) return;
 			auto hotY = readByte_t(); if (hotY == -1) return;
-			if (makeCursor(getCurrentBitmapId(), hotX, hotY)) {
-				debug_log("vdu_sys_sprites: cursor created from bitmap %d\n\r", getCurrentBitmapId());
+			if (makeCursor(context->getCurrentBitmapId(), hotX, hotY)) {
+				debug_log("vdu_sys_sprites: cursor created from bitmap %d\n\r", context->getCurrentBitmapId());
 			} else {
-				debug_log("vdu_sys_sprites: cursor failed to create from bitmap %d\n\r", getCurrentBitmapId());
+				debug_log("vdu_sys_sprites: cursor failed to create from bitmap %d\n\r", context->getCurrentBitmapId());
 			}
 		}	break;
 

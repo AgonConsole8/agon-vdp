@@ -13,7 +13,6 @@
 #include "agon_ps2.h"
 #include "agon_screen.h"
 
-uint16_t		currentBitmap = BUFFERED_BITMAP_BASEID;	// Current bitmap ID
 std::unordered_map<uint16_t, std::shared_ptr<Bitmap>> bitmaps;	// Storage for our bitmaps
 uint8_t			numsprites = 0;					// Number of sprites on stage
 uint8_t			current_sprite = 0;				// Current sprite number
@@ -28,7 +27,7 @@ uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor
 // character to bitmap mapping
 std::vector<uint16_t> charToBitmap(255, 65535);
 
-std::shared_ptr<Bitmap> getBitmap(uint16_t id = currentBitmap) {
+std::shared_ptr<Bitmap> getBitmap(uint16_t id) {
 	if (bitmaps.find(id) != bitmaps.end()) {
 		return bitmaps[id];
 	}
@@ -51,14 +50,6 @@ std::shared_ptr<Bitmap> getBitmapFromChar(char c) {
 		return nullptr;
 	}
 	return getBitmap(bitmapId);
-}
-
-inline void setCurrentBitmap(uint16_t b) {
-	currentBitmap = b;
-}
-
-inline uint16_t getCurrentBitmapId() {
-	return currentBitmap;
 }
 
 // TODO remove this??  it doesn't seem to be used
@@ -110,18 +101,15 @@ bool setMouseCursor(uint16_t cursor = mCursor) {
 }
 
 void resetBitmaps() {
-	// if we're using a bitmap as a cursor then the cursor needs to change too
-	if (cursors.find(currentBitmap) != cursors.end()) {
-		uint16_t cursor = MOUSE_DEFAULT_CURSOR;
-		setMouseCursor(cursor);
-	}
 	bitmaps.clear();
 	// this will only be used after resetting sprites, so we can clear the bitmapUsers list
 	bitmapUsers.clear();
 	cursors.clear();
+	if (!setMouseCursor()) {
+		setMouseCursor(MOUSE_DEFAULT_CURSOR);
+	}
 	// reset charToBitmap to 65535s
 	std::fill(charToBitmap.begin(), charToBitmap.end(), 65535);
-	setCurrentBitmap(BUFFERED_BITMAP_BASEID);
 }
 
 Sprite * getSprite(uint8_t sprite = current_sprite) {
@@ -153,7 +141,7 @@ void clearSpriteFrames(uint8_t s = current_sprite) {
 	}
 }
 
-void clearBitmap(uint16_t b = currentBitmap) {
+void clearBitmap(uint16_t b) {
 	if (bitmaps.find(b) == bitmaps.end()) {
 		return;
 	}
