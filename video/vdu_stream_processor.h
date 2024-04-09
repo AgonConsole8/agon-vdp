@@ -2,6 +2,9 @@
 #define VDU_STREAM_PROCESSOR_H
 
 #include <memory>
+#include <unordered_map>
+#include <vector>
+
 #include <Stream.h>
 #include <fabgl.h>
 
@@ -21,7 +24,12 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> inputStream;
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
-		std::shared_ptr<Context> context;
+
+		// Graphics context storage and management
+		std::unordered_map<uint8_t, std::vector<std::shared_ptr<Context>>> contextStacks;
+		std::shared_ptr<Context> context;					// Current active context
+		std::vector<std::shared_ptr<Context>> contextStack;	// Current active context stack
+
 		bool commandsEnabled = true;
 
 		int16_t readByte_t(uint16_t timeout);
@@ -77,13 +85,12 @@ class VDUStreamProcessor {
 		void vdu_sys_context();
 		void selectContext(uint8_t contextId);
 		void resetContext();
-		// void deleteContext(uint8_t contextId);
-		// void saveContext(uint8_t contextId);
-		// void pushContext();
-		// void pushAndSelectContext(uint8_t contextId);
-		// void popContext();
-		// void popAllContexts();
-		// void deleteContextStack();
+		void saveContext();
+		void restoreContext();
+		void saveAndSelectContext(uint8_t contextId);
+		void restoreAllContexts();
+		void clearContextStack();
+		void resetAllContexts();
 
 		void vdu_sys_sprites();
 		void receiveBitmap(uint16_t bufferId, uint16_t width, uint16_t height);
@@ -127,10 +134,15 @@ class VDUStreamProcessor {
 		uint16_t id = 65535;
 
 		VDUStreamProcessor(std::shared_ptr<Context> _context, std::shared_ptr<Stream> input, std::shared_ptr<Stream> output, uint16_t bufferId) :
-			context(_context), inputStream(std::move(input)), outputStream(std::move(output)), originalOutputStream(outputStream), id(bufferId) {}
+			context(_context), inputStream(std::move(input)), outputStream(std::move(output)), originalOutputStream(outputStream), id(bufferId) {
+				// NB this will become obsolete when merging in the buffered command optimisations
+				context = make_shared_psram<Context>(*_context);
+				contextStack.push_back(context);
+			}
 		VDUStreamProcessor(Stream *input) :
 			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {
 				context = make_shared_psram<Context>();
+				contextStack.push_back(context);
 			}
 
 		inline bool byteAvailable() {
@@ -167,6 +179,9 @@ class VDUStreamProcessor {
 
 		std::shared_ptr<Context> getContext() {
 			return context;
+		}
+		bool contextExists(uint8_t id) {
+			return contextStacks.find(id) != contextStacks.end();
 		}
 };
 

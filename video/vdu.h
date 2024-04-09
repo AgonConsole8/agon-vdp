@@ -223,8 +223,6 @@ void VDUStreamProcessor::vdu_mode() {
 	auto mode = readByte_t();
 	debug_log("vdu_mode: %d\n\r", mode);
 	if (mode >= 0) {
-		// TODO reset to primary context, and clear out all others
-		// clear screen, resetting current viewports
 		context->cls(true);
 		ttxtMode = false;
 		auto errVal = changeMode(mode);
@@ -237,7 +235,9 @@ void VDUStreamProcessor::vdu_mode() {
 				changeMode(1);
 			}
 		}
-		context->reset();
+		// reset our context, and clear the context stack
+		resetAllContexts();
+		// TODO when we support multiple processors, we will need to reset contexts on all processors
 		if (isDoubleBuffered()) {
 			switchBuffer();
 			context->cls(false);

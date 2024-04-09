@@ -13,6 +13,15 @@
 extern std::unique_ptr<fabgl::SoundGenerator> soundGenerator;	// audio handling sub-system
 extern void audioTaskAbortDelay(uint8_t channel);
 
+enum AudioState : uint8_t {	// Audio channel state
+	Idle = 0,				// currently idle/silent
+	Pending,				// note will be played next loop call
+	Playing,				// playing (passive)
+	PlayLoop,				// active playing loop (used when an envelope is active)
+	Release,				// in "release" phase
+	Abort					// aborting a note
+};
+
 // The audio channel class
 //
 class AudioChannel {

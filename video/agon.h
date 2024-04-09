@@ -19,7 +19,7 @@
 #define MAX_SPRITES				256		// Maximum number of sprites
 #define MAX_BITMAPS				256		// Maximum number of bitmaps
 
-#define VDP_USE_WDT						// Use the esp watchdog timer (experimental)
+// #define VDP_USE_WDT						// Use the esp watchdog timer (experimental)
 
 #define UART_BR					1152000	// Max baud rate; previous stable value was 384000
 #define UART_NA					-1
@@ -162,15 +162,6 @@
 #define AUDIO_STATUS_HAS_VOLUME_ENVELOPE	0x08	// Channel has a volume envelope set
 #define AUDIO_STATUS_HAS_FREQUENCY_ENVELOPE	0x10	// Channel has a frequency envelope set
 
-enum AudioState : uint8_t {	// Audio channel state
-	Idle = 0,				// currently idle/silent
-	Pending,				// note will be played next loop call
-	Playing,				// playing (passive)
-	PlayLoop,				// active playing loop (used when an envelope is active)
-	Release,				// in "release" phase
-	Abort					// aborting a note
-};
-
 // Mouse commands
 #define MOUSE_ENABLE			0		// Enable mouse
 #define MOUSE_DISABLE			1		// Disable mouse
@@ -217,16 +208,14 @@ enum AudioState : uint8_t {	// Audio channel state
 #define FONT_SELECTFLAG_ADJUSTBASE		0x01	// Adjust font baseline, based on ascent
 
 // Context management commands
-#define CONTEXT_SELECT					0		// Select a context
-#define CONTEXT_RESET					1		// Reset current context
-#define CONTEXT_DELETE					2		// Delete a context
-#define CONTEXT_SAVE					3		// Save a context
-#define CONTEXT_PUSH					4		// Push a context
-#define CONTEXT_PUSH_AND_SELECT			5		// Push and select a context
-#define CONTEXT_POP						6		// Pop a context
-#define CONTEXT_POPALL					7		// Pop all contexts
-#define CONTEXT_DELETESTACK				8		// Delete the context stack
-
+#define CONTEXT_SELECT					0		// Select a context stack
+#define CONTEXT_DELETE					1		// Delete a context stack
+#define CONTEXT_RESET					2		// Reset current context
+#define CONTEXT_SAVE					3		// Save a context to stack
+#define CONTEXT_RESTORE					4		// Restore a context from stack
+#define CONTEXT_SAVE_AND_SELECT			5		// Save and get a copy of topmost context from numbered stack
+#define CONTEXT_RESTORE_ALL				6		// Clear stack and restore to first context in stack
+#define CONTEXT_CLEAR_STACK				7		// Clear stack, keeping current context
 
 // Buffered commands
 #define BUFFERED_WRITE					0x00	// Write to a numbered buffer
