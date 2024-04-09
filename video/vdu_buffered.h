@@ -9,6 +9,7 @@
 #include "agon.h"
 #include "buffers.h"
 #include "buffer_stream.h"
+#include "mem_helpers.h"
 #include "multi_buffer_stream.h"
 #include "sprites.h"
 #include "types.h"
@@ -526,21 +527,43 @@ struct AdjustSingle<ADJUST_ADD_CARRY> {
 	// byte-wise add with carry
 	// bytes are treated as being in little-endian order
 	static inline uint_fast8_t adjust(uint_fast8_t target, uint_fast8_t operand, bool &carry) {
-		uint_fast16_t sum = (uint8_t)target + (uint8_t)operand + carry;
+		uint_fast16_t sum = (uint_fast16_t)(uint8_t)target + (uint8_t)operand + carry;
 		carry = sum >> 8;
 		return sum;
 	}
 	static inline uint_fast16_t adjustHalfWord(uint_fast16_t target, uint_fast16_t operand, bool &carry) {
-		static_assert(XCHAL_HAVE_BE == 0, "Assumes little endian processor");
-		uint32_t sum = (uint16_t)target + (uint16_t)operand + carry;
+		// convert from little-endian to native and back
+		uint32_t sum = (uint32_t)from_le16(target) + from_le16(operand) + carry;
 		carry = sum >> 16;
-		return sum;
+		return to_le16(sum);
 	}
 	static inline uint32_t adjustWord(uint32_t target, uint32_t operand, bool &carry) {
-		static_assert(XCHAL_HAVE_BE == 0, "Assumes little endian processor");
-		target += operand + carry;
-		carry = target < operand || (target == operand && carry);
-		return target;
+		// convert from little-endian to native and back
+		target = from_le32(target);
+		operand = from_le32(operand);
+#if defined(__XTENSA__) && XCHAL_HAVE_MINMAX
+		operand += carry;
+		target += operand;
+		// Do branchless carry handling
+		uint32_t min; //= std::min(target, operand);
+		// Use assembly so the compiler can't reverse the min operation back into a branchy less-than
+		asm("minu\t%0, %1, %2"
+		  : "=r" (min)
+		  : "r" (target), "r" (operand));
+		// The following should compile to conditional moves
+		// Intentionally preserves input carry if carry-adjusted operand is zero
+		if (operand != 0) carry = false; // Initialize carry to false if carry-adjusted operand is non-zero
+		if (min != operand) carry = true; // Set carry to true if sum < carry-adjusted operand
+#elif __has_builtin(__builtin_addc)
+		unsigned int carry_out;
+		target = __builtin_addc(target, operand, carry, &carry_out);
+		carry = carry_out;
+#else
+		uint64_t sum = (uint64_t)target + operand + carry;
+		carry = sum >> 32;
+		target = sum;
+#endif
+		return to_le32(target);
 	}
 };
 template<>
@@ -596,46 +619,44 @@ struct AdjustSingle<ADJUST_XOR> {
 };
 template<uint8_t Operator>
 struct AdjustMultiSingle {
-	typedef uint16_t __attribute__((__may_alias__)) uint16_aliasing;
-	typedef uint32_t __attribute__((__may_alias__)) uint32_aliasing;
-
 	// Input operand is duplicated into all 4 bytes
-	static void adjust(uint8_t * target, uint32_t operand, bool& __restrict carry, size_t count) {
+	static void adjust(uint8_t * target, uint32_t operand, bool &carry, size_t count) {
+		bool localCarry = carry;
 		if (count >= sizeof(uint32_t)) {
 			if (reinterpret_cast<uintptr_t>(target) & 1) {
-				*target = AdjustSingle<Operator>::adjust(*target, operand, carry);
+				*target = AdjustSingle<Operator>::adjust(*target, operand, localCarry);
 				target++, count--;
 			}
 			if (reinterpret_cast<uintptr_t>(target) & 2) {
-				auto targetHalfWord = reinterpret_cast<uint16_aliasing *>(target);
-				*targetHalfWord = AdjustSingle<Operator>::adjustHalfWord(*targetHalfWord, operand, carry);
+				write16_aligned(target, AdjustSingle<Operator>::adjustHalfWord(read16_aligned(target), operand, localCarry));
 				target += sizeof(uint16_t), count -= sizeof(uint16_t);
 			}
-			if (count >= sizeof(uint32_t)) {
-				auto targetWord = reinterpret_cast<uint32_aliasing *>(target);
-				do {
-					*targetWord = AdjustSingle<Operator>::adjustWord(*targetWord, operand, carry);
-					targetWord++, count -= sizeof(uint32_t);
-				} while (count >= sizeof(uint32_t));
-				target = reinterpret_cast<uint8_t *>(targetWord);
+			while (count >= sizeof(uint32_t)) {
+				write32_aligned(target, AdjustSingle<Operator>::adjustWord(read32_aligned(target), operand, localCarry));
+				target += sizeof(uint32_t), count -= sizeof(uint32_t);
 			}
 		}
 		if (count & 2) {
-			static_assert(XCHAL_UNALIGNED_LOAD_HW && XCHAL_UNALIGNED_STORE_HW, "Assumes hardware unaligned loads/stores");
-			auto targetHalfWord = reinterpret_cast<uint16_aliasing *>(target);
-			*targetHalfWord = AdjustSingle<Operator>::adjustHalfWord(*targetHalfWord, operand, carry);
+			write16_unaligned(target, AdjustSingle<Operator>::adjustHalfWord(read16_unaligned(target), operand, localCarry));
 			target += sizeof(uint16_t);
 		}
 		if (count & 1) {
-			*target = AdjustSingle<Operator>::adjust(*target, operand, carry);
+			*target = AdjustSingle<Operator>::adjust(*target, operand, localCarry);
+		}
+		if (Operator == ADJUST_ADD_CARRY) {
+			carry = localCarry;
 		}
 	}
 };
 template<uint8_t Operator, typename = void>
 struct AdjustSingleMulti {
-	static uint_fast8_t adjust(uint_fast8_t target, uint8_t * operand, bool& __restrict carry, size_t count) {
+	static uint_fast8_t adjust(uint_fast8_t target, uint8_t * operand, bool &carry, size_t count) {
+		bool localCarry = carry;
 		for (size_t i = 0; i < count; i++) {
-			target = AdjustSingle<Operator>::adjust(target, operand[i], carry);
+			target = AdjustSingle<Operator>::adjust(target, operand[i], localCarry);
+		}
+		if (Operator == ADJUST_ADD_CARRY) {
+			carry = localCarry;
 		}
 		return target;
 	}
@@ -643,75 +664,68 @@ struct AdjustSingleMulti {
 // Specialization if a fold operation is provided
 template<uint8_t Operator>
 struct AdjustSingleMulti<Operator, decltype(void(AdjustSingle<Operator>::fold))> {
-	typedef uint32_t __attribute__((__may_alias__)) uint32_aliasing;
-
-	static uint_fast8_t adjust(uint_fast8_t target, uint8_t * operand, bool& __restrict carry, size_t count) {
+	static uint_fast8_t adjust(uint_fast8_t target, uint8_t * operand, bool &carry, size_t count) {
+		bool localCarry = carry;
 		if (count >= sizeof(uint32_t)) {
 			if (reinterpret_cast<uintptr_t>(operand) & 1) {
-				target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+				target = AdjustSingle<Operator>::adjust(target, *operand, localCarry);
 				operand++, count--;
 			}
 			if (reinterpret_cast<uintptr_t>(operand) & 2) {
-				target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+				target = AdjustSingle<Operator>::adjust(target, *operand, localCarry);
 				operand++, count--;
-				target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+				target = AdjustSingle<Operator>::adjust(target, *operand, localCarry);
 				operand++, count--;
 			}
 			if (count >= sizeof(uint32_t)) {
-				auto operandWord = reinterpret_cast<uint32_aliasing *>(operand);
-				uint32_t targetWord = *operandWord;
-				operandWord++, count -= sizeof(uint32_t);
+				uint32_t accumulator = read32_aligned(operand);
+				operand += sizeof(uint32_t), count -= sizeof(uint32_t);
 				while (count >= sizeof(uint32_t)) {
-					targetWord = AdjustSingle<Operator>::adjustWord(targetWord, *operandWord, carry);
-					operandWord++, count -= sizeof(uint32_t);
+					accumulator = AdjustSingle<Operator>::adjustWord(accumulator, read32_aligned(operand), localCarry);
+					operand += sizeof(uint32_t), count -= sizeof(uint32_t);
 				}
-				operand = reinterpret_cast<uint8_t *>(operandWord);
-				target = AdjustSingle<Operator>::adjust(target, AdjustSingle<Operator>::fold(targetWord), carry);
+				target = AdjustSingle<Operator>::adjust(target, AdjustSingle<Operator>::fold(accumulator), localCarry);
 			}
 		}
 		if (count & 2) {
-			target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+			target = AdjustSingle<Operator>::adjust(target, *operand, localCarry);
 			operand++;
-			target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+			target = AdjustSingle<Operator>::adjust(target, *operand, localCarry);
 			operand++;
 		}
 		if (count & 1) {
-			target = AdjustSingle<Operator>::adjust(target, *operand, carry);
+			target = AdjustSingle<Operator>::adjust(target, *operand, localCarry);
+		}
+		if (Operator == ADJUST_ADD_CARRY) {
+			carry = localCarry;
 		}
 		return target;
 	}
 };
 template<uint8_t Operator>
 struct AdjustMulti {
-	typedef uint16_t __attribute__((__may_alias__)) uint16_aliasing;
-	typedef uint32_t __attribute__((__may_alias__)) uint32_aliasing;
-
-	static void adjust(uint8_t * target, uint8_t * operand, bool& __restrict carry, size_t count, bool sameBuffer) {
+	static void adjust(uint8_t * target, uint8_t * operand, bool &carry, size_t count, bool sameBuffer) {
+		bool localCarry = carry;
 		if (count >= sizeof(uint32_t) && (!sameBuffer || target <= operand || target >= operand + sizeof(uint32_t))) {
 			if (reinterpret_cast<uintptr_t>(target) & 1) {
-				*target = AdjustSingle<Operator>::adjust(*target, *operand, carry);
+				*target = AdjustSingle<Operator>::adjust(*target, *operand, localCarry);
 				target++, operand++, count--;
 			}
 			if (reinterpret_cast<uintptr_t>(target) & 2) {
-				auto targetHalfWord = reinterpret_cast<uint16_aliasing *>(target);
-			    static_assert(XCHAL_UNALIGNED_LOAD_HW, "Assumes hardware unaligned loads");
-				auto operandHalfWord = reinterpret_cast<uint16_aliasing *>(operand);
-				*targetHalfWord = AdjustSingle<Operator>::adjustHalfWord(*targetHalfWord, *operandHalfWord, carry);
+				write16_aligned(target, AdjustSingle<Operator>::adjustHalfWord(read16_aligned(target), read16_unaligned(operand), localCarry));
 				target += sizeof(uint16_t), operand += sizeof(uint16_t), count -= sizeof(uint16_t);
 			}
-			auto targetWord = reinterpret_cast<uint32_aliasing *>(target);
-			static_assert(XCHAL_UNALIGNED_LOAD_HW, "Assumes hardware unaligned loads");
-			auto operandWord = reinterpret_cast<uint32_aliasing *>(operand);
 			while (count >= sizeof(uint32_t)) {
-				*targetWord = AdjustSingle<Operator>::adjustWord(*targetWord, *operandWord, carry);
-				targetWord++, operandWord++, count -= sizeof(uint32_t);
+				write32_aligned(target, AdjustSingle<Operator>::adjustWord(read32_aligned(target), read32_unaligned(operand), localCarry));
+				target += sizeof(uint32_t), operand += sizeof(uint32_t), count -= sizeof(uint32_t);
 			}
-			target = reinterpret_cast<uint8_t *>(targetWord);
-			operand = reinterpret_cast<uint8_t *>(operandWord);
 		}
 		// Target pointer may be immediately ahead of operand pointer, so simply loop bytes
 		for (size_t i = 0; i < count; i++) {
-			target[i] = AdjustSingle<Operator>::adjust(target[i], operand[i], carry);
+			target[i] = AdjustSingle<Operator>::adjust(target[i], operand[i], localCarry);
+		}
+		if (Operator == ADJUST_ADD_CARRY) {
+			carry = localCarry;
 		}
 	}
 };
