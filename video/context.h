@@ -90,6 +90,8 @@ class Context {
 		uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
 		uint8_t			lineThickness = 1;				// Line thickness
 		uint16_t		currentBitmap = BUFFERED_BITMAP_BASEID;	// Current bitmap ID
+		fabgl::LinePattern	linePattern = fabgl::LinePattern();				// Dotted line pattern
+		uint8_t			linePatternLength = 8;			// Dotted line pattern length
 
 		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
 
@@ -309,6 +311,8 @@ class Context {
 	tbgc = c.tbgc;
 	lineThickness = c.lineThickness;
 	currentBitmap = c.currentBitmap;
+	linePattern.setPattern(c.linePattern.pattern);
+	linePatternLength = c.linePatternLength;
 	logicalCoords = c.logicalCoords;
 	origin = c.origin;
 	p1 = c.p1;
