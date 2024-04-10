@@ -217,6 +217,15 @@
 #define CONTEXT_RESTORE_ALL				6		// Clear stack and restore to first context in stack
 #define CONTEXT_CLEAR_STACK				7		// Clear stack, keeping current context
 
+#define CONTEXT_RESET_GPAINT			0x01	// graphics painting options
+#define CONTEXT_RESET_GPOS				0x02	// graphics positioning incl graphics viewport
+#define CONTEXT_RESET_TPAINT			0x04	// text painting options
+#define CONTEXT_RESET_TCURSOR			0x08	// text cursor incl text viewport
+#define CONTEXT_RESET_TBEHAVIOUR		0x10	// text cursor behaviour
+#define CONTEXT_RESET_FONTS				0x20	// fonts
+#define CONTEXT_RESET_CHAR2BITMAP		0x40	// char-to-bitmap mappings
+#define CONTEXT_RESET_RESERVED			0x80	// reserved for future use
+
 // Buffered commands
 #define BUFFERED_WRITE					0x00	// Write to a numbered buffer
 #define BUFFERED_CALL					0x01	// Call buffered commands

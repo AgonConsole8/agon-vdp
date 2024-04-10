@@ -164,6 +164,18 @@ void Context::changeFont(uint16_t newFontId, uint8_t flags) {
 	changeFont(newFont, fontData, flags);
 }
 
+void Context::resetFonts() {
+	if (!ttxtMode) {
+		canvas->selectFont(&FONT_AGON);
+	}
+	font = nullptr;
+	textFont = nullptr;
+	graphicsFont = nullptr;
+	textFontData = nullptr;
+	graphicsFontData = nullptr;
+	setCharacterOverwrite(true);
+}
+
 bool Context::usingSystemFont() {
 	return font == nullptr;
 }

@@ -95,7 +95,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			context->cursorUp();
 			break;
 		case 0x0C:	// CLS
-			context->cls(false);
+			context->cls();
 			break;
 		case 0x0D:	// CR
 			context->cursorCR();
@@ -122,7 +122,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			restorePalette();
 			// TODO consider if this should iterate over all stored contexts
 			// and if not, how to handle the fact that the palette has changed
-			context->resetPaintingInfo();
+			context->resetGraphicsPainting();
 		}	break;
 		case 0x15:
 			commandsEnabled = false;
@@ -223,7 +223,7 @@ void VDUStreamProcessor::vdu_mode() {
 	auto mode = readByte_t();
 	debug_log("vdu_mode: %d\n\r", mode);
 	if (mode >= 0) {
-		context->cls(true);
+		context->cls();
 		ttxtMode = false;
 		auto errVal = changeMode(mode);
 		if (errVal != 0) {
@@ -240,7 +240,7 @@ void VDUStreamProcessor::vdu_mode() {
 		// TODO when we support multiple processors, we will need to reset contexts on all processors
 		if (isDoubleBuffered()) {
 			switchBuffer();
-			context->cls(false);
+			context->cls();
 		}
 		// reset mouse
 		setMouseCursor();

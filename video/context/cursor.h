@@ -212,24 +212,6 @@ void Context::ensureCursorInViewport(Rect viewport) {
 }
 
 
-// Reset basic cursor control
-// used when changing screen modes
-//
-void Context::resetCursor() {
-	setActiveCursor(CursorType::TextCursor);
-	// visual cursor appearance reset
-	cursorEnabled = true;
-	cursorFlashing = true;
-	cursorFlashRate = pdMS_TO_TICKS(CURSOR_PHASE);
-	cursorVStart = 0;
-	cursorVEnd = 255;
-	cursorHStart = 0;
-	cursorHEnd = 255;
-	// cursor behaviour however is _not_ reset here
-	cursorHome();
-	setPagedMode(false);
-}
-
 // Public cursor control functions
 //
 
@@ -341,6 +323,30 @@ void Context::setCursorHEnd(uint8_t end) {
 void Context::setPagedMode(bool mode) {
 	pagedMode = mode;
 	pagedModeCount = 0;
+}
+
+// Reset basic cursor control
+// used when changing screen modes
+//
+void Context::resetTextCursor() {
+	setActiveCursor(CursorType::TextCursor);
+	// visual cursor appearance reset
+	cursorEnabled = true;
+	cursorFlashing = true;
+	cursorFlashRate = pdMS_TO_TICKS(CURSOR_PHASE);
+	cursorVStart = 0;
+	cursorVEnd = 255;
+	cursorHStart = 0;
+	cursorHEnd = 255;
+
+	// reset text viewport
+	// and set the active viewport to text
+	textViewport =	Rect(0, 0, canvasW - 1, canvasH - 1);
+	setActiveViewport(ViewportType::TextViewport);
+
+	// cursor behaviour however is _not_ reset here
+	cursorHome();
+	setPagedMode(false);
 }
 
 
@@ -527,34 +533,9 @@ void Context::cursorRelativeMove(int8_t x, int8_t y) {
 
 void Context::getCursorTextPosition(uint8_t * x, uint8_t * y) {
 	auto font = getFont();
-	if (cursorBehaviour.flipXY) {
-		if (cursorBehaviour.invertHorizontal) {
-			*x = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);
-		} else {
-			*x = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / font->height);
-		}
-		if (cursorBehaviour.invertVertical) {
-			*y = (uint8_t) ((activeViewport->X2 - activeCursor->X) / font->width);
-		} else {
-			*y = (uint8_t) ((activeCursor->X - activeViewport->X1) / font->width);
-		}
-	} else {
-		if (cursorBehaviour.invertHorizontal) {
-			*x = (uint8_t) ((activeViewport->X2 - activeCursor->X) / font->width);
-		} else {
-			*x = (uint8_t) ((activeCursor->X - activeViewport->X1) / font->width);
-		}
-		if (cursorBehaviour.invertVertical) {
-			*y = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);
-		} else {
-			*y = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / font->height);
-		}
-	}
-
-	// TODO check cursor position stuff - getNormalisedCursorPosition has different logic to above
-	// Point p = getNormalisedCursorPosition();
-	// *x = p.X / font->width;
-	// *y = p.Y / font->height;
+	Point p = getNormalisedCursorPosition();
+	*x = p.X / font->width;
+	*y = p.Y / font->height;
 }
 
 #endif	// CONTEXT_CURSOR_H

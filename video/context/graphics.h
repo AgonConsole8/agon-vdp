@@ -808,13 +808,7 @@ void Context::drawCursor(Point p) {
 
 // Clear the screen
 //
-void Context::cls(bool resetViewports) {
-	if (resetViewports) {
-		if (ttxtMode) {
-			ttxt_instance.set_window(0,24,39,0);
-		}
-		viewportReset();
-	}
+void Context::cls() {
 	if (canvas) {
 		canvas->setPenColor(tfg);
 		canvas->setBrushColor(tbg);
@@ -848,41 +842,47 @@ void Context::scrollRegion(ViewportType viewport, uint8_t direction, int16_t mov
 
 // Reset graphics colours and painting options
 //
-void Context::resetPaintingInfo() {
+void Context::resetGraphicsPainting() {
 	gbgc = tbgc = 0;
 	gfgc = tfgc = 15 % getVGAColourDepth();
 	gfg = colourLookup[0x3F];
 	gbg = colourLookup[0x00];
-	tfg = colourLookup[0x3F];
-	tbg = colourLookup[0x00];
-	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
-	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
 	gpofg = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 	gpobg = getPaintOptions(fabgl::PaintMode::Set, gpobg);
 }
 
-// Reset graphics context, called after a mode change
-//
-void Context::reset() {
-	resetPaintingInfo();
-	if (!ttxtMode) {
-		canvas->selectFont(&FONT_AGON);
-	}
-
-	setCharacterOverwrite(true);
+void Context::resetGraphicsOptions() {
 	setLineThickness(1);
+	setCurrentBitmap(BUFFERED_BITMAP_BASEID);
+	setDottedLinePatternLength(0);
+}
 
-	// reset our font indicators back to system font
-	font = nullptr;
-	textFont = nullptr;
-	graphicsFont = nullptr;
-	viewportReset();
+void Context::resetGraphicsPositioning() {
 	setOrigin(0,0);
 	pushPoint(0,0);
 	pushPoint(0,0);
 	pushPoint(0,0);
 	moveTo();
-	resetCursor();
+	graphicsViewport = Rect(0, 0, canvasW - 1, canvasH - 1);
+}
+
+void Context::resetTextPainting() {
+	tfg = colourLookup[0x3F];
+	tbg = colourLookup[0x00];
+	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
+	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
+}
+
+// Reset graphics context, called after a mode change
+//
+void Context::reset() {
+	defaultViewport = Rect(0, 0, canvasW - 1, canvasH - 1);
+	resetGraphicsPainting();
+	resetTextPainting();
+	resetGraphicsPositioning();
+	setLineThickness(1);
+	resetFonts();
+	resetTextCursor();
 }
 
 // Activate the context, setting up canvas as required

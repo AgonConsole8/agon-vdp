@@ -150,7 +150,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			// TODO reset current bitmaps in all processors
 			context->setCurrentBitmap(BUFFERED_BITMAP_BASEID);
 			context->resetCharToBitmap();
-			context->cls(false);
+			context->cls();
 			debug_log("vdu_sys_sprites: reset\n\r");
 		}	break;
 
@@ -172,7 +172,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			debug_log("vdu_sys_sprites: bitmap %d selected\n\r", context->getCurrentBitmapId());
 		}	break;
 
-		case 0x21: {	// Create bitmap from buffer
+		case 0x21: {	// Create bitmap from buffer or screen
 			auto width = readWord_t(); if (width == -1) return;
 			auto height = readWord_t(); if (height == -1) return;
 			if (height == 0) {
@@ -258,6 +258,7 @@ void VDUStreamProcessor::createEmptyBitmap(uint16_t bufferId, uint16_t width, ui
 
 void VDUStreamProcessor::createBitmapFromBuffer(uint16_t bufferId, uint8_t format, uint16_t width, uint16_t height) {
 	clearBitmap(bufferId);
+	// TODO unmap bitmap from characters for all contexts
 	context->unmapBitmapFromChars(bufferId);
 	// do we have a buffer with this ID?
 	if (buffers.find(bufferId) == buffers.end()) {

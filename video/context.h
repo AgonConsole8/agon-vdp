@@ -128,8 +128,6 @@ class Context {
 		void cursorAutoNewline();
 		void ensureCursorInViewport(Rect viewport);
 
-		void resetCursor();
-
 		// Viewport management functions
 		Rect * getViewport(ViewportType type);
 		bool setTextViewport(Rect rect);
@@ -200,6 +198,7 @@ class Context {
 		void setCursorHStart(uint8_t start);
 		void setCursorHEnd(uint8_t end);
 		void setPagedMode(bool mode);
+		void resetTextCursor();
 
 		void cursorUp();
 		void cursorUp(bool moveOnly);
@@ -231,6 +230,7 @@ class Context {
 
 		// Font management functions
 		void changeFont(uint16_t newFontId, uint8_t flags);
+		void resetFonts();
 		bool usingSystemFont();
 		char getScreenChar(uint8_t x, uint8_t y);
 		char getScreenCharAt(uint16_t px, uint16_t py);
@@ -267,11 +267,15 @@ class Context {
 		void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet);
 		void drawCursor(Point p);
 
-		void cls(bool resetViewports);
+		void cls();
 		void clg();
 		void scrollRegion(ViewportType viewport, uint8_t direction, int16_t movement);
 
-		void resetPaintingInfo();
+		void resetGraphicsPainting();
+		void resetGraphicsOptions();
+		void resetGraphicsPositioning();
+		void resetTextPainting();
+
 		void reset();
 		void activate();
 };
@@ -279,49 +283,50 @@ class Context {
 
  Context::Context(const Context &c) {
 	// Copy all the data
+
+	// Font tracking
 	font = c.font;
 	textFont = c.textFont;
 	graphicsFont = c.graphicsFont;
 	textFontData = c.textFontData;
 	graphicsFontData = c.graphicsFontData;
 
+	// Text cursor management data
 	cursorEnabled = c.cursorEnabled;
 	cursorFlashing = c.cursorFlashing;
 	cursorFlashRate = c.cursorFlashRate;
 	cursorBehaviour = c.cursorBehaviour;
 	textCursor = c.textCursor;
-	cursorShowing = c.cursorShowing;
-	cursorTemporarilyHidden = c.cursorTemporarilyHidden;
-	cursorTime = c.cursorTime;
 	cursorVStart = c.cursorVStart;
 	cursorVEnd = c.cursorVEnd;
 	cursorHStart = c.cursorHStart;
 	cursorHEnd = c.cursorHEnd;
+	// Data related to cursor rendering
+	cursorShowing = c.cursorShowing;
+	cursorTemporarilyHidden = c.cursorTemporarilyHidden;
+	cursorTime = c.cursorTime;
 
 	pagedMode = c.pagedMode;
 	pagedModeCount = c.pagedModeCount;
 
+	// Viewport management data
 	defaultViewport = c.defaultViewport;
 	textViewport = c.textViewport;
 	graphicsViewport = c.graphicsViewport;
 
+	// Graphics painting options
 	gpofg = c.gpofg;
 	gpobg = c.gpobg;
-	tpo = c.tpo;
-	cpo = c.cpo;
 	gfg = c.gfg;
 	gbg = c.gbg;
-	tfg = c.tfg;
-	tbg = c.tbg;
 	gfgc = c.gfgc;
 	gbgc = c.gbgc;
-	tfgc = c.tfgc;
-	tbgc = c.tbgc;
 	lineThickness = c.lineThickness;
 	currentBitmap = c.currentBitmap;
 	linePattern.setPattern(c.linePattern.pattern);
 	linePatternLength = c.linePatternLength;
-	charToBitmap = c.charToBitmap;
+
+	// Graphics positioning data
 	logicalCoords = c.logicalCoords;
 	origin = c.origin;
 	p1 = c.p1;
@@ -329,8 +334,16 @@ class Context {
 	p3 = c.p3;
 	rp1 = c.rp1;
 	up1 = c.up1;
-	pathPoints = c.pathPoints;
-	lastPlotCommand = c.lastPlotCommand;
+	// pathPoints and lastPlotCommand are currently completely transient, so don't need to be copied
+
+	// Text painting options
+	tfg = c.tfg;
+	tbg = c.tbg;
+	tfgc = c.tfgc;
+	tbgc = c.tbgc;
+	tpo = c.tpo;
+	cpo = c.cpo;
+	charToBitmap = c.charToBitmap;
 
 	if (c.activeCursor == &c.textCursor) {
 		activeCursor = &textCursor;

@@ -32,11 +32,13 @@ void VDUStreamProcessor::vdu_sys_context() {
 				debug_log("vdu_sys_context: delete %d not found\n\r", id);
 			}
 		} break;
-		case CONTEXT_RESET: {	// VDU 23, 0, &C8, 2
+		case CONTEXT_RESET: {	// VDU 23, 0, &C8, 2, flags
+			auto flags = readByte_t(); if (flags == -1) return;
+			if (resetContext(flags)) {
+				sendModeInformation();
+			}
 			// Context reset specifically for the current context
 			// stack is left intact
-			resetContext();
-			sendModeInformation();
 			debug_log("vdu_sys_context: reset\n\r");
 		} break;
 		case CONTEXT_SAVE: {	// VDU 23, 0, &C8, 3
@@ -82,8 +84,44 @@ void VDUStreamProcessor::selectContext(uint8_t id) {
 	}
 }
 
-void VDUStreamProcessor::resetContext() {
-	context->reset();
+bool VDUStreamProcessor::resetContext(uint8_t flags) {
+	// if flags are all clear, then do a "mode" style reset
+	if (flags == 0) {
+		context->reset();
+		return true;
+	}
+
+	// otherwise we can reset specific things
+	bool sendModeData = false;
+
+	if (flags & CONTEXT_RESET_GPAINT) {	// graphics painting options
+		context->resetGraphicsPainting();
+		context->resetGraphicsOptions();
+	}
+	if (flags & CONTEXT_RESET_GPOS) {	// graphics positioning incl graphics viewport
+		context->setLogicalCoords(true);
+		context->resetGraphicsPositioning();
+	}
+	if (flags & CONTEXT_RESET_TPAINT) {	// text painting options
+		context->resetTextPainting();
+	}
+	if (flags & CONTEXT_RESET_FONTS) {	// fonts
+		context->resetFonts();
+		sendModeData = true;
+	}
+	if (flags & CONTEXT_RESET_TBEHAVIOUR) {	// text cursor behaviour
+		context->setCursorBehaviour(0, 0);
+		sendModeData = true;
+	}
+	if (flags & CONTEXT_RESET_TCURSOR) {	// text cursor incl text viewport
+		context->resetTextCursor();
+		sendModeData = true;
+	}
+	if (flags & CONTEXT_RESET_CHAR2BITMAP) {	// char-to-bitmap mappings
+		context->resetCharToBitmap();
+	}
+
+	return sendModeData;
 }
 
 void VDUStreamProcessor::saveContext() {
@@ -138,11 +176,14 @@ void VDUStreamProcessor::clearContextStack() {
 	contextStack.push_back(context);
 }
 
+// Context reset, performed when changing screen modes
+//
 void VDUStreamProcessor::resetAllContexts() {
 	debug_log("resetAllContexts: resetting all contexts\n\r");
 	clearContextStack();
 	contextStacks.clear();
-	resetContext();
+	// perform a "mode" style reset
+	resetContext(0);
 }
 
 #endif // VDU_CONTEXT_H

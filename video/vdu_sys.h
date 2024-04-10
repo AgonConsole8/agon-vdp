@@ -119,6 +119,7 @@ void VDUStreamProcessor::vdu_sys() {
 	// Redefine character with ASCII code mode
 	//
 	else {
+		waitPlotCompletion();
 		vdu_sys_udg(mode);
 	}
 }

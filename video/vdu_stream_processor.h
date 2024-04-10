@@ -14,6 +14,8 @@
 #include "span.h"
 #include "types.h"
 
+std::unordered_map<uint8_t, std::vector<std::shared_ptr<Context>>> contextStacks;
+
 class VDUStreamProcessor {
 	private:
 		struct AdvancedOffset {
@@ -26,7 +28,6 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> originalOutputStream;
 
 		// Graphics context storage and management
-		std::unordered_map<uint8_t, std::vector<std::shared_ptr<Context>>> contextStacks;
 		std::shared_ptr<Context> context;					// Current active context
 		std::vector<std::shared_ptr<Context>> contextStack;	// Current active context stack
 
@@ -84,7 +85,7 @@ class VDUStreamProcessor {
 
 		void vdu_sys_context();
 		void selectContext(uint8_t contextId);
-		void resetContext();
+		bool resetContext(uint8_t flags);
 		void saveContext();
 		void restoreContext();
 		void saveAndSelectContext(uint8_t contextId);
