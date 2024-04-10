@@ -284,14 +284,17 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_SWITCHBUFFER: {		// VDU 23, 0, &C3
 			switchBuffer();
 		}	break;
+		case VDP_CONTEXT: {				// VDU 23, 0, &C8, command, [<args>]
+			vdu_sys_context();			// Context management
+		}	break;
+		case VDP_FLUSH_DRAWING_QUEUE: {	// VDU 23, 0, &CA
+			waitPlotCompletion();
+		}	break;
 		case VDP_PATTERN_LENGTH: {		// VDU 23, 0, &F2, n
 			auto b = readByte_t();		// Set pattern length
 			if (b >= 0) {
 				context->setDottedLinePatternLength(b);
 			}
-		}	break;
-		case VDP_CONTEXT: {				// VDU 23, 0, &F3, command, [<args>]
-			vdu_sys_context();			// Context management
 		}	break;
 		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
 			auto b = readByte_t();
