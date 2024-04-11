@@ -329,7 +329,6 @@ void Context::setPagedMode(bool mode) {
 // used when changing screen modes
 //
 void Context::resetTextCursor() {
-	setActiveCursor(CursorType::TextCursor);
 	// visual cursor appearance reset
 	cursorEnabled = true;
 	cursorFlashing = true;
@@ -342,7 +341,7 @@ void Context::resetTextCursor() {
 	// reset text viewport
 	// and set the active viewport to text
 	textViewport =	Rect(0, 0, canvasW - 1, canvasH - 1);
-	setActiveViewport(ViewportType::TextViewport);
+	setActiveCursor(CursorType::TextCursor);
 
 	// cursor behaviour however is _not_ reset here
 	cursorHome();

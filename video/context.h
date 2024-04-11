@@ -147,7 +147,7 @@ class Context {
 		fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions priorPaintOptions);
 		void setGraphicsOptions(uint8_t mode);
 		void setGraphicsFill(uint8_t mode);
-		void setClippingRect(Rect rect);
+		inline void setClippingRect(Rect rect);
 
 		void pushPoint(Point p);
 		void pushPointRelative(int16_t x, int16_t y);
@@ -219,11 +219,13 @@ class Context {
 		void viewportReset();
 		void setActiveViewport(ViewportType type);
 		bool setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+		bool setGraphicsViewport();
 		bool setTextViewport(uint8_t cx1, uint8_t cy1, uint8_t cx2, uint8_t cy2);
-		bool setTextViewportAt(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+		bool setTextViewport();
 		uint8_t getNormalisedViewportCharWidth();
 		uint8_t getNormalisedViewportCharHeight();
 		inline void setOrigin(int x, int y);
+		void setOrigin();
 		inline void setLogicalCoords(bool b);
 		Point toCurrentCoordinates(int16_t X, int16_t Y);
 		Point toScreenCoordinates(int16_t X, int16_t Y);

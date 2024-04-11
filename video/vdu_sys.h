@@ -242,26 +242,31 @@ void VDUStreamProcessor::vdu_sys_video() {
 				controlKeys = (bool) b;
 			}
 		}	break;
-		case VDP_TEXT_VIEWPORT: {		// VDU 23, 0, &9C, x1; y1; x2; y2;
-			auto x1 = readWord_t();		// Set text viewport using graphics coordinates
-			if (x1 == -1) return;
-			auto y1 = readWord_t();
-			if (y1 == -1) return;
-			auto x2 = readWord_t();
-			if (x2 == -1) return;
-			auto y2 = readWord_t();
-			if (y2 == -1) return;
+		case VDP_TEXT_VIEWPORT: {		// VDU 23, 0, &9C
+			// Set text viewport using graphics coordinates
 			if (ttxtMode) {
 				// We could consider supporting this by dividing points by font size
 				debug_log("vdp_textViewport: Not supported in teletext mode\n\r");
 				return;
 			}
-			if (context->setTextViewport(x1, y1, x2, y2)) {
-				debug_log("vdp_textViewport: OK %d,%d,%d,%d\n\r", x1, y1, x2, y2);
+			if (context->setTextViewport()) {
+				debug_log("vdp_textViewport: OK\n\r");
 			} else {
-				debug_log("vdp_textViewport: Invalid Viewport %d,%d -> %d,%d)\n\r", x1, y1, x2, y2);
+				debug_log("vdp_textViewport: Invalid Viewport\n\r");
 			}
 			sendModeInformation();
+		}	break;
+		case VDP_GRAPHICS_VIEWPORT: {	// VDU 23, 0, &9D
+			// Set graphics viewport using latest graphics coordinates
+			if (context->setGraphicsViewport()) {
+				debug_log("vdp_graphicsViewport: OK\n\r");
+			} else {
+				debug_log("vdp_graphicsViewport: Invalid Viewport\n\r");
+			}
+		}	break;
+		case VDP_GRAPHICS_ORIGIN: {		// VDU 23, 0, &9E
+			// Set graphics origin using latest graphics coordintes
+			context->setOrigin();
 		}	break;
 		case VDP_BUFFERED: {			// VDU 23, 0, &A0, bufferId; command, <args>
 			vdu_sys_buffered();

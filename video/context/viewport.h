@@ -64,10 +64,18 @@ bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_
 
 	if (p1.X >= 0 && p2.X < canvasW && p1.Y >= 0 && p2.Y < canvasH && p2.X >= p1.X && p2.Y >= p1.Y) {
 		graphicsViewport = Rect(p1.X, p1.Y, p2.X, p2.Y);
-		setClippingRect(graphicsViewport);
 		return true;
 	}
 	return false;
+}
+
+bool Context::setGraphicsViewport() {
+	auto newViewport = getGraphicsRect();
+	if (newViewport.width() == 0 || newViewport.height() == 0) {
+		return false;
+	}
+	graphicsViewport = newViewport;
+	return true;
 }
 
 // Set text viewport
@@ -83,12 +91,9 @@ bool Context::setTextViewport(uint8_t cx1, uint8_t cy1, uint8_t cx2, uint8_t cy2
 	return setTextViewport(Rect(x1, y1, x2, y2));
 }
 
-// With current graphics coordinates
-bool Context::setTextViewportAt(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-	Point p1 = toScreenCoordinates(x1, y1);
-	Point p2 = toScreenCoordinates(x2, y2);
-
-	return setTextViewport(Rect(std::min(p1.X, p2.X), std::min(p1.Y, p2.Y), std::max(p1.X, p2.X), std::max(p1.Y, p2.Y)));
+// With current graphics coordinates (from graphics cursor stack)
+bool Context::setTextViewport() {
+	return setTextViewport(getGraphicsRect());
 }
 
 // Return our viewport width in number of characters
@@ -109,6 +114,17 @@ uint8_t Context::getNormalisedViewportCharHeight() {
 
 inline void Context::setOrigin(int x, int y) {
 	origin = scale(x, y);
+}
+
+void Context::setOrigin() {
+	origin = Point(
+		std::max(0, (int)std::min(canvasW - 1, (int)p1.X)),
+		std::max(0, (int)std::min(canvasH - 1, (int)p1.Y))
+	);
+	if (logicalCoords) {
+		origin.Y = canvasH - origin.Y - 1;
+	}
+	debug_log("setOrigin: %d,%d\n\r", origin.X, origin.Y);
 }
 
 inline void Context::setLogicalCoords(bool b) {

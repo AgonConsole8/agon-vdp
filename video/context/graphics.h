@@ -35,7 +35,7 @@ fabgl::PaintOptions Context::getPaintOptions(fabgl::PaintMode mode, fabgl::Paint
 //
 void Context::setGraphicsOptions(uint8_t mode) {
 	auto colourMode = mode & 0x03;
-	canvas->setClippingRect(graphicsViewport);
+	setClippingRect(graphicsViewport);
 	switch (colourMode) {
 		case 0: break;	// move command
 		case 1: {
@@ -77,7 +77,7 @@ void Context::setGraphicsFill(uint8_t mode) {
 
 // Set a clipping rectangle
 //
-void Context::setClippingRect(Rect rect) {
+inline void Context::setClippingRect(Rect rect) {
 	canvas->setClippingRect(rect);
 }
 
@@ -250,7 +250,7 @@ void Context::plotCopyMove(uint8_t mode) {
 				debug_log("clearing left of destination\n\r");
 				auto clearClip = Rect(sourceRect.X1, sourceRect.Y1, intersection.X1 - 1, sourceRect.Y2);
 				debug_log("clearClip: (%d,%d) -> (%d,%d)\n\r", clearClip.X1, clearClip.Y1, clearClip.X2, clearClip.Y2);
-				canvas->setClippingRect(clearClip);
+				setClippingRect(clearClip);
 				canvas->fillRectangle(sourceRect);
 			}
 			if (intersection.X2 < sourceRect.X2) {
@@ -258,7 +258,7 @@ void Context::plotCopyMove(uint8_t mode) {
 				debug_log("clearing right of destination\n\r");
 				auto clearClip = Rect(intersection.X2 + 1, sourceRect.Y1, sourceRect.X2, sourceRect.Y2);
 				debug_log("clearClip: (%d,%d) -> (%d,%d)\n\r", clearClip.X1, clearClip.Y1, clearClip.X2, clearClip.Y2);
-				canvas->setClippingRect(clearClip);
+				setClippingRect(clearClip);
 				canvas->fillRectangle(sourceRect);
 			}
 			if (intersection.Y1 > sourceRect.Y1) {
@@ -266,7 +266,7 @@ void Context::plotCopyMove(uint8_t mode) {
 				debug_log("clearing above destination\n\r");
 				auto clearClip = Rect(sourceRect.X1, sourceRect.Y1, sourceRect.X2, intersection.Y1 - 1);
 				debug_log("clearClip: (%d,%d) -> (%d,%d)\n\r", clearClip.X1, clearClip.Y1, clearClip.X2, clearClip.Y2);
-				canvas->setClippingRect(clearClip);
+				setClippingRect(clearClip);
 				canvas->fillRectangle(sourceRect);
 			}
 			if (intersection.Y2 < sourceRect.Y2) {
@@ -274,7 +274,7 @@ void Context::plotCopyMove(uint8_t mode) {
 				debug_log("clearing below destination\n\r");
 				auto clearClip = Rect(sourceRect.X1, intersection.Y2 + 1, sourceRect.X2, sourceRect.Y2);
 				debug_log("clearClip: (%d,%d) -> (%d,%d)\n\r", clearClip.X1, clearClip.Y1, clearClip.X2, clearClip.Y2);
-				canvas->setClippingRect(clearClip);
+				setClippingRect(clearClip);
 				canvas->fillRectangle(sourceRect);
 			}
 		} else {
@@ -339,10 +339,7 @@ void Context::clearViewport(ViewportType type) {
 	if (ttxtMode) {
 		ttxt_instance.cls();
 	} else {
-		if (canvas) {
-			auto viewport = getViewport(type);
-			canvas->fillRectangle(*viewport);
-		}
+		canvas->fillRectangle(*getViewport(type));
 	}
 }
 
@@ -585,9 +582,15 @@ void Context::pushPoint(uint16_t x, uint16_t y) {
 }
 
 // Get rect from last two points
+// ensuring that the rect is on-screen coordinates
 //
 Rect Context::getGraphicsRect() {
-	return Rect(std::min(p1.X, p2.X), std::min(p1.Y, p2.Y), std::max(p1.X, p2.X), std::max(p1.Y, p2.Y));
+	return Rect(
+		std::max((int)0, (int)std::min(p1.X, p2.X)),
+		std::max((int)0, (int)std::min(p1.Y, p2.Y)),
+		std::min(canvasW - 1, (int)std::max(p1.X, p2.X)),
+		std::min(canvasH - 1, (int)std::max(p1.Y, p2.Y))
+	);
 }
 
 
@@ -740,15 +743,14 @@ void Context::plotCharacter(char c) {
 		if (cursorBehaviour.scrollProtect) {
 			cursorAutoNewline();
 		}
-		bool isTextCursor = textCursorActive();
 		auto bitmap = getBitmapFromChar(c);
-		if (isTextCursor) {
-			canvas->setClippingRect(defaultViewport);
+		if (textCursorActive()) {
+			setClippingRect(textViewport);
 			canvas->setPenColor(tfg);
 			canvas->setBrushColor(tbg);
 			canvas->setPaintOptions(tpo);
 		} else {
-			canvas->setClippingRect(graphicsViewport);
+			setClippingRect(graphicsViewport);
 			canvas->setPenColor(gfg);
 			canvas->setPaintOptions(gpofg);
 		}
@@ -832,7 +834,7 @@ void Context::clg() {
 		canvas->setPaintOptions(gpobg);
 		clearViewport(ViewportType::GraphicsViewport);
 	}
-	pushPoint(0, 0);		// Reset graphics origin (as per BBC Micro CLG)
+	pushPoint(0, 0);		// Reset graphics cursor position (as per BBC Micro CLG)
 }
 
 void Context::scrollRegion(ViewportType viewport, uint8_t direction, int16_t movement) {
