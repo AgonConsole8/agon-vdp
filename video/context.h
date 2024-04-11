@@ -226,7 +226,7 @@ class Context {
 		uint8_t getNormalisedViewportCharHeight();
 		inline void setOrigin(int x, int y);
 		void setOrigin();
-		inline void setLogicalCoords(bool b);
+		void setLogicalCoords(bool b);
 		Point toCurrentCoordinates(int16_t X, int16_t Y);
 		Point toScreenCoordinates(int16_t X, int16_t Y);
 

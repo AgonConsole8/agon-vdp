@@ -127,8 +127,18 @@ void Context::setOrigin() {
 	debug_log("setOrigin: %d,%d\n\r", origin.X, origin.Y);
 }
 
-inline void Context::setLogicalCoords(bool b) {
-	logicalCoords = b;
+void Context::setLogicalCoords(bool b) {
+	if (b != logicalCoords) {
+		logicalCoords = b;
+		// change our unscaled point according to the new setting
+		if (b) {
+			// point was in screen coordinates, change to logical
+			up1 = Point(up1.X * logicalScaleX, LOGICAL_SCRH - (up1.Y * logicalScaleY));
+		} else {
+			// point was in logical coordinates, change to screen coordinates
+			up1 = Point(up1.X / logicalScaleX, canvasH - (up1.Y / logicalScaleY));
+		}
+	}
 }
 
 // Convert to currently active coordinate system
