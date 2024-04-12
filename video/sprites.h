@@ -152,13 +152,15 @@ void activateSprites(uint8_t n) {
 	* Sprites 0-(numsprites-1) will be activated on-screen
 	* Make sure all sprites have at least one frame attached to them
 	*/
-	numsprites = n;
+	if (numsprites != n) {
+		numsprites = n;
 
-	waitPlotCompletion();
-	if (numsprites) {
-		_VGAController->setSprites(sprites, numsprites);
-	} else {
-		_VGAController->removeSprites();
+		waitPlotCompletion();
+		if (numsprites) {
+			_VGAController->setSprites(sprites, numsprites);
+		} else {
+			_VGAController->removeSprites();
+		}
 	}
 }
 

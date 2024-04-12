@@ -811,14 +811,14 @@ void Context::drawCursor(Point p) {
 // Clear the screen
 //
 void Context::cls() {
+	if (hasActiveSprites()) {
+		activateSprites(0);
+	}
 	if (canvas) {
 		canvas->setPenColor(tfg);
 		canvas->setBrushColor(tbg);
 		canvas->setPaintOptions(tpo);
-		clearViewport(ViewportType::TextViewport);
-	}
-	if (hasActiveSprites()) {
-		activateSprites(0);
+		setClippingRect(textViewport);
 		clearViewport(ViewportType::TextViewport);
 	}
 	cursorHome();
@@ -832,6 +832,7 @@ void Context::clg() {
 		canvas->setPenColor(gfg);
 		canvas->setBrushColor(gbg);
 		canvas->setPaintOptions(gpobg);
+		setClippingRect(graphicsViewport);
 		clearViewport(ViewportType::GraphicsViewport);
 	}
 	pushPoint(0, 0);		// Reset graphics cursor position (as per BBC Micro CLG)
