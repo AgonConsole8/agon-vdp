@@ -69,18 +69,18 @@ void VDUStreamProcessor::selectContext(uint8_t id) {
 	if (contextExists(id)) {
 		debug_log("selectContext: selecting existing context %d\n\r", id);
 		contextStack = contextStacks[id];
-		context = contextStack.back();
+		context = contextStack->back();
 		context->activate();
 	} else {
 		debug_log("selectContext: creating new context %d\n\r", id);
 		// copy current stack
-		std::vector<std::shared_ptr<Context>> newStack;
-		for (auto it = contextStack.begin(); it != contextStack.end(); ++it) {
-			newStack.push_back(make_shared_psram<Context>(*it->get()));
+		auto newStack = make_shared_psram<std::vector<std::shared_ptr<Context>>>();
+		for (auto it = contextStack->begin(); it != contextStack->end(); ++it) {
+			newStack->push_back(make_shared_psram<Context>(*it->get()));
 		}
 		contextStacks[id] = newStack;
-		contextStack = newStack;
-		context = contextStack.back();
+		contextStack = contextStacks[id];
+		context = contextStack->back();
 	}
 }
 
@@ -128,15 +128,15 @@ void VDUStreamProcessor::saveContext() {
 	debug_log("saveContext: saving context\n\r");
 	// create a new context and push it to the stack
 	auto newContext = make_shared_psram<Context>(*(context.get()));
-	contextStack.push_back(newContext);
+	contextStack->push_back(newContext);
 	context = newContext;
 }
 
 void VDUStreamProcessor::restoreContext() {
-	if (contextStack.size() > 1) {
+	if (contextStack->size() > 1) {
 		debug_log("restoreContext: restoring context\n\r");
-		contextStack.pop_back();
-		context = contextStack.back();
+		contextStack->pop_back();
+		context = contextStack->back();
 		context->activate();
 	} else {
 		debug_log("restoreContext: no context to restore\n\r");
@@ -148,8 +148,8 @@ void VDUStreamProcessor::saveAndSelectContext(uint8_t id) {
 	if (contextExists(id)) {
 		// grab a copy of the top-most context at id
 		debug_log("saveAndSelectContext: selecting existing context %d\n\r", id);
-		context = make_shared_psram<Context>(*contextStacks[id].back());
-		contextStack.push_back(context);
+		context = make_shared_psram<Context>(*contextStacks[id]->back());
+		contextStack->push_back(context);
 		context->activate();
 	} else {
 		debug_log("saveAndSelectContext: context %d not found\n\r", id);
@@ -159,11 +159,11 @@ void VDUStreamProcessor::saveAndSelectContext(uint8_t id) {
 
 void VDUStreamProcessor::restoreAllContexts() {
 	// restore to first context in stack
-	if (contextStack.size() > 1) {
+	if (contextStack->size() > 1) {
 		debug_log("restoreAllContexts: restoring all contexts\n\r");
-		context = contextStack.front();
-		contextStack.clear();
-		contextStack.push_back(context);
+		context = contextStack->front();
+		contextStack->clear();
+		contextStack->push_back(context);
 		context->activate();
 	} else {
 		debug_log("restoreAllContexts: no contexts to restore\n\r");
@@ -172,8 +172,8 @@ void VDUStreamProcessor::restoreAllContexts() {
 
 void VDUStreamProcessor::clearContextStack() {
 	debug_log("clearContextStack: clearing all contexts\n\r");
-	contextStack.clear();
-	contextStack.push_back(context);
+	contextStack->clear();
+	contextStack->push_back(context);
 }
 
 // Context reset, performed when changing screen modes
