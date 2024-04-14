@@ -191,22 +191,12 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
 		}	break;
 		case BUFFERED_COMPRESS: {
-			// read list of source buffer IDs
-			auto sourceBufferIds = getBufferIdsFromStream();
-			if (sourceBufferIds.size() == 0) {
-				debug_log("vdu_sys_buffered: no source buffer IDs\n\r");
-				return;
-			}
-			bufferCompress(bufferId, sourceBufferIds);
+			auto sourceBufferId = readWord_t();
+			bufferCompress(bufferId, sourceBufferId);
 		}	break;
 		case BUFFERED_DECOMPRESS: {
-			// read list of source buffer IDs
-			auto sourceBufferIds = getBufferIdsFromStream();
-			if (sourceBufferIds.size() == 0) {
-				debug_log("vdu_sys_buffered: no source buffer IDs\n\r");
-				return;
-			}
-			bufferDecompress(bufferId, sourceBufferIds);
+			auto sourceBufferId = readWord_t();
+			bufferDecompress(bufferId, sourceBufferId);
 		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
@@ -1561,7 +1551,7 @@ static void local_write_compressed_byte(void* p_cd, uint8_t comp_byte) {
 	CompressionData* cd = (CompressionData*) p_cd;
     uint8_t** pp_temp = (uint8_t**) cd->context;
 	uint8_t* p_temp = *pp_temp;
-	*p_temp++ = comp_byte;
+	p_temp[cd->output_count++] = comp_byte;
 	if (!(cd->output_count & (COMPRESSION_OUTPUT_CHUNK_SIZE-1))) {
 		// extend the temporary buffer to make room for more output
 		auto new_size = cd->output_count + COMPRESSION_OUTPUT_CHUNK_SIZE;
@@ -1583,7 +1573,7 @@ static void local_write_decompressed_byte(void* p_dd, uint8_t orig_data) {
 	DecompressionData* dd = (DecompressionData*) p_dd;
     uint8_t** pp_temp = (uint8_t**) dd->context;
 	uint8_t* p_temp = *pp_temp;
-	*p_temp++ = orig_data;
+	p_temp[dd->output_count++] = orig_data;
 	if (!(dd->output_count & (COMPRESSION_OUTPUT_CHUNK_SIZE-1))) {
 		// extend the temporary buffer to make room for more output
 		auto new_size = dd->output_count + COMPRESSION_OUTPUT_CHUNK_SIZE;
@@ -1605,13 +1595,9 @@ static void local_write_decompressed_byte(void* p_dd, uint8_t orig_data) {
 // Replaces the target buffer with the new one.
 // If target buffer is included in the source list it will be skipped.
 //
-void VDUStreamProcessor::bufferCompress(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds) {
-	if (bufferId == 65535) {
-		debug_log("bufferCompress: ignoring buffer %d\n\r", bufferId);
-		return;
-	}
-
+void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBufferId) {
 	buffers[bufferId].clear();
+	debug_log("Compressing into buffer %u\n\r", bufferId);
 
 	// create a temporary output buffer, which may be expanded during compression
 	uint8_t* p_temp = (uint8_t*) ps_malloc(COMPRESSION_OUTPUT_CHUNK_SIZE);
@@ -1620,24 +1606,17 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, std::vector<uint16_t>
 		CompressionData cd;
 		agon_init_compression(&cd, &p_temp, &local_write_compressed_byte);
 
-		// loop thru input buffer IDs
-		for (const auto sourceId : sourceBufferIds) {
-			if (sourceId == bufferId) {
-				debug_log("bufferCompress: skipping buffer %d as it's the target\n\r", sourceId);
-			} else if (buffers.find(sourceId) != buffers.end()) {
-				// buffer ID exists
-				// loop thru blocks stored against this ID
-				for (const auto &block : buffers[sourceId]) {
-					// compress the block into our temporary buffer
-					auto bufferLength = block->size();
-					auto p_data = block->getBuffer();
-					cd.input_count += bufferLength;
-					while (bufferLength--) {
-		                agon_compress_byte(&cd, *p_data++);
-					}
-				}
-			} else {
-				debug_log("bufferCompress: buffer %d not found\n\r", sourceId);
+		// loop thru blocks stored against the source buffer ID
+		for (const auto &block : buffers[sourceBufferId]) {
+			// compress the block into our temporary buffer
+			auto bufferLength = block->size();
+			auto p_data = block->getBuffer();
+			debug_log(" from buffer %u [%08X] %u bytes\n\r", sourceBufferId, p_data, bufferLength);
+			debug_log(" %02hX %02hX %02hX %02hX\n\r",
+						p_data[0], p_data[1], p_data[2], p_data[3]);
+			cd.input_count += bufferLength;
+			while (bufferLength--) {
+				agon_compress_byte(&cd, *p_data++);
 			}
 		}
 		agon_finish_compression(&cd);
@@ -1650,13 +1629,15 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, std::vector<uint16_t>
 			return;
 		}
 		auto destination = bufferStream->getBuffer();
+		debug_log(" %02hX %02hX %02hX %02hX\n\r",
+					p_temp[0], p_temp[1], p_temp[2], p_temp[3]);
 		memcpy(destination, p_temp, cd.output_count);
 		heap_caps_free(p_temp);
 		buffers[bufferId].push_back(bufferStream);
 
 		uint32_t pct = (cd.output_count * 100) / cd.input_count;
-		printf("Compressed %u input bytes to %u output bytes (%u%%)\n",
-				cd.input_count, cd.output_count, pct);
+		printf("Compressed %u input bytes to %u output bytes (%u%%) at %08X\n\r",
+				cd.input_count, cd.output_count, pct, destination);
 	} else {
 		debug_log("bufferCompress: cannot allocate temporary buffer of %d bytes\n\r", COMPRESSION_OUTPUT_CHUNK_SIZE);
 	}
@@ -1668,13 +1649,9 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, std::vector<uint16_t>
 // Replaces the target buffer with the new one.
 // If target buffer is included in the source list it will be skipped.
 //
-void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds) {
-	if (bufferId == 65535) {
-		debug_log("bufferDecompress: ignoring buffer %d\n\r", bufferId);
-		return;
-	}
-
+void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId) {
 	buffers[bufferId].clear();
+	debug_log("Decompressing into buffer %u\n\r", bufferId);
 
 	// create a temporary output buffer, which may be expanded during decompression
 	uint8_t* p_temp = (uint8_t*) ps_malloc(COMPRESSION_OUTPUT_CHUNK_SIZE);
@@ -1683,24 +1660,17 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, std::vector<uint16_
 		DecompressionData dd;
 		agon_init_decompression(&dd, &p_temp, &local_write_decompressed_byte);
 
-		// loop thru input buffer IDs
-		for (const auto sourceId : sourceBufferIds) {
-			if (sourceId == bufferId) {
-				debug_log("bufferDecompress: skipping buffer %d as it's the target\n\r", sourceId);
-			} else if (buffers.find(sourceId) != buffers.end()) {
-				// buffer ID exists
-				// loop thru blocks stored against this ID
-				for (const auto &block : buffers[sourceId]) {
-					// decompress the block into our temporary buffer
-					auto bufferLength = block->size();
-					auto p_data = block->getBuffer();
-					dd.input_count += bufferLength;
-					while (bufferLength--) {
-		                agon_decompress_byte(&dd, *p_data++);
-					}
-				}
-			} else {
-				debug_log("bufferDecompress: buffer %d not found\n\r", sourceId);
+		// loop thru blocks stored against the source buffer ID
+		for (const auto &block : buffers[sourceBufferId]) {
+			// decompress the block into our temporary buffer
+			auto bufferLength = block->size();
+			auto p_data = block->getBuffer();
+			debug_log(" from buffer %u [%08X] %u bytes\n\r", sourceBufferId, p_data, bufferLength);
+			debug_log(" %02hX %02hX %02hX %02hX\n\r",
+						p_data[0], p_data[1], p_data[2], p_data[3]);
+			dd.input_count += bufferLength;
+			while (bufferLength--) {
+				agon_decompress_byte(&dd, *p_data++);
 			}
 		}
 
@@ -1712,13 +1682,15 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, std::vector<uint16_
 			return;
 		}
 		auto destination = bufferStream->getBuffer();
+		debug_log(" %02hX %02hX %02hX %02hX\n\r",
+					p_temp[0], p_temp[1], p_temp[2], p_temp[3]);
 		memcpy(destination, p_temp, dd.output_count);
 		heap_caps_free(p_temp);
 		buffers[bufferId].push_back(bufferStream);
 
 		uint32_t pct = (dd.output_count * 100) / dd.input_count;
-		printf("Decompressed %u input bytes to %u output bytes (%u%%)\n",
-				dd.input_count, dd.output_count, pct);
+		printf("Decompressed %u input bytes to %u output bytes (%u%%) at %08X\n\r",
+				dd.input_count, dd.output_count, pct, destination);
 	} else {
 		debug_log("bufferDecompress: cannot allocate temporary buffer of %d bytes\n\r", COMPRESSION_OUTPUT_CHUNK_SIZE);
 	}
