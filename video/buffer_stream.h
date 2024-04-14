@@ -12,6 +12,11 @@ class BufferStream : public Stream {
 		int available();
 		int read();
 		int peek();
+		virtual size_t readBytes(char * outBuffer, size_t length); // read chars from stream into buffer
+		virtual size_t readBytes(uint8_t * outBuffer, size_t length) {
+			return readBytes((char *)outBuffer, length);
+		}
+
 		size_t write(uint8_t b);
 		virtual bool isWritable() {
 			return false;
@@ -28,9 +33,16 @@ class BufferStream : public Stream {
 		inline uint8_t * getBuffer() {
 			return buffer.get();
 		}
-		inline uint32_t size() {
+		inline const uint8_t * getBuffer() const {
+			return buffer.get();
+		}
+		inline uint32_t size() const {
 			return bufferLength;
 		}
+		inline uint32_t tell() const {
+			return bufferPosition;
+		}
+
 		bool writeBuffer(uint8_t * data, uint32_t length, uint32_t offset);
 		void writeBufferByte(uint8_t data, uint32_t offset);
 		bool incrementBufferByte(uint32_t offset, int8_t by);
@@ -60,6 +72,13 @@ int BufferStream::peek() {
 		return buffer[bufferPosition];
 	}
 	return -1;
+}
+
+size_t BufferStream::readBytes(char * outBuffer, size_t length) {
+	size_t readAmount = std::min<size_t>(length, available());
+	memcpy(outBuffer, &buffer[bufferPosition], readAmount);
+	bufferPosition += readAmount;
+	return readAmount;
 }
 
 size_t BufferStream::write(uint8_t b) {
