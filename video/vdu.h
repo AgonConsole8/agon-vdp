@@ -32,7 +32,9 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			// 	break;
 			case 8 ... 13:
 			case 0x20 ... 0xFF: {
-				vdu_print(c);
+				if (!commandsEnabled && !consoleMode) {
+					DBGSerial.write(c);
+				}
 			}
 		}
 	}
@@ -42,7 +44,9 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			case 0x01: {
 				// capture character and send to "printer" if enabled
 				auto b = readByte_t();	if (b == -1) return;
-				vdu_print(b);
+				if (printerOn || consoleMode) {
+					DBGSerial.write(b);
+				}
 			}	break;
 			case 0x06:	// resume VDU command system
 				commandsEnabled = true;
@@ -55,7 +59,9 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 		case 0x01: {
 			// capture character and send to "printer" if enabled
 			auto b = readByte_t();	if (b == -1) return;
-			vdu_print(b);
+			if (printerOn || consoleMode) {
+				DBGSerial.write(b);
+			}
 		}	break;
 		case 0x02:
 			printerOn = true;
@@ -146,8 +152,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			break;
 		case 0x1B: { // VDU 27
 			auto b = readByte_t();	if (b == -1) return;
-			context->plotCharacter(b);
-			vdu_print(c);
+			vdu_print(b);
 		}	break;
 		case 0x1C:	// Define a text viewport
 			vdu_textViewport();
@@ -164,7 +169,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			break;
 		case 0x20 ... 0x7E:
 		case 0x80 ... 0xFF:
-			context->plotCharacter(c);
+			vdu_print(c);
 			break;
 		case 0x7F:	// Backspace
 			context->plotBackspace();
@@ -175,11 +180,38 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 // VDU "print" command
 // will output to "printer", if enabled
 //
-void VDUStreamProcessor::vdu_print(uint8_t c) {
+void VDUStreamProcessor::vdu_print(char c) {
 	if (printerOn && !consoleMode) {
 		// if consoleMode is enabled we're echoing everything back anyway
 		DBGSerial.write(c);
 	}
+
+	std::string s;
+	s += c;
+	// gather our string for printing
+	for (;;) {
+		auto next = peekByte_t(FAST_COMMS_TIMEOUT);
+		if (next == 27) {
+			readByte_t();
+			if (consoleMode) {
+				DBGSerial.write(next);
+			}
+			next = readByte_t(FAST_COMMS_TIMEOUT);
+			if (next == -1) {
+				break;
+			}
+			s += (char)next;
+		} else if (next != -1 && ((next >= 0x20 && next <= 0x7E) || (next >= 0x80 && next <= 0xFF))) {
+			s += (char)next;
+			readByte_t();
+		} else {
+			break;
+		}
+		if (printerOn) {
+			DBGSerial.write(next);
+		}
+	}
+	context->plotString(s);
 }
 
 // VDU 17 Handle COLOUR
