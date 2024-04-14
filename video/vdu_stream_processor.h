@@ -41,7 +41,7 @@ class VDUStreamProcessor {
 		uint32_t discardBytes(uint32_t length, uint16_t timeout);
 		int16_t peekByte_t(uint16_t timeout);
 
-		void vdu_print(uint8_t c);
+		void vdu_print(char c);
 		void vdu_colour();
 		void vdu_gcol();
 		void vdu_palette();

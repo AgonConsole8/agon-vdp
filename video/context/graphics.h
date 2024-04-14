@@ -406,6 +406,14 @@ void Context::scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 			canvas->scroll(movement * moveX, movement * moveY);
 		}
 	}
+	if (textCursorActive()) {
+		canvas->setPenColor(tfg);
+		canvas->setBrushColor(tbg);
+	} else {
+		canvas->setPenColor(gfg);
+		canvas->setBrushColor(gfg);
+		canvas->setPaintOptions(gpofg);
+	}
 }
 
 
@@ -734,16 +742,10 @@ void Context::plotPending(int16_t peeked) {
 }
 
 
-// Character plot
+// Plot a string
 //
-void Context::plotCharacter(char c) {
-	if (ttxtMode) {
-		ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, c);
-	} else {
-		if (cursorBehaviour.scrollProtect) {
-			cursorAutoNewline();
-		}
-		auto bitmap = getBitmapFromChar(c);
+void Context::plotString(const std::string s) {
+	if (!ttxtMode) {
 		if (textCursorActive()) {
 			setClippingRect(textViewport);
 			canvas->setPenColor(tfg);
@@ -754,14 +756,27 @@ void Context::plotCharacter(char c) {
 			canvas->setPenColor(gfg);
 			canvas->setPaintOptions(gpofg);
 		}
-		if (bitmap) {
-			canvas->drawBitmap(activeCursor->X, activeCursor->Y + getFont()->height - bitmap->height, bitmap.get());
-		} else {
-			canvas->drawChar(activeCursor->X, activeCursor->Y, c);
-		}
 	}
-	if (!cursorBehaviour.xHold) {
-		cursorRight(cursorBehaviour.scrollProtect);
+
+	auto font = getFont();
+	// iterate over the string and plot each character
+	for (char c : s) {
+		if (cursorBehaviour.scrollProtect) {
+			cursorAutoNewline();
+		}
+		if (ttxtMode) {
+			ttxt_instance.draw_char(activeCursor->X, activeCursor->Y, c);
+		} else {
+			auto bitmap = getBitmapFromChar(c);
+			if (bitmap) {
+				canvas->drawBitmap(activeCursor->X, activeCursor->Y + font->height - bitmap->height, bitmap.get());
+			} else {
+				canvas->drawChar(activeCursor->X, activeCursor->Y, c);
+			}
+		}
+		if (!cursorBehaviour.xHold) {
+			cursorRight(cursorBehaviour.scrollProtect);
+		}
 	}
 }
 
