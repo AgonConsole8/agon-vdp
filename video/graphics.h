@@ -925,60 +925,57 @@ void setLegacyModes(bool legacy) {
 }
 
 void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
+	auto moveX = 0;
+	auto moveY = 0;
 	canvas->setScrollingRegion(region->X1, region->Y1, region->X2, region->Y2);
 	canvas->setPenColor(tbg);
 	canvas->setBrushColor(tbg);
 	canvas->setPaintOptions(tpo);
-	if (ttxtMode) {
-		if (direction & 3 == 3) {
-			ttxt_instance.scroll();
-		}
-	} else {
-		auto moveX = 0;
-		auto moveY = 0;
-		switch (direction) {
-			case 0:		// Right
-				moveX = 1;
-				break;
-			case 1:		// Left
-				moveX = -1;
-				break;
-			case 2:		// Down
-				moveY = 1;
-				break;
-			case 3:		// Up
-				moveY = -1;
-				break;
-			case 4:		// positive X
-				if (cursorBehaviour.flipXY) {
-					moveY = cursorBehaviour.invertVertical ? -1 : 1;
-				} else {
-					moveX = cursorBehaviour.invertHorizontal ? -1 : 1;
-				}
-				break;
-			case 5:		// negative X
-				if (cursorBehaviour.flipXY) {
-					moveY = cursorBehaviour.invertVertical ? 1 : -1;
-				} else {
-					moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
-				}
-				break;
-			case 6:		// positive Y
-				if (cursorBehaviour.flipXY) {
-					moveX = cursorBehaviour.invertHorizontal ? -1 : 1;
-				} else {
-					moveY = cursorBehaviour.invertVertical ? -1 : 1;
-				}
-				break;
-			case 7:		// negative Y
-				if (cursorBehaviour.flipXY) {
-					moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
-				} else {
-					moveY = cursorBehaviour.invertVertical ? 1 : -1;
-				}
-				break;
-		}
-		if (moveX != 0 || moveY != 0) {
+	switch (direction) {
+		case 0:		// Right
+			moveX = 1;
+			break;
+		case 1:		// Left
+			moveX = -1;
+			break;
+		case 2:		// Down
+			moveY = 1;
+			break;
+		case 3:		// Up
+			moveY = -1;
+			break;
+		case 4:		// positive X
+			if (cursorBehaviour.flipXY) {
+				moveY = cursorBehaviour.invertVertical ? -1 : 1;
+			} else {
+				moveX = cursorBehaviour.invertHorizontal ? -1 : 1;			}
+			break;
+		case 5:		// negative X
+			if (cursorBehaviour.flipXY) {
+				moveY = cursorBehaviour.invertVertical ? 1 : -1;
+			} else {
+				moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
+			}
+			break;
+		case 6:		// positive Y
+			if (cursorBehaviour.flipXY) {
+				moveX = cursorBehaviour.invertHorizontal ? -1 : 1;
+			} else {
+				moveY = cursorBehaviour.invertVertical ? -1 : 1;
+			}
+			break;
+		case 7:		// negative Y
+			if (cursorBehaviour.flipXY) {
+				moveX = cursorBehaviour.invertHorizontal ? 1 : -1;
+			} else {
+				moveY = cursorBehaviour.invertVertical ? 1 : -1;
+			}
+			break;
+	}
+	if (moveX != 0 || moveY != 0) {
+		if (ttxtMode) {
+			ttxt_instance.scroll(moveX, moveY);
+		} else {
 			if (movement == 0) {
 				if (moveX != 0) {
 					movement = fontW;
@@ -988,7 +985,7 @@ void scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 			}
 			canvas->scroll(movement * moveX, movement * moveY);
 		}
-	}
+	}	
 }
 
 void setLineThickness(uint8_t thickness) {
