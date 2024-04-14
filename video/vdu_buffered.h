@@ -18,8 +18,6 @@
 #include "types.h"
 #include "vdu_stream_processor.h"
 
-#define COMPRESSION_OUTPUT_CHUNK_SIZE	1024 // used to extend temporary buffer
-
 // VDU 23, 0, &A0, bufferId; command: Buffered command support
 //
 void VDUStreamProcessor::vdu_sys_buffered() {
@@ -1545,58 +1543,11 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 	debug_log("bufferCopyAndConsolidate: copied %d bytes into buffer %d\n\r", length, bufferId);
 }
 
-// Write compressed output to a temporary buffer
-//
-static void local_write_compressed_byte(void* p_cd, uint8_t comp_byte) {
-	CompressionData* cd = (CompressionData*) p_cd;
-    uint8_t** pp_temp = (uint8_t**) cd->context;
-	uint8_t* p_temp = *pp_temp;
-	p_temp[cd->output_count++] = comp_byte;
-	if (!(cd->output_count & (COMPRESSION_OUTPUT_CHUNK_SIZE-1))) {
-		// extend the temporary buffer to make room for more output
-		auto new_size = cd->output_count + COMPRESSION_OUTPUT_CHUNK_SIZE;
-		uint8_t* p_temp2 = (uint8_t*) ps_malloc(new_size);
-		if (p_temp2) {
-			memcpy(p_temp2, p_temp, cd->output_count);
-			*pp_temp = p_temp2; // use new buffer pointer now
-		} else {
-			debug_log("bufferCompress: cannot allocate temporary buffer of %d bytes\n\r", new_size);
-			*pp_temp = NULL; // indicate failure
-		}
-		heap_caps_free(p_temp);
-	}
-}
-
-// Write decompressed output to a temporary buffer
-//
-static void local_write_decompressed_byte(void* p_dd, uint8_t orig_data) {
-	DecompressionData* dd = (DecompressionData*) p_dd;
-    uint8_t** pp_temp = (uint8_t**) dd->context;
-	uint8_t* p_temp = *pp_temp;
-	p_temp[dd->output_count++] = orig_data;
-	if (!(dd->output_count & (COMPRESSION_OUTPUT_CHUNK_SIZE-1))) {
-		// extend the temporary buffer to make room for more output
-		auto new_size = dd->output_count + COMPRESSION_OUTPUT_CHUNK_SIZE;
-		uint8_t* p_temp2 = (uint8_t*) ps_malloc(new_size);
-		if (p_temp2) {
-			memcpy(p_temp2, p_temp, dd->output_count);
-			*pp_temp = p_temp2; // use new buffer pointer now
-		} else {
-			debug_log("bufferDecompress: cannot allocate temporary buffer of %d bytes\n\r", new_size);
-			*pp_temp = NULL; // indicate failure
-		}
-		heap_caps_free(p_temp);
-	}
-}
-
-// VDU 23, 0, &A0, bufferId; &1C, sourceBufferId; sourceBufferId; ...; 65535; : Compress blocks from buffers
-// Compress (blocks from) a list of buffers into a new buffer.
-// List is terminated with a bufferId of 65535 (-1).
+// VDU 23, 0, &A0, bufferId; &1C, sourceBufferId; : Compress blocks from a buffer
+// Compress (blocks from) a buffer into a new buffer.
 // Replaces the target buffer with the new one.
-// If target buffer is included in the source list it will be skipped.
 //
 void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBufferId) {
-	buffers[bufferId].clear();
 	debug_log("Compressing into buffer %u\n\r", bufferId);
 
 	// create a temporary output buffer, which may be expanded during compression
@@ -1654,6 +1605,7 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 					p_temp[8], p_temp[9], p_temp[10], p_temp[11]);
 		memcpy(destination, p_temp, cd.output_count);
 		heap_caps_free(p_temp);
+		buffers[bufferId].clear();
 		buffers[bufferId].push_back(bufferStream);
 
 		uint32_t pct = (cd.output_count * 100) / cd.input_count;
@@ -1664,11 +1616,9 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 	}
 }
 
-// VDU 23, 0, &A0, bufferId; &1D, sourceBufferId; sourceBufferId; ...; 65535; : Decompress blocks from buffers
-// Decompress (blocks from) a list of buffers into a new buffer.
-// List is terminated with a bufferId of 65535 (-1).
+// VDU 23, 0, &A0, bufferId; &1D, sourceBufferId; : Decompress blocks from a buffer
+// Decompress (blocks from) a buffer into a new buffer.
 // Replaces the target buffer with the new one.
-// If target buffer is included in the source list it will be skipped.
 //
 void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId) {
 	// Validate the compression header
@@ -1687,7 +1637,6 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 	}
 	auto orig_size = p_hdr->orig_size;
 
-	buffers[bufferId].clear();
 	debug_log("Decompressing into buffer %u\n\r", bufferId);
 
 	// create a temporary output buffer, which may be expanded during decompression
@@ -1729,6 +1678,7 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 					p_temp[0], p_temp[1], p_temp[2], p_temp[3]);
 		memcpy(destination, p_temp, dd.output_count);
 		heap_caps_free(p_temp);
+		buffers[bufferId].clear();
 		buffers[bufferId].push_back(bufferStream);
 
 		uint32_t pct = (dd.output_count * 100) / dd.input_count;

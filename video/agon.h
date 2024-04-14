@@ -258,10 +258,10 @@
 #define BUFFERED_REVERSE				0x18	// Reverse the order of data in a buffer
 #define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
-#define BUFFERED_COMPRESS				0x1C	// Compress blocks from multiple buffers into one buffer
-#define BUFFERED_DECOMPRESS				0x1D	// Decompress blocks from multiple buffers into one buffer
+#define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
+#define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 
-#define BUFFERED_DEBUG_INFO				0x20	// Get debug info about a buffer
+#define BUFFERED_DEBUG_INFO				0x80	// Get debug info about a buffer
 
 // Adjust operation codes
 #define ADJUST_NOT				0x00	// Adjust: NOT

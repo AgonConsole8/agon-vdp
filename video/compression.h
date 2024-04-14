@@ -1,7 +1,12 @@
 #ifndef COMPRESSION_H
 #define COMPRESSION_H
 
+#include <cstring>
+#include <esp_heap_caps.h>
 #include <stdint.h>
+#include <esp32-hal-psram.h>
+
+extern void debug_log(const char * format, ...);		// Debug log function
 
 // This implementation uses a window size of 256 bytes, and a code size of 10 bits.
 // The maximum compressed byte string size is 16 bytes.
@@ -21,6 +26,8 @@
 #define COMPRESSION_STRING_SIZE 16      // power of 2
 #define COMPRESSION_TYPE_TURBO  'T'     // TurboVega-style compression
 #define TEMP_BUFFER_SIZE        256
+
+#define COMPRESSION_OUTPUT_CHUNK_SIZE	1024 // used to extend temporary buffer
 
 #pragma pack(push, 1)
 typedef struct {
@@ -84,6 +91,50 @@ void agon_write_compressed_byte(CompressionData* cd, uint8_t comp_byte) {
         agon_write_compressed_bit(cd, (comp_byte & 0x80) ? 1 : 0);
         comp_byte <<= 1;
     }
+}
+
+// Write compressed output to a temporary buffer
+//
+static void local_write_compressed_byte(void* p_cd, uint8_t comp_byte) {
+	CompressionData* cd = (CompressionData*) p_cd;
+    uint8_t** pp_temp = (uint8_t**) cd->context;
+	uint8_t* p_temp = *pp_temp;
+	p_temp[cd->output_count++] = comp_byte;
+	if (!(cd->output_count & (COMPRESSION_OUTPUT_CHUNK_SIZE-1))) {
+		// extend the temporary buffer to make room for more output
+		auto new_size = cd->output_count + COMPRESSION_OUTPUT_CHUNK_SIZE;
+		uint8_t* p_temp2 = (uint8_t*) ps_malloc(new_size);
+		if (p_temp2) {
+			memcpy(p_temp2, p_temp, cd->output_count);
+			*pp_temp = p_temp2; // use new buffer pointer now
+		} else {
+			debug_log("bufferCompress: cannot allocate temporary buffer of %d bytes\n\r", new_size);
+			*pp_temp = NULL; // indicate failure
+		}
+		heap_caps_free(p_temp);
+	}
+}
+
+// Write decompressed output to a temporary buffer
+//
+static void local_write_decompressed_byte(void* p_dd, uint8_t orig_data) {
+	DecompressionData* dd = (DecompressionData*) p_dd;
+    uint8_t** pp_temp = (uint8_t**) dd->context;
+	uint8_t* p_temp = *pp_temp;
+	p_temp[dd->output_count++] = orig_data;
+	if (!(dd->output_count & (COMPRESSION_OUTPUT_CHUNK_SIZE-1))) {
+		// extend the temporary buffer to make room for more output
+		auto new_size = dd->output_count + COMPRESSION_OUTPUT_CHUNK_SIZE;
+		uint8_t* p_temp2 = (uint8_t*) ps_malloc(new_size);
+		if (p_temp2) {
+			memcpy(p_temp2, p_temp, dd->output_count);
+			*pp_temp = p_temp2; // use new buffer pointer now
+		} else {
+			debug_log("bufferDecompress: cannot allocate temporary buffer of %d bytes\n\r", new_size);
+			*pp_temp = NULL; // indicate failure
+		}
+		heap_caps_free(p_temp);
+	}
 }
 
 void agon_compress_byte(CompressionData* cd, uint8_t orig_byte) {
