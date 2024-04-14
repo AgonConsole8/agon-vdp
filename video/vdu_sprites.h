@@ -5,9 +5,9 @@
 #include <cmath>
 
 #include "buffers.h"
-#include "graphics.h"
 #include "sprites.h"
 #include "types.h"
+#include "vdu_stream_processor.h"
 
 // Sprite Engine, VDU command handler
 //
@@ -18,8 +18,8 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 0: {	// Select bitmap
 			auto rb = readByte_t();
 			if (rb >= 0) {
-				setCurrentBitmap(rb + BUFFERED_BITMAP_BASEID);
-				debug_log("vdu_sys_sprites: bitmap %d selected\n\r", getCurrentBitmapId());
+				context->setCurrentBitmap(rb + BUFFERED_BITMAP_BASEID);
+				debug_log("vdu_sys_sprites: bitmap %d selected\n\r", context->getCurrentBitmapId());
 			}
 		}	break;
 
@@ -35,12 +35,12 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 					createBitmapFromScreen(rw + BUFFERED_BITMAP_BASEID);
 				} else {
 					// invalid bitmap size definition for sending bitmap data stream
-					debug_log("vdu_sys_sprites: bitmap %d - zero size\n\r", getCurrentBitmapId());
+					debug_log("vdu_sys_sprites: bitmap %d - zero size\n\r", context->getCurrentBitmapId());
 				}
 				return;
 			}
 
-			receiveBitmap(getCurrentBitmapId(), rw, rh);
+			receiveBitmap(context->getCurrentBitmapId(), rw, rh);
 		}	break;
 
 		case 2: {	// Define bitmap in single color
@@ -53,15 +53,15 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 				return;
 			}
 
-			createEmptyBitmap(getCurrentBitmapId(), rw, rh, color);
+			createEmptyBitmap(context->getCurrentBitmapId(), rw, rh, color);
 		}	break;
 
 		case 3: {	// Draw bitmap to screen (x,y)
 			auto rx = readWord_t(); if (rx == -1) return;
 			auto ry = readWord_t(); if (ry == -1) return;
 
-			drawBitmap(rx,ry, false, true);
-			debug_log("vdu_sys_sprites: bitmap %d draw command\n\r", getCurrentBitmapId());
+			context->drawBitmap(rx,ry, false, true);
+			debug_log("vdu_sys_sprites: bitmap %d draw command\n\r", context->getCurrentBitmapId());
 		}	break;
 
 	   /*
@@ -147,7 +147,10 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 16: {	// Reset
 			resetSprites();
 			resetBitmaps();
-			cls(false);
+			// TODO reset current bitmaps in all processors
+			context->setCurrentBitmap(BUFFERED_BITMAP_BASEID);
+			context->resetCharToBitmap();
+			context->cls();
 			debug_log("vdu_sys_sprites: reset\n\r");
 		}	break;
 
@@ -165,11 +168,11 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		// Extended bitmap commands
 		case 0x20: {	// Select bitmap, 16-bit buffer ID
 			auto b = readWord_t(); if (b == -1) return;
-			setCurrentBitmap((uint16_t) b);
-			debug_log("vdu_sys_sprites: bitmap %d selected\n\r", getCurrentBitmapId());
+			context->setCurrentBitmap((uint16_t) b);
+			debug_log("vdu_sys_sprites: bitmap %d selected\n\r", context->getCurrentBitmapId());
 		}	break;
 
-		case 0x21: {	// Create bitmap from buffer
+		case 0x21: {	// Create bitmap from buffer or screen
 			auto width = readWord_t(); if (width == -1) return;
 			auto height = readWord_t(); if (height == -1) return;
 			if (height == 0) {
@@ -178,7 +181,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 				createBitmapFromScreen(width);
 			} else {
 				auto format = readByte_t(); if (format == -1) return;
-				createBitmapFromBuffer(getCurrentBitmapId(), format, width, height);
+				createBitmapFromBuffer(context->getCurrentBitmapId(), format, width, height);
 			}
 		}	break;
 
@@ -191,10 +194,10 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 0x40: {	// Setup mouse cursor from current bitmap
 			auto hotX = readByte_t(); if (hotX == -1) return;
 			auto hotY = readByte_t(); if (hotY == -1) return;
-			if (makeCursor(getCurrentBitmapId(), hotX, hotY)) {
-				debug_log("vdu_sys_sprites: cursor created from bitmap %d\n\r", getCurrentBitmapId());
+			if (makeCursor(context->getCurrentBitmapId(), hotX, hotY)) {
+				debug_log("vdu_sys_sprites: cursor created from bitmap %d\n\r", context->getCurrentBitmapId());
 			} else {
-				debug_log("vdu_sys_sprites: cursor failed to create from bitmap %d\n\r", getCurrentBitmapId());
+				debug_log("vdu_sys_sprites: cursor failed to create from bitmap %d\n\r", context->getCurrentBitmapId());
 			}
 		}	break;
 
@@ -219,24 +222,8 @@ void VDUStreamProcessor::receiveBitmap(uint16_t bufferId, uint16_t width, uint16
 void VDUStreamProcessor::createBitmapFromScreen(uint16_t bufferId) {
 	bufferClear(bufferId);
 	// get screen rectangle from last two graphics cursor positions
-	auto x1 = p1.X;
-	auto y1 = p1.Y;
-	auto x2 = p2.X;
-	auto y2 = p2.Y;
-	auto width = x2 - x1;
-	auto height = y2 - y1;
-	// normalize to positive values
-	if (width < 0) {
-		width = -width;
-		x1 = x2;
-	}
-	width += 1;
-	if (height < 0) {
-		height = -height;
-		y1 = y2;
-	}
-	height += 1;
-	auto size = width * height;
+	auto rect = context->getGraphicsRect();
+	auto size = rect.width() * rect.height();
 	if (size == 0) {
 		debug_log("vdu_sys_sprites: bitmap %d - zero size\n\r", bufferId);
 		return;
@@ -248,9 +235,9 @@ void VDUStreamProcessor::createBitmapFromScreen(uint16_t bufferId) {
 		debug_log("vdu_sys_sprites: failed to create buffer\n\r");
 		return;
 	}
-	createBitmapFromBuffer(bufferId, 1, width, height);
+	createBitmapFromBuffer(bufferId, 1, rect.width(), rect.height());
 	// Copy screen area to buffer
-	canvas->copyToBitmap(x1, y1, getBitmap(bufferId).get());
+	canvas->copyToBitmap(rect.X1, rect.Y1, getBitmap(bufferId).get());
 }
 
 void VDUStreamProcessor::createEmptyBitmap(uint16_t bufferId, uint16_t width, uint16_t height, uint32_t color) {
@@ -271,6 +258,8 @@ void VDUStreamProcessor::createEmptyBitmap(uint16_t bufferId, uint16_t width, ui
 
 void VDUStreamProcessor::createBitmapFromBuffer(uint16_t bufferId, uint8_t format, uint16_t width, uint16_t height) {
 	clearBitmap(bufferId);
+	// TODO unmap bitmap from characters for all contexts
+	context->unmapBitmapFromChars(bufferId);
 	// do we have a buffer with this ID?
 	if (buffers.find(bufferId) == buffers.end()) {
 		debug_log("vdu_sys_sprites: buffer %d not found\n\r", bufferId);
@@ -319,7 +308,10 @@ void VDUStreamProcessor::createBitmapFromBuffer(uint16_t bufferId, uint8_t forma
 	}
 	auto data = stream->getBuffer();
 	if (bytesPerPixel < 1) {
-		bitmaps[bufferId] = make_shared_psram<Bitmap>(width, height, (uint8_t *)data, pixelFormat, gfg);
+		// get our current foreground graphics colour
+		RGB888 colour;
+		context->getColour(130, &colour);
+		bitmaps[bufferId] = make_shared_psram<Bitmap>(width, height, (uint8_t *)data, pixelFormat, colour);
 	} else {
 		bitmaps[bufferId] = make_shared_psram<Bitmap>(width, height, (uint8_t *)data, pixelFormat);
 	}

@@ -7,12 +7,14 @@
 #include <unordered_map>
 
 #include "agon.h"
+#include "agon_fonts.h"
 #include "buffers.h"
 #include "buffer_stream.h"
 #include "mem_helpers.h"
 #include "multi_buffer_stream.h"
 #include "sprites.h"
 #include "types.h"
+#include "vdu_stream_processor.h"
 
 // VDU 23, 0, &A0, bufferId; command: Buffered command support
 //
@@ -294,6 +296,10 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 	if (bufferId == 65535) {
 		buffers.clear();
 		resetBitmaps();
+		// TODO reset current bitmaps in all processors
+		context->setCurrentBitmap(BUFFERED_BITMAP_BASEID);
+		context->resetCharToBitmap();
+		resetFonts();
 		resetSamples();
 		return;
 	}
@@ -304,6 +310,8 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 	}
 	buffers.erase(bufferIter);
 	clearBitmap(bufferId);
+	context->unmapBitmapFromChars(bufferId);
+	clearFont(bufferId);
 	clearSample(bufferId);
 	debug_log("bufferClear: cleared buffer %d\n\r", bufferId);
 }
@@ -1187,11 +1195,13 @@ void clearTarget(uint16_t target) {
 		bufferIter->second.clear();
 	}
 	clearBitmap(target);
+	clearFont(target);
 }
 
-void clearTargets(tcb::span<const uint16_t> targets) {
+void VDUStreamProcessor::clearTargets(tcb::span<const uint16_t> targets) {
 	for (const auto target : targets) {
 		clearTarget(target);
+		context->unmapBitmapFromChars(target);
 	}
 }
 

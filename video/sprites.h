@@ -13,7 +13,6 @@
 #include "agon_ps2.h"
 #include "agon_screen.h"
 
-uint16_t		currentBitmap = BUFFERED_BITMAP_BASEID;	// Current bitmap ID
 std::unordered_map<uint16_t, std::shared_ptr<Bitmap>> bitmaps;	// Storage for our bitmaps
 uint8_t			numsprites = 0;					// Number of sprites on stage
 uint8_t			current_sprite = 0;				// Current sprite number
@@ -25,58 +24,15 @@ std::unordered_map<uint16_t, std::vector<uint8_t>> bitmapUsers;
 std::unordered_map<uint16_t, fabgl::Cursor> cursors;	// Storage for our cursors
 uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor
 
-// character to bitmap mapping
-std::vector<uint16_t> charToBitmap(255, 65535);
 
-extern fabgl::PaintOptions			gpofg;
-extern fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions priorPaintOptions);
-
-std::shared_ptr<Bitmap> getBitmap(uint16_t id = currentBitmap) {
+std::shared_ptr<Bitmap> getBitmap(uint16_t id) {
 	if (bitmaps.find(id) != bitmaps.end()) {
 		return bitmaps[id];
 	}
 	return nullptr;
 }
 
-void mapCharToBitmap(char c, uint16_t bitmapId) {
-	auto bitmap = getBitmap(bitmapId);
-	if (bitmap) {
-		charToBitmap[c] = bitmapId;
-	} else {
-		debug_log("mapCharToBitmap: bitmap %d not found\n\r", bitmapId);
-		charToBitmap[c] = 65535;
-	}
-}
-
-std::shared_ptr<Bitmap> getBitmapFromChar(char c) {
-	auto bitmapId = charToBitmap[c];
-	if (bitmapId == 65535) {
-		return nullptr;
-	}
-	return getBitmap(bitmapId);
-}
-
-inline void setCurrentBitmap(uint16_t b) {
-	currentBitmap = b;
-}
-
-inline uint16_t getCurrentBitmapId() {
-	return currentBitmap;
-}
-
-void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet = false) {
-	auto bitmap = getBitmap();
-	if (bitmap) {
-		if (forceSet) {
-			auto options = getPaintOptions(fabgl::PaintMode::Set, gpofg);
-			canvas->setPaintOptions(options);
-		}
-		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get());
-	} else {
-		debug_log("drawBitmap: bitmap %d not found\n\r", currentBitmap);
-	}
-}
-
+// TODO remove this??  it doesn't seem to be used
 void clearCursor(uint16_t cursor) {
 	if (cursors.find(cursor) != cursors.end()) {
 		cursors.erase(cursor);
@@ -125,18 +81,13 @@ bool setMouseCursor(uint16_t cursor = mCursor) {
 }
 
 void resetBitmaps() {
-	// if we're using a bitmap as a cursor then the cursor needs to change too
-	if (cursors.find(currentBitmap) != cursors.end()) {
-		uint16_t cursor = MOUSE_DEFAULT_CURSOR;
-		setMouseCursor(cursor);
-	}
 	bitmaps.clear();
 	// this will only be used after resetting sprites, so we can clear the bitmapUsers list
 	bitmapUsers.clear();
 	cursors.clear();
-	// reset charToBitmap to 65535s
-	std::fill(charToBitmap.begin(), charToBitmap.end(), 65535);
-	setCurrentBitmap(BUFFERED_BITMAP_BASEID);
+	if (!setMouseCursor()) {
+		setMouseCursor(MOUSE_DEFAULT_CURSOR);
+	}
 }
 
 Sprite * getSprite(uint8_t sprite = current_sprite) {
@@ -168,18 +119,11 @@ void clearSpriteFrames(uint8_t s = current_sprite) {
 	}
 }
 
-void clearBitmap(uint16_t b = currentBitmap) {
+void clearBitmap(uint16_t b) {
 	if (bitmaps.find(b) == bitmaps.end()) {
 		return;
 	}
 	bitmaps.erase(b);
-
-	// remove this bitmap from the charToBitmap mapping
-	for (auto it = charToBitmap.begin(); it != charToBitmap.end(); it++) {
-		if (*it == b) {
-			*it = 65535;
-		}
-	}
 
 	// find all sprites that had used this bitmap and clear their frames
 	if (bitmapUsers.find(b) != bitmapUsers.end()) {
@@ -208,13 +152,15 @@ void activateSprites(uint8_t n) {
 	* Sprites 0-(numsprites-1) will be activated on-screen
 	* Make sure all sprites have at least one frame attached to them
 	*/
-	numsprites = n;
+	if (numsprites != n) {
+		numsprites = n;
 
-	waitPlotCompletion();
-	if (numsprites) {
-		_VGAController->setSprites(sprites, numsprites);
-	} else {
-		_VGAController->removeSprites();
+		waitPlotCompletion();
+		if (numsprites) {
+			_VGAController->setSprites(sprites, numsprites);
+		} else {
+			_VGAController->removeSprites();
+		}
 	}
 }
 
