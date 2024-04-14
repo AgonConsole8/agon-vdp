@@ -149,6 +149,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			resetBitmaps();
 			// TODO reset current bitmaps in all processors
 			context->setCurrentBitmap(BUFFERED_BITMAP_BASEID);
+			context->resetCharToBitmap();
 			context->cls(false);
 			debug_log("vdu_sys_sprites: reset\n\r");
 		}	break;
@@ -257,6 +258,7 @@ void VDUStreamProcessor::createEmptyBitmap(uint16_t bufferId, uint16_t width, ui
 
 void VDUStreamProcessor::createBitmapFromBuffer(uint16_t bufferId, uint8_t format, uint16_t width, uint16_t height) {
 	clearBitmap(bufferId);
+	context->unmapBitmapFromChars(bufferId);
 	// do we have a buffer with this ID?
 	if (buffers.find(bufferId) == buffers.end()) {
 		debug_log("vdu_sys_sprites: buffer %d not found\n\r", bufferId);

@@ -215,7 +215,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 			auto c = readByte_t();		// Map a character to a bitmap
 			auto bitmapId = readWord_t();
 			if (c >= 0 && bitmapId >= 0) {
-				mapCharToBitmap(c, bitmapId);
+				context->mapCharToBitmap(c, bitmapId);
 			}
 		}	break;
 		case VDP_SCRCHAR_GRAPHICS: {	// VDU 23, 0, &93, x; y;

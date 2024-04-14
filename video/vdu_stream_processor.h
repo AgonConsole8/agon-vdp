@@ -117,6 +117,7 @@ class VDUStreamProcessor {
 		void bufferJump(uint16_t bufferId, AdvancedOffset offset);
 		void bufferCopy(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferConsolidate(uint16_t bufferId);
+		void clearTargets(tcb::span<const uint16_t> targets);
 		void bufferSplitInto(uint16_t bufferId, uint16_t length, tcb::span<uint16_t> newBufferIds, bool iterate);
 		void bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, tcb::span<uint16_t> newBufferIds, bool iterate);
 		void bufferSpreadInto(uint16_t bufferId, tcb::span<uint16_t> newBufferIds, bool iterate);

@@ -24,32 +24,12 @@ std::unordered_map<uint16_t, std::vector<uint8_t>> bitmapUsers;
 std::unordered_map<uint16_t, fabgl::Cursor> cursors;	// Storage for our cursors
 uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor
 
-// character to bitmap mapping
-std::vector<uint16_t> charToBitmap(255, 65535);
 
 std::shared_ptr<Bitmap> getBitmap(uint16_t id) {
 	if (bitmaps.find(id) != bitmaps.end()) {
 		return bitmaps[id];
 	}
 	return nullptr;
-}
-
-void mapCharToBitmap(char c, uint16_t bitmapId) {
-	auto bitmap = getBitmap(bitmapId);
-	if (bitmap) {
-		charToBitmap[c] = bitmapId;
-	} else {
-		debug_log("mapCharToBitmap: bitmap %d not found\n\r", bitmapId);
-		charToBitmap[c] = 65535;
-	}
-}
-
-std::shared_ptr<Bitmap> getBitmapFromChar(char c) {
-	auto bitmapId = charToBitmap[c];
-	if (bitmapId == 65535) {
-		return nullptr;
-	}
-	return getBitmap(bitmapId);
 }
 
 // TODO remove this??  it doesn't seem to be used
@@ -108,8 +88,6 @@ void resetBitmaps() {
 	if (!setMouseCursor()) {
 		setMouseCursor(MOUSE_DEFAULT_CURSOR);
 	}
-	// reset charToBitmap to 65535s
-	std::fill(charToBitmap.begin(), charToBitmap.end(), 65535);
 }
 
 Sprite * getSprite(uint8_t sprite = current_sprite) {
@@ -146,13 +124,6 @@ void clearBitmap(uint16_t b) {
 		return;
 	}
 	bitmaps.erase(b);
-
-	// remove this bitmap from the charToBitmap mapping
-	for (auto it = charToBitmap.begin(); it != charToBitmap.end(); it++) {
-		if (*it == b) {
-			*it = 65535;
-		}
-	}
 
 	// find all sprites that had used this bitmap and clear their frames
 	if (bitmapUsers.find(b) != bitmapUsers.end()) {

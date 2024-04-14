@@ -11,6 +11,7 @@
 #include <fabgl.h>
 
 #include "agon.h"
+#include "sprites.h"
 
 // Support structures
 
@@ -92,6 +93,7 @@ class Context {
 		uint16_t		currentBitmap = BUFFERED_BITMAP_BASEID;	// Current bitmap ID
 		fabgl::LinePattern	linePattern = fabgl::LinePattern();				// Dotted line pattern
 		uint8_t			linePatternLength = 8;			// Dotted line pattern length
+		std::vector<uint16_t>	charToBitmap = std::vector<uint16_t>(255, 65535);	// character to bitmap mapping
 
 		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
 
@@ -139,6 +141,9 @@ class Context {
 		bool cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len);
 		char getScreenChar(Point p);
 		inline void setCharacterOverwrite(bool overwrite);		// TODO integrate into setActiveCursor?
+		inline std::shared_ptr<Bitmap> getBitmapFromChar(char c) {
+			return getBitmap(charToBitmap[c]);
+		}
 
 		// Graphics functions
 		fabgl::PaintOptions getPaintOptions(fabgl::PaintMode mode, fabgl::PaintOptions priorPaintOptions);
@@ -229,6 +234,9 @@ class Context {
 		bool usingSystemFont();
 		char getScreenChar(uint8_t x, uint8_t y);
 		char getScreenCharAt(uint16_t px, uint16_t py);
+		void mapCharToBitmap(char c, uint16_t bitmapId);
+		void unmapBitmapFromChars(uint16_t bitmapId);
+		void resetCharToBitmap();
 		
 		// Graphics functions
 		inline void setCurrentBitmap(uint16_t b) {
@@ -313,6 +321,7 @@ class Context {
 	currentBitmap = c.currentBitmap;
 	linePattern.setPattern(c.linePattern.pattern);
 	linePatternLength = c.linePatternLength;
+	charToBitmap = c.charToBitmap;
 	logicalCoords = c.logicalCoords;
 	origin = c.origin;
 	p1 = c.p1;

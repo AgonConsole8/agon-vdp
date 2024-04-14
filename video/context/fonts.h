@@ -1,6 +1,8 @@
 #ifndef CONTEXT_FONTS_H
 #define CONTEXT_FONTS_H
 
+#include <algorithm>
+
 #include <fabgl.h>
 
 #include "agon.h"
@@ -179,6 +181,29 @@ char Context::getScreenChar(uint8_t x, uint8_t y) {
 //
 char Context::getScreenCharAt(uint16_t px, uint16_t py) {
 	return getScreenChar(toScreenCoordinates(px, py));
+}
+
+void Context::mapCharToBitmap(char c, uint16_t bitmapId) {
+	auto bitmap = getBitmap(bitmapId);
+	if (bitmap) {
+		charToBitmap[c] = bitmapId;
+	} else {
+		debug_log("mapCharToBitmap: bitmap %d not found\n\r", bitmapId);
+		charToBitmap[c] = 65535;
+	}
+}
+
+void Context::unmapBitmapFromChars(uint16_t bitmapId) {
+	// remove this bitmap from the charToBitmap mapping
+	for (auto it = charToBitmap.begin(); it != charToBitmap.end(); it++) {
+		if (*it == bitmapId) {
+			*it = 65535;
+		}
+	}
+}
+
+void Context::resetCharToBitmap() {
+	std::fill(charToBitmap.begin(), charToBitmap.end(), 65535);
 }
 
 #endif // CONTEXT_FONTS_H
