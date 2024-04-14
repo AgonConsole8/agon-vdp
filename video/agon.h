@@ -290,12 +290,6 @@ enum AudioState : uint8_t {	// Audio channel state
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
 #define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples
 
-// Viewport definitions
-#define VIEWPORT_TEXT			0		// Text viewport
-#define VIEWPORT_DEFAULT		1		// Default (whole screen) viewport
-#define VIEWPORT_GRAPHICS		2		// Graphics viewport
-#define VIEWPORT_ACTIVE			3		// Active viewport
-
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024
 

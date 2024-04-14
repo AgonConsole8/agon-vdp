@@ -9,8 +9,7 @@
 
 #include "agon.h"
 #include "agon_ps2.h"
-#include "cursor.h"
-#include "graphics.h"
+#include "agon_screen.h"
 #include "vdu_audio.h"
 #include "vdu_buffered.h"
 #include "vdu_fonts.h"
@@ -20,6 +19,7 @@
 
 extern void startTerminal();					// Start the terminal
 extern void setConsoleMode(bool mode);			// Set console mode
+extern bool controlKeys;	
 
 bool			initialised = false;			// Is the system initialised yet?
 ESP32Time		rtc(0);							// The RTC
@@ -43,7 +43,7 @@ typedef union {
 // Wait for eZ80 to initialise
 //
 void VDUStreamProcessor::wait_eZ80() {
-	if(esp_reset_reason() == ESP_RST_SW) {
+	if (esp_reset_reason() == ESP_RST_SW) {
 		return;
 	}
 
@@ -82,20 +82,14 @@ void VDUStreamProcessor::vdu_sys() {
 			case 0x01: {					// VDU 23, 1
 				auto b = readByte_t();		// Cursor control
 				if (b >= 0) {
-					enableCursor((bool) b);
-					if (b == 2) {
-						cursorFlashing = false;
-					}
-					if (b == 3) {
-						cursorFlashing = true;
-					}
+					context->enableCursor((bool) b);
 				}
 			}	break;
 			case 0x06: {					// VDU 23, 6
 				uint8_t pattern[8];			// Set dotted line pattern
 				auto remaining = readIntoBuffer(pattern, 8);
 				if (remaining == 0) {
-					setDottedLinePattern(pattern);
+					context->setDottedLinePattern(pattern);
 				}
 			}	break;
 			case 0x07: {					// VDU 23, 7
@@ -107,7 +101,7 @@ void VDUStreamProcessor::vdu_sys() {
 			case 0x17: {					// VDU 23, 23, n
 				auto b = readByte_t();		// Set line thickness
 				if (b >= 0) {
-					setLineThickness(b);
+					context->setLineThickness(b);
 				}
 			}	break;
 			case 0x1B: {					// VDU 23, 27
@@ -138,30 +132,14 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_CURSOR_VSTART: {		// VDU 23, 0, &0A, offset
 			auto offset = readByte_t();	// Set the vertical start of the cursor
 			if (offset >= 0) {
-				cursorVStart = offset & 0x1F;
-				auto appearance = (offset & 0x60) >> 5;
-				switch (appearance) {
-					case 0:		// cursor steady
-						cursorFlashing = false;
-						break;
-					case 1:		// cursor off
-						cursorEnabled = false;
-						break;
-					case 2:		// fast flash
-						cursorFlashRate = CURSOR_FAST_PHASE;
-						cursorFlashing = true;
-						break;
-					case 3:		// slow flash
-						cursorFlashRate = CURSOR_PHASE;
-						cursorFlashing = true;
-						break;
-				}
+				context->setCursorVStart(offset & 0x1F);
+				context->setCursorAppearance((offset & 0x60) >> 5);
 			}
 		}	break;
 		case VDP_CURSOR_VEND: {			// VDU 23, 0, &0B, offset
 			auto offset = readByte_t();	// Set the vertical end of the cursor
 			if (offset >= 0) {
-				cursorVEnd = offset;
+				context->setCursorVEnd(offset);
 			}
 		}	break;
 		case VDP_GP: {					// VDU 23, 0, &80
@@ -178,9 +156,8 @@ void VDUStreamProcessor::vdu_sys_video() {
 			if (x == -1) return;
 			auto y = readWord_t();
 			if (y == -1) return;
-			uint16_t px = x * (font->width == 0 ? 8 : font->width);
-			uint16_t py = y * font->height;
-			sendScreenChar(px, py);
+			auto c = context->getScreenChar(x, y);
+			sendScreenChar(c);
 		}	break;
 		case VDP_SCRPIXEL: {			// VDU 23, 0, &84, x; y;
 			auto x = readWord_t();		// Get pixel value at screen position x, y
@@ -207,19 +184,19 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_CURSOR_HSTART: {		// VDU 23, 0, &8A, offset
 			auto offset = readByte_t();	// Set the horizontal start of the cursor
 			if (offset >= 0)
-				cursorHStart = offset;
+				context->setCursorHStart(offset);
 		}	break;
 		case VDP_CURSOR_HEND: {			// VDU 23, 0, &8B, offset
 			auto offset = readByte_t();	// Set the vertical end of the cursor
 			if (offset >= 0)
-				cursorHEnd = offset;
+				context->setCursorHEnd(offset);
 		}	break;
 		case VDP_CURSOR_MOVE: {			// VDU 23, 0, &8C, x, y
 			auto x = readByte_t();		// Relative move of current active cursor by x, y pixels
 			if (x == -1) return;
 			auto y = readByte_t();
 			if (y == -1) return;
-			cursorRelativeMove((int8_t) x, (int8_t) y);
+			context->cursorRelativeMove((int8_t) x, (int8_t) y);
 		}	break;
 		case VDP_UDG: {					// VDU 23, 0, &90, c, <args>
 			auto c = readByte_t();		// Redefine a display character (system font only)
@@ -245,8 +222,8 @@ void VDUStreamProcessor::vdu_sys_video() {
 			if (x == -1) return;
 			auto y = readWord_t();
 			if (y == -1) return;
-			Point p = translateCanvas(scale(x, y));
-			sendScreenChar(p.X, p.Y);
+			char c = context->getScreenCharAt(x, y);
+			sendScreenChar(c);
 		}	break;
 		case VDP_READ_COLOUR: {			// VDU 23, 0, &94, index
 			auto index = readByte_t();	// Read colour from palette
@@ -277,13 +254,10 @@ void VDUStreamProcessor::vdu_sys_video() {
 				debug_log("vdp_textViewport: Not supported in teletext mode\n\r");
 				return;
 			}
-			Point p1 = translateCanvas(scale(x1, y1));
-			Point p2 = translateCanvas(scale(x2, y2));
-			if (setTextViewport(std::min(p1.X, p2.X), std::min(p1.Y, p2.Y), std::max(p1.X, p2.X), std::max(p1.Y, p2.Y))) {
-				ensureCursorInViewport(textViewport);
+			if (context->setTextViewport(x1, y1, x2, y2)) {
 				debug_log("vdp_textViewport: OK %d,%d,%d,%d\n\r", x1, y1, x2, y2);
 			} else {
-				debug_log("vdp_textViewport: Invalid Viewport %d,%d -> %d,%d (%d,%d -> %d,%d)\n\r", x1, y1, x2, y2, p1.X, p1.Y, p2.X, p2.Y);
+				debug_log("vdp_textViewport: Invalid Viewport %d,%d -> %d,%d)\n\r", x1, y1, x2, y2);
 			}
 			sendModeInformation();
 		}	break;
@@ -296,7 +270,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_LOGICALCOORDS: {		// VDU 23, 0, &C0, n
 			auto b = readByte_t();		// Set logical coord mode
 			if (b >= 0) {
-				setLogicalCoords((bool) b);	// (0 = off, 1 = on)
+				context->setLogicalCoords((bool) b);	// (0 = off, 1 = on)
 			}
 		}	break;
 		case VDP_LEGACYMODES: {			// VDU 23, 0, &C1, n
@@ -311,7 +285,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_PATTERN_LENGTH: {		// VDU 23, 0, &F2, n
 			auto b = readByte_t();		// Set pattern length
 			if (b >= 0) {
-				setDottedLinePatternLength(b);
+				context->setDottedLinePatternLength(b);
 			}
 		}	break;
 		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
@@ -354,38 +328,15 @@ void VDUStreamProcessor::sendCursorPosition() {
 	// and if x/y are swapped, we need to swap them
 	uint8_t x, y;
 
-	if (cursorBehaviour.flipXY) {
-		if (cursorBehaviour.invertHorizontal) {
-			x = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);
-		} else {
-			x = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / font->height);
-		}
-		if (cursorBehaviour.invertVertical) {
-			y = (uint8_t) ((activeViewport->X2 - activeCursor->X) / font->width);
-		} else {
-			y = (uint8_t) ((activeCursor->X - activeViewport->X1) / font->width);
-		}
-	} else {
-		if (cursorBehaviour.invertHorizontal) {
-			x = (uint8_t) ((activeViewport->X2 - activeCursor->X) / font->width);
-		} else {
-			x = (uint8_t) ((activeCursor->X - activeViewport->X1) / font->width);
-		}
-		if (cursorBehaviour.invertVertical) {
-			y = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);
-		} else {
-			y = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / font->height);
-		}
-	}
+	context->getCursorTextPosition(&x, &y);
+	
 	uint8_t packet[] = { x, y };
 	send_packet(PACKET_CURSOR, sizeof packet, packet);
 }
 
 // VDU 23, 0, &83 / &93 Send a character back to MOS
 //
-void VDUStreamProcessor::sendScreenChar(uint16_t x, uint16_t y) {
-	waitPlotCompletion();
-	char c = getScreenChar(x, y);
+void VDUStreamProcessor::sendScreenChar(char c) {
 	uint8_t packet[] = {
 		c,
 	};
@@ -396,7 +347,7 @@ void VDUStreamProcessor::sendScreenChar(uint16_t x, uint16_t y) {
 //
 void VDUStreamProcessor::sendScreenPixel(uint16_t x, uint16_t y) {
 	waitPlotCompletion();
-	RGB888 pixel = getPixel(x, y);
+	RGB888 pixel = context->getPixel(x, y);
 	uint8_t pixelIndex = getPaletteIndex(pixel);
 	uint8_t packet[] = {
 		pixel.R,	// Send the colour components
@@ -417,22 +368,9 @@ void VDUStreamProcessor::sendColour(uint8_t colour) {
 		pixel = colourLookup[c];
 	} else {
 		// Colour may be an active colour lookup
-		switch (colour) {
-			case 128:	// text foreground
-				pixel = tfg;
-				break;
-			case 129:	// text background
-				pixel = tbg;
-				break;
-			case 130:	// graphics foreground
-				pixel = gfg;
-				break;
-			case 131:	// graphics background
-				pixel = gbg;
-				break;
-			default:
-				// Unrecognised colour - no response
-				return;
+		if (!context->getColour(colour, &pixel)) {
+			// Unrecognised colour - no response
+			return;
 		}
 		colour = getPaletteIndex(pixel);
 	}
@@ -468,15 +406,13 @@ void VDUStreamProcessor::sendTime() {
 void VDUStreamProcessor::sendModeInformation() {
 	// our character dimensions are for the currently active viewport
 	// needed as MOS's line editing system uses these
-	uint8_t charsX = activeViewport->width() / font->width;
-	uint8_t charsY = activeViewport->height() / font->height;
 	uint8_t packet[] = {
 		(uint8_t) (canvasW & 0xFF),			// Width in pixels (L)
 		(uint8_t) ((canvasW >> 8) & 0xFF),	// Width in pixels (H)
 		(uint8_t) (canvasH & 0xFF),			// Height in pixels (L)
 		(uint8_t) ((canvasH >> 8) & 0xFF),	// Height in pixels (H)
-		(uint8_t) cursorBehaviour.flipXY ? charsY : charsX,		// Width in characters (byte)
-		(uint8_t) cursorBehaviour.flipXY ? charsX : charsY,		// Height in characters (byte)
+		(uint8_t) context->getNormalisedViewportCharWidth(),		// Width in characters (byte)
+		(uint8_t) context->getNormalisedViewportCharHeight(),		// Height in characters (byte)
 		getVGAColourDepth(),				// Colour depth
 		videoMode,							// The video mode number
 	};
@@ -594,7 +530,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			auto x = readWord_t();	if (x == -1) return;
 			auto y = readWord_t();	if (y == -1) return;
 			// normalise coordinates
-			auto p = translateCanvas(scale(x, y));
+			auto p = context->translateCanvas(context->scale(x, y));
 
 			// need to update position in mouse status
 			setMousePos(p.X, p.Y);
@@ -674,12 +610,8 @@ void VDUStreamProcessor::vdu_sys_scroll() {
 	auto direction = readByte_t();	if (direction == -1) return;	// Direction
 	auto movement = readByte_t();	if (movement == -1) return;	// Number of pixels to scroll
 
-	// Extent matches viewport constant defs (plus 3=active)
-	Rect * region = getViewport(extent);
-
-	scrollRegion(region, direction, movement);
+	context->scrollRegion(static_cast<ViewportType>(extent), direction, movement);
 }
-
 
 // VDU 23,16: Set cursor behaviour
 //
@@ -687,7 +619,7 @@ void VDUStreamProcessor::vdu_sys_cursorBehaviour() {
 	auto setting = readByte_t();	if (setting == -1) return;
 	auto mask = readByte_t();		if (mask == -1) return;
 
-	setCursorBehaviour((uint8_t) setting, (uint8_t) mask);
+	context->setCursorBehaviour((uint8_t) setting, (uint8_t) mask);
 	sendModeInformation();
 }
 
@@ -706,7 +638,12 @@ void VDUStreamProcessor::vdu_sys_udg(char c) {
 		buffer[i] = b;
 	}
 
-	redefineCharacter(c, buffer);
+	if (context->usingSystemFont()) {
+		redefineCharacter(c, buffer);
+	} else {
+		debug_log("vdu_sys_udg: system font not active, ignoring\n\r");
+	}
+
 }
 
 #endif // VDU_SYS_H

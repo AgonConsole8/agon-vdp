@@ -5,7 +5,6 @@
 #include <cmath>
 
 #include "buffers.h"
-#include "graphics.h"
 #include "sprites.h"
 #include "types.h"
 #include "vdu_stream_processor.h"
@@ -61,7 +60,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			auto rx = readWord_t(); if (rx == -1) return;
 			auto ry = readWord_t(); if (ry == -1) return;
 
-			drawBitmap(rx,ry, false, true);
+			context->drawBitmap(rx,ry, false, true);
 			debug_log("vdu_sys_sprites: bitmap %d draw command\n\r", getCurrentBitmapId());
 		}	break;
 
@@ -148,7 +147,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 16: {	// Reset
 			resetSprites();
 			resetBitmaps();
-			cls(false);
+			context->cls(false);
 			debug_log("vdu_sys_sprites: reset\n\r");
 		}	break;
 
@@ -220,24 +219,8 @@ void VDUStreamProcessor::receiveBitmap(uint16_t bufferId, uint16_t width, uint16
 void VDUStreamProcessor::createBitmapFromScreen(uint16_t bufferId) {
 	bufferClear(bufferId);
 	// get screen rectangle from last two graphics cursor positions
-	auto x1 = p1.X;
-	auto y1 = p1.Y;
-	auto x2 = p2.X;
-	auto y2 = p2.Y;
-	auto width = x2 - x1;
-	auto height = y2 - y1;
-	// normalize to positive values
-	if (width < 0) {
-		width = -width;
-		x1 = x2;
-	}
-	width += 1;
-	if (height < 0) {
-		height = -height;
-		y1 = y2;
-	}
-	height += 1;
-	auto size = width * height;
+	auto rect = context->getGraphicsRect();
+	auto size = rect.width() * rect.height();
 	if (size == 0) {
 		debug_log("vdu_sys_sprites: bitmap %d - zero size\n\r", bufferId);
 		return;
@@ -249,9 +232,9 @@ void VDUStreamProcessor::createBitmapFromScreen(uint16_t bufferId) {
 		debug_log("vdu_sys_sprites: failed to create buffer\n\r");
 		return;
 	}
-	createBitmapFromBuffer(bufferId, 1, width, height);
+	createBitmapFromBuffer(bufferId, 1, rect.width(), rect.height());
 	// Copy screen area to buffer
-	canvas->copyToBitmap(x1, y1, getBitmap(bufferId).get());
+	canvas->copyToBitmap(rect.X1, rect.Y1, getBitmap(bufferId).get());
 }
 
 void VDUStreamProcessor::createEmptyBitmap(uint16_t bufferId, uint16_t width, uint16_t height, uint32_t color) {
@@ -320,7 +303,10 @@ void VDUStreamProcessor::createBitmapFromBuffer(uint16_t bufferId, uint8_t forma
 	}
 	auto data = stream->getBuffer();
 	if (bytesPerPixel < 1) {
-		bitmaps[bufferId] = make_shared_psram<Bitmap>(width, height, (uint8_t *)data, pixelFormat, gfg);
+		// get our current foreground graphics colour
+		RGB888 colour;
+		context->getColour(130, &colour);
+		bitmaps[bufferId] = make_shared_psram<Bitmap>(width, height, (uint8_t *)data, pixelFormat, colour);
 	} else {
 		bitmaps[bufferId] = make_shared_psram<Bitmap>(width, height, (uint8_t *)data, pixelFormat);
 	}

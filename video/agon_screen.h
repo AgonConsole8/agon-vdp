@@ -4,10 +4,23 @@
 #include <memory>
 #include <fabgl.h>
 
+#include "agon_palette.h"						// Colour lookup table
+
 std::unique_ptr<fabgl::Canvas>	canvas;			// The canvas class
 std::unique_ptr<fabgl::VGABaseController>	_VGAController;		// Pointer to the current VGA controller class (one of the above)
 
+bool			legacyModes = false;			// Default legacy modes being false
 uint8_t			_VGAColourDepth = -1;			// Number of colours per pixel (2, 4, 8, 16 or 64)
+uint8_t			palette[64];					// Storage for the palette
+uint16_t		canvasW;						// Canvas width
+uint16_t		canvasH;						// Canvas height
+uint8_t			videoMode;						// Current video mode
+
+extern void debug_log(const char * format, ...);		// Debug log function
+
+void setLegacyModes(bool legacy) {
+	legacyModes = legacy;
+}
 
 // Get a new VGA controller
 // Parameters:
@@ -60,6 +73,66 @@ void setPaletteItem(uint8_t l, RGB888 c) {
 			case 16: fabgl::VGA16Controller::instance()->setPaletteItem(l, c); break;
 		}
 	}
+}
+
+// Get the palette index for a given RGB888 colour
+//
+uint8_t getPaletteIndex(RGB888 colour) {
+	for (uint8_t i = 0; i < getVGAColourDepth(); i++) {
+		if (colourLookup[palette[i]] == colour) {
+			return i;
+		}
+	}
+	return 0;
+}
+
+// Set logical palette
+// Parameters:
+// - l: The logical colour to change
+// - p: The physical colour to change
+// - r: The red component
+// - g: The green component
+// - b: The blue component
+//
+int8_t setLogicalPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b) {
+	RGB888 col;				// The colour to set
+
+	if (p == 255) {					// If p = 255, then use the RGB values
+		col = RGB888(r, g, b);
+	} else if (p < 64) {			// If p < 64, then look the value up in the colour lookup table
+		col = colourLookup[p];
+	} else {
+		debug_log("vdu_palette: p=%d not supported\n\r", p);
+		return -1;
+	}
+
+	debug_log("vdu_palette: %d,%d,%d,%d,%d\n\r", l, p, r, g, b);
+	if (getVGAColourDepth() < 64) {		// If it is a paletted video mode
+		setPaletteItem(l, col);
+	} else {
+		// adjust our palette array for new colour
+		// palette is an index into the colourLookup table, and our index is in 00RRGGBB format
+		uint8_t index = (col.R >> 6) << 4 | (col.G >> 6) << 2 | (col.B >> 6);
+		auto lookedup = colourLookup[index];
+		debug_log("vdu_palette: col.R %02X, col.G %02X, col.B %02X, index %d (%02X), lookup %02X, %02X, %02X\n\r", col.R, col.G, col.B, index, index, lookedup.R, lookedup.G, lookedup.B);
+		palette[l] = index;
+		return index;
+	}
+	return -1;
+}
+
+// Reset the palette and set the foreground and background drawing colours
+// Parameters:
+// - colour: Array of indexes into colourLookup table
+// - sizeOfArray: Size of passed colours array
+//
+void resetPalette(const uint8_t colours[]) {
+	for (uint8_t i = 0; i < 64; i++) {
+		uint8_t c = colours[i % getVGAColourDepth()];
+		palette[i] = c;
+		setPaletteItem(i, colourLookup[c]);
+	}
+	updateRGB2PaletteLUT();
 }
 
 // Update our VGA controller based on number of colours

@@ -1,83 +1,67 @@
-#ifndef CURSOR_H
-#define CURSOR_H
+#ifndef CONTEXT_CURSOR_H
+#define CONTEXT_CURSOR_H
 
 #include <fabgl.h>
 
 #include "agon_ps2.h"
-#include "graphics.h"
-#include "viewport.h"
 // TODO remove this, somehow
 #include "vdp_protocol.h"
 
-extern const fabgl::FontInfo * font;
-extern uint8_t	cursorVStart;
-extern uint8_t	cursorVEnd;
-extern uint8_t	cursorHStart;
-extern uint8_t	cursorHEnd;
+// Definitions for the functions we're implementing here
+#include "context.h"
 
-extern void drawCursor(Point p);
-extern void scrollRegion(Rect * r, uint8_t direction, int16_t amount);
-
-typedef union {
-	uint8_t value = 0;
-	struct {
-		uint8_t scrollProtect : 1;
-		uint8_t invertHorizontal : 1;
-		uint8_t invertVertical : 1;
-		uint8_t flipXY : 1;
-		uint8_t yWrap : 1;
-		uint8_t xHold : 1;
-		uint8_t grNoSpecialActions : 1;
-		uint8_t _undefined : 1;
-	};
-} CursorBehaviour;
-
-Point			textCursor;						// Text cursor
-Point *			activeCursor = &textCursor;		// Pointer to the active text cursor (textCursor or p1)
-bool			cursorEnabled = true;			// Cursor visibility
-bool			cursorFlashing = true;			// Cursor is flashing
-uint16_t		cursorFlashRate = CURSOR_PHASE;	// Cursor flash rate
-CursorBehaviour cursorBehaviour;				// New cursor behavior
-bool 			pagedMode = false;				// Is output paged or not? Set by VDU 14 and 15
-uint8_t			pagedModeCount = 0;				// Scroll counter for paged mode
-
-void cursorDown(bool moveOnly);
-void cursorUp(bool moveOnly);
 
 // Render a cursor at the current screen position
 //
-void do_cursor() {
+void Context::do_cursor() {
 	if (cursorEnabled) {
 		drawCursor(textCursor);
 	}
 }
 
-inline Point * getTextCursor() {
-	return &textCursor;
-}
-
-inline bool textCursorActive() {
+inline bool Context::textCursorActive() {
 	return activeCursor == &textCursor;
 }
 
-inline void setActiveCursor(Point * cursor) {
-	activeCursor = cursor;
+inline void Context::setActiveCursor(CursorType type) {
+	switch (type) {
+		case CursorType::TextCursor:
+			activeCursor = &textCursor;
+			changeFont(textFont, 0);
+			setCharacterOverwrite(true);
+			setActiveViewport(ViewportType::TextViewport);
+			break;
+		case CursorType::GraphicsCursor:
+			activeCursor = &p1;
+			changeFont(graphicsFont, 0);
+			setCharacterOverwrite(false);
+			setActiveViewport(ViewportType::GraphicsViewport);
+			break;
+	}
 }
 
-inline void setCursorBehaviour(uint8_t setting, uint8_t mask = 0xFF) {
+inline void Context::setCursorBehaviour(uint8_t setting, uint8_t mask = 0xFF) {
 	cursorBehaviour.value = (cursorBehaviour.value & mask) ^ setting;
 }
 
+CursorBehaviour Context::getCursorBehaviour() {
+	return cursorBehaviour;
+}
+
 // Adjustments to ensure cursor position sits at the nearest character boundary
-int getXAdjustment() {
+int Context::getXAdjustment() {
 	return activeViewport->width() % font->width;
 }
 
-int getYAdjustment() {
+int Context::getYAdjustment() {
 	return activeViewport->height() % font->height;
 }
 
-Point getNormalisedCursorPosition(Point * cursor = activeCursor) {
+Point Context::getNormalisedCursorPosition() {
+	return getNormalisedCursorPosition(activeCursor);
+}
+
+Point Context::getNormalisedCursorPosition(Point * cursor) {
 	Point p;
 	if (cursorBehaviour.flipXY) {
 		// our normalised Y needs to take values from X and vice versa
@@ -106,14 +90,14 @@ Point getNormalisedCursorPosition(Point * cursor = activeCursor) {
 	return p;
 }
 
-int getNormalisedViewportWidth() {
+int Context::getNormalisedViewportWidth() {
 	if (cursorBehaviour.flipXY) {
 		return activeViewport->height() - getYAdjustment();
 	}
 	return activeViewport->width() - getXAdjustment();
 }
 
-int getNormalisedViewportHeight() {
+int Context::getNormalisedViewportHeight() {
 	if (cursorBehaviour.flipXY) {
 		auto height = activeViewport->width() - getXAdjustment();
 		if (!cursorBehaviour.invertHorizontal) {
@@ -128,59 +112,85 @@ int getNormalisedViewportHeight() {
 	return height;
 }
 
-bool cursorIsOffRight() {
+uint8_t Context::getNormalisedViewportCharWidth() {
+	if (cursorBehaviour.flipXY) {
+		return activeViewport->height() / font->height;
+	}
+	return activeViewport->width() / font->width;
+}
+
+uint8_t Context::getNormalisedViewportCharHeight() {
+	if (cursorBehaviour.flipXY) {
+		return activeViewport->width() / font->width;
+	}
+	return activeViewport->height() / font->height;
+}
+
+bool Context::cursorIsOffRight() {
 	return getNormalisedCursorPosition().X >= getNormalisedViewportWidth();
 }
 
-bool cursorIsOffLeft() {
+bool Context::cursorIsOffLeft() {
 	return getNormalisedCursorPosition().X < 0;
 }
 
-bool cursorIsOffTop() {
+bool Context::cursorIsOffTop() {
 	return getNormalisedCursorPosition().Y < 0;
 }
 
-bool cursorIsOffBottom() {
+bool Context::cursorIsOffBottom() {
 	return getNormalisedCursorPosition().Y >= getNormalisedViewportHeight();
 }
 
 // Move the active cursor to the leftmost position in the viewport
 //
-void cursorCR(Rect * viewport = activeViewport) {
+void Context::cursorCR() {
+	cursorCR(activeCursor, activeViewport);
+}
+void Context::cursorCR(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - font->height - getYAdjustment()) : viewport->Y1;
+		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - font->height - getYAdjustment()) : viewport->Y1;
 	} else {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - font->width - getXAdjustment()) : viewport->X1;
+		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - font->width - getXAdjustment()) : viewport->X1;
 	}
 }
 
-void cursorEndRow(Rect * viewport = activeViewport) {
+void Context::cursorEndRow() {
+	cursorEndRow(activeCursor, activeViewport);
+}
+void Context::cursorEndRow(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - font->height - getYAdjustment());
+		cursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - font->height - getYAdjustment());
 	} else {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - font->width - getXAdjustment());
+		cursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - font->width - getXAdjustment());
 	}
 }
 
-void cursorTop(Rect * viewport = activeViewport) {
+void Context::cursorTop() {
+	cursorTop(activeCursor, activeViewport);
+}
+void Context::cursorTop(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - font->width - getXAdjustment()) : viewport->X1;
+		cursor->X = cursorBehaviour.invertHorizontal ? (viewport->X2 + 1 - font->width - getXAdjustment()) : viewport->X1;
 	} else {
-		activeCursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - font->height - getYAdjustment()) : viewport->Y1;
+		cursor->Y = cursorBehaviour.invertVertical ? (viewport->Y2 + 1 - font->height - getYAdjustment()) : viewport->Y1;
 	}
 }
 
-void cursorEndCol(Rect * viewport = activeViewport) {
+void Context::cursorEndCol() {
+	cursorEndCol(activeCursor, activeViewport);
+}
+void Context::cursorEndCol(Point * cursor, Rect * viewport) {
 	if (cursorBehaviour.flipXY) {
-		activeCursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - font->width - getXAdjustment());
+		cursor->X = cursorBehaviour.invertHorizontal ? viewport->X1 : (viewport->X2 + 1 - font->width - getXAdjustment());
 	} else {
-		activeCursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - font->height - getYAdjustment());
+		cursor->Y = cursorBehaviour.invertVertical ? viewport->Y1 : (viewport->Y2 + 1 - font->height - getYAdjustment());
 	}
 }
 
 // Check if the cursor is off the edge of the viewport and take appropriate action
 // returns true if the cursor wrapped, false if no action was taken or the screen scrolled
-bool cursorScrollOrWrap() {
+bool Context::cursorScrollOrWrap() {
 	bool offLeft = cursorIsOffLeft();
 	bool offRight = cursorIsOffRight();
 	bool offTop = cursorIsOffTop();
@@ -235,7 +245,10 @@ bool cursorScrollOrWrap() {
 
 // Move the active cursor down a line
 //
-void cursorDown(bool moveOnly = false) {
+void Context::cursorDown() {
+	cursorDown(false);
+}
+void Context::cursorDown(bool moveOnly) {
 	if (cursorBehaviour.flipXY) {
 		activeCursor->X += (cursorBehaviour.invertHorizontal ? -font->width : font->width);
 	} else {
@@ -279,7 +292,10 @@ void cursorDown(bool moveOnly = false) {
 
 // Move the active cursor up a line
 //
-void cursorUp(bool moveOnly = false) {
+void Context::cursorUp() {
+	cursorUp(false);
+}
+void Context::cursorUp(bool moveOnly) {
 	if (cursorBehaviour.flipXY) {
 		activeCursor->X += (cursorBehaviour.invertHorizontal ? font->width : -font->width);
 	} else {
@@ -293,7 +309,7 @@ void cursorUp(bool moveOnly = false) {
 
 // Move the active cursor back one character
 //
-void cursorLeft() {
+void Context::cursorLeft() {
 	if (cursorBehaviour.flipXY) {
 		activeCursor->Y += (cursorBehaviour.invertVertical ? font->height : -font->height);
 	} else {
@@ -305,7 +321,7 @@ void cursorLeft() {
 	}
 }
 
-void cursorAutoNewline() {
+void Context::cursorAutoNewline() {
 	if (cursorIsOffRight() && (textCursorActive() || !cursorBehaviour.grNoSpecialActions)) {
 		cursorCR();
 		cursorDown();
@@ -314,7 +330,10 @@ void cursorAutoNewline() {
 
 // Advance the active cursor right one character
 //
-void cursorRight(bool scrollProtect = false) {
+void Context::cursorRight() {
+	cursorRight(false);
+}
+void Context::cursorRight(bool scrollProtect) {
 	// deal with any pending newline that we may have
 	cursorAutoNewline();
 
@@ -330,14 +349,17 @@ void cursorRight(bool scrollProtect = false) {
 
 // Move the active cursor to the top-left position in the viewport
 //
-void cursorHome(Point * cursor = activeCursor, Rect * viewport = activeViewport) {
-	cursorCR(viewport);
-	cursorTop(viewport);
+void Context::cursorHome() {
+	cursorHome(activeCursor, activeViewport);
+}
+void Context::cursorHome(Point * cursor, Rect * viewport) {
+	cursorCR(cursor, viewport);
+	cursorTop(cursor, viewport);
 }
 
 // TAB(x,y)
 //
-void cursorTab(uint8_t x, uint8_t y) {
+void Context::cursorTab(uint8_t x, uint8_t y) {
 	int xPos, yPos;
 	if (cursorBehaviour.flipXY) {
 		if (cursorBehaviour.invertHorizontal) {
@@ -372,7 +394,7 @@ void cursorTab(uint8_t x, uint8_t y) {
 	}
 }
 
-void cursorRelativeMove(int8_t x, int8_t y) {
+void Context::cursorRelativeMove(int8_t x, int8_t y) {
 	// perform a pixel-relative movement of the cursor
 	// does _not_ obey cursor behaviour for directions
 	// but does for wrapping and scrolling
@@ -389,7 +411,38 @@ void cursorRelativeMove(int8_t x, int8_t y) {
 	}
 }
 
-void setPagedMode(bool mode = pagedMode) {
+void Context::getCursorTextPosition(uint8_t * x, uint8_t * y) {
+	if (cursorBehaviour.flipXY) {
+		if (cursorBehaviour.invertHorizontal) {
+			*x = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);
+		} else {
+			*x = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / font->height);
+		}
+		if (cursorBehaviour.invertVertical) {
+			*y = (uint8_t) ((activeViewport->X2 - activeCursor->X) / font->width);
+		} else {
+			*y = (uint8_t) ((activeCursor->X - activeViewport->X1) / font->width);
+		}
+	} else {
+		if (cursorBehaviour.invertHorizontal) {
+			*x = (uint8_t) ((activeViewport->X2 - activeCursor->X) / font->width);
+		} else {
+			*x = (uint8_t) ((activeCursor->X - activeViewport->X1) / font->width);
+		}
+		if (cursorBehaviour.invertVertical) {
+			*y = (uint8_t) ((activeViewport->Y2 - activeCursor->Y) / font->height);
+		} else {
+			*y = (uint8_t) ((activeCursor->Y - activeViewport->Y1) / font->height);
+		}
+	}
+
+	// TODO check cursor position stuff - getNormalisedCursorPosition has different logic to above
+	// Point p = getNormalisedCursorPosition();
+	// *x = p.X / font->width;
+	// *y = p.Y / font->height;
+}
+
+void Context::setPagedMode(bool mode) {
 	pagedMode = mode;
 	pagedModeCount = 0;
 }
@@ -397,8 +450,8 @@ void setPagedMode(bool mode = pagedMode) {
 // Reset basic cursor control
 // used when changing screen modes
 //
-void resetCursor() {
-	setActiveCursor(getTextCursor());
+void Context::resetCursor() {
+	setActiveCursor(CursorType::TextCursor);
 	// visual cursor appearance reset
 	cursorEnabled = true;
 	cursorFlashing = true;
@@ -412,11 +465,52 @@ void resetCursor() {
 	setPagedMode(false);
 }
 
-inline void enableCursor(bool enable = true) {
-	cursorEnabled = enable;
+inline void Context::enableCursor(uint8_t enable) {
+	cursorEnabled = (bool) enable;
+	if (enable == 2) {
+		cursorFlashing = false;
+	}
+	if (enable == 3) {
+		cursorFlashing = true;
+	}
 }
 
-void ensureCursorInViewport(Rect viewport) {
+void Context::setCursorAppearance(uint8_t appearance) {
+	switch (appearance) {
+		case 0:		// cursor steady
+			cursorFlashing = false;
+			break;
+		case 1:		// cursor off
+			cursorEnabled = false;
+			break;
+		case 2:		// fast flash
+			cursorFlashRate = CURSOR_FAST_PHASE;
+			cursorFlashing = true;
+			break;
+		case 3:		// slow flash
+			cursorFlashRate = CURSOR_PHASE;
+			cursorFlashing = true;
+			break;
+	}
+}
+
+void Context::setCursorVStart(uint8_t start) {
+	cursorVStart = start;
+}
+
+void Context::setCursorVEnd(uint8_t end) {
+	cursorVEnd = end;
+}
+
+void Context::setCursorHStart(uint8_t start) {
+	cursorHStart = start;
+}
+
+void Context::setCursorHEnd(uint8_t end) {
+	cursorHEnd = end;
+}
+
+void Context::ensureCursorInViewport(Rect viewport) {
 	if (textCursor.X < viewport.X1
 		|| textCursor.X > viewport.X2 - getXAdjustment()
 		|| textCursor.Y < viewport.Y1
@@ -426,4 +520,4 @@ void ensureCursorInViewport(Rect viewport) {
 	}
 }
 
-#endif	// CURSOR_H
+#endif	// CONTEXT_CURSOR_H

@@ -64,9 +64,8 @@ bool			controlKeys = true;				// Control keys enabled
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support
 #include "agon_audio.h"							// Audio support
+#include "agon_screen.h"						// Screen support
 #include "agon_ttxt.h"
-#include "graphics.h"							// Graphics support
-#include "cursor.h"								// Cursor support
 #include "vdp_protocol.h"						// VDP Protocol
 #include "vdu_stream_processor.h"
 #include "hexload.h"
@@ -81,9 +80,10 @@ void setup() {
 	disableCore1WDT(); delay(200);
 	DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
 	copy_font();
-	set_mode(1);
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
+	auto context = processor->getContext();
+	context->set_mode(0);
 	initAudio();
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
@@ -103,28 +103,28 @@ void loop() {
 		if (processTerminal()) {
 			continue;
 		}
-		if (!cursorTemporarilyHidden && cursorFlashing && (millis() - cursorTime > cursorFlashRate)) {
-			cursorTime = millis();
-			cursorShowing = !cursorShowing;
-			if (ttxtMode) {
-				ttxt_instance.flash(cursorShowing);
-			}
-			do_cursor();
-		}
+		// if (!cursorTemporarilyHidden && cursorFlashing && (millis() - cursorTime > cursorFlashRate)) {
+		// 	cursorTime = millis();
+		// 	cursorShowing = !cursorShowing;
+		// 	if (ttxtMode) {
+		// 		ttxt_instance.flash(cursorShowing);
+		// 	}
+		// 	do_cursor();
+		// }
 		do_keyboard();
 		do_mouse();
 
 		if (processor->byteAvailable()) {
-			if (!cursorTemporarilyHidden && cursorShowing) {
-				cursorTemporarilyHidden = true;
-				do_cursor();
-			}
+			// if (!cursorTemporarilyHidden && cursorShowing) {
+			// 	cursorTemporarilyHidden = true;
+			// 	do_cursor();
+			// }
 			processor->processNext();
-			if (!processor->byteAvailable() && (cursorTemporarilyHidden || !cursorFlashing)) {
-				cursorShowing = true;
-				cursorTemporarilyHidden = false;
-				do_cursor();
-			}
+			// if (!processor->byteAvailable() && (cursorTemporarilyHidden || !cursorFlashing)) {
+			// 	cursorShowing = true;
+			// 	cursorTemporarilyHidden = false;
+			// 	do_cursor();
+			// }
 		}
 	}
 }
@@ -329,7 +329,8 @@ bool processTerminal() {
 		case TerminalState::Disabling: {
 			Terminal->deactivate();
 			Terminal = nullptr;
-			set_mode(1);
+			auto context = processor->getContext();
+			context->set_mode(0);
 			processor->sendModeInformation();
 			debug_log("Terminal disabled\n\r");
 			terminalState = TerminalState::Disabled;

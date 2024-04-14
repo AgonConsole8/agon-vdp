@@ -3,7 +3,6 @@
 
 #include "agon.h"
 #include "agon_fonts.h"
-#include "graphics.h"
 #include "types.h"
 #include "vdu_stream_processor.h"
 
@@ -20,13 +19,13 @@ void VDUStreamProcessor::vdu_sys_font() {
             auto flags = readByte_t(); if (flags == -1) return;
             if (bufferId == 65535) {
                 // reset to default font
-                changeFont(&FONT_AGON, flags);
+                context->changeFont(&FONT_AGON, flags);
             } else {
                 if (fonts.find(bufferId) == fonts.end()) {
                     debug_log("fontSelect: font %d not found\n\r", bufferId);
                     return;
                 }
-                changeFont(fonts[bufferId].get(), flags);
+                context->changeFont(fonts[bufferId].get(), flags);
             }
             sendModeInformation();
         } break;

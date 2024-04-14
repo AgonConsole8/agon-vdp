@@ -64,19 +64,7 @@ inline uint16_t getCurrentBitmapId() {
 	return currentBitmap;
 }
 
-void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet = false) {
-	auto bitmap = getBitmap();
-	if (bitmap) {
-		if (forceSet) {
-			auto options = getPaintOptions(fabgl::PaintMode::Set, gpofg);
-			canvas->setPaintOptions(options);
-		}
-		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get());
-	} else {
-		debug_log("drawBitmap: bitmap %d not found\n\r", currentBitmap);
-	}
-}
-
+// TODO remove this??  it doesn't seem to be used
 void clearCursor(uint16_t cursor) {
 	if (cursors.find(cursor) != cursors.end()) {
 		cursors.erase(cursor);

@@ -44,10 +44,6 @@
 #include "buffers.h"
 #include "types.h"
 
-const fabgl::FontInfo		* font;				// Current active font
-const fabgl::FontInfo		* textFont;			// Current active font for text cursor
-const fabgl::FontInfo		* graphicsFont;		// Current active font for graphics cursor
-
 std::unordered_map<uint16_t, std::shared_ptr<fabgl::FontInfo>> fonts;	// Storage for our fonts
 
 uint8_t FONT_AGON_DATA[256*8]; 
@@ -317,7 +313,7 @@ static const uint8_t FONT_AGON_BITMAP[] = {
 	0x66, 0x00, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x3C  // ÿ 
 };
 
-extern const fabgl::FontInfo FONT_AGON = {
+const fabgl::FontInfo FONT_AGON = {
 	.pointSize = 6,
 	.width     = 8,
 	.height    = 8,
@@ -338,15 +334,11 @@ void copy_font() {
 	memcpy(FONT_AGON_DATA, FONT_AGON_BITMAP, sizeof(FONT_AGON_BITMAP));
 }
 
-// Redefine a character in the font
+// Redefine a character in the system font
 // Applies only when the system font is selected
 //
 void redefineCharacter(uint8_t c, uint8_t * data) {
-	if (font == &FONT_AGON) {
-		memcpy(&FONT_AGON_DATA[c * 8], data, 8);
-	} else {
-		debug_log("redefineCharacter: alternate font redefinition not supported with this API\n\r");
-	}
+	memcpy(&FONT_AGON_DATA[c * 8], data, 8);
 }
 
 std::shared_ptr<fabgl::FontInfo> createFontFromBuffer(uint16_t bufferId, uint8_t width, uint8_t height, uint8_t ascent, uint8_t flags) {
