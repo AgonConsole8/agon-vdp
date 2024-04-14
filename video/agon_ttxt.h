@@ -9,6 +9,7 @@
 // 11/06/2023:    Fixed hold graphics semantics
 // 13/06/2023:    Refactored the code, made all private member variables prefix m_
 // 18/10/2023:    Integrated into the new VDP code. canvas is a global variable (unique pointer).
+// 14/04/2044:    Added scroll in all four directions.
 
 #pragma once
 
@@ -53,7 +54,7 @@ public:
   int init(void);
   unsigned char get_screen_char(int x, int y);
   void draw_char(int x, int y, unsigned char c);
-  void scroll();
+  void scroll(int x, int y);
   void cls();
   void flash(bool f);
   void set_window(int left, int bottom, int right, int top);
@@ -503,6 +504,7 @@ int agon_ttxt::init(void)
   return 0;
 }
 
+// Either x==0 and y== -1 or 1 or y==0 and x == -1 or 1
 unsigned char agon_ttxt::get_screen_char(int x, int y)
 {
   x=x/m_font.width;
@@ -540,11 +542,11 @@ void agon_ttxt::draw_char(int x, int y, unsigned char c)
   display_char(cx, cy, translate_char(c));
 }
 
-void agon_ttxt::scroll()
+void agon_ttxt::scroll(int x, int y)
 {
-  if (m_left==0 && m_right==39 && m_top==0 && m_bottom==24)
+  if (m_left==0 && m_right==39 && m_top==0 && m_bottom==24 && y<0)
   {
-    /* Do the full screen */
+    /* Do the full screen up, the fast way */
     memmove(m_screen_buf, m_screen_buf+40, 960);
     memset(m_screen_buf+960, ' ', 40);
     m_lastRow--;
@@ -553,21 +555,40 @@ void agon_ttxt::scroll()
       m_dh_status[24] = 2;
     else
       m_dh_status[24] = 0;
-     canvas->scroll(0, -m_font.height);
-     if (m_dh_status[0] == 2)
-     {
-        m_dh_status[0] = 1;
-        process_line(0, 0, AGON_TTXT_OP_UPDATE);
-        m_lastRow = -1;
-     }     
+    canvas->scroll(0, -m_font.height);
+    if (m_dh_status[0] == 2) {
+      m_dh_status[0] = 1;
+      process_line(0, 0, AGON_TTXT_OP_UPDATE);
+      m_lastRow = -1;
+    }     
   }
   else
   {
-    for (int row = m_top; row < m_bottom; row++)
-    {
-      memcpy(m_screen_buf+40*row+m_left,m_screen_buf+40*(row+1)+m_left , m_right+1-m_left);
+    if (y < 0) {/* scroll up, normall case */
+      for (int row = m_top; row < m_bottom; row++) {
+	  memcpy(m_screen_buf+40*row+m_left,m_screen_buf+40*(row+1)+m_left , m_right+1-m_left);
+      }
+      memset(m_screen_buf+40*m_bottom+m_left, ' ', m_right + 1 - m_left);
+    } else if (y > 0) { /* scroll down */
+      for (int row = m_bottom; row > m_top; row--) {
+	  memcpy(m_screen_buf+40*row+m_left,m_screen_buf+40*(row-1)+m_left , m_right+1-m_left);
+      }
+      memset(m_screen_buf+40*m_top+m_left,' ', m_right + 1 - m_left);
+    } else if (x < 0) { /* scroll left */
+      for (int row = m_top; row <= m_bottom; row++) {
+	memmove(m_screen_buf+40*row+m_left,
+		m_screen_buf+40*row+m_left+1,
+		m_right - m_left);
+	m_screen_buf[40*row+m_right] = ' ';
+      }
+    } else { /* scroll right */
+      for (int row = m_top; row <= m_bottom; row++) {
+	memmove(m_screen_buf+40*row+m_left+1,
+		m_screen_buf+40*row+m_left,
+		m_right - m_left);
+	m_screen_buf[40*row+m_left] = ' ';
+      }      
     }
-    memset(m_screen_buf+40*m_bottom+m_left, ' ', m_right + 1 - m_left);
     memset(m_dh_status, 0, 25);
     for (int row = 0; row < 25; row++)
     {    
