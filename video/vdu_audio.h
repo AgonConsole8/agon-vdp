@@ -16,10 +16,11 @@
 #include "agon_audio.h"
 #include "audio_sample.h"
 #include "buffers.h"
-#include "types.h"
 #include "envelopes/adsr.h"
 #include "envelopes/multiphase_adsr.h"
 #include "envelopes/frequency.h"
+#include "types.h"
+#include "vdu_stream_processor.h"
 
 // Audio VDU command support (VDU 23, 0, &85, <args>)
 //
