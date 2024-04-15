@@ -268,6 +268,10 @@ void VDUStreamProcessor::vdu_sys_video() {
 			// Set graphics origin using latest graphics coordintes
 			context->setOrigin();
 		}	break;
+		case VDP_SHIFT_ORIGIN: {		// VDU 23, 0, &9F
+			// Shift graphics origin and viewports using latest graphics coordintes
+			context->shiftOrigin();
+		}	break;
 		case VDP_BUFFERED: {			// VDU 23, 0, &A0, bufferId; command, <args>
 			vdu_sys_buffered();
 		}	break;

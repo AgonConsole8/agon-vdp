@@ -325,6 +325,7 @@ void VDUStreamProcessor::vdu_resetViewports() {
 	context->viewportReset();
 	// reset cursors too (according to BBC BASIC manual)
 	context->cursorHome();
+	context->setOrigin(0, 0);
 	context->pushPoint(0, 0);
 	debug_log("vdu_resetViewport\n\r");
 }

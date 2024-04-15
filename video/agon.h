@@ -66,6 +66,7 @@
 #define VDP_TEXT_VIEWPORT		0x9C	// Set text viewport using current graphics coordinates
 #define VDP_GRAPHICS_VIEWPORT	0x9D	// Set graphics viewport using current graphics coordinates
 #define VDP_GRAPHICS_ORIGIN		0x9E	// Set graphics origin using current graphics coordinates
+#define VDP_SHIFT_ORIGIN		0x9F	// Move origin to new position from graphics coordinates, and viewports too
 #define VDP_BUFFERED			0xA0	// Buffered commands
 #define VDP_UPDATER				0xA1	// Update VDP
 #define VDP_LOGICALCOORDS		0xC0	// Switch BBC Micro style logical coords on and off
