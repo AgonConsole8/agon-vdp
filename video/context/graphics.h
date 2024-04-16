@@ -593,11 +593,13 @@ void Context::pushPoint(uint16_t x, uint16_t y) {
 // ensuring that the rect is on-screen coordinates
 //
 Rect Context::getGraphicsRect() {
-	return Rect(
-		std::max((int)0, (int)std::min(p1.X, p2.X)),
-		std::max((int)0, (int)std::min(p1.Y, p2.Y)),
-		std::min(canvasW - 1, (int)std::max(p1.X, p2.X)),
-		std::min(canvasH - 1, (int)std::max(p1.Y, p2.Y))
+	return defaultViewport.intersection(
+		Rect(
+			std::min(p1.X, p2.X),
+			std::min(p1.Y, p2.Y),
+			std::max(p1.X, p2.X),
+			std::max(p1.Y, p2.Y)
+		)
 	);
 }
 

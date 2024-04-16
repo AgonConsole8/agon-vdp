@@ -132,6 +132,7 @@ class Context {
 		Rect * getViewport(ViewportType type);
 		bool setTextViewport(Rect rect);
 		Point scale(int16_t X, int16_t Y);
+		Point invScale(Point p);
 
 		// Font management functions
 		const fabgl::FontInfo * getFont();
@@ -224,8 +225,9 @@ class Context {
 		bool setTextViewport();
 		uint8_t getNormalisedViewportCharWidth();
 		uint8_t getNormalisedViewportCharHeight();
-		inline void setOrigin(int x, int y);
+		void setOrigin(int x, int y);
 		void setOrigin();
+		void shiftOrigin();
 		void setLogicalCoords(bool b);
 		Point toCurrentCoordinates(int16_t X, int16_t Y);
 		Point toScreenCoordinates(int16_t X, int16_t Y);

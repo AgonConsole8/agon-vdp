@@ -41,6 +41,13 @@ Point Context::scale(int16_t X, int16_t Y) {
 	return Point(X, Y);
 }
 
+Point Context::invScale(Point p) {
+	if (logicalCoords) {
+		return Point((double)p.X * logicalScaleX, (double)p.Y * logicalScaleY);
+	}
+	return p;
+}
+
 
 // Public viewport management functions
 
@@ -112,23 +119,44 @@ uint8_t Context::getNormalisedViewportCharHeight() {
 	return activeViewport->height() / getFont()->height;
 }
 
-inline void Context::setOrigin(int x, int y) {
-	origin = scale(x, y);
+void Context::setOrigin(int x, int y) {
+	auto newOrigin = scale(x, y);
+
+	if (logicalCoords) {
+		newOrigin.Y = canvasH - newOrigin.Y - 1;
+	}
+
+	// shift up1 by the difference between the new and old origins, with scaling
+	auto delta = invScale(newOrigin.sub(origin));
+	up1.X = up1.X - delta.X;
+	up1.Y = logicalCoords ? up1.Y + delta.Y : up1.Y - delta.Y;
+
+	origin = newOrigin;
 }
 
 void Context::setOrigin() {
-	origin = Point(
-		std::max(0, (int)std::min(canvasW - 1, (int)p1.X)),
-		std::max(0, (int)std::min(canvasH - 1, (int)p1.Y))
-	);
-	if (logicalCoords) {
-		origin.Y = canvasH - origin.Y - 1;
-	}
+	origin = p1;
+	up1 = Point(0, 0);
 	debug_log("setOrigin: %d,%d\n\r", origin.X, origin.Y);
+}
+
+void Context::shiftOrigin() {
+	Point originDelta = p1.sub(origin);
+
+	textViewport = textViewport.translate(originDelta).intersection(defaultViewport);
+	graphicsViewport = graphicsViewport.translate(originDelta).intersection(defaultViewport);
+
+	origin = p1;
+	up1 = Point(0, 0);
+
+	textCursor = textCursor.add(originDelta);
+	ensureCursorInViewport(textViewport);
 }
 
 void Context::setLogicalCoords(bool b) {
 	if (b != logicalCoords) {
+		// invert our origin Y point, as we're changing coordinate systems
+		origin.Y = canvasH - origin.Y - 1;
 		logicalCoords = b;
 		// change our unscaled point according to the new setting
 		if (b) {
@@ -157,10 +185,7 @@ Point Context::toCurrentCoordinates(int16_t X, int16_t Y) {
 inline Point Context::toScreenCoordinates(int16_t X, int16_t Y) {
 	auto p = scale(X, Y);
 
-	if (logicalCoords) {
-		return Point(origin.X + p.X, (canvasH - 1) - (origin.Y + p.Y));
-	}
-	return Point(origin.X + p.X, origin.Y + p.Y);
+	return Point(origin.X + p.X, logicalCoords ? origin.Y - p.Y : origin.Y + p.Y);
 }
 
 #endif // CONTEXT_VIEWPORT_H
