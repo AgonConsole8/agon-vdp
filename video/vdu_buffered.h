@@ -287,6 +287,14 @@ void VDUStreamProcessor::bufferCall(uint16_t callBufferId, AdvancedOffset offset
 	}
 }
 
+void VDUStreamProcessor::bufferRemoveUsers(uint16_t bufferId) {
+	// remove all users of the given buffer
+	context->unmapBitmapFromChars(bufferId);
+	clearBitmap(bufferId);
+	clearFont(bufferId);
+	clearSample(bufferId);
+}
+
 // VDU 23, 0, &A0, bufferId; 2: Clear buffer
 // Removes all streams stored against the given bufferId
 // sending a bufferId of 65535 (i.e. -1) clears all buffers
@@ -309,10 +317,7 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 		return;
 	}
 	buffers.erase(bufferIter);
-	clearBitmap(bufferId);
-	context->unmapBitmapFromChars(bufferId);
-	clearFont(bufferId);
-	clearSample(bufferId);
+	bufferRemoveUsers(bufferId);
 	debug_log("bufferClear: cleared buffer %d\n\r", bufferId);
 }
 
@@ -1156,6 +1161,7 @@ void VDUStreamProcessor::bufferCopy(uint16_t bufferId, tcb::span<const uint16_t>
 		}
 	}
 	// replace buffer with new one
+	bufferRemoveUsers(bufferId);
 	buffers[bufferId].assign(std::make_move_iterator(streams.begin()), std::make_move_iterator(streams.end()));
 	debug_log("bufferCopy: copied %d streams into buffer %d (%d)\n\r", streams.size(), bufferId, buffers[bufferId].size());
 }
@@ -1184,24 +1190,15 @@ void VDUStreamProcessor::bufferConsolidate(uint16_t bufferId) {
 		debug_log("bufferConsolidate: failed to create buffer\n\r");
 		return;
 	}
+	bufferRemoveUsers(bufferId);
 	buffer.clear();
 	buffer.push_back(std::move(bufferStream));
 	debug_log("bufferConsolidate: consolidated %d streams into buffer %d\n\r", buffer.size(), bufferId);
 }
 
-void clearTarget(uint16_t target) {
-	auto bufferIter = buffers.find(target);
-	if (bufferIter != buffers.end()) {
-		bufferIter->second.clear();
-	}
-	clearBitmap(target);
-	clearFont(target);
-}
-
 void VDUStreamProcessor::clearTargets(tcb::span<const uint16_t> targets) {
 	for (const auto target : targets) {
-		clearTarget(target);
-		context->unmapBitmapFromChars(target);
+		bufferClear(target);
 	}
 }
 
@@ -1237,7 +1234,7 @@ void VDUStreamProcessor::bufferSplitInto(uint16_t bufferId, uint16_t length, tcb
 	for (auto &chunk : chunks) {
 		auto targetId = *targetIter;
 		if (iterate) {
-			clearTarget(targetId);
+			bufferClear(targetId);
 		}
 		buffers[targetId].push_back(std::move(chunk));
 		iterate = updateTarget(newBufferIds, targetIter, iterate);
@@ -1292,7 +1289,7 @@ void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, ui
 	for (auto &stream : chunks) {
 		auto targetId = *targetIter;
 		if (iterate) {
-			clearTarget(targetId);
+			bufferClear(targetId);
 		}
 		auto chunk = consolidateBuffers(stream);
 		if (!chunk) {
@@ -1327,7 +1324,7 @@ void VDUStreamProcessor::bufferSpreadInto(uint16_t bufferId, tcb::span<uint16_t>
 	for (const auto &block : localBuffer) {
 		auto targetId = *targetIter;
 		if (iterate) {
-			clearTarget(targetId);
+			bufferClear(targetId);
 		}
 		buffers[targetId].push_back(block);
 		iterate = updateTarget(newBufferIds, targetIter, iterate);
@@ -1446,8 +1443,8 @@ void VDUStreamProcessor::bufferCopyRef(uint16_t bufferId, tcb::span<const uint16
 		debug_log("bufferCopyRef: ignoring buffer %d\n\r", bufferId);
 		return;
 	}
+	bufferClear(bufferId);
 	auto &buffer = buffers[bufferId];
-	buffer.clear();
 
 	// loop thru buffer IDs
 	for (const auto sourceId : sourceBufferIds) {
@@ -1498,8 +1495,8 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 
 	// Ensure the buffer has 1 block of the correct size
 	auto &buffer = buffers[bufferId];
-	if (buffer.size() != 1 || buffer.front()->size() != length)
-	{
+	if (buffer.size() != 1 || buffer.front()->size() != length) {
+		bufferRemoveUsers(bufferId);
 		buffer.clear();
 		auto bufferStream = make_shared_psram<BufferStream>(length);
 		if (!bufferStream || !bufferStream->getBuffer()) {

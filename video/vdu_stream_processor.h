@@ -105,6 +105,7 @@ class VDUStreamProcessor {
 		void vdu_sys_buffered();
 		uint32_t bufferWrite(uint16_t bufferId, uint32_t size);
 		void bufferCall(uint16_t bufferId, AdvancedOffset offset);
+		void bufferRemoveUsers(uint16_t bufferId);
 		void bufferClear(uint16_t bufferId);
 		std::shared_ptr<WritableBufferStream> bufferCreate(uint16_t bufferId, uint32_t size);
 		void setOutputStream(uint16_t bufferId);
