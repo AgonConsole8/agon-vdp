@@ -190,10 +190,12 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 		}	break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
+			if (sourceBufferId == -1) return;
 			bufferCompress(bufferId, sourceBufferId);
 		}	break;
 		case BUFFERED_DECOMPRESS: {
 			auto sourceBufferId = readWord_t();
+			if (sourceBufferId == -1) return;
 			bufferDecompress(bufferId, sourceBufferId);
 		}	break;
 		case BUFFERED_DEBUG_INFO: {
@@ -1550,6 +1552,12 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBufferId) {
 	debug_log("Compressing into buffer %u\n\r", bufferId);
 
+	auto sourceBufferIter = buffers.find(sourceBufferId);
+	if (sourceBufferIter == buffers.end()) {
+		debug_log("bufferCompress: buffer %d not found\n\r", sourceBufferId);
+		return;
+	}
+
 	// create a temporary output buffer, which may be expanded during compression
 	uint8_t* p_temp = (uint8_t*) ps_malloc(COMPRESSION_OUTPUT_CHUNK_SIZE);
 	if (p_temp) {
@@ -1572,7 +1580,8 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 
 		// loop thru blocks stored against the source buffer ID
 		uint32_t orig_size = 0;
-		for (const auto &block : buffers[sourceBufferId]) {
+		auto &sourceBuffer = sourceBufferIter->second;
+		for (const auto &block : sourceBuffer) {
 			// compress the block into our temporary buffer
 			auto bufferLength = block->size();
 			auto p_data = block->getBuffer();
@@ -1605,7 +1614,7 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 					p_temp[8], p_temp[9], p_temp[10], p_temp[11]);
 		memcpy(destination, p_temp, cd.output_count);
 		heap_caps_free(p_temp);
-		buffers[bufferId].clear();
+		bufferClear(bufferId);
 		buffers[bufferId].push_back(bufferStream);
 
 		uint32_t pct = (cd.output_count * 100) / cd.input_count;
@@ -1621,13 +1630,20 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 // Replaces the target buffer with the new one.
 //
 void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId) {
+	auto sourceBufferIter = buffers.find(sourceBufferId);
+	if (sourceBufferIter == buffers.end()) {
+		debug_log("bufferDeompress: buffer %d not found\n\r", sourceBufferId);
+		return;
+	}
+	auto &sourceBuffer = sourceBufferIter->second;
+
 	// Validate the compression header
-	if (buffers[sourceBufferId][0]->size() < sizeof(CompressionFileHeader)) {
+	if (sourceBuffer.size() >= 1 && sourceBuffer[0]->size() < sizeof(CompressionFileHeader)) {
 		debug_log("bufferDecompress: buffer too small for header\n\r");
 		return;
 	}
 	
-	auto p_hdr = (const CompressionFileHeader*) buffers[sourceBufferId][0]->getBuffer();
+	auto p_hdr = (const CompressionFileHeader*) sourceBuffer[0]->getBuffer();
 	if (p_hdr->marker[0] != 'C' ||
 		p_hdr->marker[1] != 'm' ||
 		p_hdr->marker[2] != 'p' ||
@@ -1649,7 +1665,7 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 		// loop thru blocks stored against the source buffer ID
 		uint32_t skip_hdr = sizeof(CompressionFileHeader);
 		dd.input_count = skip_hdr;
-		for (const auto &block : buffers[sourceBufferId]) {
+		for (const auto &block : sourceBuffer) {
 			// decompress the block into our temporary buffer
 			auto bufferLength = block->size() - skip_hdr;
 			auto p_data = block->getBuffer();
@@ -1678,7 +1694,7 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 					p_temp[0], p_temp[1], p_temp[2], p_temp[3]);
 		memcpy(destination, p_temp, dd.output_count);
 		heap_caps_free(p_temp);
-		buffers[bufferId].clear();
+		bufferClear(bufferId);
 		buffers[bufferId].push_back(bufferStream);
 
 		uint32_t pct = (dd.output_count * 100) / dd.input_count;
