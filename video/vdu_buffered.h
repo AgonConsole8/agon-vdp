@@ -198,6 +198,9 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			if (sourceBufferId == -1) return;
 			bufferDecompress(bufferId, sourceBufferId);
 		}	break;
+        case BUFFERED_PINGO_3D: {
+			bufferUsePingo3D(bufferId);
+        }   break;
 		case BUFFERED_DEBUG_INFO: {
 			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
 			if (buffers[bufferId].empty()) {
@@ -1708,6 +1711,31 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 	} else {
 		debug_log("bufferDecompress: cannot allocate temporary buffer of %d bytes\n\r", COMPRESSION_OUTPUT_CHUNK_SIZE);
 	}
+}
+
+// VDU 23, 0, &A0, bufferId; &48, subcommand - Configure/render using Pingo 3D
+//
+// VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices<br>
+// VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indices<br>
+// VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates<br>
+// VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indices<br>
+// VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid; :  Create Object<br>
+// VDU 23, 0, &A0, sid; &48, 6, oid; scalex; :  Set Object X Scale Factor<br>
+// VDU 23, 0, &A0, sid; &48, 7, oid; scaley; :  Set Object Y Scale Factor<br>
+// VDU 23, 0, &A0, sid; &48, 8, oid; scalez; :  Set Object Z Scale Factor<br>
+// VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez :  Set Object XYZ Scale Factors<br>
+// VDU 23, 0, &A0, sid; &48, 10, oid; anglex; :  Set Object X Rotation Angle<br>
+// VDU 23, 0, &A0, sid; &48, 11, oid; angley; :  Set Object Y Rotation Angle<br>
+// VDU 23, 0, &A0, sid; &48, 12, oid; anglez; :  Set Object Z Rotation Angle<br>
+// VDU 23, 0, &A0, sid; &48, 13, oid; anglex; angley; anglez; :  Set Object XYZ Rotation Angles<br>
+// VDU 23, 0, &A0, sid; &48, 14, oid; distx; :  Set Object X Translation Distance<br>
+// VDU 23, 0, &A0, sid; &48, 15, oid; disty; :  Set Object Y Translation Distance<br>
+// VDU 23, 0, &A0, sid; &48, 16, oid; distz; :  Set Object Z Translation Distance<br>
+// VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances<br>
+// VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap<br>
+//
+void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
+
 }
 
 #endif // VDU_BUFFERED_H
