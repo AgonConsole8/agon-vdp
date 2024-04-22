@@ -95,7 +95,8 @@
 #define AUDIO_CHANNELS			3		// Default number of audio channels
 #define AUDIO_DEFAULT_SAMPLE_RATE	16384	// Default sample rate
 #define MAX_AUDIO_CHANNELS		32		// Maximum number of audio channels
-#define PLAY_SOUND_PRIORITY		3		// Sound driver task priority with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest
+#define AUDIO_CHANNEL_PRIORITY	3		// Sound driver task priority with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest
+#define AUDIO_CORE				0		// Core to run audio tasks on
 
 // Audio command definitions
 //
@@ -311,12 +312,6 @@
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024
-
-#if CONFIG_FREERTOS_UNICORE
-#define ARDUINO_RUNNING_CORE	0
-#else
-#define ARDUINO_RUNNING_CORE	1
-#endif
 
 // Function Prototypes
 //

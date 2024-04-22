@@ -251,6 +251,20 @@ void debug_log(const char *format, ...) {
 	#endif
 }
 
+void force_debug_log(const char *format, ...) {
+	va_list ap;
+	va_start(ap, format);
+	auto size = vsnprintf(nullptr, 0, format, ap) + 1;
+	if (size > 0) {
+		va_end(ap);
+		va_start(ap, format);
+		char buf[size + 1];
+		vsnprintf(buf, size, format, ap);
+		DBGSerial.print(buf);
+	}
+	va_end(ap);
+}
+
 // Set console mode
 // Parameters:
 // - mode: 0 = off, 1 = on
