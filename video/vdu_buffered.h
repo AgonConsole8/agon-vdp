@@ -1715,6 +1715,7 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 
 // VDU 23, 0, &A0, bufferId; &48, subcommand - Configure/render using Pingo 3D
 //
+// VDU 23, 0, &A0, sid; &48, 0, init :  Initialize/Deinitialize Control Structure<br>
 // VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices<br>
 // VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indices<br>
 // VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates<br>
