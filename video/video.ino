@@ -136,7 +136,7 @@ void do_keyboard() {
 				case 7:		// Bell
 				case 12:	// CLS
 				case 14 ... 15:	// paged mode on/off
-					processor->vdu(keycode);
+					processor->vdu(keycode, false);
 					break;
 				case 16:
 					// control-P toggles "printer" on R.T.Russell's BASIC
@@ -350,7 +350,7 @@ bool processTerminal() {
 
 void print(char const * text) {
 	for (auto i = 0; i < strlen(text); i++) {
-		processor->vdu(text[i]);
+		processor->vdu(text[i], false);
 	}
 }
 
