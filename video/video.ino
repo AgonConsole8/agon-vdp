@@ -76,6 +76,8 @@ VDUStreamProcessor *	processor;				// VDU Stream Processor
 
 #include "zdi.h"								// ZDI debugging console
 
+void test_pingo_3d();
+
 void setup() {
 	#ifndef VDP_USE_WDT
 		disableCore0WDT(); delay(200);				// Disable the watchdog timers
@@ -91,6 +93,12 @@ void setup() {
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
 	processor->sendModeInformation();
+
+    test_pingo_3d();
+}
+
+void test_pingo_3d() {
+    
 }
 
 // The main loop

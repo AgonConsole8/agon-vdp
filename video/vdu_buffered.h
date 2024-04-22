@@ -17,6 +17,7 @@
 #include "sprites.h"
 #include "types.h"
 #include "vdu_stream_processor.h"
+#include "pingo_3d.h"
 
 // VDU 23, 0, &A0, bufferId; command: Buffered command support
 //
@@ -1715,28 +1716,67 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 
 // VDU 23, 0, &A0, bufferId; &48, subcommand - Configure/render using Pingo 3D
 //
-// VDU 23, 0, &A0, sid; &48, 0, init :  Initialize/Deinitialize Control Structure<br>
-// VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices<br>
-// VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indices<br>
-// VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates<br>
-// VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indices<br>
-// VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid; :  Create Object<br>
-// VDU 23, 0, &A0, sid; &48, 6, oid; scalex; :  Set Object X Scale Factor<br>
-// VDU 23, 0, &A0, sid; &48, 7, oid; scaley; :  Set Object Y Scale Factor<br>
-// VDU 23, 0, &A0, sid; &48, 8, oid; scalez; :  Set Object Z Scale Factor<br>
-// VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez :  Set Object XYZ Scale Factors<br>
-// VDU 23, 0, &A0, sid; &48, 10, oid; anglex; :  Set Object X Rotation Angle<br>
-// VDU 23, 0, &A0, sid; &48, 11, oid; angley; :  Set Object Y Rotation Angle<br>
-// VDU 23, 0, &A0, sid; &48, 12, oid; anglez; :  Set Object Z Rotation Angle<br>
-// VDU 23, 0, &A0, sid; &48, 13, oid; anglex; angley; anglez; :  Set Object XYZ Rotation Angles<br>
-// VDU 23, 0, &A0, sid; &48, 14, oid; distx; :  Set Object X Translation Distance<br>
-// VDU 23, 0, &A0, sid; &48, 15, oid; disty; :  Set Object Y Translation Distance<br>
-// VDU 23, 0, &A0, sid; &48, 16, oid; distz; :  Set Object Z Translation Distance<br>
-// VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances<br>
-// VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap<br>
+// VDU 23, 0, &A0, sid; &48, 0, init :  Initialize/Deinitialize Control Structure
+// VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
+// VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indices
+// VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
+// VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indices
+// VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid; :  Create Object
+// VDU 23, 0, &A0, sid; &48, 6, oid; scalex; :  Set Object X Scale Factor
+// VDU 23, 0, &A0, sid; &48, 7, oid; scaley; :  Set Object Y Scale Factor
+// VDU 23, 0, &A0, sid; &48, 8, oid; scalez; :  Set Object Z Scale Factor
+// VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez :  Set Object XYZ Scale Factors
+// VDU 23, 0, &A0, sid; &48, 10, oid; anglex; :  Set Object X Rotation Angle
+// VDU 23, 0, &A0, sid; &48, 11, oid; angley; :  Set Object Y Rotation Angle
+// VDU 23, 0, &A0, sid; &48, 12, oid; anglez; :  Set Object Z Rotation Angle
+// VDU 23, 0, &A0, sid; &48, 13, oid; anglex; angley; anglez; :  Set Object XYZ Rotation Angles
+// VDU 23, 0, &A0, sid; &48, 14, oid; distx; :  Set Object X Translation Distance
+// VDU 23, 0, &A0, sid; &48, 15, oid; disty; :  Set Object Y Translation Distance
+// VDU 23, 0, &A0, sid; &48, 16, oid; distz; :  Set Object Z Translation Distance
+// VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances
+// VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap
 //
 void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
-
+    auto subcmd = readByte_t();
+    if (subcmd == 0) {
+        auto init = readByte_t();
+        if (init) {
+            // Create the buffer if necessary
+            // Initialize the control structure
+            auto buffer = bufferCreate(bufferId, sizeof(Pingo3dControl));
+            if (buffer) {
+                auto ctrl = (Pingo3dControl*) buffer[0].getBuffer();
+                ctrl->initialize();
+            }
+        } else {
+            // Deinitialize the control structure
+            // Delete the buffer
+            auto buffer = buffers.find(bufferId);
+            if (buffer != buffers.end()) {
+                auto ctrl = (Pingo3dControl*) buffer[0].getBuffer();
+                if (ctrl->validate()) {
+                    ctrl->deinitialize();
+                    buffers.erase(buffer);
+                } else {
+                    debug_log("bufferUsePingo3D: buffer %d is invalid\n\r", bufferId);
+                }
+            } else {
+                debug_log("bufferUsePingo3D: buffer %d not found\n\r", bufferId);
+            }            
+        }
+    } else {
+        auto buffer = buffers.find(bufferId);
+        if (buffer != buffers.end()) {
+            auto ctrl = (Pingo3dControl*) buffer[0].getBuffer();
+            if (ctrl->validate()) {
+                ctrl->handle_subcommand(*this, subcmd);
+            } else {
+           		debug_log("bufferUsePingo3D: buffer %d is invalid\n\r", bufferId);
+            }
+        } else {
+    		debug_log("bufferUsePingo3D: buffer %d not found\n\r", bufferId);
+        }
+    }
 }
 
 #endif // VDU_BUFFERED_H
