@@ -14,9 +14,9 @@ only supports passing 1-byte and 2-byte values. For that reason, many of the
 values passed to the render commands are scaled values.
 
 The commands below use numbers with the following meaning and ranges:
-<br><br><b>sid</b>: A VDU buffer ID that refers to a control structure for the 3D scene.
-<br><br><b>mid</b>: A specific mesh ID in the range 0 to 65535. This is not a primitive ID.
-<br><br><b>oid</b>: A specific object ID in the range 0 to 65535. This is not a primitive ID.
+<br><br><b>sid</b>: A VDU buffer ID that acts as a scene ID. It refers to a control structure for the 3D scene.
+<br><br><b>mid</b>: A specific mesh ID in the range 0 to 65535.
+<br><br><b>oid</b>: A specific object ID in the range 0 to 65535.
 <br><br><b>n</b>: A positive number (count) of things that follow within the same command.
 <br><br><b>x</b>: A 2D X coordinate in the range -32768 to +32767. Often, the value is in or near the range of 0 to screen width.
 <br><br><b>y</b>: A 2D Y coordinate in the range -32768 to +32767. Often, the value is in or near the range of 0 to screen height.
