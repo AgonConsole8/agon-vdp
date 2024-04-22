@@ -76,6 +76,8 @@ VDUStreamProcessor *	processor;				// VDU Stream Processor
 
 #include "zdi.h"								// ZDI debugging console
 
+TaskHandle_t		Core0Task;					// Core 0 task handle
+
 void setup() {
 	#ifndef VDP_USE_WDT
 		disableCore0WDT(); delay(200);				// Disable the watchdog timers
@@ -91,11 +93,49 @@ void setup() {
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
 	processor->sendModeInformation();
+	debug_log("Setup ran on core %d, busy core is %d\n\r", xPortGetCoreID(), CoreUsage::busiestCore());
+	xTaskCreatePinnedToCore(
+		processLoop,
+		"processLoop",
+		8192,
+		NULL,
+		3,
+		&Core0Task,
+		0
+	);
 }
 
 // The main loop
 //
 void loop() {
+	while (true) {
+		delay(1000);
+	};
+	// debug_log("Loop ran on core %d, busy core is %d\n\r", xPortGetCoreID(), CoreUsage::busiestCore());
+	// while (true) {
+	// 	#ifdef VDP_USE_WDT
+	// 		esp_task_wdt_reset();
+	// 	#endif
+	// 	if (processTerminal()) {
+	// 		continue;
+	// 	}
+	// 	processor->doCursorFlash();
+
+	// 	do_keyboard();
+	// 	do_mouse();
+
+	// 	if (processor->byteAvailable()) {
+	// 		processor->hideCursor();
+	// 		processor->processNext();
+	// 		if (!processor->byteAvailable()) {
+	// 			processor->showCursor();
+	// 		}
+	// 	}
+	// }
+}
+
+void processLoop(void * parameter) {
+	debug_log("Loop ran on core %d, busy core is %d\n\r", xPortGetCoreID(), CoreUsage::busiestCore());
 	while (true) {
 		#ifdef VDP_USE_WDT
 			esp_task_wdt_reset();

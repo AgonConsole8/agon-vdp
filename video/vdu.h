@@ -195,6 +195,9 @@ void VDUStreamProcessor::vdu_print(char c, bool usePeek) {
 	// gather our string for printing
 	if (usePeek) {
 		for (;;) {
+			if (!byteAvailable()) {
+				break;
+			}
 			auto next = peekByte_t(FAST_COMMS_TIMEOUT);
 			if (next == 27) {
 				readByte_t();
