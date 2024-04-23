@@ -27,7 +27,7 @@ typedef struct tag_Pingo3dControl {
 
     bool validate() {
         return (m_tag == PINGO_3D_CONTROL_TAG &&
-                m_size == sizeof(Pingo3dControl));
+                m_size == sizeof(tag_Pingo3dControl));
     }
 
     void handle_subcommand(VDUStreamProcessor& processor, uint8_t subcmd) {

@@ -1745,18 +1745,19 @@ void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
             // Initialize the control structure
             auto buffer = bufferCreate(bufferId, sizeof(Pingo3dControl));
             if (buffer) {
-                auto ctrl = (Pingo3dControl*) buffer[0].getBuffer();
+                auto ctrl = (Pingo3dControl*) buffer->getBuffer();
                 ctrl->initialize();
             }
         } else {
             // Deinitialize the control structure
             // Delete the buffer
-            auto buffer = buffers.find(bufferId);
-            if (buffer != buffers.end()) {
-                auto ctrl = (Pingo3dControl*) buffer[0].getBuffer();
+            auto bufferIter = buffers.find(bufferId);
+            if (bufferIter != buffers.end()) {
+				auto &buffer = bufferIter->second;
+                auto ctrl = (Pingo3dControl*) buffer.begin()->get()->getBuffer();
                 if (ctrl->validate()) {
                     ctrl->deinitialize();
-                    buffers.erase(buffer);
+                    buffers.erase(bufferIter);
                 } else {
                     debug_log("bufferUsePingo3D: buffer %d is invalid\n\r", bufferId);
                 }
@@ -1765,9 +1766,10 @@ void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
             }            
         }
     } else {
-        auto buffer = buffers.find(bufferId);
-        if (buffer != buffers.end()) {
-            auto ctrl = (Pingo3dControl*) buffer[0].getBuffer();
+        auto bufferIter = buffers.find(bufferId);
+        if (bufferIter != buffers.end()) {
+			auto &buffer = bufferIter->second;
+			auto ctrl = (Pingo3dControl*) buffer.begin()->get()->getBuffer();
             if (ctrl->validate()) {
                 ctrl->handle_subcommand(*this, subcmd);
             } else {
