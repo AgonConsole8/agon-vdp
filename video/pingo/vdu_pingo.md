@@ -160,7 +160,8 @@ The "n" parameter is the number of indexes.
 This command defines a renderable object in terms of its already-defined mesh,
 plus a reference to an existing bitmap that provides its coloring, via the
 texture coordinates used by the mesh. The same mesh can be used multiple times,
-with the same or different bitmaps for coloring.
+with the same or different bitmaps for coloring. The bitmap must be in the
+RGBA8888 format (4 bytes per pixel).
 
 ## Set Object X Scale Factor
 <b>VDU 23, 0, &A0, sid; &48, 6, oid; scalex;</b> :  Set Object X Scale Factor

@@ -6,6 +6,7 @@
 #include <agon.h>
 #include <map>
 #include "esp_heap_caps.h"
+#include "sprites.h"
 
 namespace p3d {
 
@@ -29,6 +30,15 @@ namespace p3d {
 
 class VDUStreamProcessor;
 
+typedef struct tag_TexObject {
+    p3d::Texture    m_texture;
+    p3d::Material   m_material;
+    p3d::Object     m_object;
+    p3d::Vec3f      m_scale;
+    p3d::Vec3f      m_rotation;
+    p3d::Vec3f      m_translation;
+} TexObject;
+
 typedef struct tag_Pingo3dControl {
     uint32_t            m_tag;              // Used to verify the existence of this structure
     uint32_t            m_size;             // Used to verify the existence of this structure
@@ -38,8 +48,8 @@ typedef struct tag_Pingo3dControl {
     p3d::PingoDepth*    m_zeta;             // Zeta buffer for depth information
     uint16_t            m_width;            // Width of final render in pixels
     uint16_t            m_height;           // Height of final render in pixels
-    std::map<uint16_t, p3d::Mesh>*   m_meshes;     // Map of meshes for use by objects
-    std::map<uint16_t, p3d::Object>* m_objects;    // Map of objects that use meshes and have transforms
+    std::map<uint16_t, p3d::Mesh>* m_meshes;    // Map of meshes for use by objects
+    std::map<uint16_t, TexObject>* m_objects;   // Map of textured objects that use meshes and have transforms
 
     // VDU 23, 0, &A0, sid; &48, 0, 1 :  Initialize Control Structure
     void initialize(VDUStreamProcessor& processor, uint16_t width, uint16_t height) {
@@ -62,7 +72,7 @@ typedef struct tag_Pingo3dControl {
         m_backend.clientCustomData = (void*) this;
 
         m_meshes = new std::map<uint16_t, p3d::Mesh>;
-        m_objects = new std::map<uint16_t, p3d::Object>;
+        m_objects = new std::map<uint16_t, TexObject>;
     }
 
     static void static_init(p3d::Renderer* ren, p3d::BackEnd* backEnd, p3d::Vec4i _rect) {
@@ -119,7 +129,7 @@ typedef struct tag_Pingo3dControl {
         }
     }
 
-    p3d::Mesh* create_mesh(uint16_t mid) {
+    p3d::Mesh* establish_mesh(uint16_t mid) {
         auto mesh_iter = m_meshes->find(mid);
         if (mesh_iter == m_meshes->end()) {
             p3d::Mesh mesh;
@@ -134,7 +144,30 @@ typedef struct tag_Pingo3dControl {
     p3d::Mesh* get_mesh() {
         auto mid = m_proc->readWord_t();
         if (mid >= 0) {
-            return create_mesh(mid);
+            return establish_mesh(mid);
+        }
+        return NULL;
+    }
+
+    TexObject* establish_object(uint16_t mid) {
+        auto object_iter = m_objects->find(mid);
+        if (object_iter == m_objects->end()) {
+            TexObject object;
+            memset(&object, 0, sizeof(object));
+            object.m_object.material = &object.m_material;
+            object.m_material.texture = &object.m_texture;
+            object.m_scale = p3d::Vec3f { 1.0f, 1.0f, 1.0f };
+            (*m_objects).insert(std::pair<uint16_t, TexObject>(mid, object));
+            return &m_objects->find(mid)->second;
+        } else {
+            return &object_iter->second;
+        }
+    }
+
+    TexObject* get_object() {
+        auto mid = m_proc->readWord_t();
+        if (mid >= 0) {
+            return establish_object(mid);
         }
         return NULL;
     }
@@ -231,67 +264,151 @@ typedef struct tag_Pingo3dControl {
 
     // VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid; :  Create Object
     void create_object() {
+        auto object = get_object();
+        auto mesh = get_mesh();
+        auto bmid = m_proc->readWord_t();
+        if (object && mesh && bmid) {
+            auto stored_bitmap = getBitmap(bmid);
+            if (stored_bitmap) {
+                auto bitmap = stored_bitmap.get();
+                if (bitmap) {
+                    auto size = p3d::Vec2i{(p3d::I_TYPE)bitmap->width, (p3d::I_TYPE)bitmap->height};
+                    texture_init(&object->m_texture, size, (p3d::Pixel*) bitmap->data);
+                    object->m_object.mesh = mesh;
+                }
+            }
+        }
+    }
 
+    p3d::F_TYPE convert_scale_value(int32_t value) {
+        return 0;
+    }
+
+    p3d::F_TYPE convert_rotation_value(int32_t value) {
+        return 0;
+    }
+
+    p3d::F_TYPE convert_translation_value(int32_t value) {
+        return 0;
     }
 
     // VDU 23, 0, &A0, sid; &48, 6, oid; scalex; :  Set Object X Scale Factor
     void set_object_x_scale_factor() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_scale.x = convert_scale_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 7, oid; scaley; :  Set Object Y Scale Factor
     void set_object_y_scale_factor() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_scale.y = convert_scale_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 8, oid; scalez; :  Set Object Z Scale Factor
     void set_object_z_scale_factor() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_scale.y = convert_scale_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez :  Set Object XYZ Scale Factors
     void set_object_xyz_scale_factors() {
-
+        auto object = get_object();
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            object->m_scale.x = convert_scale_value(valuex);
+            object->m_scale.y = convert_scale_value(valuey);
+            object->m_scale.z = convert_scale_value(valuez);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 10, oid; anglex; :  Set Object X Rotation Angle
     void set_object_x_rotation_angle() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_rotation.x = convert_rotation_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 11, oid; angley; :  Set Object Y Rotation Angle
     void set_object_y_rotation_angle() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_rotation.y = convert_rotation_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 12, oid; anglez; :  Set Object Z Rotation Angle
     void set_object_z_rotation_angle() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_rotation.z = convert_rotation_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 13, oid; anglex; angley; anglez; :  Set Object XYZ Rotation Angles
     void set_object_xyz_rotation_angles() {
-
+        auto object = get_object();
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            object->m_rotation.x = convert_rotation_value(valuex);
+            object->m_rotation.y = convert_rotation_value(valuey);
+            object->m_rotation.z = convert_rotation_value(valuez);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 14, oid; distx; :  Set Object X Translation Distance
     void set_object_x_translation_distance() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_translation.x = convert_translation_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 15, oid; disty; :  Set Object Y Translation Distance
     void set_object_y_translation_distance() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_translation.y = convert_translation_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 16, oid; distz; :  Set Object Z Translation Distance
     void set_object_z_translation_distance() {
-
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_translation.z = convert_translation_value(value);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances
-    void set_object_xyz_translation_distances() {
-
+    void set_object_xyz_translation_distances() {        auto object = get_object();
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            object->m_translation.x = convert_translation_value(valuex);
+            object->m_translation.y = convert_translation_value(valuey);
+            object->m_translation.z = convert_translation_value(valuez);
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap
