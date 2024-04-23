@@ -144,20 +144,21 @@ typedef struct tag_Pingo3dControl {
         auto mesh = get_mesh();
         if (mesh->positions) {
             heap_caps_free(mesh->positions);
-            mesh->positions = 0;
+            mesh->positions = NULL;
         }
         auto n = (uint32_t) m_proc->readWord_t();
         if (n > 0) {
             mesh->positions = (p3d::Vec3f*) heap_caps_malloc(n*sizeof(p3d::Vec3f), MALLOC_CAP_SPIRAM);
-            auto position = mesh->positions;
+            auto pos = mesh->positions;
             for (uint32_t i = 0; i < n; i++) {
                 uint16_t x = m_proc->readWord_t();
                 uint16_t y = m_proc->readWord_t();
                 uint16_t z = m_proc->readWord_t();
-                if (position) {
-                    position->x = x;
-                    position->y = y;
-                    position->z = z;
+                if (pos) {
+                    pos->x = x;
+                    pos->y = y;
+                    pos->z = z;
+                    pos++;
                 }
             }
         }
@@ -165,17 +166,67 @@ typedef struct tag_Pingo3dControl {
 
     // VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indexes
     void set_mesh_vertex_indexes() {
-//            m_mesh_indexes = new std::map<uint16_t, uint16_t*>;
+        auto mesh = get_mesh();
+        if (mesh->pos_indices) {
+            heap_caps_free(mesh->pos_indices);
+            mesh->pos_indices = NULL;
+            mesh->indexes_count = 0;
+        }
+        auto n = (uint32_t) m_proc->readWord_t();
+        if (n > 0) {
+            mesh->indexes_count = n;
+            mesh->pos_indices = (uint16_t*) heap_caps_malloc(n*sizeof(uint16_t), MALLOC_CAP_SPIRAM);
+            auto idx = mesh->pos_indices;
+            for (uint32_t i = 0; i < n; i++) {
+                uint16_t index = m_proc->readWord_t();
+                if (idx) {
+                    *idx++ = index;
+                }
+            }
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
     void define_texture_coordinates() {
-//            m_tex_coords = new std::map<uint16_t, p3d::Vec2f*>;
+        auto mesh = get_mesh();
+        if (mesh->textCoord) {
+            heap_caps_free(mesh->textCoord);
+            mesh->textCoord = NULL;
+        }
+        auto n = (uint32_t) m_proc->readWord_t();
+        if (n > 0) {
+            mesh->textCoord = (p3d::Vec2f*) heap_caps_malloc(n*sizeof(p3d::Vec2f), MALLOC_CAP_SPIRAM);
+            auto coord = mesh->textCoord;
+            for (uint32_t i = 0; i < n; i++) {
+                uint16_t u = m_proc->readWord_t();
+                uint16_t v = m_proc->readWord_t();
+                if (coord) {
+                    coord->x = u;
+                    coord->y = v;
+                    coord++;
+                }
+            }
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indexes
     void set_texture_coordinate_indexes() {
-//            m_tex_indexes = new std::map<uint16_t, uint16_t*>;
+        auto mesh = get_mesh();
+        if (mesh->tex_indices) {
+            heap_caps_free(mesh->tex_indices);
+            mesh->tex_indices = NULL;
+        }
+        auto n = (uint32_t) m_proc->readWord_t();
+        if (n > 0) {
+            mesh->tex_indices = (uint16_t*) heap_caps_malloc(n*sizeof(uint16_t), MALLOC_CAP_SPIRAM);
+            auto idx = mesh->tex_indices;
+            for (uint32_t i = 0; i < n; i++) {
+                uint16_t index = m_proc->readWord_t();
+                if (idx && (i < mesh->indexes_count)) {
+                    *idx++ = index;
+                }
+            }
+        }
     }
 
     // VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid; :  Create Object
