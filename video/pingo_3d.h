@@ -188,9 +188,9 @@ typedef struct tag_Pingo3dControl {
                 uint16_t y = m_proc->readWord_t();
                 uint16_t z = m_proc->readWord_t();
                 if (pos) {
-                    pos->x = x;
-                    pos->y = y;
-                    pos->z = z;
+                    pos->x = convert_position_value(x);
+                    pos->y = convert_position_value(y);
+                    pos->z = convert_position_value(z);
                     pos++;
                 }
             }
@@ -234,8 +234,8 @@ typedef struct tag_Pingo3dControl {
                 uint16_t u = m_proc->readWord_t();
                 uint16_t v = m_proc->readWord_t();
                 if (coord) {
-                    coord->x = u;
-                    coord->y = v;
+                    coord->x = convert_texture_coordinate_value(u);
+                    coord->y = convert_texture_coordinate_value(v);
                     coord++;
                 }
             }
@@ -281,15 +281,32 @@ typedef struct tag_Pingo3dControl {
     }
 
     p3d::F_TYPE convert_scale_value(int32_t value) {
-        return 0;
+        return ((p3d::F_TYPE) value) / 256.0f;
     }
 
     p3d::F_TYPE convert_rotation_value(int32_t value) {
-        return 0;
+        if (value & 0x8000) {
+            value = (int32_t)(int16_t)(uint16_t) value;
+        }
+        return (((p3d::F_TYPE) value) * (2.0f * 3.1415926f)) / 32767.0f;
     }
 
     p3d::F_TYPE convert_translation_value(int32_t value) {
-        return 0;
+        if (value & 0x8000) {
+            value = (int32_t)(int16_t)(uint16_t) value;
+        }
+        return ((p3d::F_TYPE) value) / 256.0f;
+    }
+
+    p3d::F_TYPE convert_position_value(int32_t value) {
+        if (value & 0x8000) {
+            value = (int32_t)(int16_t)(uint16_t) value;
+        }
+        return ((p3d::F_TYPE) value) / 32767.0f;
+    }
+
+    p3d::F_TYPE convert_texture_coordinate_value(int32_t value) {
+        return ((p3d::F_TYPE) value) / 65535.0f;
     }
 
     // VDU 23, 0, &A0, sid; &48, 6, oid; scalex; :  Set Object X Scale Factor

@@ -25,7 +25,7 @@ The commands below use numbers with the following meaning and ranges:
 <br><br><b>x0, y0, z0</b>: A prescaled 3D X, Y, or Z coordinate in the range -32767 to +32767.
 This number is divided by 32767 to yield a floating point number in the range -1.0 to +1.0, for 3D computations.
 To prescale a set of coordinates for use in a VDU command, scale them all to fit within the range -1.0 to +1.0,
-then multiply the original floating point values by 32767.
+then multiply the new floating point values by 32767.
 ```
 F = FACTOR * 32767
 PX = X * F
@@ -34,17 +34,17 @@ PZ = Z * F
 VDU ... PX; PY; PZ; ...
 ```
 <br><br><b>i0</b>: A zero-based index into a list of coordinates (mesh or texture).
-<br><br><b>u0, v0</b>: A texture coordinate ranging from 0 to the width or height of the texture.
-This value is divided by the texture width or height to yield a floating point number, for 3D computations.
+<br><br><b>u0, v0</b>: A texture coordinate ranging from 0 to 65535.
+This value is divided by 65535 to yield a floating point number, for 3D computations.
 To prescale a set of coordinates for use in a VDU command, scale them all to fit within the range 0.0 to +1.0,
-then multiply the original floating point values by the texture width or height, as appropriate.
+then multiply the new floating point values by 65535, as appropriate.
 ```
-PU = U * FACTOR * TEXWIDTH
-PV = V * FACTOR * TEXHEIGHT
+PU = U * HORIZ_FACTOR * 65535
+PV = V * VERT_FACTOR * 65535
 VDU ... PU; PV; ...
 ```
 <br><br><b>scalex, scaley, scalez</b>: A prescaled 3D X, Y, or Z scale value in the range 0 to 65535.
-This number is divided by 256 to yield a floating point number in the approximate range 0.0 to 256.0, for 3D computations.
+This number is divided by 256 to yield a floating point number in the approximate range 0.0 to near 256.0, for 3D computations.
 To prescale a set of scale factors for use in a VDU command, multiply them by 256.
 ```
 F = 256
@@ -59,7 +59,7 @@ The resulting number is multiplied by 2PI, to yield an angle in radians.
 Thus, the passed value of -32767 means -2PI, and +32767 means +2PI.
 To prescale a set of angles in radians for use in a VDU command, divide the angles by 2PI, which will
 scale them all to fit within the range -1.0 to +1.0,
-then multiply the original floating point values by 32767.
+then multiply the new floating point values by 32767.
 ```
 F = 32767 / TWOPI
 PAX = AX * F
@@ -73,7 +73,7 @@ The resulting number is multiplied by 256.0.
 Thus, the passed value of -32767 means -256.0, and +32767 means +256.0.
 To prescale a set of distances for use in a VDU command, divide the distances by 256,
 scale them all to fit within the range -1.0 to +1.0,
-then multiply the original floating point values by 32767.
+then multiply the new floating point values by 32767.
 ```
 F = 256
 PDX = DX * F
