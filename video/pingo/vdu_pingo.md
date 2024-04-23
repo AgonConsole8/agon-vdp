@@ -133,7 +133,8 @@ vertices are often referenced multiple times within a mesh, because they are
 often part of multiple surface triangles. Each index value ranges from 0 to
 the number of defined mesh vertices.
 
-The "n" parameter is the number of indexes.
+The "n" parameter is the number of indexes, and must match the "n" in subcommand 4
+(Set Texture Coordinate Indexes).
 
 ## Define Texture Coordinates
 <b>VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates
@@ -152,7 +153,8 @@ but that is not required. The number of indexes passed in this command must matc
 the number of mesh indexes defining the mesh. Thus, each mesh vertex has texture
 coordinates associated with it.
 
-The "n" parameter is the number of indexes.
+The "n" parameter is the number of indexes, and must match the "n" in subcommand 2
+(Set Mesh Vertex Indexes).
 
 ## Define Object
 <b>VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid;</b> :  Create Object

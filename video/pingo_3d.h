@@ -37,6 +37,28 @@ typedef struct tag_TexObject {
     p3d::Vec3f      m_scale;
     p3d::Vec3f      m_rotation;
     p3d::Vec3f      m_translation;
+    bool            m_modified;
+
+    void compute_transformation_matrix() {
+        m_object.transform = p3d::mat4Scale(m_scale);
+        if (m_rotation.x) {
+            auto t = p3d::mat4RotateX(m_rotation.x);
+            m_object.transform = mat4MultiplyM(&m_object.transform, &t);
+        }
+        if (m_rotation.y) {
+            auto t = p3d::mat4RotateY(m_rotation.y);
+            m_object.transform = mat4MultiplyM(&m_object.transform, &t);
+        }
+        if (m_rotation.z) {
+            auto t = p3d::mat4RotateY(m_rotation.z);
+            m_object.transform = mat4MultiplyM(&m_object.transform, &t);
+        }
+        if (m_translation.x || m_translation.y || m_translation.z) {
+            auto t = p3d::mat4Translate(m_translation);
+            m_object.transform = mat4MultiplyM(&m_object.transform, &t);
+        }
+        m_modified = false;
+    }
 } TexObject;
 
 typedef struct tag_Pingo3dControl {
@@ -68,7 +90,7 @@ typedef struct tag_Pingo3dControl {
         m_backend.afterRender = &static_after_render;
         m_backend.getFrameBuffer = &static_get_frame_buffer;
         m_backend.getZetaBuffer = &static_get_zeta_buffer;
-        m_backend.drawPixel = 0;
+        m_backend.drawPixel = NULL;
         m_backend.clientCustomData = (void*) this;
 
         m_meshes = new std::map<uint16_t, p3d::Mesh>;
@@ -315,6 +337,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_scale.x = convert_scale_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -324,6 +347,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_scale.y = convert_scale_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -333,6 +357,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_scale.y = convert_scale_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -346,6 +371,7 @@ typedef struct tag_Pingo3dControl {
             object->m_scale.x = convert_scale_value(valuex);
             object->m_scale.y = convert_scale_value(valuey);
             object->m_scale.z = convert_scale_value(valuez);
+            object->m_modified = true;
         }
     }
 
@@ -355,6 +381,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_rotation.x = convert_rotation_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -364,6 +391,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_rotation.y = convert_rotation_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -373,6 +401,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_rotation.z = convert_rotation_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -386,6 +415,7 @@ typedef struct tag_Pingo3dControl {
             object->m_rotation.x = convert_rotation_value(valuex);
             object->m_rotation.y = convert_rotation_value(valuey);
             object->m_rotation.z = convert_rotation_value(valuez);
+            object->m_modified = true;
         }
     }
 
@@ -395,6 +425,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_translation.x = convert_translation_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -404,6 +435,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_translation.y = convert_translation_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -413,6 +445,7 @@ typedef struct tag_Pingo3dControl {
         auto value = m_proc->readWord_t();
         if (object && (value >= 0)) {
             object->m_translation.z = convert_translation_value(value);
+            object->m_modified = true;
         }
     }
 
@@ -425,12 +458,46 @@ typedef struct tag_Pingo3dControl {
             object->m_translation.x = convert_translation_value(valuex);
             object->m_translation.y = convert_translation_value(valuey);
             object->m_translation.z = convert_translation_value(valuez);
+            object->m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap
     void render_to_bitmap() {
+        auto size = p3d::Vec2i{(p3d::I_TYPE)m_width, (p3d::I_TYPE)m_height};
+        p3d::Renderer renderer;
+        rendererInit(&renderer, size, &m_backend );
+        rendererSetCamera(&renderer,(p3d::Vec4i){0,0,size.x,size.y});
 
+        p3d::Scene scene;
+        sceneInit(&scene);
+        p3d::rendererSetScene(&renderer, &scene);
+
+        for (auto object = m_objects->begin(); object != m_objects->end(); object++) {
+            if (object->second.m_modified) {
+                object->second.compute_transformation_matrix();
+            }
+            sceneAddRenderable(&scene, p3d::object_as_renderable(&object->second.m_object));
+        }
+
+        p3d::F_TYPE phi = 0;
+        p3d::Mat4 t;
+
+        // Set the projection matrix
+        renderer.camera_projection =
+            p3d::mat4Perspective( 1, 2500.0, (p3d::F_TYPE)size.x / (p3d::F_TYPE)size.y, 0.6);
+
+        // Set the view matrix (position and orientation of the "camera")
+        p3d::Mat4 view = p3d::mat4Translate((p3d::Vec3f) {0,2,-35});
+
+        p3d::Mat4 rotateDown = p3d::mat4RotateX(-0.40); // Rotate around origin/orbit
+        renderer.camera_view = mat4MultiplyM(&rotateDown, &view);
+
+        // Set the scene transformation matrix
+        scene.transform = p3d::mat4RotateY(phi);
+        phi += 0.01;
+
+        rendererRender(&renderer);
     }
 
 } Pingo3dControl;
