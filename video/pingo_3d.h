@@ -206,6 +206,7 @@ typedef struct tag_Pingo3dControl {
             mesh->positions = (p3d::Vec3f*) heap_caps_malloc(n*sizeof(p3d::Vec3f), MALLOC_CAP_SPIRAM);
             auto pos = mesh->positions;
             for (uint32_t i = 0; i < n; i++) {
+                if (!(i & 0x1F)) debug_log("%u ", i);
                 uint16_t x = m_proc->readWord_t();
                 uint16_t y = m_proc->readWord_t();
                 uint16_t z = m_proc->readWord_t();
