@@ -1716,7 +1716,7 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 
 // VDU 23, 0, &A0, bufferId; &48, subcommand - Configure/render using Pingo 3D
 //
-// VDU 23, 0, &A0, sid; &48, 0, init :  Initialize/Deinitialize Control Structure
+// VDU 23, 0, &A0, sid; &48, 0, w; h; :  Create Control Structure
 // VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
 // VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indices
 // VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
@@ -1735,36 +1735,44 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 // VDU 23, 0, &A0, sid; &48, 16, oid; distz; :  Set Object Z Translation Distance
 // VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances
 // VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap
+// VDU 23, 0, &A0, sid; &48, 19 :  Delete Control Structure
 //
 void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
     auto subcmd = readByte_t();
     if (subcmd == 0) {
-        auto init = readByte_t();
-        if (init) {
-            // Create the buffer if necessary
-            // Initialize the control structure
-            auto buffer = bufferCreate(bufferId, sizeof(Pingo3dControl));
-            if (buffer) {
-                auto ctrl = (Pingo3dControl*) buffer->getBuffer();
-                ctrl->initialize();
-            }
-        } else {
-            // Deinitialize the control structure
-            // Delete the buffer
-            auto bufferIter = buffers.find(bufferId);
-            if (bufferIter != buffers.end()) {
-				auto &buffer = bufferIter->second;
-                auto ctrl = (Pingo3dControl*) buffer.begin()->get()->getBuffer();
-                if (ctrl->validate()) {
-                    ctrl->deinitialize();
-                    buffers.erase(bufferIter);
-                } else {
-                    debug_log("bufferUsePingo3D: buffer %d is invalid\n\r", bufferId);
-                }
-            } else {
-                debug_log("bufferUsePingo3D: buffer %d not found\n\r", bufferId);
-            }            
-        }
+		// Create the buffer if necessary
+		// Initialize the control structure
+		auto w = readWord_t();
+		if (w > 0) {
+			auto h = readWord_t();
+			if (h > 0) {
+				auto buffer = bufferCreate(bufferId, sizeof(Pingo3dControl));
+				if (buffer) {
+					auto ctrl = (Pingo3dControl*) buffer->getBuffer();
+					ctrl->initialize((uint16_t)w, (uint16_t)h);
+				}
+			} else {
+				debug_log("bufferUsePingo3D: buffer %d missing height\n\r", bufferId);
+			}
+		} else {
+			debug_log("bufferUsePingo3D: buffer %d missing width\n\r", bufferId);
+		}
+	} else if (subcmd == 19) {
+		// Deinitialize the control structure
+		// Delete the buffer
+		auto bufferIter = buffers.find(bufferId);
+		if (bufferIter != buffers.end()) {
+			auto &buffer = bufferIter->second;
+			auto ctrl = (Pingo3dControl*) buffer.begin()->get()->getBuffer();
+			if (ctrl->validate()) {
+				ctrl->deinitialize();
+				buffers.erase(bufferIter);
+			} else {
+				debug_log("bufferUsePingo3D: buffer %d is invalid\n\r", bufferId);
+			}
+		} else {
+			debug_log("bufferUsePingo3D: buffer %d not found\n\r", bufferId);
+		}            
     } else {
         auto bufferIter = buffers.find(bufferId);
         if (bufferIter != buffers.end()) {

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <agon.h>
+#include "esp_heap_caps.h"
 
 namespace p3d {
 
@@ -31,12 +32,51 @@ typedef struct tag_Pingo3dControl {
     uint32_t            m_tag;      // Used to verify the existence of this structure
     uint32_t            m_size;     // Used to verify the existence of this structure
     VDUStreamProcessor* m_proc;     // Used by subcommands to obtain more data
+    p3d::BackEnd        m_backend;  // Used by the renderer
+    p3d::Pixel*         m_frame;    // Frame buffer for rendered pixels
+    p3d::PingoDepth*    m_zeta;     // Zeta buffer for depth information
+    uint16_t            m_width;    // Width of final render in pixels
+    uint16_t            m_height;   // Height of final render in pixels
 
     // VDU 23, 0, &A0, sid; &48, 0, 1 :  Initialize Control Structure
-    void initialize() {
+    void initialize(uint16_t width, uint16_t height) {
         memset(this, 0, sizeof(tag_Pingo3dControl));
         m_tag = PINGO_3D_CONTROL_TAG;
         m_size = sizeof(tag_Pingo3dControl);
+
+        auto frame_size = (uint32_t) width * (uint32_t) height;
+        m_frame = (p3d::Pixel*) heap_caps_malloc(sizeof(p3d::Pixel) * frame_size,
+            MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+        m_zeta = (p3d::PingoDepth*) heap_caps_malloc(sizeof(p3d::PingoDepth) * frame_size,
+            MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+
+        m_backend.init = &static_init;
+        m_backend.beforeRender = &static_before_render;
+        m_backend.afterRender = &static_after_render;
+        m_backend.getFrameBuffer = &static_get_frame_buffer;
+        m_backend.getZetaBuffer = &static_get_zeta_buffer;
+        m_backend.drawPixel = 0;
+        m_backend.clientCustomData = (void*) this;
+    }
+
+    static void static_init(p3d::Renderer* ren, p3d::BackEnd* backEnd, p3d::Vec4i _rect) {
+        //rect = _rect;
+    }
+
+    static void static_before_render(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
+    }
+
+    static void static_after_render(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
+    }
+
+    static p3d::Pixel* static_get_frame_buffer(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
+        auto p_this = (struct tag_Pingo3dControl*) backEnd->clientCustomData;
+        return p_this->m_frame;
+    }
+
+    static p3d::PingoDepth* static_get_zeta_buffer(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
+        auto p_this = (struct tag_Pingo3dControl*) backEnd->clientCustomData;
+        return p_this->m_zeta;
     }
 
     // VDU 23, 0, &A0, sid; &48, 0, 0 :  Deinitialize Control Structure

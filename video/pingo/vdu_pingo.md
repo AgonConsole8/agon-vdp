@@ -87,7 +87,7 @@ VDU ... PDX; PDY; PDZ; ...
 
 ## Overview of Commands
 
-<b>VDU 23, 0, &A0, sid; &48, 0, init</b> :  Initialize/Deinitialize Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &48, 0, w; h;</b> :  Create Control Structure<br>
 <b>VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices<br>
 <b>VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indices<br>
 <b>VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates<br>
@@ -106,17 +106,16 @@ VDU ... PDX; PDY; PDZ; ...
 <b>VDU 23, 0, &A0, sid; &48, 16, oid; distz;</b> :  Set Object Z Translation Distance<br>
 <b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz</b> :  Set Object XYZ Translation Distances<br>
 <b>VDU 23, 0, &A0, sid; &48, 18, bmid;</b> :  Render To Bitmap<br>
+<b>VDU 23, 0, &A0, sid; &48, 19</b> :  Delete Control Structure<br>
 
-## Initialize/Deinitialize Control Structure
-<b>VDU 23, 0, &A0, sid; &48, 0, init</b> :  Initialize/Deinitialize Control Structure<br>
+## Create Control Structure
+<b>VDU 23, 0, &A0, sid; &48, 0, w; h;</b> :  Create Control Structure<br>
 
-If <i>init</i> is nonzero, this command initializes a control structure used to
+This command initializes a control structure used to
 do 3D rendering. The structure is housed inside the designated buffer. The buffer
-is created, if it does not already exist.
+referred to by the scene ID (sid) is created, if it does not already exist.
 
-If <i>init</i> is zero, this command deinitializes an existing control structure,
-assuming that it exists in the designated buffer. The buffer is subsequently
-deleted, as part of processing for this command.
+The given width and height determine the size of the final rendered scene.
 
 ## Define Mesh Vertices
 <b>VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices
@@ -238,6 +237,15 @@ This command uses information provided by the above commands to render the 3D sc
 onto the bitmap belonging to the render primitive. This command must be used in
 order to perform the render operation; it does <i>not</i> happen automatically, when other
 commands change some of the render parameters.
+
+## Delete Control Structure
+<b>VDU 23, 0, &A0, sid; &48, 19</b> :  Delete Control Structure<br>
+
+This command deinitializes an existing control structure,
+assuming that it exists in the designated buffer. The buffer is subsequently
+deleted, as part of processing for this command.
+
+## Sample
 
 The following image illustrates the concept.
 
