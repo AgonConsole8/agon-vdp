@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <agon.h>
+#include <map>
 #include "esp_heap_caps.h"
 
 namespace p3d {
@@ -29,14 +30,20 @@ namespace p3d {
 class VDUStreamProcessor;
 
 typedef struct tag_Pingo3dControl {
-    uint32_t            m_tag;      // Used to verify the existence of this structure
-    uint32_t            m_size;     // Used to verify the existence of this structure
-    VDUStreamProcessor* m_proc;     // Used by subcommands to obtain more data
-    p3d::BackEnd        m_backend;  // Used by the renderer
-    p3d::Pixel*         m_frame;    // Frame buffer for rendered pixels
-    p3d::PingoDepth*    m_zeta;     // Zeta buffer for depth information
-    uint16_t            m_width;    // Width of final render in pixels
-    uint16_t            m_height;   // Height of final render in pixels
+    uint32_t            m_tag;              // Used to verify the existence of this structure
+    uint32_t            m_size;             // Used to verify the existence of this structure
+    VDUStreamProcessor* m_proc;             // Used by subcommands to obtain more data
+    p3d::BackEnd        m_backend;          // Used by the renderer
+    p3d::Pixel*         m_frame;            // Frame buffer for rendered pixels
+    p3d::PingoDepth*    m_zeta;             // Zeta buffer for depth information
+    uint16_t            m_width;            // Width of final render in pixels
+    uint16_t            m_height;           // Height of final render in pixels
+    std::map<uint16_t, p3d::Vec3f*> m_mesh_vertices;    // Map of arrays of mesh vertices
+    std::map<uint16_t, uint16_t*>   m_mesh_indexes;     // Map of arrays of mesh vertex indexes
+    std::map<uint16_t, p3d::Vec3f*> m_tex_coords;       // Map of arrays of texture coordinates
+    std::map<uint16_t, uint16_t*>   m_tex_indexes;      // Map of arrays of texture coordinate indexes
+    std::map<uint16_t, p3d::Mesh*>  m_meshes;           // Map of meshes for use by objects
+    std::map<uint16_t, p3d::Object*> m_objects;         // Map of objects that use meshes and have transforms
 
     // VDU 23, 0, &A0, sid; &48, 0, 1 :  Initialize Control Structure
     void initialize(uint16_t width, uint16_t height) {
