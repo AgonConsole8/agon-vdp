@@ -89,9 +89,9 @@ VDU ... PDX; PDY; PDZ; ...
 
 <b>VDU 23, 0, &A0, sid; &48, 0, w; h;</b> :  Create Control Structure<br>
 <b>VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices<br>
-<b>VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indices<br>
+<b>VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indexes<br>
 <b>VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates<br>
-<b>VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indices<br>
+<b>VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indexes<br>
 <b>VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid;</b> :  Create Object<br>
 <b>VDU 23, 0, &A0, sid; &48, 6, oid; scalex;</b> :  Set Object X Scale Factor<br>
 <b>VDU 23, 0, &A0, sid; &48, 7, oid; scaley;</b> :  Set Object Y Scale Factor<br>
@@ -125,15 +125,15 @@ a surface structure. The mesh may be referenced by multiple objects.
 
 The "n" parameter is the number of vertices, so the total number of coordinates specified equals n*3.
 
-## Set Mesh Vertex Indices
-<b>VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indices
+## Set Mesh Vertex Indexes
+<b>VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indexes
 
 This command lists the indexes of the vertices that define a 3D mesh. Individual
 vertices are often referenced multiple times within a mesh, because they are
 often part of multiple surface triangles. Each index value ranges from 0 to
 the number of defined mesh vertices.
 
-The "n" parameter is the number of indices.
+The "n" parameter is the number of indexes.
 
 ## Define Texture Coordinates
 <b>VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates
@@ -143,16 +143,16 @@ for a mesh.
 
 The "n" parameter is the number of coordinate pairs, so the total number of coordinates specified equals n*2.
 
-## Set Texture Coordinate Indices
-<b>VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indices
+## Set Texture Coordinate Indexes
+<b>VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indexes
 
 This command lists the indexes of the coordinates that define a 3D texture for a mesh.
 Individual coordinates may be referenced multiple times within a texture,
-but that is not required. The number of indices passed in this command must match
-the number of mesh indices defining the mesh. Thus, each mesh vertex has texture
+but that is not required. The number of indexes passed in this command must match
+the number of mesh indexes defining the mesh. Thus, each mesh vertex has texture
 coordinates associated with it.
 
-The "n" parameter is the number of indices.
+The "n" parameter is the number of indexes.
 
 ## Define Object
 <b>VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid;</b> :  Create Object

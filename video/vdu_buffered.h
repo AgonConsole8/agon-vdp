@@ -1718,9 +1718,9 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 //
 // VDU 23, 0, &A0, sid; &48, 0, w; h; :  Create Control Structure
 // VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
-// VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indices
+// VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indexes
 // VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
-// VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indices
+// VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indexes
 // VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid; :  Create Object
 // VDU 23, 0, &A0, sid; &48, 6, oid; scalex; :  Set Object X Scale Factor
 // VDU 23, 0, &A0, sid; &48, 7, oid; scaley; :  Set Object Y Scale Factor
@@ -1749,7 +1749,7 @@ void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
 				auto buffer = bufferCreate(bufferId, sizeof(Pingo3dControl));
 				if (buffer) {
 					auto ctrl = (Pingo3dControl*) buffer->getBuffer();
-					ctrl->initialize((uint16_t)w, (uint16_t)h);
+					ctrl->initialize(*this, (uint16_t)w, (uint16_t)h);
 				}
 			} else {
 				debug_log("bufferUsePingo3D: buffer %d missing height\n\r", bufferId);
@@ -1765,7 +1765,7 @@ void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
 			auto &buffer = bufferIter->second;
 			auto ctrl = (Pingo3dControl*) buffer.begin()->get()->getBuffer();
 			if (ctrl->validate()) {
-				ctrl->deinitialize();
+				ctrl->deinitialize(*this);
 				buffers.erase(bufferIter);
 			} else {
 				debug_log("bufferUsePingo3D: buffer %d is invalid\n\r", bufferId);

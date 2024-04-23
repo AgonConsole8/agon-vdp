@@ -25,7 +25,7 @@ namespace p3d {
 
 } // namespace p3d
 
-#define PINGO_3D_CONTROL_TAG    0x50334443 // "P3DC"
+#define PINGO_3D_CONTROL_TAG    0x43443350 // "P3DC"
 
 class VDUStreamProcessor;
 
@@ -38,15 +38,11 @@ typedef struct tag_Pingo3dControl {
     p3d::PingoDepth*    m_zeta;             // Zeta buffer for depth information
     uint16_t            m_width;            // Width of final render in pixels
     uint16_t            m_height;           // Height of final render in pixels
-    std::map<uint16_t, p3d::Vec3f*> m_mesh_vertices;    // Map of arrays of mesh vertices
-    std::map<uint16_t, uint16_t*>   m_mesh_indexes;     // Map of arrays of mesh vertex indexes
-    std::map<uint16_t, p3d::Vec3f*> m_tex_coords;       // Map of arrays of texture coordinates
-    std::map<uint16_t, uint16_t*>   m_tex_indexes;      // Map of arrays of texture coordinate indexes
-    std::map<uint16_t, p3d::Mesh*>  m_meshes;           // Map of meshes for use by objects
-    std::map<uint16_t, p3d::Object*> m_objects;         // Map of objects that use meshes and have transforms
+    std::map<uint16_t, p3d::Mesh>*   m_meshes;     // Map of meshes for use by objects
+    std::map<uint16_t, p3d::Object>* m_objects;    // Map of objects that use meshes and have transforms
 
     // VDU 23, 0, &A0, sid; &48, 0, 1 :  Initialize Control Structure
-    void initialize(uint16_t width, uint16_t height) {
+    void initialize(VDUStreamProcessor& processor, uint16_t width, uint16_t height) {
         memset(this, 0, sizeof(tag_Pingo3dControl));
         m_tag = PINGO_3D_CONTROL_TAG;
         m_size = sizeof(tag_Pingo3dControl);
@@ -64,6 +60,9 @@ typedef struct tag_Pingo3dControl {
         m_backend.getZetaBuffer = &static_get_zeta_buffer;
         m_backend.drawPixel = 0;
         m_backend.clientCustomData = (void*) this;
+
+        m_meshes = new std::map<uint16_t, p3d::Mesh>;
+        m_objects = new std::map<uint16_t, p3d::Object>;
     }
 
     static void static_init(p3d::Renderer* ren, p3d::BackEnd* backEnd, p3d::Vec4i _rect) {
@@ -87,7 +86,7 @@ typedef struct tag_Pingo3dControl {
     }
 
     // VDU 23, 0, &A0, sid; &48, 0, 0 :  Deinitialize Control Structure
-    void deinitialize() {
+    void deinitialize(VDUStreamProcessor& processor) {
     }
 
     bool validate() {
@@ -100,9 +99,9 @@ typedef struct tag_Pingo3dControl {
         m_proc = &processor;
         switch (subcmd) {
             case 1: define_mesh_vertices(); break;
-            case 2: set_mesh_vertex_indices(); break;
+            case 2: set_mesh_vertex_indexes(); break;
             case 3: define_texture_coordinates(); break;
-            case 4: set_texture_coordinate_indices(); break;
+            case 4: set_texture_coordinate_indexes(); break;
             case 5: create_object(); break;
             case 6: set_object_x_scale_factor(); break;
             case 7: set_object_y_scale_factor(); break;
@@ -120,24 +119,63 @@ typedef struct tag_Pingo3dControl {
         }
     }
 
-    // VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
-    void define_mesh_vertices() {
-
+    p3d::Mesh* create_mesh(uint16_t mid) {
+        auto mesh_iter = m_meshes->find(mid);
+        if (mesh_iter == m_meshes->end()) {
+            p3d::Mesh mesh;
+            memset(&mesh, 0, sizeof(mesh));
+            (*m_meshes).insert(std::pair<uint16_t, p3d::Mesh>(mid, mesh));
+            return &m_meshes->find(mid)->second;
+        } else {
+            return &mesh_iter->second;
+        }
     }
 
-    // VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indices
-    void set_mesh_vertex_indices() {
+    p3d::Mesh* get_mesh() {
+        auto mid = m_proc->readWord_t();
+        if (mid >= 0) {
+            return create_mesh(mid);
+        }
+        return NULL;
+    }
 
+    // VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
+    void define_mesh_vertices() {
+        auto mesh = get_mesh();
+        if (mesh->positions) {
+            heap_caps_free(mesh->positions);
+            mesh->positions = 0;
+        }
+        auto n = (uint32_t) m_proc->readWord_t();
+        if (n > 0) {
+            mesh->positions = (p3d::Vec3f*) heap_caps_malloc(n*sizeof(p3d::Vec3f), MALLOC_CAP_SPIRAM);
+            auto position = mesh->positions;
+            for (uint32_t i = 0; i < n; i++) {
+                uint16_t x = m_proc->readWord_t();
+                uint16_t y = m_proc->readWord_t();
+                uint16_t z = m_proc->readWord_t();
+                if (position) {
+                    position->x = x;
+                    position->y = y;
+                    position->z = z;
+                }
+            }
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indexes
+    void set_mesh_vertex_indexes() {
+//            m_mesh_indexes = new std::map<uint16_t, uint16_t*>;
     }
 
     // VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
     void define_texture_coordinates() {
-
+//            m_tex_coords = new std::map<uint16_t, p3d::Vec2f*>;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indices
-    void set_texture_coordinate_indices() {
-
+    // VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indexes
+    void set_texture_coordinate_indexes() {
+//            m_tex_indexes = new std::map<uint16_t, uint16_t*>;
     }
 
     // VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid; :  Create Object
