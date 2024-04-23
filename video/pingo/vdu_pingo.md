@@ -234,7 +234,7 @@ belonging to the render primitive.
 <b>VDU 23, 0, &A0, sid; &48, 18, bmid;</b> :  Render To Bitmap
 
 This command uses information provided by the above commands to render the 3D scene
-onto the bitmap belonging to the render primitive. This command must be used in
+onto the specified bitmap. This command must be used in
 order to perform the render operation; it does <i>not</i> happen automatically, when other
 commands change some of the render parameters.
 
