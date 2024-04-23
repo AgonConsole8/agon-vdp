@@ -11,7 +11,7 @@
 
 #define MAX_SCENE_RENDERABLES 32
 
-typedef struct Scene {
+typedef struct tag_Scene {
     uint8_t numberOfRenderables;
     Renderable renderables[MAX_SCENE_RENDERABLES];
     Mat4 transform;

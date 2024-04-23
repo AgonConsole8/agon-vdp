@@ -5,6 +5,24 @@
 #include <string.h>
 #include <agon.h>
 
+namespace p3d {
+
+    extern "C" {
+
+        #include "pingo/assets/teapot.h"
+
+        #include "pingo/render/mesh.h"
+        #include "pingo/render/object.h"
+        #include "pingo/render/pixel.h"
+        #include "pingo/render/renderer.h"
+        #include "pingo/render/scene.h"
+        #include "pingo/render/backend.h"
+        #include "pingo/render/depth.h"
+
+    } // extern "C"
+
+} // namespace p3d
+
 #define PINGO_3D_CONTROL_TAG    0x50334443 // "P3DC"
 
 class VDUStreamProcessor;

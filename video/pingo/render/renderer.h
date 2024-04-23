@@ -5,7 +5,7 @@
 #include "pixel.h"
 #include "../math/vec4.h"
 
-typedef struct Scene Scene;
+typedef struct tag_Scene Scene;
 typedef struct BackEnd BackEnd;
 
 typedef struct Renderer{
