@@ -8,7 +8,7 @@
 
 //Formats definitions:
 #ifdef UINT8
-typedef struct Pixel {
+typedef struct tag_Pixel {
     uint8_t g;
 }Pixel;
 #define PIXELBLACK (Pixel){0}
@@ -16,7 +16,7 @@ typedef struct Pixel {
 #endif
 
 #ifdef RGB565
-typedef struct Pixel {
+typedef struct tag_Pixel {
     uint8_t red:5;
     uint8_t green:6;
     uint8_t blue:5;
@@ -26,7 +26,7 @@ typedef struct Pixel {
 #endif
 
 #ifdef RGB888
-typedef struct Pixel {
+typedef struct tag_Pixel {
     uint8_t r;
     uint8_t g;
     uint8_t b;
@@ -37,7 +37,7 @@ typedef struct Pixel {
 #endif
 
 #ifdef RGBA8888
-typedef struct Pixel {
+typedef struct tag_Pixel {
     uint8_t r;
     uint8_t g;
     uint8_t b;
@@ -49,7 +49,7 @@ typedef struct Pixel {
 #endif
 
 #ifdef BGRA8888
-typedef struct Pixel {
+typedef struct tag_Pixel {
     uint8_t b;
     uint8_t g;
     uint8_t r;

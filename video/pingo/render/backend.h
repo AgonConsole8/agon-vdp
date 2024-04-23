@@ -8,7 +8,7 @@
   */
 
 typedef struct Renderer Renderer;
-typedef struct Pixel Pixel;
+typedef struct tag_Pixel Pixel;
 typedef struct PingoDepth PingoDepth;
 typedef struct Texture Texture;
 
