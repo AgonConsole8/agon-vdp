@@ -266,7 +266,7 @@ class Context {
 		bool plot(int16_t x, int16_t y, uint8_t command);
 		void plotPending(int16_t peeked);
 
-		void plotString(const std::string s);
+		void plotString(const std::string & s);
 		void plotBackspace();
 		void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet);
 		void drawCursor(Point p);
