@@ -96,7 +96,7 @@ VDU ... PDX; PDY; PDZ; ...
 <b>VDU 23, 0, &A0, sid; &48, 6, oid; scalex;</b> :  Set Object X Scale Factor<br>
 <b>VDU 23, 0, &A0, sid; &48, 7, oid; scaley;</b> :  Set Object Y Scale Factor<br>
 <b>VDU 23, 0, &A0, sid; &48, 8, oid; scalez;</b> :  Set Object Z Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez</b> :  Set Object XYZ Scale Factors<br>
+<b>VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez;</b> :  Set Object XYZ Scale Factors<br>
 <b>VDU 23, 0, &A0, sid; &48, 10, oid; anglex;</b> :  Set Object X Rotation Angle<br>
 <b>VDU 23, 0, &A0, sid; &48, 11, oid; angley;</b> :  Set Object Y Rotation Angle<br>
 <b>VDU 23, 0, &A0, sid; &48, 12, oid; anglez;</b> :  Set Object Z Rotation Angle<br>
@@ -104,7 +104,7 @@ VDU ... PDX; PDY; PDZ; ...
 <b>VDU 23, 0, &A0, sid; &48, 14, oid; distx;</b> :  Set Object X Translation Distance<br>
 <b>VDU 23, 0, &A0, sid; &48, 15, oid; disty;</b> :  Set Object Y Translation Distance<br>
 <b>VDU 23, 0, &A0, sid; &48, 16, oid; distz;</b> :  Set Object Z Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz</b> :  Set Object XYZ Translation Distances<br>
+<b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances<br>
 <b>VDU 23, 0, &A0, sid; &48, 18, bmid;</b> :  Render To Bitmap<br>
 <b>VDU 23, 0, &A0, sid; &48, 19</b> :  Delete Control Structure<br>
 
@@ -181,7 +181,7 @@ This command sets the Y scale factor for an object.
 This command sets the Z scale factor for an object.
 
 ## Set Object XYZ Scale Factors
-<b>VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez</b> :  Set Object XYZ Scale Factors
+<b>VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez;</b> :  Set Object XYZ Scale Factors
 
 This command sets the X, Y, and Z scale factors for an object.
 
@@ -227,7 +227,7 @@ Note that 3D translation of an object is independent of 2D translation of the bi
 belonging to the render primitive.
 
 ## Set Object XYZ Translation Distances
-<b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz</b> :  Set Object XYZ Translation Distances
+<b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances
 
 This command sets the X, Y, and Z translation distances for an object.
 Note that 3D translation of an object is independent of 2D translation of the bitmap

@@ -627,7 +627,7 @@
 6236 PRINT "Factor = ";factor
 6240 sid%=100: mid%=1: oid%=1: bmid1%=101: bmid2%=102
 6245 PRINT "Creating control structure"
-6250 VDU 23,0, &A0, sid%; &48,0, 150; 150; : REM Create Control Structure
+6250 VDU 23,0, &A0, sid%; &48,0, 256; 256; : REM Create Control Structure
 6255 PRINT "Sending vertices using factor ";factor
 6260 VDU 23,0, &A0, sid%; &48, 1, mid%; teapot_vertices%; : REM Define Mesh Vertices
 6270 FOR i%=0 TO total_coords%-1
@@ -654,12 +654,15 @@
 6376 PRINT "Creating texture bitmap"
 6380 VDU 23, 27, 0, bmid1%: REM Create a bitmap for a texture
 6382 PRINT "Setting texture pixel"
-6390 VDU 23, 27, 1, 1; 1; &55, &A0, &FF, &C0 : REM Set a pixel in the bitmap
+6390 VDU 23, 27, 1, 1; 1; &55, &AA, &FF, &C0 : REM Set a pixel in the bitmap
 6405 PRINT "Create 3D object"
-6410 VDU 23,0, &A0, sid%; &48, 5, oid%; mid%; bmid1%+64000; : REM Create Object
+6407 VDU 23,0, &A0, sid%; &48, 5, oid%; mid%; bmid1%+64000; : REM Create Object
+6409 PRINT "Scale object"
+6410 scale=6.0*256.0
+6411 VDU 23, 0, &A0, sid%; &48, 9, oid%; scale; scale; scale; : REM Set Object XYZ Scale Factors
 6412 PRINT "Create target bitmap"
 6413 VDU 23, 27, 0, bmid2% : REM Select output bitmap
-6414 VDU 23, 27, 2, 150; 150; &0000; &00C0; : REM Create solid color bitmap
+6414 VDU 23, 27, 2, 256; 256; &0000; &00C0; : REM Create solid color bitmap
 6415 PRINT "Render 3D object"
 6420 VDU 23, 0, &A0, sid%; &48, 18, bmid2%+64000; : REM Render To Bitmap
-6510 VDU 23, 27, 3, 300; 300; : REM Display output bitmap
+6510 VDU 23, 27, 3, 100; 100; : REM Display output bitmap

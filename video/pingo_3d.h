@@ -31,15 +31,18 @@ namespace p3d {
 class VDUStreamProcessor;
 
 typedef struct tag_TexObject {
+    p3d::Object     m_object;
     p3d::Texture    m_texture;
     p3d::Material   m_material;
-    p3d::Object     m_object;
     p3d::Vec3f      m_scale;
     p3d::Vec3f      m_rotation;
     p3d::Vec3f      m_translation;
+    uint16_t        m_oid;
     bool            m_modified;
 
     void compute_transformation_matrix() {
+        m_object.material = &m_material;
+        m_material.texture = &m_texture;
         m_object.transform = p3d::mat4Scale(m_scale);
         if (m_rotation.x) {
             auto t = p3d::mat4RotateX(m_rotation.x);
@@ -59,7 +62,38 @@ typedef struct tag_TexObject {
         }
         m_modified = false;
     }
+
+    void dump() {
+        debug_log("TObject: %p %u\n", this, m_oid);
+        debug_log("Object: %p %p %p %p\n", &m_object, m_object.material, m_object.mesh,
+                    m_object.transform.elements);
+        for (int i = 0; i < 16; i++) {
+            debug_log("        [%i] %f\n", i, m_object.transform.elements[i]);
+        }
+        debug_log("Scale: %f %f %f\n", m_scale.x, m_scale.y, m_scale.z);
+        debug_log("Rotation: %f %f %f\n", m_rotation.x, m_rotation.y, m_rotation.z);
+        debug_log("Translation: %f %f %f\n", m_translation.x, m_translation.y, m_translation.z);
+        debug_log("Texture: %p %u %u %p\n", &m_texture, m_texture.size.x, m_texture.size.y, m_texture.frameBuffer);
+        debug_log("Material: %p %p %u %u %p\n", &m_material, m_material.texture, m_material.texture->size.x,
+                    m_material.texture->size.y, m_material.texture->frameBuffer);
+    }
 } TexObject;
+
+typedef struct tag_Pingo3dControl;
+
+extern "C" {
+
+    void static_init(p3d::Renderer* ren, p3d::BackEnd* backEnd, p3d::Vec4i _rect);
+
+    void static_before_render(p3d::Renderer* ren, p3d::BackEnd* backEnd);
+
+    void static_after_render(p3d::Renderer* ren, p3d::BackEnd* backEnd);
+
+    p3d::Pixel* static_get_frame_buffer(p3d::Renderer* ren, p3d::BackEnd* backEnd);
+
+    p3d::PingoDepth* static_get_zeta_buffer(p3d::Renderer* ren, p3d::BackEnd* backEnd);
+
+} // extern "C"
 
 typedef struct tag_Pingo3dControl {
     uint32_t            m_tag;              // Used to verify the existence of this structure
@@ -112,26 +146,6 @@ typedef struct tag_Pingo3dControl {
 
         m_meshes = new std::map<uint16_t, p3d::Mesh>;
         m_objects = new std::map<uint16_t, TexObject>;
-    }
-
-    static void static_init(p3d::Renderer* ren, p3d::BackEnd* backEnd, p3d::Vec4i _rect) {
-        //rect = _rect;
-    }
-
-    static void static_before_render(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
-    }
-
-    static void static_after_render(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
-    }
-
-    static p3d::Pixel* static_get_frame_buffer(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
-        auto p_this = (struct tag_Pingo3dControl*) backEnd->clientCustomData;
-        return p_this->m_frame;
-    }
-
-    static p3d::PingoDepth* static_get_zeta_buffer(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
-        auto p_this = (struct tag_Pingo3dControl*) backEnd->clientCustomData;
-        return p_this->m_zeta;
     }
 
     // VDU 23, 0, &A0, sid; &48, 0, 0 :  Deinitialize Control Structure
@@ -188,25 +202,27 @@ typedef struct tag_Pingo3dControl {
         return NULL;
     }
 
-    TexObject* establish_object(uint16_t mid) {
-        auto object_iter = m_objects->find(mid);
+    TexObject* establish_object(uint16_t oid) {
+        auto object_iter = m_objects->find(oid);
         if (object_iter == m_objects->end()) {
             TexObject object;
             memset(&object, 0, sizeof(object));
+            object.m_oid = oid;
             object.m_object.material = &object.m_material;
             object.m_material.texture = &object.m_texture;
             object.m_scale = p3d::Vec3f { 1.0f, 1.0f, 1.0f };
-            (*m_objects).insert(std::pair<uint16_t, TexObject>(mid, object));
-            return &m_objects->find(mid)->second;
+            object.m_modified = true;
+            (*m_objects).insert(std::pair<uint16_t, TexObject>(oid, object));
+            return &m_objects->find(oid)->second;
         } else {
             return &object_iter->second;
         }
     }
 
     TexObject* get_object() {
-        auto mid = m_proc->readWord_t();
-        if (mid >= 0) {
-            return establish_object(mid);
+        auto oid = m_proc->readWord_t();
+        if (oid >= 0) {
+            return establish_object(oid);
         }
         return NULL;
     }
@@ -336,13 +352,16 @@ typedef struct tag_Pingo3dControl {
         auto mesh = get_mesh();
         auto bmid = m_proc->readWord_t();
         if (object && mesh && bmid) {
+            debug_log("Creating 3D object %u with bitmap %u\n", object->m_oid, bmid);
             auto stored_bitmap = getBitmap(bmid);
             if (stored_bitmap) {
                 auto bitmap = stored_bitmap.get();
                 if (bitmap) {
                     auto size = p3d::Vec2i{(p3d::I_TYPE)bitmap->width, (p3d::I_TYPE)bitmap->height};
-                    texture_init(&object->m_texture, size, (p3d::Pixel*) bitmap->data);
+                    auto pix = (p3d::Pixel*) bitmap->data;
+                    texture_init(&object->m_texture, size, pix);
                     object->m_object.mesh = mesh;
+                    debug_log("Texture data:  %02hX %02hX %02hX %02hX\n", pix->r, pix->g, pix->b, pix->a);
                 }
             }
         }
@@ -546,6 +565,7 @@ typedef struct tag_Pingo3dControl {
         for (auto object = m_objects->begin(); object != m_objects->end(); object++) {
             if (object->second.m_modified) {
                 object->second.compute_transformation_matrix();
+                object->second.dump();
             }
             sceneAddRenderable(&scene, p3d::object_as_renderable(&object->second.m_object));
         }
@@ -558,7 +578,7 @@ typedef struct tag_Pingo3dControl {
             p3d::mat4Perspective( 1, 2500.0, (p3d::F_TYPE)size.x / (p3d::F_TYPE)size.y, 0.6);
 
         // Set the view matrix (position and orientation of the "camera")
-        p3d::Mat4 view = p3d::mat4Translate((p3d::Vec3f) {0,2,-35});
+        p3d::Mat4 view = p3d::mat4Translate((p3d::Vec3f) {0, 2, -60.0});
 
         p3d::Mat4 rotateDown = p3d::mat4RotateX(-0.40); // Rotate around origin/orbit
         renderer.camera_view = mat4MultiplyM(&rotateDown, &view);
@@ -582,5 +602,35 @@ typedef struct tag_Pingo3dControl {
     }
 
 } Pingo3dControl;
+
+extern "C" {
+
+    void static_init(p3d::Renderer* ren, p3d::BackEnd* backEnd, p3d::Vec4i _rect) {
+        //rect = _rect;
+    }
+
+    void static_before_render(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
+    }
+
+    void static_after_render(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
+    }
+
+    p3d::Pixel* static_get_frame_buffer(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
+        auto p_this = (struct tag_Pingo3dControl*) backEnd->clientCustomData;
+        return p_this->m_frame;
+    }
+
+    p3d::PingoDepth* static_get_zeta_buffer(p3d::Renderer* ren, p3d::BackEnd* backEnd) {
+        auto p_this = (struct tag_Pingo3dControl*) backEnd->clientCustomData;
+        return p_this->m_zeta;
+    }
+
+#if DEBUG
+    void show_pixel(float x, float y, uint8_t a, uint8_t b, uint8_t g, uint8_t r) {
+        debug_log("%f %f %02hX %02hX %02hX %02hX\n", x, y, a, b, g, r);
+    }
+#endif
+
+} // extern "C"
 
 #endif // PINGO_3D_H

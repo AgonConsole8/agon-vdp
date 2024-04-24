@@ -10,7 +10,9 @@
 #include "object.h"
 /*#include "../backend/ttgobackend.h"*/
 
-extern void show_pixel(uint8_t a, uint8_t b, uint8_t g, uint8_t r);
+#if DEBUG
+extern void show_pixel(float x, float y, uint8_t a, uint8_t b, uint8_t g, uint8_t r);
+#endif
 
 int renderFrame(Renderer * r, Renderable ren) {
     Texture * f = ren.impl;
@@ -229,7 +231,9 @@ int renderObject(Mat4 object_transform, Renderer * r, Renderable ren) {
                     float textCoordy = -(w0 * tca.y + w1 * tcb.y + w2 * tcc.y)* areaInverse * depth;
 
                     Pixel text = texture_readF(o->material->texture, (Vec2f){textCoordx,textCoordy});
-                    //show_pixel(text.a, text.b, text.g, text.r);
+#if DEBUG
+                    //show_pixel(textCoordx, textCoordy, text.a, text.b, text.g, text.r);
+#endif
 
                     backendDrawPixel(r, &r->frameBuffer, (Vec2i){x,y}, text, diffuseLight);
                 } else {
