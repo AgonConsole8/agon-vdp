@@ -578,7 +578,7 @@ typedef struct tag_Pingo3dControl {
             p3d::mat4Perspective( 1, 2500.0, (p3d::F_TYPE)size.x / (p3d::F_TYPE)size.y, 0.6);
 
         // Set the view matrix (position and orientation of the "camera")
-        p3d::Mat4 view = p3d::mat4Translate((p3d::Vec3f) {0, 2, -60.0});
+        p3d::Mat4 view = p3d::mat4Translate((p3d::Vec3f) {0, 2, -20.0});
 
         p3d::Mat4 rotateDown = p3d::mat4RotateX(-0.40); // Rotate around origin/orbit
         renderer.camera_view = mat4MultiplyM(&rotateDown, &view);
