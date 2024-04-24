@@ -39,7 +39,7 @@ typedef struct {
 
 
 typedef void (*WriteCompressedByte)(void*, uint8_t);
-typedef void (*WriteDecompressedByte)(void*, uint8_t);
+typedef bool (*WriteDecompressedByte)(void*, uint8_t);
 
 typedef struct {
     void*               context;
@@ -65,6 +65,7 @@ typedef struct {
     uint32_t            window_write_index;
     uint32_t            input_count;
     uint32_t            output_count;
+    uint32_t            orig_size;
     uint8_t             window_data[COMPRESSION_WINDOW_SIZE];
     uint8_t             temp_buffer[TEMP_BUFFER_SIZE];
     uint16_t            code;
@@ -117,24 +118,15 @@ static void local_write_compressed_byte(void* p_cd, uint8_t comp_byte) {
 
 // Write decompressed output to a temporary buffer
 //
-static void local_write_decompressed_byte(void* p_dd, uint8_t orig_data) {
+static bool local_write_decompressed_byte(void* p_dd, uint8_t orig_data) {
 	DecompressionData* dd = (DecompressionData*) p_dd;
     uint8_t** pp_temp = (uint8_t**) dd->context;
 	uint8_t* p_temp = *pp_temp;
+    if (dd->output_count >= dd->orig_size) {
+        return false;
+    }
 	p_temp[dd->output_count++] = orig_data;
-	if (!(dd->output_count & (COMPRESSION_OUTPUT_CHUNK_SIZE-1))) {
-		// extend the temporary buffer to make room for more output
-		auto new_size = dd->output_count + COMPRESSION_OUTPUT_CHUNK_SIZE;
-		uint8_t* p_temp2 = (uint8_t*) ps_malloc(new_size);
-		if (p_temp2) {
-			memcpy(p_temp2, p_temp, dd->output_count);
-			*pp_temp = p_temp2; // use new buffer pointer now
-		} else {
-			debug_log("bufferDecompress: cannot allocate temporary buffer of %d bytes\n\r", new_size);
-			*pp_temp = NULL; // indicate failure
-		}
-		heap_caps_free(p_temp);
-	}
+    return true;
 }
 
 void agon_compress_byte(CompressionData* cd, uint8_t orig_byte) {
@@ -252,10 +244,11 @@ void agon_finish_compression(CompressionData* cd) {
     }
 }
 
-void agon_init_decompression(DecompressionData* dd, void* context, WriteDecompressedByte write_fcn) {
+void agon_init_decompression(DecompressionData* dd, void* context, WriteDecompressedByte write_fcn, uint32_t orig_size) {
     memset(dd, 0, sizeof(DecompressionData));
     dd->context = context;
     dd->write_fcn = write_fcn;
+    dd->orig_size = orig_size;
 }
 
 void agon_decompress_byte(DecompressionData* dd, uint8_t comp_byte) {
@@ -302,7 +295,11 @@ void agon_decompress_byte(DecompressionData* dd, uint8_t comp_byte) {
                 uint8_t out_byte = dd->window_data[wi++];
                 wi &= (COMPRESSION_WINDOW_SIZE - 1);
                 string_data[si] = out_byte;
-                (*(dd->write_fcn))(dd, out_byte);
+                if (!(*(dd->write_fcn))(dd, out_byte)) {
+                    // decompression has overflowed the output buffer
+                    debug_log("Decompression overflow\n\r");
+                    return;
+                };
             }
         }
     }
