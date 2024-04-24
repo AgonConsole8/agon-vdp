@@ -665,5 +665,15 @@
 6413 VDU 23, 27, 0, bmid2% : REM Select output bitmap
 6414 VDU 23, 27, 2, scene_width%; scene_height%; &0000; &00C0; : REM Create solid color bitmap
 6415 PRINT "Render 3D object"
+6417 rotatex=0.0: rotatey=0.0: rotatez=0.0
+6418 incx=PI/16.0: incy=PI/32.0: incz=PI/64.0: pi2=PI*2.0
+6419 factor=32767.0/pi2
 6420 VDU 23, 0, &A0, sid%; &48, 18, bmid2%+64000; : REM Render To Bitmap
 6510 VDU 23, 27, 3, 100; 100; : REM Display output bitmap
+6512 *FX 19
+6520 rotatex=rotatex+incx: IF rotatex>=pi2 THEN rotatex=rotatex-pi2
+6530 rotatey=rotatey+incy: IF rotatey>=pi2 THEN rotatey=rotatey-pi2
+6540 rotatez=rotatez+incz: IF rotatez>=pi2 THEN rotatez=rotatez-pi2
+6550 rx=rotatex*factor: ry=rotatey*factor: rz=rotatez*factor
+6560 VDU 23, 0, &A0, sid%; &48, 13, oid%; rx; ry; rz; : REM Set Object XYZ Rotation Angles
+6570 GOTO 6420
