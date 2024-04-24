@@ -73,6 +73,10 @@ typedef struct tag_Pingo3dControl {
     std::map<uint16_t, p3d::Mesh>* m_meshes;    // Map of meshes for use by objects
     std::map<uint16_t, TexObject>* m_objects;   // Map of textured objects that use meshes and have transforms
 
+    void show_free_ram() {
+        debug_log("Free PSRAM: %u\n", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    }
+
     // VDU 23, 0, &A0, sid; &48, 0, 1 :  Initialize Control Structure
     void initialize(VDUStreamProcessor& processor, uint16_t width, uint16_t height) {
         memset(this, 0, sizeof(tag_Pingo3dControl));
@@ -80,10 +84,20 @@ typedef struct tag_Pingo3dControl {
         m_size = sizeof(tag_Pingo3dControl);
 
         auto frame_size = (uint32_t) width * (uint32_t) height;
-        m_frame = (p3d::Pixel*) heap_caps_malloc(sizeof(p3d::Pixel) * frame_size,
-            MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
-        m_zeta = (p3d::PingoDepth*) heap_caps_malloc(sizeof(p3d::PingoDepth) * frame_size,
-            MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+
+        auto size = sizeof(p3d::Pixel) * frame_size;
+        m_frame = (p3d::Pixel*) heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+        if (!m_frame) {
+            debug_log("initialize: failed to allocate %u bytes for frame\n", size);
+            show_free_ram();
+        }
+
+        size = sizeof(p3d::PingoDepth) * frame_size;
+        m_zeta = (p3d::PingoDepth*) heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+        if (!m_zeta) {
+            debug_log("initialize: failed to allocate %u bytes for zeta\n", size);
+            show_free_ram();
+        }
 
         m_backend.init = &static_init;
         m_backend.beforeRender = &static_before_render;
@@ -203,10 +217,15 @@ typedef struct tag_Pingo3dControl {
         }
         auto n = (uint32_t) m_proc->readWord_t();
         if (n > 0) {
-            mesh->positions = (p3d::Vec3f*) heap_caps_malloc(n*sizeof(p3d::Vec3f), MALLOC_CAP_SPIRAM);
+            auto size = n*sizeof(p3d::Vec3f);
+            mesh->positions = (p3d::Vec3f*) heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
             auto pos = mesh->positions;
+            if (!pos) {
+                debug_log("define_mesh_vertices: failed to allocate %u bytes\n", size);
+                show_free_ram();
+            }
+            debug_log("Reading %u vertices\n", n);
             for (uint32_t i = 0; i < n; i++) {
-                if (!(i & 0x1F)) debug_log("%u ", i);
                 uint16_t x = m_proc->readWord_t();
                 uint16_t y = m_proc->readWord_t();
                 uint16_t z = m_proc->readWord_t();
@@ -214,6 +233,7 @@ typedef struct tag_Pingo3dControl {
                     pos->x = convert_position_value(x);
                     pos->y = convert_position_value(y);
                     pos->z = convert_position_value(z);
+                    if (!(i & 0x1F)) debug_log("%u %f %f %f\n", i, pos->x, pos->y, pos->z);
                     pos++;
                 }
             }
@@ -232,14 +252,20 @@ typedef struct tag_Pingo3dControl {
         auto n = (uint32_t) m_proc->readWord_t();
         if (n > 0) {
             mesh->indexes_count = n;
-            mesh->pos_indices = (uint16_t*) heap_caps_malloc(n*sizeof(uint16_t), MALLOC_CAP_SPIRAM);
+            auto size = n*sizeof(uint16_t);
+            mesh->pos_indices = (uint16_t*) heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
             auto idx = mesh->pos_indices;
+            if (!idx) {
+                debug_log("set_mesh_vertex_indexes: failed to allocate %u bytes\n", size);
+                show_free_ram();
+            }
+            debug_log("Reading %u vertex indexes\n", n);
             for (uint32_t i = 0; i < n; i++) {
-                if (!(i & 0x1F)) debug_log("%u ", i);
                 uint16_t index = m_proc->readWord_t();
                 if (idx) {
                     *idx++ = index;
                 }
+                if (!(i & 0x1F)) debug_log("%u %hu\n", i, index);
             }
             debug_log("\n");
         }
@@ -254,8 +280,14 @@ typedef struct tag_Pingo3dControl {
         }
         auto n = (uint32_t) m_proc->readWord_t();
         if (n > 0) {
-            mesh->textCoord = (p3d::Vec2f*) heap_caps_malloc(n*sizeof(p3d::Vec2f), MALLOC_CAP_SPIRAM);
+            auto size = n*sizeof(p3d::Vec2f);
+            mesh->textCoord = (p3d::Vec2f*) heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
             auto coord = mesh->textCoord;
+            if (!coord) {
+                debug_log("set_mesh_vertex_indexes: failed to allocate %u bytes\n", size);
+                show_free_ram();
+            }
+            debug_log("Reading %u texture coordinates\n", n);
             for (uint32_t i = 0; i < n; i++) {
                 uint16_t u = m_proc->readWord_t();
                 uint16_t v = m_proc->readWord_t();
@@ -277,13 +309,20 @@ typedef struct tag_Pingo3dControl {
         }
         auto n = (uint32_t) m_proc->readWord_t();
         if (n > 0) {
-            mesh->tex_indices = (uint16_t*) heap_caps_malloc(n*sizeof(uint16_t), MALLOC_CAP_SPIRAM);
+            auto size = n*sizeof(uint16_t);
+            mesh->tex_indices = (uint16_t*) heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
             auto idx = mesh->tex_indices;
+            if (!idx) {
+                debug_log("set_texture_coordinate_indexes: failed to allocate %u bytes\n", size);
+                show_free_ram();
+            }
+            debug_log("Reading %u texture coordinate indexes\n", n);
             for (uint32_t i = 0; i < n; i++) {
                 uint16_t index = m_proc->readWord_t();
                 if (idx && (i < mesh->indexes_count)) {
                     *idx++ = index;
                 }
+                if (!(i & 0x1F)) debug_log("%u %hu\n", i, index);
             }
         }
     }
@@ -307,32 +346,37 @@ typedef struct tag_Pingo3dControl {
     }
 
     p3d::F_TYPE convert_scale_value(int32_t value) {
-        return ((p3d::F_TYPE) value) / 256.0f;
+        static const p3d::F_TYPE factor = 1.0f / 256.0f;
+        return ((p3d::F_TYPE) value) * factor;
     }
 
     p3d::F_TYPE convert_rotation_value(int32_t value) {
         if (value & 0x8000) {
             value = (int32_t)(int16_t)(uint16_t) value;
         }
-        return (((p3d::F_TYPE) value) * (2.0f * 3.1415926f)) / 32767.0f;
+        static const p3d::F_TYPE factor = (2.0f * 3.1415926f) / 32767.0f;
+        return ((p3d::F_TYPE) value) * factor;
     }
 
     p3d::F_TYPE convert_translation_value(int32_t value) {
         if (value & 0x8000) {
             value = (int32_t)(int16_t)(uint16_t) value;
         }
-        return ((p3d::F_TYPE) value) / 256.0f;
+        static const p3d::F_TYPE factor = 1.0f / 256.0f;
+        return ((p3d::F_TYPE) value) * factor;
     }
 
     p3d::F_TYPE convert_position_value(int32_t value) {
         if (value & 0x8000) {
             value = (int32_t)(int16_t)(uint16_t) value;
         }
-        return ((p3d::F_TYPE) value) / 32767.0f;
+        static const p3d::F_TYPE factor = 1.0f / 32767.0f;
+        return ((p3d::F_TYPE) value) * factor;
     }
 
     p3d::F_TYPE convert_texture_coordinate_value(int32_t value) {
-        return ((p3d::F_TYPE) value) / 65535.0f;
+        static const p3d::F_TYPE factor = 1.0f / 65535.0f;
+        return ((p3d::F_TYPE) value) * factor;
     }
 
     // VDU 23, 0, &A0, sid; &48, 6, oid; scalex; :  Set Object X Scale Factor
@@ -468,6 +512,7 @@ typedef struct tag_Pingo3dControl {
 
     // VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap
     void render_to_bitmap() {
+        auto start = millis();
         auto size = p3d::Vec2i{(p3d::I_TYPE)m_width, (p3d::I_TYPE)m_height};
         p3d::Renderer renderer;
         rendererInit(&renderer, size, &m_backend );
@@ -502,6 +547,9 @@ typedef struct tag_Pingo3dControl {
         phi += 0.01;
 
         rendererRender(&renderer);
+        auto stop = millis();
+        auto diff = stop - start;
+        debug_log("Render to %ux%u took %u ms\n", m_width, m_height, diff);
     }
 
 } Pingo3dControl;
