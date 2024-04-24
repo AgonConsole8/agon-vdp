@@ -79,9 +79,12 @@ typedef struct tag_Pingo3dControl {
 
     // VDU 23, 0, &A0, sid; &48, 0, 1 :  Initialize Control Structure
     void initialize(VDUStreamProcessor& processor, uint16_t width, uint16_t height) {
+        debug_log("initialize: pingo creating control structure for %ux%u scene\n", width, height);
         memset(this, 0, sizeof(tag_Pingo3dControl));
         m_tag = PINGO_3D_CONTROL_TAG;
         m_size = sizeof(tag_Pingo3dControl);
+        m_width = width;
+        m_height = height;
 
         auto frame_size = (uint32_t) width * (uint32_t) height;
 
@@ -512,6 +515,24 @@ typedef struct tag_Pingo3dControl {
 
     // VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap
     void render_to_bitmap() {
+        auto bmid = m_proc->readWord_t();
+        if (bmid < 0) {
+            return;
+        }
+
+        p3d::Pixel* dst_pix = NULL;
+        auto old_bitmap = getBitmap(bmid);
+        if (old_bitmap) {
+            auto bitmap = old_bitmap.get();
+            if (bitmap && bitmap->width == m_width && bitmap->height == m_height) {
+                dst_pix = (p3d::Pixel*) bitmap->data;
+            }
+        }
+
+        if (!dst_pix) {
+            debug_log("render_to_bitmap: output bitmap %u not found or invalid\n", bmid);
+        }
+
         auto start = millis();
         auto size = p3d::Vec2i{(p3d::I_TYPE)m_width, (p3d::I_TYPE)m_height};
         p3d::Renderer renderer;
@@ -546,10 +567,18 @@ typedef struct tag_Pingo3dControl {
         scene.transform = p3d::mat4RotateY(phi);
         phi += 0.01;
 
+        debug_log("Frame data:  %02hX %02hX %02hX %02hX\n", m_frame->r, m_frame->g, m_frame->b, m_frame->a);
+        debug_log("Destination: %02hX %02hX %02hX %02hX\n", dst_pix->r, dst_pix->g, dst_pix->b, dst_pix->a);
+
         rendererRender(&renderer);
+
+        memcpy(dst_pix, m_frame, sizeof(p3d::Pixel) * m_width * m_height);
+
         auto stop = millis();
         auto diff = stop - start;
         debug_log("Render to %ux%u took %u ms\n", m_width, m_height, diff);
+        debug_log("Frame data:  %02hX %02hX %02hX %02hX\n", m_frame->r, m_frame->g, m_frame->b, m_frame->a);
+        debug_log("Final data:  %02hX %02hX %02hX %02hX\n", dst_pix->r, dst_pix->g, dst_pix->b, dst_pix->a);
     }
 
 } Pingo3dControl;

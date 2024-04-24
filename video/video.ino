@@ -93,12 +93,6 @@ void setup() {
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
 	processor->sendModeInformation();
-
-    test_pingo_3d();
-}
-
-void test_pingo_3d() {
-    
 }
 
 // The main loop
