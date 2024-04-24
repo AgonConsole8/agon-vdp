@@ -217,6 +217,7 @@ typedef struct tag_Pingo3dControl {
                     pos++;
                 }
             }
+            debug_log("\n");
         }
     }
 
@@ -234,11 +235,13 @@ typedef struct tag_Pingo3dControl {
             mesh->pos_indices = (uint16_t*) heap_caps_malloc(n*sizeof(uint16_t), MALLOC_CAP_SPIRAM);
             auto idx = mesh->pos_indices;
             for (uint32_t i = 0; i < n; i++) {
+                if (!(i & 0x1F)) debug_log("%u ", i);
                 uint16_t index = m_proc->readWord_t();
                 if (idx) {
                     *idx++ = index;
                 }
             }
+            debug_log("\n");
         }
     }
 
