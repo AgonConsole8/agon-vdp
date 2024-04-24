@@ -97,11 +97,11 @@ void setup() {
 	xTaskCreatePinnedToCore(
 		processLoop,
 		"processLoop",
-		8192,
+		4096,		// Stack size - highwater mark checks show this generally still leaves about 2000 words free
 		NULL,
-		3,
+		3,			// Priority
 		&Core0Task,
-		0
+		0			// Core 0
 	);
 }
 
@@ -111,31 +111,9 @@ void loop() {
 	while (true) {
 		delay(1000);
 	};
-	// debug_log("Loop ran on core %d, busy core is %d\n\r", xPortGetCoreID(), CoreUsage::busiestCore());
-	// while (true) {
-	// 	#ifdef VDP_USE_WDT
-	// 		esp_task_wdt_reset();
-	// 	#endif
-	// 	if (processTerminal()) {
-	// 		continue;
-	// 	}
-	// 	processor->doCursorFlash();
-
-	// 	do_keyboard();
-	// 	do_mouse();
-
-	// 	if (processor->byteAvailable()) {
-	// 		processor->hideCursor();
-	// 		processor->processNext();
-	// 		if (!processor->byteAvailable()) {
-	// 			processor->showCursor();
-	// 		}
-	// 	}
-	// }
 }
 
 void processLoop(void * parameter) {
-	debug_log("Loop ran on core %d, busy core is %d\n\r", xPortGetCoreID(), CoreUsage::busiestCore());
 	while (true) {
 		#ifdef VDP_USE_WDT
 			esp_task_wdt_reset();
