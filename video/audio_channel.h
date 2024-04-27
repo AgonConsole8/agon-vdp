@@ -69,8 +69,8 @@ class AudioChannel {
 extern std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage for the sample data
 
 AudioChannel::AudioChannel(uint8_t channel) : _channel(channel), _state(AudioState::Idle), _volume(64), _frequency(750), _duration(-1) {
-	setWaveform(AUDIO_WAVE_DEFAULT, nullptr);
 	debug_log("AudioChannel: init %d\n\r", channel);
+	setWaveform(AUDIO_WAVE_DEFAULT, nullptr);
 	debug_log("free mem: %d\n\r", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 }
 

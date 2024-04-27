@@ -746,7 +746,7 @@ void Context::plotPending(int16_t peeked) {
 
 // Plot a string
 //
-void Context::plotString(const std::string s) {
+void Context::plotString(const std::string& s) {
 	if (!ttxtMode) {
 		if (textCursorActive()) {
 			setClippingRect(textViewport);
@@ -762,7 +762,7 @@ void Context::plotString(const std::string s) {
 
 	auto font = getFont();
 	// iterate over the string and plot each character
-	for (char c : s) {
+	for (const char c : s) {
 		if (cursorBehaviour.scrollProtect) {
 			cursorAutoNewline();
 		}

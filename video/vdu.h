@@ -13,7 +13,7 @@ extern HardwareSerial DBGSerial;
 
 // Handle VDU commands
 //
-void VDUStreamProcessor::vdu(uint8_t c) {
+void VDUStreamProcessor::vdu(uint8_t c, bool usePeek) {
 	// We want to send raw chars back to the debugger
 	// this allows binary (faster) data transfer in ZDI mode
 	// to inspect memory and register values
@@ -31,6 +31,10 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			// 	vdu_print(32);
 			// 	break;
 			case 8 ... 13:
+				if (!consoleMode) {
+					DBGSerial.write(c);
+				}
+				break;
 			case 0x20 ... 0xFF: {
 				if (!commandsEnabled && !consoleMode) {
 					DBGSerial.write(c);
@@ -83,7 +87,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			playNote(0, 100, 750, 125);
 			break;
 		case 0x08:	// Cursor Left
-			if (!context->textCursorActive() && peekByte_t(20) == 0x20) {
+			if (!context->textCursorActive() && usePeek && peekByte_t(FAST_COMMS_TIMEOUT) == 0x20) {
 				// left followed by a space is almost certainly a backspace
 				// but MOS doesn't send backspaces to delete characters on line edits
 				context->plotBackspace();
@@ -152,7 +156,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			break;
 		case 0x1B: { // VDU 27
 			auto b = readByte_t();	if (b == -1) return;
-			vdu_print(b);
+			vdu_print(b, usePeek);
 		}	break;
 		case 0x1C:	// Define a text viewport
 			vdu_textViewport();
@@ -169,7 +173,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			break;
 		case 0x20 ... 0x7E:
 		case 0x80 ... 0xFF:
-			vdu_print(c);
+			vdu_print(c, usePeek);
 			break;
 		case 0x7F:	// Backspace
 			context->plotBackspace();
@@ -180,7 +184,7 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 // VDU "print" command
 // will output to "printer", if enabled
 //
-void VDUStreamProcessor::vdu_print(char c) {
+void VDUStreamProcessor::vdu_print(char c, bool usePeek) {
 	if (printerOn && !consoleMode) {
 		// if consoleMode is enabled we're echoing everything back anyway
 		DBGSerial.write(c);
@@ -189,26 +193,32 @@ void VDUStreamProcessor::vdu_print(char c) {
 	std::string s;
 	s += c;
 	// gather our string for printing
-	for (;;) {
-		auto next = peekByte_t(FAST_COMMS_TIMEOUT);
-		if (next == 27) {
-			readByte_t();
-			if (consoleMode) {
-				DBGSerial.write(next);
-			}
-			next = readByte_t(FAST_COMMS_TIMEOUT);
-			if (next == -1) {
+	if (usePeek) {
+		auto limit = 39;
+		while (--limit) {
+			if (!byteAvailable()) {
 				break;
 			}
-			s += (char)next;
-		} else if (next != -1 && ((next >= 0x20 && next <= 0x7E) || (next >= 0x80 && next <= 0xFF))) {
-			s += (char)next;
-			readByte_t();
-		} else {
-			break;
-		}
-		if (printerOn) {
-			DBGSerial.write(next);
+			auto next = peekByte_t(FAST_COMMS_TIMEOUT);
+			if (next == 27) {
+				readByte_t();
+				if (consoleMode) {
+					DBGSerial.write(next);
+				}
+				next = readByte_t(FAST_COMMS_TIMEOUT);
+				if (next == -1) {
+					break;
+				}
+				s += (char)next;
+			} else if (next != -1 && ((next >= 0x20 && next <= 0x7E) || (next >= 0x80 && next <= 0xFF))) {
+				s += (char)next;
+				readByte_t();
+			} else {
+				break;
+			}
+			if (printerOn) {
+				DBGSerial.write(next);
+			}
 		}
 	}
 	context->plotString(s);

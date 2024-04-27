@@ -180,6 +180,8 @@ void VDUStreamProcessor::vdu_sys_audio() {
 
 		case AUDIO_CMD_ENABLE: {
 			sendAudioStatus(channel, enableChannel(channel));
+			debug_log("vdu_sys_audio: channel %d enabled\n\r", channel);
+			vTaskDelay(1);
 		}	break;
 
 		case AUDIO_CMD_DISABLE: {
@@ -188,8 +190,13 @@ void VDUStreamProcessor::vdu_sys_audio() {
 
 		case AUDIO_CMD_RESET: {
 			if (channelEnabled(channel)) {
+				debug_log("vdu_sys_audio: channel %d resetting\n\r", channel);
 				audioTaskKill(channel);
-				sendAudioStatus(channel, enableChannel(channel));
+				vTaskDelay(1);
+				debug_log("vdu_sys_audio: channel %d killed\n\r", channel);
+				sendAudioStatus(channel, enableChannel((uint8_t) channel));
+				vTaskDelay(1);
+				debug_log("vdu_sys_audio: channel %d reset\n\r", channel);
 			} else {
 				sendAudioStatus(channel, 0);
 			}

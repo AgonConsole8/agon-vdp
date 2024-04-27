@@ -199,6 +199,7 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			bufferDecompress(bufferId, sourceBufferId);
 		}	break;
 		case BUFFERED_DEBUG_INFO: {
+			// force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
 			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
 			if (buffers[bufferId].empty()) {
 				return;
@@ -1630,6 +1631,9 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 // Replaces the target buffer with the new one.
 //
 void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId) {
+	#ifdef DEBUG
+	auto start = millis();
+	#endif
 	auto sourceBufferIter = buffers.find(sourceBufferId);
 	if (sourceBufferIter == buffers.end()) {
 		debug_log("bufferDeompress: buffer %d not found\n\r", sourceBufferId);
@@ -1655,59 +1659,55 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 
 	debug_log("Decompressing into buffer %u\n\r", bufferId);
 
-	// create a temporary output buffer, which may be expanded during decompression
-	uint8_t* p_temp = (uint8_t*) ps_malloc(COMPRESSION_OUTPUT_CHUNK_SIZE);
-	if (p_temp) {
-		// prepare for doing compression
-		DecompressionData dd;
-		agon_init_decompression(&dd, &p_temp, &local_write_decompressed_byte);
-
-		// loop thru blocks stored against the source buffer ID
-		uint32_t skip_hdr = sizeof(CompressionFileHeader);
-		dd.input_count = skip_hdr;
-		for (const auto &block : sourceBuffer) {
-			// decompress the block into our temporary buffer
-			auto bufferLength = block->size() - skip_hdr;
-			auto p_data = block->getBuffer();
-			debug_log(" from buffer %u [%08X] %u bytes\n\r", sourceBufferId, p_data, bufferLength);
-			debug_log(" %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX\n\r",
-						p_data[0], p_data[1], p_data[2], p_data[3],
-						p_data[4], p_data[5], p_data[6], p_data[7],
-						p_data[8], p_data[9], p_data[10], p_data[11]);
-			p_data += skip_hdr;
-			skip_hdr = 0;
-			dd.input_count += bufferLength;
-			while (bufferLength--) {
-				agon_decompress_byte(&dd, *p_data++);
-			}
-		}
-
-		// make a single buffer with all of the temporary output data
-		auto bufferStream = make_shared_psram<BufferStream>(dd.output_count);
-		if (!bufferStream || !bufferStream->getBuffer()) {
-			// buffer couldn't be created
-			debug_log("bufferDecompress: failed to create buffer %d\n\r", bufferId);
-			return;
-		}
-		auto destination = bufferStream->getBuffer();
-		debug_log(" %02hX %02hX %02hX %02hX\n\r",
-					p_temp[0], p_temp[1], p_temp[2], p_temp[3]);
-		memcpy(destination, p_temp, dd.output_count);
-		heap_caps_free(p_temp);
-		bufferClear(bufferId);
-		buffers[bufferId].push_back(bufferStream);
-
-		uint32_t pct = (dd.output_count * 100) / dd.input_count;
-		debug_log("Decompressed %u input bytes to %u output bytes (%u%%) at %08X\n\r",
-					dd.input_count, dd.output_count, pct, destination);
-
-		if (dd.output_count != orig_size) {
-			debug_log("Decompressed buffer size %u does not equal original size %u\r\n",
-						dd.output_count, orig_size);
-		}
-	} else {
-		debug_log("bufferDecompress: cannot allocate temporary buffer of %d bytes\n\r", COMPRESSION_OUTPUT_CHUNK_SIZE);
+	// create output buffer
+	auto bufferStream = make_shared_psram<BufferStream>(orig_size);
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		// buffer couldn't be created
+		debug_log("bufferDecompress: failed to create buffer %d\n\r", bufferId);
+		return;
 	}
+
+	// prepare for doing compression
+	auto buffer = bufferStream->getBuffer();
+	DecompressionData dd;
+	agon_init_decompression(&dd, &buffer, &local_write_decompressed_byte, orig_size);
+
+	// loop thru blocks stored against the source buffer ID
+	uint32_t skip_hdr = sizeof(CompressionFileHeader);
+	dd.input_count = skip_hdr;
+	for (const auto &block : sourceBuffer) {
+		// decompress the block into our temporary buffer
+		auto bufferLength = block->size() - skip_hdr;
+		auto p_data = block->getBuffer();
+		debug_log(" from buffer %u [%08X] %u bytes\n\r", sourceBufferId, p_data, bufferLength);
+		debug_log(" %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX %02hX\n\r",
+					p_data[0], p_data[1], p_data[2], p_data[3],
+					p_data[4], p_data[5], p_data[6], p_data[7],
+					p_data[8], p_data[9], p_data[10], p_data[11]);
+		p_data += skip_hdr;
+		skip_hdr = 0;
+		dd.input_count += bufferLength;
+		while (bufferLength--) {
+			agon_decompress_byte(&dd, *p_data++);
+		}
+	}
+
+	debug_log(" %02hX %02hX %02hX %02hX\n\r",
+				buffer[0], buffer[1], buffer[2], buffer[3]);
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(bufferStream);
+
+	uint32_t pct = (dd.output_count * 100) / dd.input_count;
+	debug_log("Decompressed %u input bytes to %u output bytes (%u%%) at %08X\n\r",
+				dd.input_count, dd.output_count, pct, buffer);
+
+	if (dd.output_count != orig_size) {
+		debug_log("Decompressed buffer size %u does not equal original size %u\r\n",
+					dd.output_count, orig_size);
+	}
+	#ifdef DEBUG
+	debug_log("Decompress took %u ms\n\r", millis() - start);
+	#endif
 }
 
 #endif // VDU_BUFFERED_H

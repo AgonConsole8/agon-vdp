@@ -375,6 +375,7 @@ void Context::cursorDown() {
 	cursorDown(false);
 }
 void Context::cursorDown(bool moveOnly) {
+	if (!moveOnly) cursorAutoNewline();
 	auto font = getFont();
 	if (cursorBehaviour.flipXY) {
 		activeCursor->X += (cursorBehaviour.invertHorizontal ? -font->width : font->width);
