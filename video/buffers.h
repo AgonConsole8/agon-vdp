@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "buffer_stream.h"
+#include "span.h"
 
 std::unordered_map<uint16_t, std::vector<std::shared_ptr<BufferStream>>> buffers;
 
@@ -51,31 +52,37 @@ void reverseValues(uint8_t * data, uint32_t length, uint16_t valueSize) {
 }
 
 // Work out which buffer to use next
-void updateTarget(std::vector<uint16_t> targets, uint16_t &target, uint16_t &index, bool iterate) {
+// Returns whether to continue iterating, which the caller uses to decide whether to clear buffers
+bool updateTarget(tcb::span<uint16_t> targets, tcb::span<uint16_t>::iterator &targetIter, bool iterate) {
 	if (iterate) {
 		// if the iterate flag is set, we just use the next buffer
-		if (target < 65535) {
-			target++;
+		auto &targetId = *targetIter;
+		if (targetId >= 65534) {
+			// in future iterations, loop over the single buffer in the list and don't clear it
+			return false;
 		}
+		// update the list in-place
+		targetId++;
+		return true;
 	} else {
 		// use the next buffer in the list, or loop back to the start
-		index++;
-		if (index >= targets.size()) {
-			index = 0;
+		targetIter++;
+		if (targetIter == targets.end()) {
+			targetIter = targets.begin();
 		}
-		target = targets[index];
+		return false;
 	}
 }
 
 // consolidate blocks/streams into a single buffer
-std::shared_ptr<BufferStream> consolidateBuffers(std::vector<std::shared_ptr<BufferStream>>& streams) {
+std::shared_ptr<BufferStream> consolidateBuffers(const std::vector<std::shared_ptr<BufferStream>> &streams) {
 	// don't do anything if only one stream
 	if (streams.size() == 1) {
-		return streams[0];
+		return streams.front();
 	}
 	// work out total length of buffer
 	uint32_t length = 0;
-	for (auto block : streams) {
+	for (auto &block : streams) {
 		length += block->size();
 	}
 	auto bufferStream = make_shared_psram<BufferStream>(length);
@@ -84,7 +91,7 @@ std::shared_ptr<BufferStream> consolidateBuffers(std::vector<std::shared_ptr<Buf
 		return nullptr;
 	}
 	auto destination = bufferStream->getBuffer();
-	for (auto block : streams) {
+	for (auto &block : streams) {
 		auto bufferLength = block->size();
 		memcpy(destination, block->getBuffer(), bufferLength);
 		destination += bufferLength;
@@ -109,10 +116,11 @@ std::vector<std::shared_ptr<BufferStream>> splitBuffer(std::shared_ptr<BufferStr
 		auto chunk = make_shared_psram<BufferStream>(bufferLength);
 		if (!chunk || !chunk->getBuffer()) {
 			// buffer couldn't be created, so return an empty vector
-			return {};
+			chunks.clear();
+			break;
 		}
 		memcpy(chunk->getBuffer(), sourceData, bufferLength);
-		chunks.push_back(chunk);
+		chunks.push_back(std::move(chunk));
 		sourceData += bufferLength;
 		remaining -= bufferLength;
 	}

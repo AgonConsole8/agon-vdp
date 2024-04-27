@@ -45,8 +45,8 @@
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
 
-#include <WiFi.h>
 #include <HardwareSerial.h>
+#include <WiFi.h>
 #include <fabgl.h>
 
 #define	DEBUG			1						// Serial Debug Mode: 1 = enable
@@ -66,9 +66,8 @@ bool			controlKeys = true;				// Control keys enabled
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support
 #include "agon_audio.h"							// Audio support
+#include "agon_screen.h"						// Screen support
 #include "agon_ttxt.h"
-#include "graphics.h"							// Graphics support
-#include "cursor.h"								// Cursor support
 #include "vdp_protocol.h"						// VDP Protocol
 #include "vdu_stream_processor.h"
 #include "hexload.h"
@@ -81,52 +80,48 @@ VDUStreamProcessor *	processor;				// VDU Stream Processor
 #endif /* !USERSPACE */
 
 void setup() {
-	disableCore0WDT(); delay(200);				// Disable the watchdog timers
-	disableCore1WDT(); delay(200);
+	#ifndef VDP_USE_WDT
+		disableCore0WDT(); delay(200);				// Disable the watchdog timers
+		disableCore1WDT(); delay(200);
+	#endif
 	DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
+	changeMode(startup_screen_mode);
 	copy_font();
-	set_mode(startup_screen_mode);
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
 	initAudio();
+	boot_screen();
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
-	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	processor->sendModeInformation();
-	boot_screen();
 }
 
 // The main loop
 //
 void loop() {
-	uint32_t count = 0;						// Generic counter, incremented every loop iteration
-	bool cursorVisible = false;
-	bool cursorState = false;
+	uint32_t count = 0;
 
 	while (true) {
  		if ((count & 0x7f) == 0) delay(1 /* -TM- ms */);
  		count++;
 
+		#ifdef VDP_USE_WDT
+			esp_task_wdt_reset();
+		#endif
 		if (processTerminal()) {
 			continue;
 		}
-		cursorVisible = ((count & 0xFFFF) == 0);
-		if (cursorVisible) {
-    		if (!cursorState && ttxtMode) ttxt_instance.flash(true);
-			cursorState = !cursorState;
-			do_cursor();
-      		if (!cursorState && ttxtMode) ttxt_instance.flash(false);
-		}
+		processor->doCursorFlash();
+
 		do_keyboard();
 		do_mouse();
 
 		if (processor->byteAvailable()) {
-			if (cursorState) {
-				cursorState = false;
-				do_cursor();
-			}
-			count = -1;
+			processor->hideCursor();
 			processor->processNext();
+			if (!processor->byteAvailable()) {
+				processor->showCursor();
+			}
 		}
 	}
 }
@@ -333,7 +328,14 @@ bool processTerminal() {
 		case TerminalState::Disabling: {
 			Terminal->deactivate();
 			Terminal = nullptr;
-			set_mode(1);
+			auto context = processor->getContext();
+			// reset our screen mode
+			if (changeMode(videoMode) != 0) {
+				debug_log("processTerminal: Error %d changing back to mode %d\n\r", videoMode);
+				videoMode = 1;
+				changeMode(1);
+			}
+			context->reset();
 			processor->sendModeInformation();
 			debug_log("Terminal disabled\n\r");
 			terminalState = TerminalState::Disabled;

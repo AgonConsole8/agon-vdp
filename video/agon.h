@@ -19,6 +19,8 @@
 #define MAX_SPRITES				256		// Maximum number of sprites
 #define MAX_BITMAPS				256		// Maximum number of bitmaps
 
+// #define VDP_USE_WDT						// Use the esp watchdog timer (experimental)
+
 #define UART_BR					1152000	// Max baud rate; previous stable value was 384000
 #define UART_NA					-1
 #define UART_TX					2
@@ -53,16 +55,25 @@
 #define VDP_MOUSE				0x89	// Mouse data
 #define VDP_CURSOR_HSTART		0x8A	// Cursor start row offset (0-15)
 #define VDP_CURSOR_HEND			0x8B	// Cursor end row offset
+#define VDP_CURSOR_MOVE			0x8C	// Cursor relative move
 #define VDP_UDG					0x90	// User defined characters
 #define VDP_UDG_RESET			0x91	// Reset UDGs
 #define VDP_MAP_CHAR_TO_BITMAP	0x92	// Map a character to a bitmap
+#define VDP_SCRCHAR_GRAPHICS	0x93	// Character read from screen at graphics coordinates
 #define VDP_READ_COLOUR			0x94	// Read colour
+#define VDP_FONT				0x95	// Font management commands
 #define VDP_CONTROLKEYS			0x98	// Control keys on/off
+#define VDP_TEXT_VIEWPORT		0x9C	// Set text viewport using current graphics coordinates
+#define VDP_GRAPHICS_VIEWPORT	0x9D	// Set graphics viewport using current graphics coordinates
+#define VDP_GRAPHICS_ORIGIN		0x9E	// Set graphics origin using current graphics coordinates
+#define VDP_SHIFT_ORIGIN		0x9F	// Move origin to new position from graphics coordinates, and viewports too
 #define VDP_BUFFERED			0xA0	// Buffered commands
 #define VDP_UPDATER				0xA1	// Update VDP
 #define VDP_LOGICALCOORDS		0xC0	// Switch BBC Micro style logical coords on and off
 #define VDP_LEGACYMODES			0xC1	// Switch VDP 1.03 compatible modes on and off
 #define VDP_SWITCHBUFFER		0xC3	// Double buffering control
+#define VDP_CONTEXT				0xC8	// Context management commands
+#define VDP_FLUSH_DRAWING_QUEUE	0xCA	// Flush the drawing queue
 #define VDP_PATTERN_LENGTH		0xF2	// Set pattern length (*FX 163,242,n)
 #define VDP_CONSOLEMODE			0xFE	// Switch console mode on and off
 #define VDP_TERMINALMODE		0xFF	// Switch to terminal mode
@@ -155,15 +166,6 @@
 #define AUDIO_STATUS_HAS_VOLUME_ENVELOPE	0x08	// Channel has a volume envelope set
 #define AUDIO_STATUS_HAS_FREQUENCY_ENVELOPE	0x10	// Channel has a frequency envelope set
 
-enum AudioState : uint8_t {	// Audio channel state
-	Idle = 0,				// currently idle/silent
-	Pending,				// note will be played next loop call
-	Playing,				// playing (passive)
-	PlayLoop,				// active playing loop (used when an envelope is active)
-	Release,				// in "release" phase
-	Abort					// aborting a note
-};
-
 // Mouse commands
 #define MOUSE_ENABLE			0		// Enable mouse
 #define MOUSE_DISABLE			1		// Disable mouse
@@ -177,12 +179,56 @@ enum AudioState : uint8_t {	// Audio channel state
 #define MOUSE_SET_ACCERATION	9		// Set mouse acceleration (1-2000)
 #define MOUSE_SET_WHEELACC		10		// Set mouse wheel acceleration
 
-#define MOUSE_DEFAULT_CURSOR		0;		// Default mouse cursor
-#define MOUSE_DEFAULT_SAMPLERATE	60;		// Default mouse sample rate
-#define MOUSE_DEFAULT_RESOLUTION	2;		// Default mouse resolution (4 counts/mm)
-#define MOUSE_DEFAULT_SCALING		1;		// Default mouse scaling (1:1)
-#define MOUSE_DEFAULT_ACCELERATION	180;	// Default mouse acceleration 
-#define MOUSE_DEFAULT_WHEELACC		60000;	// Default mouse wheel acceleration
+#define MOUSE_DEFAULT_CURSOR		0		// Default mouse cursor
+#define MOUSE_DEFAULT_SAMPLERATE	60		// Default mouse sample rate
+#define MOUSE_DEFAULT_RESOLUTION	2		// Default mouse resolution (4 counts/mm)
+#define MOUSE_DEFAULT_SCALING		1		// Default mouse scaling (1:1)
+#define MOUSE_DEFAULT_ACCELERATION	180		// Default mouse acceleration 
+#define MOUSE_DEFAULT_WHEELACC		60000	// Default mouse wheel acceleration
+
+// Font management commands
+#define FONT_SELECT						0		// Select a font (by buffer ID, 65535 for system font)
+#define FONT_FROM_BUFFER				1		// Load/define a font from a buffer
+#define FONT_SET_INFO					2		// Set font information
+#define FONT_SET_NAME					3		// Set font name
+#define FONT_CLEAR						4		// Clear a font
+#define FONT_COPY_SYSTEM				5		// Copy system font to a buffer
+#define FONT_SELECT_BY_NAME				0x10	// Select a font by name
+#define FONT_DEBUG_INFO					0x20	// Get debug info about a font
+// Future commands may include ability to search for fonts based on their info settings
+
+#define FONT_INFO_WIDTH					0		// Font width
+#define FONT_INFO_HEIGHT				1		// Font height
+#define FONT_INFO_ASCENT				2		// Font ascent
+#define FONT_INFO_FLAGS					3		// Font flags
+#define FONT_INFO_CHARPTRS_BUFFER		4		// Font character pointers (for variable width fonts)
+#define FONT_INFO_POINTSIZE				5		// Font point size
+#define FONT_INFO_INLEADING				6		// Font inleading
+#define FONT_INFO_EXLEADING				7		// Font exleading
+#define FONT_INFO_WEIGHT				8		// Font weight
+#define FONT_INFO_CHARSET				9		// Font character set ??
+#define FONT_INFO_CODEPAGE				10		// Font code page
+
+#define FONT_SELECTFLAG_ADJUSTBASE		0x01	// Adjust font baseline, based on ascent
+
+// Context management commands
+#define CONTEXT_SELECT					0		// Select a context stack
+#define CONTEXT_DELETE					1		// Delete a context stack
+#define CONTEXT_RESET					2		// Reset current context
+#define CONTEXT_SAVE					3		// Save a context to stack
+#define CONTEXT_RESTORE					4		// Restore a context from stack
+#define CONTEXT_SAVE_AND_SELECT			5		// Save and get a copy of topmost context from numbered stack
+#define CONTEXT_RESTORE_ALL				6		// Clear stack and restore to first context in stack
+#define CONTEXT_CLEAR_STACK				7		// Clear stack, keeping current context
+
+#define CONTEXT_RESET_GPAINT			0x01	// graphics painting options
+#define CONTEXT_RESET_GPOS				0x02	// graphics positioning incl graphics viewport
+#define CONTEXT_RESET_TPAINT			0x04	// text painting options
+#define CONTEXT_RESET_TCURSOR			0x08	// text cursor incl text viewport
+#define CONTEXT_RESET_TBEHAVIOUR		0x10	// text cursor behaviour
+#define CONTEXT_RESET_FONTS				0x20	// fonts
+#define CONTEXT_RESET_CHAR2BITMAP		0x40	// char-to-bitmap mappings
+#define CONTEXT_RESET_RESERVED			0x80	// reserved for future use
 
 // Buffered commands
 #define BUFFERED_WRITE					0x00	// Write to a numbered buffer
@@ -212,8 +258,10 @@ enum AudioState : uint8_t {	// Audio channel state
 #define BUFFERED_REVERSE				0x18	// Reverse the order of data in a buffer
 #define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
+#define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
+#define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 
-#define BUFFERED_DEBUG_INFO				0x20	// Get debug info about a buffer
+#define BUFFERED_DEBUG_INFO				0x80	// Get debug info about a buffer
 
 // Adjust operation codes
 #define ADJUST_NOT				0x00	// Adjust: NOT
@@ -260,12 +308,6 @@ enum AudioState : uint8_t {	// Audio channel state
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
 #define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples
-
-// Viewport definitions
-#define VIEWPORT_TEXT			0		// Text viewport
-#define VIEWPORT_DEFAULT		1		// Default (whole screen) viewport
-#define VIEWPORT_GRAPHICS		2		// Graphics viewport
-#define VIEWPORT_ACTIVE			3		// Active viewport
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024

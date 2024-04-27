@@ -7,8 +7,7 @@
 #include <fabgl.h>
 
 #include "agon.h"
-
-fabgl::PS2Controller		_PS2Controller;		// The keyboard class
+#include "agon_screen.h"
 
 uint8_t			_keycode = 0;					// Last pressed key code
 uint8_t			_modifiers = 0;					// Last pressed key modifiers
@@ -34,26 +33,31 @@ void zdi_enter ();
 void zdi_process_cmd (uint8_t key);
 #endif
 
+bool resetMousePositioner(uint16_t width, uint16_t height, fabgl::VGABaseController * display);
+extern bool consoleMode;
+extern HardwareSerial DBGSerial;
+
 // Get keyboard instance
 //
 inline fabgl::Keyboard* getKeyboard() {
-	return _PS2Controller.keyboard();
+	return fabgl::PS2Controller::keyboard();
 }
 
 // Get mouse instance
 //
 inline fabgl::Mouse* getMouse() {
-	return _PS2Controller.mouse();
+	return fabgl::PS2Controller::mouse();
 }
 
 // Keyboard and mouse setup
 //
 void setupKeyboardAndMouse() {
-	_PS2Controller.begin();
+	fabgl::PS2Controller::begin();
 	auto kb = getKeyboard();
 	kb->setLayout(&fabgl::UKLayout);
 	kb->setCodePage(fabgl::CodePages::get(1252));
 	kb->setTypematicRateAndDelay(kbRepeatRate, kbRepeatDelay);
+	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 }
 
 // Set keyboard layout
@@ -91,7 +95,7 @@ bool getKeyboardKey(uint8_t *keycode, uint8_t *modifiers, uint8_t *vk, uint8_t *
 	auto kb = getKeyboard();
 	fabgl::VirtualKeyItem item;
 
-	if(consoleMode) {
+	if (consoleMode) {
 		if (DBGSerial.available()) {
 			_keycode = DBGSerial.read();			
 			if(!zdi_mode()) {

@@ -2,21 +2,36 @@
 #define VDU_STREAM_PROCESSOR_H
 
 #include <memory>
+#include <unordered_map>
+#include <vector>
+
 #include <Stream.h>
+#include <fabgl.h>
 
 #include "agon.h"
-#include "agon_ps2.h"
+#include "context.h"
 #include "buffer_stream.h"
+#include "span.h"
 #include "types.h"
-#include "viewport.h"
+
+std::unordered_map<uint8_t, std::shared_ptr<std::vector<std::shared_ptr<Context>>>> contextStacks;
 
 class VDUStreamProcessor {
 	private:
+		struct AdvancedOffset {
+			uint32_t blockOffset = 0;
+			size_t blockIndex = 0;
+		};
+
 		std::shared_ptr<Stream> inputStream;
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
+
+		// Graphics context storage and management
+		std::shared_ptr<Context> context;					// Current active context
+		std::shared_ptr<std::vector<std::shared_ptr<Context>>> contextStack;	// Current active context stack
+
 		bool commandsEnabled = true;
-		uint8_t lastPlotCommand = 0;
 
 		int16_t readByte_t(uint16_t timeout);
 		int32_t readWord_t(uint16_t timeout);
@@ -26,26 +41,24 @@ class VDUStreamProcessor {
 		uint32_t discardBytes(uint32_t length, uint16_t timeout);
 		int16_t peekByte_t(uint16_t timeout);
 
+		void vdu_print(char c);
 		void vdu_colour();
 		void vdu_gcol();
 		void vdu_palette();
 		void vdu_mode();
 		void vdu_graphicsViewport();
 		void vdu_plot();
-		void vdu_plotPath(uint8_t mode);
 		void vdu_resetViewports();
 		void vdu_textViewport();
 		void vdu_origin();
 		void vdu_cursorTab();
-
-		void vdu_print(uint8_t c);
 
 		void vdu_sys();
 		void vdu_sys_video();
 		void sendGeneralPoll();
 		void vdu_sys_video_kblayout();
 		void sendCursorPosition();
-		void sendScreenChar(uint16_t x, uint16_t y);
+		void sendScreenChar(char c);
 		void sendScreenPixel(uint16_t x, uint16_t y);
 		void sendColour(uint8_t colour);
 		void sendTime();
@@ -68,6 +81,18 @@ class VDUStreamProcessor {
 		uint8_t setSampleRepeatLength(uint16_t bufferId, uint32_t length);
 		uint8_t setParameter(uint8_t channel, uint8_t parameter, uint16_t value);
 
+		void vdu_sys_font();
+
+		void vdu_sys_context();
+		void selectContext(uint8_t contextId);
+		bool resetContext(uint8_t flags);
+		void saveContext();
+		void restoreContext();
+		void saveAndSelectContext(uint8_t contextId);
+		void restoreAllContexts();
+		void clearContextStack();
+		void resetAllContexts();
+
 		void vdu_sys_sprites();
 		void receiveBitmap(uint16_t bufferId, uint16_t width, uint16_t height);
 		void createBitmapFromScreen(uint16_t bufferId);
@@ -79,26 +104,31 @@ class VDUStreamProcessor {
 
 		void vdu_sys_buffered();
 		uint32_t bufferWrite(uint16_t bufferId, uint32_t size);
-		void bufferCall(uint16_t bufferId, uint32_t offset);
+		void bufferCall(uint16_t bufferId, AdvancedOffset offset);
+		void bufferRemoveUsers(uint16_t bufferId);
 		void bufferClear(uint16_t bufferId);
 		std::shared_ptr<WritableBufferStream> bufferCreate(uint16_t bufferId, uint32_t size);
 		void setOutputStream(uint16_t bufferId);
-		uint32_t getOffsetFromStream(uint16_t bufferId, bool isAdvanced);
+		AdvancedOffset getOffsetFromStream(bool isAdvanced);
 		std::vector<uint16_t> getBufferIdsFromStream();
-		int16_t getBufferByte(uint16_t bufferId, uint32_t offset);
-		bool setBufferByte(uint8_t value, uint16_t bufferId, uint32_t offset);
+		static tcb::span<uint8_t> getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset);
+		static int16_t getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
+		static bool setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
-		void bufferJump(uint16_t bufferId, uint32_t offset);
-		void bufferCopy(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
+		void bufferJump(uint16_t bufferId, AdvancedOffset offset);
+		void bufferCopy(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferConsolidate(uint16_t bufferId);
-		void bufferSplitInto(uint16_t bufferId, uint16_t length, std::vector<uint16_t> newBufferIds, bool iterate);
-		void bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, std::vector<uint16_t> newBufferIds, bool iterate);
-		void bufferSpreadInto(uint16_t bufferId, std::vector<uint16_t> newBufferIds, bool iterate);
+		void clearTargets(tcb::span<const uint16_t> targets);
+		void bufferSplitInto(uint16_t bufferId, uint16_t length, tcb::span<uint16_t> newBufferIds, bool iterate);
+		void bufferSplitByInto(uint16_t bufferId, uint16_t width, uint16_t chunkCount, tcb::span<uint16_t> newBufferIds, bool iterate);
+		void bufferSpreadInto(uint16_t bufferId, tcb::span<uint16_t> newBufferIds, bool iterate);
 		void bufferReverseBlocks(uint16_t bufferId);
 		void bufferReverse(uint16_t bufferId, uint8_t options);
-		void bufferCopyRef(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
-		void bufferCopyAndConsolidate(uint16_t bufferId, std::vector<uint16_t> sourceBufferIds);
+		void bufferCopyRef(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
+		void bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
+		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
+		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 
 		void vdu_sys_updater();
 		void unlock();
@@ -108,10 +138,19 @@ class VDUStreamProcessor {
 	public:
 		uint16_t id = 65535;
 
-		VDUStreamProcessor(std::shared_ptr<Stream> input, std::shared_ptr<Stream> output, uint16_t bufferId) :
-			inputStream(input), outputStream(output), originalOutputStream(output), id(bufferId) {}
+		VDUStreamProcessor(std::shared_ptr<Context> _context, std::shared_ptr<Stream> input, std::shared_ptr<Stream> output, uint16_t bufferId) :
+			context(_context), inputStream(std::move(input)), outputStream(std::move(output)), originalOutputStream(outputStream), id(bufferId) {
+				// NB this will become obsolete when merging in the buffered command optimisations
+				context = make_shared_psram<Context>(*_context);
+				contextStack = make_shared_psram<std::vector<std::shared_ptr<Context>>>();
+				contextStack->push_back(context);
+			}
 		VDUStreamProcessor(Stream *input) :
-			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {}
+			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {
+				context = make_shared_psram<Context>();
+				contextStack = make_shared_psram<std::vector<std::shared_ptr<Context>>>();
+				contextStack->push_back(context);
+			}
 
 		inline bool byteAvailable() {
 			return inputStream->available() > 0;
@@ -130,11 +169,27 @@ class VDUStreamProcessor {
 
 		void processAllAvailable();
 		void processNext();
+		void doCursorFlash() {
+			context->doCursorFlash();
+		}
+		void hideCursor() {
+			context->hideCursor();
+		}
+		void showCursor() {
+			context->showCursor();
+		}
 
 		void vdu(uint8_t c);
 
 		void wait_eZ80();
 		void sendModeInformation();
+
+		std::shared_ptr<Context> getContext() {
+			return context;
+		}
+		bool contextExists(uint8_t id) {
+			return contextStacks.find(id) != contextStacks.end();
+		}
 };
 
 // Read an unsigned byte from the serial port, with a timeout
@@ -289,7 +344,7 @@ void VDUStreamProcessor::sendMouseData(MouseDelta * delta = nullptr) {
 	}
 	if (mouse) {
 		auto mStatus = mouse->status();
-		auto mousePos = toCurrentCoordinates(mStatus.X, mStatus.Y);
+		auto mousePos = context->toCurrentCoordinates(mStatus.X, mStatus.Y);
 		mouseX = mousePos.X;
 		mouseY = mousePos.Y;
 		buttons = mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2;
