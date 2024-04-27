@@ -199,7 +199,7 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			bufferDecompress(bufferId, sourceBufferId);
 		}	break;
 		case BUFFERED_DEBUG_INFO: {
-			force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
+			// force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
 			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
 			if (buffers[bufferId].empty()) {
 				return;
