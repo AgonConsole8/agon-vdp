@@ -31,6 +31,10 @@ void VDUStreamProcessor::vdu(uint8_t c) {
 			// 	vdu_print(32);
 			// 	break;
 			case 8 ... 13:
+				if (!consoleMode) {
+					DBGSerial.write(c);
+				}
+				break;
 			case 0x20 ... 0xFF: {
 				if (!commandsEnabled && !consoleMode) {
 					DBGSerial.write(c);
