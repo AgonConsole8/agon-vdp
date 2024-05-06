@@ -76,7 +76,7 @@ VDUStreamProcessor *	processor;				// VDU Stream Processor
 
 #include "zdi.h"								// ZDI debugging console
 
-void test_pingo_3d();
+TaskHandle_t		Core0Task;					// Core 0 task handle
 
 void setup() {
 	#ifndef VDP_USE_WDT
@@ -93,11 +93,27 @@ void setup() {
 	processor->wait_eZ80();
 	setupKeyboardAndMouse();
 	processor->sendModeInformation();
+	debug_log("Setup ran on core %d, busy core is %d\n\r", xPortGetCoreID(), CoreUsage::busiestCore());
+	xTaskCreatePinnedToCore(
+		processLoop,
+		"processLoop",
+		4096,		// Stack size - highwater mark checks show this generally still leaves about 2000 words free
+		NULL,
+		3,			// Priority
+		&Core0Task,
+		0			// Core 0
+	);
 }
 
 // The main loop
 //
 void loop() {
+	while (true) {
+		delay(1000);
+	};
+}
+
+void processLoop(void * parameter) {
 	while (true) {
 		#ifdef VDP_USE_WDT
 			esp_task_wdt_reset();
@@ -138,7 +154,7 @@ void do_keyboard() {
 				case 7:		// Bell
 				case 12:	// CLS
 				case 14 ... 15:	// paged mode on/off
-					processor->vdu(keycode);
+					processor->vdu(keycode, false);
 					break;
 				case 16:
 					// control-P toggles "printer" on R.T.Russell's BASIC
@@ -211,6 +227,20 @@ void debug_log(const char *format, ...) {
 	}
 	va_end(ap);
 	#endif
+}
+
+void force_debug_log(const char *format, ...) {
+	va_list ap;
+	va_start(ap, format);
+	auto size = vsnprintf(nullptr, 0, format, ap) + 1;
+	if (size > 0) {
+		va_end(ap);
+		va_start(ap, format);
+		char buf[size + 1];
+		vsnprintf(buf, size, format, ap);
+		DBGSerial.print(buf);
+	}
+	va_end(ap);
 }
 
 // Set console mode
@@ -352,7 +382,7 @@ bool processTerminal() {
 
 void print(char const * text) {
 	for (auto i = 0; i < strlen(text); i++) {
-		processor->vdu(text[i]);
+		processor->vdu(text[i], false);
 	}
 }
 

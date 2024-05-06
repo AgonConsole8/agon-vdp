@@ -27,26 +27,38 @@ std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage f
 
 std::unique_ptr<fabgl::SoundGenerator> soundGenerator;				// audio handling sub-system
 
+extern void force_debug_log(const char *format, ...);
+
 // Audio channel driver task
 //
 void audioDriver(void * parameters) {
-	uint8_t channelNum = *(uint8_t *)parameters;
-	auto channel = make_shared_psram<AudioChannel>(channelNum);
+	uint8_t channelNum = (uint8_t)(uintptr_t)parameters;
+	// auto counter = 0;
+	auto channel = audioChannels[channelNum];
 
-	audioChannels[channelNum] = channel;
 	while (true) {
 		channel->loop();
 		vTaskDelay(1);
+		// counter++;
+		// if (counter > 3000) {
+		// 	force_debug_log("audioDriver: channel %d stack highwater %d\n\r", channelNum, uxTaskGetStackHighWaterMark(nullptr));
+		// 	counter = 0;
+		// }
 	}
 }
 
-void initAudioChannel(uint8_t channel) {
-	xTaskCreatePinnedToCore(audioDriver,  "audioDriver",
-		4096,						// This stack size can be checked & adjusted by reading the Stack Highwater
-		&channel,					// Parameters
-		PLAY_SOUND_PRIORITY,		// Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-		&audioHandlers[channel],	// Task handle
-		ARDUINO_RUNNING_CORE
+BaseType_t initAudioChannel(uint8_t channelNum) {
+	debug_log("initAudioChannel: channel %d\n\r", channelNum);
+
+	auto channel = make_shared_psram<AudioChannel>(channelNum);
+	audioChannels[channelNum] = channel;
+
+	return xTaskCreatePinnedToCore(audioDriver,  "audioDriver",
+		1792,						// Checked & adjusted by reading the Stack Highwater
+		(void*)(uintptr_t) channelNum,	// Parameters
+		AUDIO_CHANNEL_PRIORITY,		// Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+		&audioHandlers[channelNum],	// Task handle
+		AUDIO_CORE
 	);
 }
 
@@ -105,6 +117,7 @@ void initAudio() {
 	debug_log("initAudio: we have reserved %d channels\n\r", audioHandlers.capacity());
 	for (uint8_t i = 0; i < AUDIO_CHANNELS; i++) {
 		initAudioChannel(i);
+		vTaskDelay(1);
 	}
 }
 
@@ -207,8 +220,9 @@ uint8_t enableChannel(uint8_t channel) {
 	}
 	if (channel >= 0 && channel < MAX_AUDIO_CHANNELS && audioChannels[channel] == nullptr) {
 		// channel not enabled, so enable it
-		initAudioChannel(channel);
-		return 1;
+		if (initAudioChannel(channel) == pdPASS) {
+			return 1;
+		}
 	}
 	return 0;
 }
