@@ -1734,8 +1734,20 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 // VDU 23, 0, &A0, sid; &48, 15, oid; disty; :  Set Object Y Translation Distance
 // VDU 23, 0, &A0, sid; &48, 16, oid; distz; :  Set Object Z Translation Distance
 // VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances
-// VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap
-// VDU 23, 0, &A0, sid; &48, 19 :  Delete Control Structure
+// VDU 23, 0, &A0, sid; &48, 18, scalex;</b> :  Set Camera X Scale Factor
+// VDU 23, 0, &A0, sid; &48, 19, scaley;</b> :  Set Camera Y Scale Factor
+// VDU 23, 0, &A0, sid; &48, 20, scalez;</b> :  Set Camera Z Scale Factor
+// VDU 23, 0, &A0, sid; &48, 21, scalex; scaley; scalez;</b> :  Set Camera XYZ Scale Factors
+// VDU 23, 0, &A0, sid; &48, 22, anglex;</b> :  Set Camera X Rotation Angle
+// VDU 23, 0, &A0, sid; &48, 23, angley;</b> :  Set Camera Y Rotation Angle
+// VDU 23, 0, &A0, sid; &48, 24, anglez;</b> :  Set Camera Z Rotation Angle
+// VDU 23, 0, &A0, sid; &48, 25, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles
+// VDU 23, 0, &A0, sid; &48, 26, distx;</b> :  Set Camera X Translation Distance
+// VDU 23, 0, &A0, sid; &48, 27, disty;</b> :  Set Camera Y Translation Distance
+// VDU 23, 0, &A0, sid; &48, 28, distz;</b> :  Set Camera Z Translation Distance
+// VDU 23, 0, &A0, sid; &48, 29, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances
+// VDU 23, 0, &A0, sid; &48, 30, bmid; :  Render To Bitmap
+// VDU 23, 0, &A0, sid; &48, 31 :  Delete Control Structure
 //
 void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
     auto subcmd = readByte_t();
@@ -1757,7 +1769,7 @@ void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
 		} else {
 			debug_log("bufferUsePingo3D: buffer %d missing width\n\r", bufferId);
 		}
-	} else if (subcmd == 19) {
+	} else if (subcmd == 31) {
 		// Deinitialize the control structure
 		// Delete the buffer
 		auto bufferIter = buffers.find(bufferId);

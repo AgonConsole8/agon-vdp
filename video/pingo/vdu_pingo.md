@@ -105,8 +105,20 @@ VDU ... PDX; PDY; PDZ; ...
 <b>VDU 23, 0, &A0, sid; &48, 15, oid; disty;</b> :  Set Object Y Translation Distance<br>
 <b>VDU 23, 0, &A0, sid; &48, 16, oid; distz;</b> :  Set Object Z Translation Distance<br>
 <b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances<br>
-<b>VDU 23, 0, &A0, sid; &48, 18, bmid;</b> :  Render To Bitmap<br>
-<b>VDU 23, 0, &A0, sid; &48, 19</b> :  Delete Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &48, 18, scalex;</b> :  Set Camera X Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &48, 19, scaley;</b> :  Set Camera Y Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &48, 20, scalez;</b> :  Set Camera Z Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &48, 21, scalex; scaley; scalez;</b> :  Set Camera XYZ Scale Factors<br>
+<b>VDU 23, 0, &A0, sid; &48, 22, anglex;</b> :  Set Camera X Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 23, angley;</b> :  Set Camera Y Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 24, anglez;</b> :  Set Camera Z Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 25, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles<br>
+<b>VDU 23, 0, &A0, sid; &48, 26, distx;</b> :  Set Camera X Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 27, disty;</b> :  Set Camera Y Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 28, distz;</b> :  Set Camera Z Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 29, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances<br>
+<b>VDU 23, 0, &A0, sid; &48, 30, bmid;</b> :  Render To Bitmap<br>
+<b>VDU 23, 0, &A0, sid; &48, 31</b> :  Delete Control Structure<br>
 
 ## Create Control Structure
 <b>VDU 23, 0, &A0, sid; &48, 0, w; h;</b> :  Create Control Structure<br>

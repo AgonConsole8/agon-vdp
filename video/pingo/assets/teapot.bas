@@ -668,7 +668,7 @@
 6417 rotatex=0.0: rotatey=0.0: rotatez=0.0
 6418 incx=PI/16.0: incy=PI/32.0: incz=PI/64.0: pi2=PI*2.0
 6419 factor=32767.0/pi2
-6420 VDU 23, 0, &A0, sid%; &48, 18, bmid2%+64000; : REM Render To Bitmap
+6420 VDU 23, 0, &A0, sid%; &48, 30, bmid2%+64000; : REM Render To Bitmap
 6510 VDU 23, 27, 3, 100; 100; : REM Display output bitmap
 6512 *FX 19
 6520 rotatex=rotatex+incx: IF rotatex>=pi2 THEN rotatex=rotatex-pi2

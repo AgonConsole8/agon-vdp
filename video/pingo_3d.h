@@ -30,56 +30,69 @@ namespace p3d {
 
 class VDUStreamProcessor;
 
-typedef struct tag_TexObject {
-    p3d::Object     m_object;
-    p3d::Texture    m_texture;
-    p3d::Material   m_material;
+typedef struct tag_Transformable {
     p3d::Vec3f      m_scale;
     p3d::Vec3f      m_rotation;
     p3d::Vec3f      m_translation;
-    uint16_t        m_oid;
+    p3d::Mat4       m_transform;
     bool            m_modified;
 
     void compute_transformation_matrix() {
-        m_object.material = &m_material;
-        m_material.texture = &m_texture;
-        m_object.transform = p3d::mat4Scale(m_scale);
+        m_transform = p3d::mat4Scale(m_scale);
         if (m_rotation.x) {
             auto t = p3d::mat4RotateX(m_rotation.x);
-            m_object.transform = mat4MultiplyM(&m_object.transform, &t);
+            m_transform = mat4MultiplyM(&m_transform, &t);
         }
         if (m_rotation.y) {
             auto t = p3d::mat4RotateY(m_rotation.y);
-            m_object.transform = mat4MultiplyM(&m_object.transform, &t);
+            m_transform = mat4MultiplyM(&m_transform, &t);
         }
         if (m_rotation.z) {
             auto t = p3d::mat4RotateY(m_rotation.z);
-            m_object.transform = mat4MultiplyM(&m_object.transform, &t);
+            m_transform = mat4MultiplyM(&m_transform, &t);
         }
         if (m_translation.x || m_translation.y || m_translation.z) {
             auto t = p3d::mat4Translate(m_translation);
-            m_object.transform = mat4MultiplyM(&m_object.transform, &t);
+            m_transform = mat4MultiplyM(&m_transform, &t);
         }
         m_modified = false;
     }
 
     void dump() {
-        debug_log("TObject: %p %u\n", this, m_oid);
-        debug_log("Object: %p %p %p %p\n", &m_object, m_object.material, m_object.mesh,
-                    m_object.transform.elements);
         for (int i = 0; i < 16; i++) {
-            debug_log("        [%i] %f\n", i, m_object.transform.elements[i]);
+            debug_log("        [%i] %f\n", i, m_transform.elements[i]);
         }
         debug_log("Scale: %f %f %f\n", m_scale.x, m_scale.y, m_scale.z);
         debug_log("Rotation: %f %f %f\n", m_rotation.x, m_rotation.y, m_rotation.z);
         debug_log("Translation: %f %f %f\n", m_translation.x, m_translation.y, m_translation.z);
+    }
+} Transformable;
+
+typedef struct tag_TexObject : public Transformable {
+    p3d::Object     m_object;
+    p3d::Texture    m_texture;
+    p3d::Material   m_material;
+    uint16_t        m_oid;
+
+    void update_transformation_matrix() {
+        m_object.material = &m_material;
+        m_material.texture = &m_texture;
+        compute_transformation_matrix();
+        m_object.transform = m_transform;
+    }
+
+    void dump() {
+        Transformable::dump();
+        debug_log("TObject: %p %u\n", this, m_oid);
+        debug_log("Object: %p %p %p %p\n", &m_object, m_object.material, m_object.mesh,
+                    m_object.transform.elements);
         debug_log("Texture: %p %u %u %p\n", &m_texture, m_texture.size.x, m_texture.size.y, m_texture.frameBuffer);
         debug_log("Material: %p %p %u %u %p\n", &m_material, m_material.texture, m_material.texture->size.x,
                     m_material.texture->size.y, m_material.texture->frameBuffer);
     }
 } TexObject;
 
-typedef struct tag_Pingo3dControl;
+struct tag_Pingo3dControl;
 
 extern "C" {
 
@@ -178,7 +191,20 @@ typedef struct tag_Pingo3dControl {
             case 15: set_object_y_translation_distance(); break;
             case 16: set_object_z_translation_distance(); break;
             case 17: set_object_xyz_translation_distances(); break;
-            case 18: render_to_bitmap(); break;
+
+            case 18: set_camera_x_scale_factor(); break;
+            case 19: set_camera_y_scale_factor(); break;
+            case 20: set_camera_z_scale_factor(); break;
+            case 21: set_camera_xyz_scale_factors(); break;
+            case 22: set_camera_x_rotation_angle(); break;
+            case 23: set_camera_y_rotation_angle(); break;
+            case 24: set_camera_z_rotation_angle(); break;
+            case 25: set_camera_xyz_rotation_angles(); break;
+            case 26: set_camera_x_translation_distance(); break;
+            case 27: set_camera_y_translation_distance(); break;
+            case 28: set_camera_z_translation_distance(); break;
+            case 29: set_camera_xyz_translation_distances(); break;
+            case 30: render_to_bitmap(); break;
         }
     }
 
@@ -532,7 +558,138 @@ typedef struct tag_Pingo3dControl {
         }
     }
 
-    // VDU 23, 0, &A0, sid; &48, 18, bmid; :  Render To Bitmap
+    // VDU 23, 0, &A0, sid; &48, 18, oid; scalex; :  Set Camera X Scale Factor
+    void set_camera_x_scale_factor() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_scale.x = convert_scale_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 19, oid; scaley; :  Set Camera Y Scale Factor
+    void set_camera_y_scale_factor() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_scale.y = convert_scale_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 20, oid; scalez; :  Set Camera Z Scale Factor
+    void set_camera_z_scale_factor() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_scale.y = convert_scale_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 21, oid; scalex; scaley; scalez :  Set Camera XYZ Scale Factors
+    void set_camera_xyz_scale_factors() {
+        auto object = get_object();
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            object->m_scale.x = convert_scale_value(valuex);
+            object->m_scale.y = convert_scale_value(valuey);
+            object->m_scale.z = convert_scale_value(valuez);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 22, oid; anglex; :  Set Camera X Rotation Angle
+    void set_camera_x_rotation_angle() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_rotation.x = convert_rotation_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 23, oid; angley; :  Set Camera Y Rotation Angle
+    void set_camera_y_rotation_angle() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_rotation.y = convert_rotation_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 24, oid; anglez; :  Set Camera Z Rotation Angle
+    void set_camera_z_rotation_angle() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_rotation.z = convert_rotation_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 25, oid; anglex; angley; anglez; :  Set Camera XYZ Rotation Angles
+    void set_camera_xyz_rotation_angles() {
+        auto object = get_object();
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            object->m_rotation.x = convert_rotation_value(valuex);
+            object->m_rotation.y = convert_rotation_value(valuey);
+            object->m_rotation.z = convert_rotation_value(valuez);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 26, oid; distx; :  Set Camera X Translation Distance
+    void set_camera_x_translation_distance() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_translation.x = convert_translation_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 27, oid; disty; :  Set Camera Y Translation Distance
+    void set_camera_y_translation_distance() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_translation.y = convert_translation_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 28, oid; distz; :  Set Camera Z Translation Distance
+    void set_camera_z_translation_distance() {
+        auto object = get_object();
+        auto value = m_proc->readWord_t();
+        if (object && (value >= 0)) {
+            object->m_translation.z = convert_translation_value(value);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 29, oid; distx; disty; distz :  Set Camera XYZ Translation Distances
+    void set_camera_xyz_translation_distances() {        auto object = get_object();
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            object->m_translation.x = convert_translation_value(valuex);
+            object->m_translation.y = convert_translation_value(valuey);
+            object->m_translation.z = convert_translation_value(valuez);
+            object->m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 30, bmid; :  Render To Bitmap
     void render_to_bitmap() {
         auto bmid = m_proc->readWord_t();
         if (bmid < 0) {
@@ -564,8 +721,8 @@ typedef struct tag_Pingo3dControl {
 
         for (auto object = m_objects->begin(); object != m_objects->end(); object++) {
             if (object->second.m_modified) {
-                object->second.compute_transformation_matrix();
-                object->second.dump();
+                object->second.update_transformation_matrix();
+                //object->second.dump();
             }
             sceneAddRenderable(&scene, p3d::object_as_renderable(&object->second.m_object));
         }
