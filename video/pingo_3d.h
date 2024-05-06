@@ -37,6 +37,14 @@ typedef struct tag_Transformable {
     p3d::Mat4       m_transform;
     bool            m_modified;
 
+    void initialize() {
+        memset(this, 0, sizeof(struct tag_Transformable));
+        m_scale.x = 1.0f;
+        m_scale.y = 1.0f;
+        m_scale.z = 1.0f;
+        m_modified = true;
+    }
+
     void compute_transformation_matrix() {
         m_transform = p3d::mat4Scale(m_scale);
         if (m_rotation.x) {
@@ -117,6 +125,7 @@ typedef struct tag_Pingo3dControl {
     p3d::PingoDepth*    m_zeta;             // Zeta buffer for depth information
     uint16_t            m_width;            // Width of final render in pixels
     uint16_t            m_height;           // Height of final render in pixels
+    Transformable       m_camera;           // Camera settings
     std::map<uint16_t, p3d::Mesh>* m_meshes;    // Map of meshes for use by objects
     std::map<uint16_t, TexObject>* m_objects;   // Map of textured objects that use meshes and have transforms
 
@@ -132,6 +141,7 @@ typedef struct tag_Pingo3dControl {
         m_size = sizeof(tag_Pingo3dControl);
         m_width = width;
         m_height = height;
+        m_camera.initialize();
 
         auto frame_size = (uint32_t) width * (uint32_t) height;
 
@@ -236,8 +246,7 @@ typedef struct tag_Pingo3dControl {
             object.m_oid = oid;
             object.m_object.material = &object.m_material;
             object.m_material.texture = &object.m_texture;
-            object.m_scale = p3d::Vec3f { 1.0f, 1.0f, 1.0f };
-            object.m_modified = true;
+            object.initialize();
             (*m_objects).insert(std::pair<uint16_t, TexObject>(oid, object));
             return &m_objects->find(oid)->second;
         } else {
@@ -560,119 +569,108 @@ typedef struct tag_Pingo3dControl {
 
     // VDU 23, 0, &A0, sid; &48, 18, oid; scalex; :  Set Camera X Scale Factor
     void set_camera_x_scale_factor() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_scale.x = convert_scale_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_scale.x = convert_scale_value(value);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 19, oid; scaley; :  Set Camera Y Scale Factor
     void set_camera_y_scale_factor() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_scale.y = convert_scale_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_scale.y = convert_scale_value(value);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 20, oid; scalez; :  Set Camera Z Scale Factor
     void set_camera_z_scale_factor() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_scale.y = convert_scale_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_scale.y = convert_scale_value(value);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 21, oid; scalex; scaley; scalez :  Set Camera XYZ Scale Factors
     void set_camera_xyz_scale_factors() {
-        auto object = get_object();
         auto valuex = m_proc->readWord_t();
         auto valuey = m_proc->readWord_t();
         auto valuez = m_proc->readWord_t();
-        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
-            object->m_scale.x = convert_scale_value(valuex);
-            object->m_scale.y = convert_scale_value(valuey);
-            object->m_scale.z = convert_scale_value(valuez);
-            object->m_modified = true;
+        if ((valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            m_camera.m_scale.x = convert_scale_value(valuex);
+            m_camera.m_scale.y = convert_scale_value(valuey);
+            m_camera.m_scale.z = convert_scale_value(valuez);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 22, oid; anglex; :  Set Camera X Rotation Angle
     void set_camera_x_rotation_angle() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_rotation.x = convert_rotation_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_rotation.x = convert_rotation_value(value);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 23, oid; angley; :  Set Camera Y Rotation Angle
     void set_camera_y_rotation_angle() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_rotation.y = convert_rotation_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_rotation.y = convert_rotation_value(value);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 24, oid; anglez; :  Set Camera Z Rotation Angle
     void set_camera_z_rotation_angle() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_rotation.z = convert_rotation_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_rotation.z = convert_rotation_value(value);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 25, oid; anglex; angley; anglez; :  Set Camera XYZ Rotation Angles
     void set_camera_xyz_rotation_angles() {
-        auto object = get_object();
         auto valuex = m_proc->readWord_t();
         auto valuey = m_proc->readWord_t();
         auto valuez = m_proc->readWord_t();
-        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
-            object->m_rotation.x = convert_rotation_value(valuex);
-            object->m_rotation.y = convert_rotation_value(valuey);
-            object->m_rotation.z = convert_rotation_value(valuez);
-            object->m_modified = true;
+        if ((valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            m_camera.m_rotation.x = convert_rotation_value(valuex);
+            m_camera.m_rotation.y = convert_rotation_value(valuey);
+            m_camera.m_rotation.z = convert_rotation_value(valuez);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 26, oid; distx; :  Set Camera X Translation Distance
     void set_camera_x_translation_distance() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_translation.x = convert_translation_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_translation.x = convert_translation_value(value);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 27, oid; disty; :  Set Camera Y Translation Distance
     void set_camera_y_translation_distance() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_translation.y = convert_translation_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_translation.y = convert_translation_value(value);
+            m_camera.m_modified = true;
         }
     }
 
     // VDU 23, 0, &A0, sid; &48, 28, oid; distz; :  Set Camera Z Translation Distance
     void set_camera_z_translation_distance() {
-        auto object = get_object();
         auto value = m_proc->readWord_t();
-        if (object && (value >= 0)) {
-            object->m_translation.z = convert_translation_value(value);
-            object->m_modified = true;
+        if (value >= 0) {
+            m_camera.m_translation.z = convert_translation_value(value);
+            m_camera.m_modified = true;
         }
     }
 
@@ -681,11 +679,11 @@ typedef struct tag_Pingo3dControl {
         auto valuex = m_proc->readWord_t();
         auto valuey = m_proc->readWord_t();
         auto valuez = m_proc->readWord_t();
-        if (object && (valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
-            object->m_translation.x = convert_translation_value(valuex);
-            object->m_translation.y = convert_translation_value(valuey);
-            object->m_translation.z = convert_translation_value(valuez);
-            object->m_modified = true;
+        if ((valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            m_camera.m_translation.x = convert_translation_value(valuex);
+            m_camera.m_translation.y = convert_translation_value(valuey);
+            m_camera.m_translation.z = convert_translation_value(valuez);
+            m_camera.m_modified = true;
         }
     }
 
@@ -728,17 +726,15 @@ typedef struct tag_Pingo3dControl {
         }
 
         p3d::F_TYPE phi = 0;
-        p3d::Mat4 t;
 
         // Set the projection matrix
         renderer.camera_projection =
             p3d::mat4Perspective( 1, 2500.0, (p3d::F_TYPE)size.x / (p3d::F_TYPE)size.y, 0.6);
 
-        // Set the view matrix (position and orientation of the "camera")
-        p3d::Mat4 view = p3d::mat4Translate((p3d::Vec3f) {0, 2, -20.0});
-
-        p3d::Mat4 rotateDown = p3d::mat4RotateX(-0.40); // Rotate around origin/orbit
-        renderer.camera_view = mat4MultiplyM(&rotateDown, &view);
+        if (m_camera.m_modified) {
+            m_camera.compute_transformation_matrix();
+        }
+        renderer.camera_view = m_camera.m_transform;
 
         // Set the scene transformation matrix
         scene.transform = p3d::mat4RotateY(phi);

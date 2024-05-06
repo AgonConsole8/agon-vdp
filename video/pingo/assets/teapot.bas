@@ -626,9 +626,16 @@
 6234 PRINT "Max absolute value = ";max_abs
 6236 PRINT "Factor = ";factor
 6240 sid%=100: mid%=1: oid%=1: bmid1%=101: bmid2%=102
-6245 PRINT "Creating control structure"
-6247 scene_width%=64: scene_height%=64
-6250 VDU 23,0, &A0, sid%; &48,0, scene_width%; scene_height%; : REM Create Control Structure
+6241 PRINT "Creating control structure"
+6242 scene_width%=64: scene_height%=64
+6243 VDU 23,0, &A0, sid%; &48,0, scene_width%; scene_height%; : REM Create Control Structure
+6244 f=32767.0/256.0
+6245 distx=0*f: disty=2*f: distz=-20*f
+6246 VDU 23,0, &A0, sid%; &48, 29, distx; disty; distz; : REM Set Camera XYZ Translation Distances
+6247 pi2=PI*2.0: f=32767.0/pi2
+6248 anglex=-0.4*f
+6249 VDU 23,0, &A0, sid%; &48, 22, anglex; : REM Set Camera X Rotation Angle
+
 6255 PRINT "Sending vertices using factor ";factor
 6260 VDU 23,0, &A0, sid%; &48, 1, mid%; teapot_vertices%; : REM Define Mesh Vertices
 6270 FOR i%=0 TO total_coords%-1
