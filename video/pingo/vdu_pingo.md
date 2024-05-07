@@ -105,20 +105,28 @@ VDU ... PDX; PDY; PDZ; ...
 <b>VDU 23, 0, &A0, sid; &48, 15, oid; disty;</b> :  Set Object Y Translation Distance<br>
 <b>VDU 23, 0, &A0, sid; &48, 16, oid; distz;</b> :  Set Object Z Translation Distance<br>
 <b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances<br>
-<b>VDU 23, 0, &A0, sid; &48, 18, scalex;</b> :  Set Camera X Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 19, scaley;</b> :  Set Camera Y Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 20, scalez;</b> :  Set Camera Z Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 21, scalex; scaley; scalez;</b> :  Set Camera XYZ Scale Factors<br>
-<b>VDU 23, 0, &A0, sid; &48, 22, anglex;</b> :  Set Camera X Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 23, angley;</b> :  Set Camera Y Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 24, anglez;</b> :  Set Camera Z Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 25, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles<br>
-<b>VDU 23, 0, &A0, sid; &48, 26, distx;</b> :  Set Camera X Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 27, disty;</b> :  Set Camera Y Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 28, distz;</b> :  Set Camera Z Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 29, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances<br>
-<b>VDU 23, 0, &A0, sid; &48, 30, bmid;</b> :  Render To Bitmap<br>
-<b>VDU 23, 0, &A0, sid; &48, 31</b> :  Delete Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &48, 18, anglex;</b> :  Set Camera X Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 19, angley;</b> :  Set Camera Y Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 20, anglez;</b> :  Set Camera Z Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 21, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles<br>
+<b>VDU 23, 0, &A0, sid; &48, 22, distx;</b> :  Set Camera X Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 23, disty;</b> :  Set Camera Y Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 24, distz;</b> :  Set Camera Z Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 25, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances<br>
+<b>VDU 23, 0, &A0, sid; &48, 26, scalex;</b> :  Set Scene X Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &48, 27, scaley;</b> :  Set Scene Y Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &48, 28, scalez;</b> :  Set Scene Z Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &48, 29, scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors<br>
+<b>VDU 23, 0, &A0, sid; &48, 30, anglex;</b> :  Set Scene X Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 31, angley;</b> :  Set Scene Y Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 32, anglez;</b> :  Set Scene Z Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &48, 33, anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles<br>
+<b>VDU 23, 0, &A0, sid; &48, 34, distx;</b> :  Set Scene X Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 35, disty;</b> :  Set Scene Y Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 36, distz;</b> :  Set Scene Z Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &48, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances<br>
+<b>VDU 23, 0, &A0, sid; &48, 38, bmid;</b> :  Render To Bitmap<br>
+<b>VDU 23, 0, &A0, sid; &48, 39</b> :  Delete Control Structure<br>
 
 ## Create Control Structure
 <b>VDU 23, 0, &A0, sid; &48, 0, w; h;</b> :  Create Control Structure<br>
@@ -221,32 +229,136 @@ This command sets the X, Y, and Z rotation angles for an object.
 <b>VDU 23, 0, &A0, sid; &48, 14, oid; distx;</b> :  Set Object X Translation Distance
 
 This command sets the X translation distance for an object.
-Note that 3D translation of an object is independent of 2D translation of the bitmap
-belonging to the render primitive.
+Note that 3D translation of an object is independent of 2D translation of the the rendered bitmap.
 
 ## Set Object Y Translation Distance
 <b>VDU 23, 0, &A0, sid; &48, 15, oid; disty;</b> :  Set Object Y Translation Distance
 
 This command sets the Y translation distance for an object.
-Note that 3D translation of an object is independent of 2D translation of the bitmap
-belonging to the render primitive.
+Note that 3D translation of an object is independent of 2D translation of the the rendered bitmap.
 
 ## Set Object Z Translation Distance
 <b>VDU 23, 0, &A0, sid; &48, 16, oid; distz;</b> :  Set Object Z Translation Distance
 
 This command sets the Z translation distance for an object.
-Note that 3D translation of an object is independent of 2D translation of the bitmap
-belonging to the render primitive.
+Note that 3D translation of an object is independent of 2D translation of the the rendered bitmap.
 
 ## Set Object XYZ Translation Distances
 <b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances
 
 This command sets the X, Y, and Z translation distances for an object.
-Note that 3D translation of an object is independent of 2D translation of the bitmap
-belonging to the render primitive.
+Note that 3D translation of an object is independent of 2D translation of the the rendered bitmap.
+
+## Set Camera X Rotation Angle
+<b>VDU 23, 0, &A0, sid; &48, 18, oid; anglex;</b> :  Set Camera X Rotation Angle
+
+This command sets the X rotation angle for the camera.
+
+## Set Camera Y Rotation Angle
+<b>VDU 23, 0, &A0, sid; &48, 19, oid; angley;</b> :  Set Camera Y Rotation Angle
+
+This command sets the Y rotation angle for the camera.
+
+## Set Camera Z Rotation Angle
+<b>VDU 23, 0, &A0, sid; &48, 20, oid; anglez;</b> :  Set Camera Z Rotation Angle
+
+This command sets the Z rotation angle for the camera.
+
+## Set Camera XYZ Rotation Angles
+<b>VDU 23, 0, &A0, sid; &48, 21, oid; anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles
+
+This command sets the X, Y, and Z rotation angles for the camera.
+
+## Set Camera X Translation Distance
+<b>VDU 23, 0, &A0, sid; &48, 22, oid; distx;</b> :  Set Camera X Translation Distance
+
+This command sets the X translation distance for the camera.
+Note that 3D translation of the camera is independent of 2D translation of the the rendered bitmap.
+
+## Set Camera Y Translation Distance
+<b>VDU 23, 0, &A0, sid; &48, 23, oid; disty;</b> :  Set Camera Y Translation Distance
+
+This command sets the Y translation distance for the camera.
+Note that 3D translation of the camera is independent of 2D translation of the the rendered bitmap.
+
+## Set Camera Z Translation Distance
+<b>VDU 23, 0, &A0, sid; &48, 24, oid; distz;</b> :  Set Camera Z Translation Distance
+
+This command sets the Z translation distance for the camera.
+Note that 3D translation of the camera is independent of 2D translation of the the rendered bitmap.
+
+## Set Camera XYZ Translation Distances
+<b>VDU 23, 0, &A0, sid; &48, 25, oid; distx; disty; distz;</b> :  Set Camera XYZ Translation Distances
+
+This command sets the X, Y, and Z translation distances for the camera.
+Note that 3D translation of the camera is independent of 2D translation of the the rendered bitmap.
+
+## Set Scene X Scale Factor
+<b>VDU 23, 0, &A0, sid; &48, 26, oid; scalex;</b> :  Set Scene X Scale Factor
+
+This command sets the X scale factor for the scene.
+
+## Set Scene Y Scale Factor
+<b>VDU 23, 0, &A0, sid; &48, 27, oid; scaley;</b> :  Set Scene Y Scale Factor
+
+This command sets the Y scale factor for the scene.
+
+## Set Scene Z Scale Factor
+<b>VDU 23, 0, &A0, sid; &48, 28, oid; scalez;</b> :  Set Scene Z Scale Factor
+
+This command sets the Z scale factor for the scene.
+
+## Set Scene XYZ Scale Factors
+<b>VDU 23, 0, &A0, sid; &48, 29, oid; scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors
+
+This command sets the X, Y, and Z scale factors for the scene.
+
+## Set Scene X Rotation Angle
+<b>VDU 23, 0, &A0, sid; &48, 30, oid; anglex;</b> :  Set Scene X Rotation Angle
+
+This command sets the X rotation angle for the scene.
+
+## Set Scene Y Rotation Angle
+<b>VDU 23, 0, &A0, sid; &48, 31, oid; angley;</b> :  Set Scene Y Rotation Angle
+
+This command sets the Y rotation angle for the scene.
+
+## Set Scene Z Rotation Angle
+<b>VDU 23, 0, &A0, sid; &48, 32, oid; anglez;</b> :  Set Scene Z Rotation Angle
+
+This command sets the Z rotation angle for the scene.
+
+## Set Scene XYZ Rotation Angles
+<b>VDU 23, 0, &A0, sid; &48, 33, oid; anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles
+
+This command sets the X, Y, and Z rotation angles for the scene.
+
+## Set Scene X Translation Distance
+<b>VDU 23, 0, &A0, sid; &48, 34, oid; distx;</b> :  Set Scene X Translation Distance
+
+This command sets the X translation distance for the scene.
+Note that 3D translation of the scene is independent of 2D translation of the the rendered bitmap.
+
+## Set Scene Y Translation Distance
+<b>VDU 23, 0, &A0, sid; &48, 35, oid; disty;</b> :  Set Scene Y Translation Distance
+
+This command sets the Y translation distance for the scene.
+Note that 3D translation of the scene is independent of 2D translation of the the rendered bitmap.
+
+## Set Scene Z Translation Distance
+<b>VDU 23, 0, &A0, sid; &48, 36, oid; distz;</b> :  Set Scene Z Translation Distance
+
+This command sets the Z translation distance for the scene.
+Note that 3D translation of the scene is independent of 2D translation of the the rendered bitmap.
+
+## Set Scene XYZ Translation Distances
+<b>VDU 23, 0, &A0, sid; &48, 37, oid; distx; disty; distz;</b> :  Set Scene XYZ Translation Distances
+
+This command sets the X, Y, and Z translation distances for the scene.
+Note that 3D translation of the scene is independent of 2D translation of the the rendered bitmap.
 
 ## Render To Bitmap
-<b>VDU 23, 0, &A0, sid; &48, 18, bmid;</b> :  Render To Bitmap
+<b>VDU 23, 0, &A0, sid; &48, 38, bmid;</b> :  Render To Bitmap
 
 This command uses information provided by the above commands to render the 3D scene
 onto the specified bitmap. This command must be used in
@@ -254,7 +366,7 @@ order to perform the render operation; it does <i>not</i> happen automatically, 
 commands change some of the render parameters.
 
 ## Delete Control Structure
-<b>VDU 23, 0, &A0, sid; &48, 19</b> :  Delete Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &48, 39</b> :  Delete Control Structure<br>
 
 This command deinitializes an existing control structure,
 assuming that it exists in the designated buffer. The buffer is subsequently

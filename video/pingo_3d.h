@@ -137,7 +137,8 @@ typedef struct tag_Pingo3dControl {
     p3d::PingoDepth*    m_zeta;             // Zeta buffer for depth information
     uint16_t            m_width;            // Width of final render in pixels
     uint16_t            m_height;           // Height of final render in pixels
-    Transformable       m_camera;           // Camera settings
+    Transformable       m_camera;           // Camera transformation settings
+    Transformable       m_scene;            // Scene transformation settings
     std::map<uint16_t, p3d::Mesh>* m_meshes;    // Map of meshes for use by objects
     std::map<uint16_t, TexObject>* m_objects;   // Map of textured objects that use meshes and have transforms
 
@@ -154,6 +155,7 @@ typedef struct tag_Pingo3dControl {
         m_width = width;
         m_height = height;
         m_camera.initialize_scale();
+        m_scene.initialize_scale();
 
         auto frame_size = (uint32_t) width * (uint32_t) height;
 
@@ -213,20 +215,27 @@ typedef struct tag_Pingo3dControl {
             case 15: set_object_y_translation_distance(); break;
             case 16: set_object_z_translation_distance(); break;
             case 17: set_object_xyz_translation_distances(); break;
-
-            case 18: set_camera_x_scale_factor(); break;
-            case 19: set_camera_y_scale_factor(); break;
-            case 20: set_camera_z_scale_factor(); break;
-            case 21: set_camera_xyz_scale_factors(); break;
-            case 22: set_camera_x_rotation_angle(); break;
-            case 23: set_camera_y_rotation_angle(); break;
-            case 24: set_camera_z_rotation_angle(); break;
-            case 25: set_camera_xyz_rotation_angles(); break;
-            case 26: set_camera_x_translation_distance(); break;
-            case 27: set_camera_y_translation_distance(); break;
-            case 28: set_camera_z_translation_distance(); break;
-            case 29: set_camera_xyz_translation_distances(); break;
-            case 30: render_to_bitmap(); break;
+            case 18: set_camera_x_rotation_angle(); break;
+            case 19: set_camera_y_rotation_angle(); break;
+            case 20: set_camera_z_rotation_angle(); break;
+            case 21: set_camera_xyz_rotation_angles(); break;
+            case 22: set_camera_x_translation_distance(); break;
+            case 23: set_camera_y_translation_distance(); break;
+            case 24: set_camera_z_translation_distance(); break;
+            case 25: set_camera_xyz_translation_distances(); break;
+            case 26: set_scene_x_scale_factor(); break;
+            case 27: set_scene_y_scale_factor(); break;
+            case 28: set_scene_z_scale_factor(); break;
+            case 29: set_scene_xyz_scale_factors(); break;
+            case 30: set_scene_x_rotation_angle(); break;
+            case 31: set_scene_y_rotation_angle(); break;
+            case 32: set_scene_z_rotation_angle(); break;
+            case 33: set_scene_xyz_rotation_angles(); break;
+            case 34: set_scene_x_translation_distance(); break;
+            case 35: set_scene_y_translation_distance(); break;
+            case 36: set_scene_z_translation_distance(); break;
+            case 37: set_scene_xyz_translation_distances(); break;
+            case 38: render_to_bitmap(); break;
         }
     }
 
@@ -579,68 +588,28 @@ typedef struct tag_Pingo3dControl {
         }
     }
 
-    // VDU 23, 0, &A0, sid; &48, 18, oid; scalex; :  Set Camera X Scale Factor
-    void set_camera_x_scale_factor() {
-        auto value = m_proc->readWord_t();
-        if (value >= 0) {
-            m_camera.m_scale.x = convert_scale_value(value);
-            m_camera.m_modified = true;
-        }
-    }
-
-    // VDU 23, 0, &A0, sid; &48, 19, oid; scaley; :  Set Camera Y Scale Factor
-    void set_camera_y_scale_factor() {
-        auto value = m_proc->readWord_t();
-        if (value >= 0) {
-            m_camera.m_scale.y = convert_scale_value(value);
-            m_camera.m_modified = true;
-        }
-    }
-
-    // VDU 23, 0, &A0, sid; &48, 20, oid; scalez; :  Set Camera Z Scale Factor
-    void set_camera_z_scale_factor() {
-        auto value = m_proc->readWord_t();
-        if (value >= 0) {
-            m_camera.m_scale.y = convert_scale_value(value);
-            m_camera.m_modified = true;
-        }
-    }
-
-    // VDU 23, 0, &A0, sid; &48, 21, oid; scalex; scaley; scalez :  Set Camera XYZ Scale Factors
-    void set_camera_xyz_scale_factors() {
-        auto valuex = m_proc->readWord_t();
-        auto valuey = m_proc->readWord_t();
-        auto valuez = m_proc->readWord_t();
-        if ((valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
-            m_camera.m_scale.x = convert_scale_value(valuex);
-            m_camera.m_scale.y = convert_scale_value(valuey);
-            m_camera.m_scale.z = convert_scale_value(valuez);
-            m_camera.m_modified = true;
-        }
-    }
-
-    // VDU 23, 0, &A0, sid; &48, 22, oid; anglex; :  Set Camera X Rotation Angle
+    // VDU 23, 0, &A0, sid; &48, 18, oid; anglex; :  Set Camera X Rotation Angle
     void set_camera_x_rotation_angle() {
         auto value = m_proc->readWord_t();
         m_camera.m_rotation.x = convert_rotation_value(value);
         m_camera.m_modified = true;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 23, oid; angley; :  Set Camera Y Rotation Angle
+    // VDU 23, 0, &A0, sid; &48, 19, oid; angley; :  Set Camera Y Rotation Angle
     void set_camera_y_rotation_angle() {
         auto value = m_proc->readWord_t();
         m_camera.m_rotation.y = convert_rotation_value(value);
         m_camera.m_modified = true;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 24, oid; anglez; :  Set Camera Z Rotation Angle
+    // VDU 23, 0, &A0, sid; &48, 20, oid; anglez; :  Set Camera Z Rotation Angle
     void set_camera_z_rotation_angle() {
         auto value = m_proc->readWord_t();
         m_camera.m_rotation.z = convert_rotation_value(value);
         m_camera.m_modified = true;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 25, oid; anglex; angley; anglez; :  Set Camera XYZ Rotation Angles
+    // VDU 23, 0, &A0, sid; &48, 21, oid; anglex; angley; anglez; :  Set Camera XYZ Rotation Angles
     void set_camera_xyz_rotation_angles() {
         auto valuex = m_proc->readWord_t();
         auto valuey = m_proc->readWord_t();
@@ -651,28 +620,28 @@ typedef struct tag_Pingo3dControl {
         m_camera.m_modified = true;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 26, oid; distx; :  Set Camera X Translation Distance
+    // VDU 23, 0, &A0, sid; &48, 22, oid; distx; :  Set Camera X Translation Distance
     void set_camera_x_translation_distance() {
         auto value = m_proc->readWord_t();
         m_camera.m_translation.x = convert_translation_value(value);
         m_camera.m_modified = true;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 27, oid; disty; :  Set Camera Y Translation Distance
+    // VDU 23, 0, &A0, sid; &48, 23, oid; disty; :  Set Camera Y Translation Distance
     void set_camera_y_translation_distance() {
         auto value = m_proc->readWord_t();
         m_camera.m_translation.y = convert_translation_value(value);
         m_camera.m_modified = true;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 28, oid; distz; :  Set Camera Z Translation Distance
+    // VDU 23, 0, &A0, sid; &48, 24, oid; distz; :  Set Camera Z Translation Distance
     void set_camera_z_translation_distance() {
         auto value = m_proc->readWord_t();
         m_camera.m_translation.z = convert_translation_value(value);
         m_camera.m_modified = true;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 29, oid; distx; disty; distz :  Set Camera XYZ Translation Distances
+    // VDU 23, 0, &A0, sid; &48, 25, oid; distx; disty; distz :  Set Camera XYZ Translation Distances
     void set_camera_xyz_translation_distances() {
         auto valuex = m_proc->readWord_t();
         auto valuey = m_proc->readWord_t();
@@ -683,7 +652,111 @@ typedef struct tag_Pingo3dControl {
         m_camera.m_modified = true;
     }
 
-    // VDU 23, 0, &A0, sid; &48, 30, bmid; :  Render To Bitmap
+    // VDU 23, 0, &A0, sid; &48, 26, oid; scalex; :  Set Scene X Scale Factor
+    void set_scene_x_scale_factor() {
+        auto value = m_proc->readWord_t();
+        if (value >= 0) {
+            m_scene.m_scale.x = convert_scale_value(value);
+            m_scene.m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 27, oid; scaley; :  Set Scene Y Scale Factor
+    void set_scene_y_scale_factor() {
+        auto value = m_proc->readWord_t();
+        if (value >= 0) {
+            m_scene.m_scale.y = convert_scale_value(value);
+            m_scene.m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 28, oid; scalez; :  Set Scene Z Scale Factor
+    void set_scene_z_scale_factor() {
+        auto value = m_proc->readWord_t();
+        if (value >= 0) {
+            m_scene.m_scale.y = convert_scale_value(value);
+            m_scene.m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 29, oid; scalex; scaley; scalez :  Set Scene XYZ Scale Factors
+    void set_scene_xyz_scale_factors() {
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        if ((valuex >= 0) && (valuey >= 0) && (valuez >= 0)) {
+            m_scene.m_scale.x = convert_scale_value(valuex);
+            m_scene.m_scale.y = convert_scale_value(valuey);
+            m_scene.m_scale.z = convert_scale_value(valuez);
+            m_scene.m_modified = true;
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 30, oid; anglex; :  Set Scene X Rotation Angle
+    void set_scene_x_rotation_angle() {
+        auto value = m_proc->readWord_t();
+        m_scene.m_rotation.x = convert_rotation_value(value);
+        m_scene.m_modified = true;
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 31, oid; angley; :  Set Scene Y Rotation Angle
+    void set_scene_y_rotation_angle() {
+        auto value = m_proc->readWord_t();
+        m_scene.m_rotation.y = convert_rotation_value(value);
+        m_scene.m_modified = true;
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 32, oid; anglez; :  Set Scene Z Rotation Angle
+    void set_scene_z_rotation_angle() {
+        auto value = m_proc->readWord_t();
+        m_scene.m_rotation.z = convert_rotation_value(value);
+        m_scene.m_modified = true;
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 33, oid; anglex; angley; anglez; :  Set Scene XYZ Rotation Angles
+    void set_scene_xyz_rotation_angles() {
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        m_scene.m_rotation.x = convert_rotation_value(valuex);
+        m_scene.m_rotation.y = convert_rotation_value(valuey);
+        m_scene.m_rotation.z = convert_rotation_value(valuez);
+        m_scene.m_modified = true;
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 34, oid; distx; :  Set Scene X Translation Distance
+    void set_scene_x_translation_distance() {
+        auto value = m_proc->readWord_t();
+        m_scene.m_translation.x = convert_translation_value(value);
+        m_scene.m_modified = true;
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 35, oid; disty; :  Set Scene Y Translation Distance
+    void set_scene_y_translation_distance() {
+        auto value = m_proc->readWord_t();
+        m_scene.m_translation.y = convert_translation_value(value);
+        m_scene.m_modified = true;
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 36, oid; distz; :  Set Scene Z Translation Distance
+    void set_scene_z_translation_distance() {
+        auto value = m_proc->readWord_t();
+        m_scene.m_translation.z = convert_translation_value(value);
+        m_scene.m_modified = true;
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 37, oid; distx; disty; distz :  Set Scene XYZ Translation Distances
+    void set_scene_xyz_translation_distances() {
+        auto valuex = m_proc->readWord_t();
+        auto valuey = m_proc->readWord_t();
+        auto valuez = m_proc->readWord_t();
+        m_scene.m_translation.x = convert_translation_value(valuex);
+        m_scene.m_translation.y = convert_translation_value(valuey);
+        m_scene.m_translation.z = convert_translation_value(valuez);
+        m_scene.m_modified = true;
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 38, bmid; :  Render To Bitmap
     void render_to_bitmap() {
         auto bmid = m_proc->readWord_t();
         if (bmid < 0) {
@@ -701,6 +774,7 @@ typedef struct tag_Pingo3dControl {
 
         if (!dst_pix) {
             debug_log("render_to_bitmap: output bitmap %u not found or invalid\n", bmid);
+            return;
         }
 
         //auto start = millis();
@@ -722,8 +796,6 @@ typedef struct tag_Pingo3dControl {
             sceneAddRenderable(&scene, p3d::object_as_renderable(&object->second.m_object));
         }
 
-        p3d::F_TYPE phi = 0;
-
         // Set the projection matrix
         renderer.camera_projection =
             p3d::mat4Perspective( 1, 2500.0, (p3d::F_TYPE)size.x / (p3d::F_TYPE)size.y, 0.6);
@@ -735,9 +807,10 @@ typedef struct tag_Pingo3dControl {
         //m_camera.dump();
         renderer.camera_view = m_camera.m_transform;
 
-        // Set the scene transformation matrix
-        scene.transform = p3d::mat4RotateY(phi);
-        phi += 0.01;
+        if (m_scene.m_modified) {
+            m_scene.compute_transformation_matrix();
+        }
+        scene.transform = m_scene.m_transform;
 
         //debug_log("Frame data:  %02hX %02hX %02hX %02hX\n", m_frame->r, m_frame->g, m_frame->b, m_frame->a);
         //debug_log("Destination: %02hX %02hX %02hX %02hX\n", dst_pix->r, dst_pix->g, dst_pix->b, dst_pix->a);
