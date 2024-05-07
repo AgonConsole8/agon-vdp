@@ -86,10 +86,14 @@ typedef struct tag_TexObject : public Transformable {
     p3d::Material   m_material;
     uint16_t        m_oid;
 
-    void initialize() {
-        Transformable::initialize();
+    void bind() {
         m_object.material = &m_material;
         m_material.texture = &m_texture;
+    }
+
+    void initialize() {
+        Transformable::initialize();
+        bind();
     }
 
     void update_transformation_matrix() {
@@ -189,7 +193,7 @@ typedef struct tag_Pingo3dControl {
     }
 
     void handle_subcommand(VDUStreamProcessor& processor, uint8_t subcmd) {
-        debug_log("P3D: handle_subcommand(%hu)\n", subcmd);
+        //debug_log("P3D: handle_subcommand(%hu)\n", subcmd);
         m_proc = &processor;
         switch (subcmd) {
             case 1: define_mesh_vertices(); break;
@@ -252,8 +256,6 @@ typedef struct tag_Pingo3dControl {
             TexObject object;
             memset(&object, 0, sizeof(object));
             object.m_oid = oid;
-            object.m_object.material = &object.m_material;
-            object.m_material.texture = &object.m_texture;
             object.initialize();
             (*m_objects).insert(std::pair<uint16_t, TexObject>(oid, object));
             return &m_objects->find(oid)->second;
@@ -402,6 +404,7 @@ typedef struct tag_Pingo3dControl {
                 if (bitmap) {
                     auto size = p3d::Vec2i{(p3d::I_TYPE)bitmap->width, (p3d::I_TYPE)bitmap->height};
                     auto pix = (p3d::Pixel*) bitmap->data;
+                    object->bind();
                     texture_init(&object->m_texture, size, pix);
                     object->m_object.mesh = mesh;
                     debug_log("Texture data:  %02hX %02hX %02hX %02hX\n", pix->r, pix->g, pix->b, pix->a);
@@ -427,7 +430,7 @@ typedef struct tag_Pingo3dControl {
         if (value & 0x8000) {
             value = (int32_t)(int16_t)(uint16_t) value;
         }
-        static const p3d::F_TYPE factor = 1.0f / 256.0f;
+        static const p3d::F_TYPE factor = 256.0f / 32767.0f;
         return ((p3d::F_TYPE) value) * factor;
     }
 
@@ -563,7 +566,8 @@ typedef struct tag_Pingo3dControl {
     }
 
     // VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances
-    void set_object_xyz_translation_distances() {        auto object = get_object();
+    void set_object_xyz_translation_distances() {
+        auto object = get_object();
         auto valuex = m_proc->readWord_t();
         auto valuey = m_proc->readWord_t();
         auto valuez = m_proc->readWord_t();
@@ -669,7 +673,7 @@ typedef struct tag_Pingo3dControl {
     }
 
     // VDU 23, 0, &A0, sid; &48, 29, oid; distx; disty; distz :  Set Camera XYZ Translation Distances
-    void set_camera_xyz_translation_distances() {        auto object = get_object();
+    void set_camera_xyz_translation_distances() {
         auto valuex = m_proc->readWord_t();
         auto valuey = m_proc->readWord_t();
         auto valuez = m_proc->readWord_t();
@@ -699,7 +703,7 @@ typedef struct tag_Pingo3dControl {
             debug_log("render_to_bitmap: output bitmap %u not found or invalid\n", bmid);
         }
 
-        auto start = millis();
+        //auto start = millis();
         auto size = p3d::Vec2i{(p3d::I_TYPE)m_width, (p3d::I_TYPE)m_height};
         p3d::Renderer renderer;
         rendererInit(&renderer, size, &m_backend );
@@ -710,9 +714,10 @@ typedef struct tag_Pingo3dControl {
         p3d::rendererSetScene(&renderer, &scene);
 
         for (auto object = m_objects->begin(); object != m_objects->end(); object++) {
+            object->second.bind();
             if (object->second.m_modified) {
                 object->second.update_transformation_matrix();
-                object->second.dump();
+                //object->second.dump();
             }
             sceneAddRenderable(&scene, p3d::object_as_renderable(&object->second.m_object));
         }
@@ -726,26 +731,26 @@ typedef struct tag_Pingo3dControl {
         if (m_camera.m_modified) {
             m_camera.compute_transformation_matrix();
         }
-        debug_log("Camera:\n");
-        m_camera.dump();
+        //debug_log("Camera:\n");
+        //m_camera.dump();
         renderer.camera_view = m_camera.m_transform;
 
         // Set the scene transformation matrix
         scene.transform = p3d::mat4RotateY(phi);
         phi += 0.01;
 
-        debug_log("Frame data:  %02hX %02hX %02hX %02hX\n", m_frame->r, m_frame->g, m_frame->b, m_frame->a);
-        debug_log("Destination: %02hX %02hX %02hX %02hX\n", dst_pix->r, dst_pix->g, dst_pix->b, dst_pix->a);
+        //debug_log("Frame data:  %02hX %02hX %02hX %02hX\n", m_frame->r, m_frame->g, m_frame->b, m_frame->a);
+        //debug_log("Destination: %02hX %02hX %02hX %02hX\n", dst_pix->r, dst_pix->g, dst_pix->b, dst_pix->a);
 
         rendererRender(&renderer);
 
         memcpy(dst_pix, m_frame, sizeof(p3d::Pixel) * m_width * m_height);
 
-        auto stop = millis();
-        auto diff = stop - start;
-        debug_log("Render to %ux%u took %u ms\n", m_width, m_height, diff);
-        debug_log("Frame data:  %02hX %02hX %02hX %02hX\n", m_frame->r, m_frame->g, m_frame->b, m_frame->a);
-        debug_log("Final data:  %02hX %02hX %02hX %02hX\n", dst_pix->r, dst_pix->g, dst_pix->b, dst_pix->a);
+        //auto stop = millis();
+        //auto diff = stop - start;
+        //debug_log("Render to %ux%u took %u ms\n", m_width, m_height, diff);
+        //debug_log("Frame data:  %02hX %02hX %02hX %02hX\n", m_frame->r, m_frame->g, m_frame->b, m_frame->a);
+        //debug_log("Final data:  %02hX %02hX %02hX %02hX\n", dst_pix->r, dst_pix->g, dst_pix->b, dst_pix->a);
     }
 
 } Pingo3dControl;

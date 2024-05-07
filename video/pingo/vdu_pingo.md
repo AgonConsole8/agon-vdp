@@ -75,7 +75,7 @@ To prescale a set of distances for use in a VDU command, divide the distances by
 scale them all to fit within the range -1.0 to +1.0,
 then multiply the new floating point values by 32767.
 ```
-F = 256
+F = 32767 / 256
 PDX = DX * F
 PDY = DY * F
 PDZ = DZ * F

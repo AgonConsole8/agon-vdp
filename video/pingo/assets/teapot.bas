@@ -627,8 +627,8 @@
 6236 PRINT "Factor = ";factor
 6240 sid%=100: mid%=1: oid%=1: bmid1%=101: bmid2%=102
 6241 PRINT "Creating control structure"
-6242 scene_width%=64: scene_height%=64
-6243 VDU 23,0, &A0, sid%; &48,0, scene_width%; scene_height%; : REM Create Control Structure
+6242 scene_width%=96: scene_height%=96
+6243 VDU 23,0, &A0, sid%; &48, 0, scene_width%; scene_height%; : REM Create Control Structure
 6244 f=32767.0/256.0
 6245 distx=0*f: disty=2*f: distz=-20*f
 6246 VDU 23,0, &A0, sid%; &48, 29, distx; disty; distz; : REM Set Camera XYZ Translation Distances
@@ -672,15 +672,20 @@
 6413 VDU 23, 27, 0, bmid2% : REM Select output bitmap
 6414 VDU 23, 27, 2, scene_width%; scene_height%; &0000; &00C0; : REM Create solid color bitmap
 6415 PRINT "Render 3D object"
+6416 VDU 23, 0, &C3: REM Flip buffer
 6417 rotatex=0.0: rotatey=0.0: rotatez=0.0
 6418 incx=PI/16.0: incy=PI/32.0: incz=PI/64.0
 6419 factor=32767.0/pi2
-6420 VDU 23, 0, &A0, sid%; &48, 30, bmid2%+64000; : REM Render To Bitmap
-6510 VDU 23, 27, 3, 100; 100; : REM Display output bitmap
-6512 *FX 19
+6420 VDU 22, 136: REM 320x240x64
+6421 VDU 23, 0, &C0, 0: REM Normal coordinates
+6422 CLG
+6423 VDU 23, 0, &A0, sid%; &48, 30, bmid2%+64000; : REM Render To Bitmap
+6510 VDU 23, 27, 3, 50; 50; : REM Display output bitmap
+6512 VDU 23, 0, &C3: REM Flip buffer
+6514 *FX 19
 6520 rotatex=rotatex+incx: IF rotatex>=pi2 THEN rotatex=rotatex-pi2
 6530 rotatey=rotatey+incy: IF rotatey>=pi2 THEN rotatey=rotatey-pi2
 6540 rotatez=rotatez+incz: IF rotatez>=pi2 THEN rotatez=rotatez-pi2
 6550 rx=rotatex*factor: ry=rotatey*factor: rz=rotatez*factor
 6560 VDU 23, 0, &A0, sid%; &48, 13, oid%; rx; ry; rz; : REM Set Object XYZ Rotation Angles
-6570 GOTO 6420
+6570 GOTO 6422
