@@ -354,7 +354,8 @@ void VDUStreamProcessor::vdu_textViewport() {
 		if (cy2 > 24) cy2 = 24;
 		if (cx2 >= cx1 && cy2 >= cy1)
 		ttxt_instance.set_window(cx1,cy2,cx2,cy1);
-	} else if (context->setTextViewport(cx1, cy1, cx2, cy2)) {
+	}
+	if (context->setTextViewport(cx1, cy1, cx2, cy2)) {
 		debug_log("vdu_textViewport: OK %d,%d,%d,%d\n\r", cx1, cy1, cx2, cy2);
 	} else {
 		debug_log("vdu_textViewport: Invalid Viewport %d,%d,%d,%d\n\r", cx1, cy1, cx2, cy2);
