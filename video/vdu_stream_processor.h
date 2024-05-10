@@ -61,6 +61,7 @@ class VDUStreamProcessor {
 		void sendScreenChar(char c);
 		void sendScreenPixel(uint16_t x, uint16_t y);
 		void sendColour(uint8_t colour);
+		void printBuffer(uint16_t bufferId);
 		void sendTime();
 		void vdu_sys_video_time();
 		void sendKeyboardState();
