@@ -1765,8 +1765,8 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 			debug_log("bufferExpandBitmap: map buffer %d does not contain a single block\n\r", mapId);
 			return;
 		}
-		if (buffer[0]->size() != numValues) {
-			debug_log("bufferExpandBitmap: map buffer %d does not contain %d values\n\r", mapId, numValues);
+		if (buffer[0]->size() < numValues) {
+			debug_log("bufferExpandBitmap: map buffer %d does not contain at least %d values\n\r", mapId, numValues);
 			return;
 		}
 		mapValues = buffer[0]->getBuffer();
@@ -1829,8 +1829,8 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 	// iterate through source buffer
 	auto p_data = destination;
 	uint8_t bit = 0;
-	uint8_t byte = 0;
 	uint8_t pixel = 0;
+	uint16_t pixelCount = 0;
 	for (const auto &block : sourceBuffer) {
 		auto bufferLength = block->size();
 		auto p_source = block->getBuffer();
@@ -1851,12 +1851,12 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 					debug_log(" %02hX %02hX (%02hX) %d\n\r", pixel, mapValues[pixel], value, i);
 					pixel = 0;
 					if (aligned) {
-						debug_log("aligned...\n\r");
-						// byte align
-						if (++byte == byteWidth) {
-							byte = 0;
+						if (++pixelCount == width) {
+							// byte align
+							debug_log("aligned... skipping to next byte at byte bit %d\n\r", i);
+							pixelCount = 0;
 							// jump to next byte
-							continue;
+							break;
 						}
 					}
 				}
