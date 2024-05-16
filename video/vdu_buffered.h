@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <esp_heap_caps.h>
+#include <mat.h>
 
 #include "agon.h"
 #include "agon_fonts.h"
@@ -187,6 +188,9 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 				return;
 			}
 			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
+		}	break;
+		case BUFFERED_AFFINE_TRANSFORM: {
+			bufferAffineTransform(bufferId);
 		}	break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
@@ -1551,6 +1555,291 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 	}
 	debug_log("bufferCopyAndConsolidate: copied %d bytes into buffer %d\n\r", length, bufferId);
 }
+
+// VDU 23, 0, &A0, bufferId; &20, operation, <args> : Affine transform creation/combination
+// Create or combine an affine transformaiton matrix
+//
+void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
+	const auto command = readByte_t();
+	const auto op = command & AFFINE_OP_MASK;
+
+	// transform is a 3x3 matrix of float values
+	float transform[9] = {0.0f};
+	transform[0] = 1.0f;
+	transform[4] = 1.0f;
+	transform[8] = 1.0f;
+	auto matrixSize = 9 * sizeof(float);
+
+	// get a MultiBufferStream object for a buffer
+	// NB this will rewind all the streams in the buffer
+	auto getMultiBufferStream = [this](uint16_t bufferId) -> std::unique_ptr<MultiBufferStream> {
+		auto bufferIter = buffers.find(bufferId);
+		if (bufferIter == buffers.end()) {
+			debug_log("bufferAffineTransform: buffer %d not found\n\r", bufferId);
+			return nullptr;
+		}
+		auto buffer = bufferIter->second;
+		return std::unique_ptr<MultiBufferStream>(new MultiBufferStream(buffer));
+	};
+
+	auto getFormatInfo = [this](bool &isFixed, bool &is16Bit, bool &isFromBuffer, int8_t &size, int16_t &sourceBufferId) {
+		auto format = readByte_t();
+		if (format == -1) {
+			return;
+		}
+		isFixed = format & AFFINE_FORMAT_FIXED;
+		is16Bit = format & AFFINE_FORMAT_16BIT;
+		isFromBuffer = format & AFFINE_FORMAT_FROMBUFFER;
+		size = format & AFFINE_FORMAT_SIZE_MASK;
+		// ensure our size value obeys negation
+		// TODO consider whether we want to support negative fixed-point sizes
+		// this would create large numbers, which we may not actually need
+		if (size & AFFINE_FORMAT_SIZE_TOPBIT) {
+			// top bit was set, so it's a negative - so we need to set the top bits of the size
+			size = size | AFFINE_FORMAT_FLAGS;
+		}
+		if (isFromBuffer) {
+			sourceBufferId = readWord_t();
+		}
+	};
+
+	auto convertValueToFloat = [](uint32_t rawValue, bool is16Bit, bool isFixed, int8_t size) -> float {
+		if (isFixed) {
+			// fixed point value
+			// we need to use our size value to determine how far to scale
+			auto scale = size < 0 ? 1 << -size : 1.0f / (1 << size);
+			if (is16Bit) {
+				return (float)(int16_t)rawValue * scale;
+			}
+			return (float)(int32_t)rawValue * scale;
+		} else {
+			// floating point value - size ignored
+			// if we're reading a 16-bit value, we need to convert to 32-bit float
+			if (is16Bit) {
+				debug_log("bufferAffineTransform: 16-bit float not supported\n\r");
+				// return INFINITY;
+				return float16ToFloat32(rawValue);
+				// return (float)(*(__fp16*)&(int16_t)rawValue);
+			}
+			// take our raw value and interpret its bits as a float
+			return *(float*)&rawValue;
+		}
+	};
+
+	auto readValueFromBuffer = [getMultiBufferStream, convertValueToFloat](uint32_t bufferId, bool is16Bit, bool isFixed, int8_t size) -> float {
+		// get the value that we're dealing with
+		uint32_t rawValue = 0;
+
+		std::unique_ptr<MultiBufferStream> buff = getMultiBufferStream(bufferId);
+		if (!buff) {
+			return INFINITY;
+		}
+
+		auto bytesToRead = is16Bit ? 2 : 4;
+		auto read = buff->readBytes((uint8_t *)&rawValue, bytesToRead);
+		if (read != bytesToRead) {
+			debug_log("bufferAffineTransform: failed to read %d bytes from buffer %d\n\r", bytesToRead, bufferId);
+			return INFINITY;
+		}
+		return convertValueToFloat(rawValue, is16Bit, isFixed, size);
+	};
+
+	auto readValueFromStream = [this, convertValueToFloat](bool is16Bit, bool isFixed, int8_t size) -> float {
+		// get the value that we're dealing with
+		uint32_t rawValue = 0;
+		auto bytesToRead = is16Bit ? 2 : 4;
+		// read the value from the stream
+		if (readIntoBuffer((uint8_t *)&rawValue, bytesToRead) != 0) {
+			debug_log("bufferAffineTransform: failed to read %d bytes from stream\n\r", bytesToRead);
+			return INFINITY;
+		}
+		return convertValueToFloat(rawValue, is16Bit, isFixed, size);
+	};
+
+	auto readFloatArgument = [getFormatInfo, readValueFromBuffer, readValueFromStream]() -> float {
+		bool isFixed, is16Bit, isFromBuffer;
+		int8_t size;
+		int16_t sourceBufferId = -1;
+		getFormatInfo(isFixed, is16Bit, isFromBuffer, size, sourceBufferId);
+		if (isFromBuffer) {
+			return readValueFromBuffer(sourceBufferId, is16Bit, isFixed, size);
+		}
+		return readValueFromStream(is16Bit, isFixed, size);
+	};
+
+	auto readMultipleArgs = [this, getFormatInfo, readValueFromBuffer, readValueFromStream](float *values, int count) -> bool {
+		bool isFixed, is16Bit, isFromBuffer;
+		int8_t size;
+		int16_t sourceBufferId = -1;
+		getFormatInfo(isFixed, is16Bit, isFromBuffer, size, sourceBufferId);
+		if (isFromBuffer) {
+			for (int i = 0; i < count; i++) {
+				values[i] = readValueFromBuffer(sourceBufferId, is16Bit, isFixed, size);
+				if (values[i] == INFINITY) {
+					return false;
+				}
+			}
+			return true;
+		}
+		for (int i = 0; i < count; i++) {
+			values[i] = readValueFromStream(is16Bit, isFixed, size);
+			if (values[i] == INFINITY) {
+				return false;
+			}
+		}
+		return true;
+	};
+
+	auto readMatrixFromBuffer = [getMultiBufferStream, matrixSize](uint16_t bufferId, void *matrix) -> bool {
+		auto buff = getMultiBufferStream(bufferId);
+		if (!buff) {
+			return false;
+		}
+		if (buff->size() < matrixSize) {
+			debug_log("bufferAffineTransform: buffer %d too small for matrix\n\r", bufferId);
+			return false;
+		}
+		auto read = buff->readBytes((uint8_t *)matrix, matrixSize);
+		if (read != matrixSize) {
+			debug_log("bufferAffineTransform: failed to read 9 floats from buffer %d\n\r", bufferId);
+			return false;
+		}
+		return true;
+	};
+
+	bool replace = false;
+	switch (op) {
+		case AFFINE_IDENTITY: {
+			// create an identity matrix
+			replace = true;
+		}	break;
+		case AFFINE_INVERT: {
+			// this will only work if we have a 3x3 matrix...
+			// first of all, get our existing matrix
+			if (!readMatrixFromBuffer(bufferId, &transform)) {
+				return;
+			}
+			auto matrix = dspm::Mat((float *)&transform, 3, 3).inverse();
+			// copy data from matrix back to our working transform matrix
+			memcpy(transform, matrix.data, matrixSize);
+			replace = true;
+		}	break;
+		case AFFINE_ROTATE: {
+			// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
+			float angle = readFloatArgument();
+			if (angle == INFINITY) {
+				return;
+			}
+			angle = DEG_TO_RAD * angle;
+			const auto cosAngle = cosf(angle);
+			const auto sinAngle = sinf(angle);
+			transform[0] = cosAngle;
+			transform[1] = sinAngle;
+			transform[3] = -sinAngle;
+			transform[4] = cosAngle;
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_MULTIPLY: {
+			// multiply values in a matrix by (single) argument value
+			// fetch matrix buffer, then multiply all values except last row by value
+			float scalar = readFloatArgument();
+			if (scalar == INFINITY) {
+				return;
+			}
+			if (!readMatrixFromBuffer(bufferId, &transform)) {
+				return;
+			}
+			// scale transform matrix by scalar, skipping last value (as that needs to remain a 1)
+			for (int i = 0; i < 7; i++) {
+				transform[i] *= scalar;
+			}
+			replace = true;
+		}	break;
+		case AFFINE_SCALE: {
+			// scale by a given factor
+			// get an array of 2 float values
+			float scales[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(scales, 2)) {
+				return;
+			}
+			transform[0] = scales[0];
+			transform[4] = scales[1];
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_TRANSLATE: {
+			// translate by a given amount
+			float translateXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(translateXY, 2)) {
+				return;
+			}
+			transform[2] = translateXY[0];
+			transform[5] = translateXY[1];
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_SHEAR: {
+			// shear by a given amount
+			float shearXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(shearXY, 2)) {
+				return;
+			}
+			transform[1] = shearXY[0];
+			transform[3] = shearXY[1];
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_SKEW: {
+			// skew by a given amount (angle)
+			float skewXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(skewXY, 2)) {
+				return;
+			}
+			transform[1] = tanf(DEG_TO_RAD * skewXY[0]);
+			transform[3] = tanf(DEG_TO_RAD * skewXY[1]);
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_TRANSFORM: {
+			// we'll either be creating a new matrix, or combining with an existing one
+			if (!readMultipleArgs(transform, 6)) {
+				return;
+			}
+			transform[8] = 1.0f;
+		}	break;
+		default:
+			debug_log("bufferAffineTransform: unknown operation %d\n\r", op);
+			return;
+	}
+
+	auto bufferStream = make_shared_psram<BufferStream>(matrixSize);
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		// buffer couldn't be created
+		debug_log("bufferAffineTransform: failed to create buffer %d\n\r", bufferId);
+		return;
+	}
+
+	if (!replace) {
+		// we are combining, if we have an existing matrix
+		float existing[9] = {0.0f};
+		if (readMatrixFromBuffer(bufferId, &existing)) {
+			// combine the two matrices together
+			auto matrix = dspm::Mat((float *)&existing, 3, 3);
+			auto newMatrix = dspm::Mat((float *)&transform, 3, 3);
+			matrix = newMatrix * matrix;
+			// copy data from matrix back to our working transform matrix
+			memcpy(transform, matrix.data, matrixSize);
+		}
+	}
+
+	bufferStream->writeBuffer((uint8_t *)transform, matrixSize);
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(std::move(bufferStream));
+	debug_log("bufferAffineTransform: created new matrix buffer %d\n\r", bufferId);
+
+	// dump the matrix
+	auto matrix = dspm::Mat((float *)&transform, 3, 3);
+	debug_log(" %f %f %f\n\r", matrix(0, 0), matrix(0, 1), matrix(0, 2));
+	debug_log(" %f %f %f\n\r", matrix(1, 0), matrix(1, 1), matrix(1, 2));
+	debug_log(" %f %f %f\n\r", matrix(2, 0), matrix(2, 1), matrix(2, 2));
+}
+
 
 // VDU 23, 0, &A0, bufferId; &40, sourceBufferId; : Compress blocks from a buffer
 // Compress (blocks from) a buffer into a new buffer.

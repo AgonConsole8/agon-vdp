@@ -260,6 +260,8 @@
 #define BUFFERED_REVERSE				0x18	// Reverse the order of data in a buffer
 #define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
+#define BUFFERED_AFFINE_TRANSFORM		0x20	// Create or combine affine transform matrix buffer
+#define BUFFERED_AFFINE_TRANSFORM_APPLY	0x21	// Apply an affine transform matrix to a buffer
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
@@ -312,6 +314,36 @@
 #define EXPAND_BITMAP_SIZE		0x07	// bottom bits indicate the number of bits per pixel in bitmap, 0=8bpp
 #define EXPAND_BITMAP_ALIGNED	0x08	// includes pixel width value to indicate where a byte alignment should be performed
 #define EXPAND_BITMAP_USEBUFFER	0x10	// use buffer ID for mapping data
+
+// Affine transform operation codes
+// if applying to an empty buffer, generate a matrix with the given operation
+// otherwise combine the existing matrix with the given operation
+// TODO think about numbers of arguments for each operation
+#define AFFINE_IDENTITY			0		// Create/reset to an identity matrix (no arguments)
+#define AFFINE_INVERT			1		// Invert (no arguments)
+#define AFFINE_ROTATE			2		// Rotate (1 argument)
+#define AFFINE_MULTIPLY			3		// Multiply (1 argument)
+#define AFFINE_SCALE			4		// Scale (2 arguments for X and Y)
+#define AFFINE_TRANSLATE		5		// Translate (X and Y)
+#define AFFINE_SHEAR			6		// Shear (2 arguments for X and Y)
+#define AFFINE_SKEW				7		// Skew (by angle, 2 arguments)
+#define AFFINE_TRANSFORM		8		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
+
+#define AFFINE_OP_MASK			0x0F	// operation code mask
+// Consider having flag to indicate separate args get separate formats?
+// or flag to indicate "no formats"??
+// also consider two versions of AFFINE_TRANSFORM, one with 6 arguments, one that's 9
+
+// Affine transform format flags byte
+// a format of 0 would indicate a 32-bit float value - "native" for transform matrix data
+// using a value of 0xC8 would indicate a 16-bit fixed point value with 8 bits of fractional part
+// a value of 0xC0 indicates 16-bit fixed point values with no fractional part
+#define AFFINE_FORMAT_SIZE_MASK	0x1F	// size bits (used for fixed point values)
+#define AFFINE_FORMAT_SIZE_TOPBIT	0x10	// top bit of size (used to work out if size is negative)
+#define AFFINE_FORMAT_FLAGS		0xE0	// flags
+#define AFFINE_FORMAT_FIXED		0x80	// if set, values are fixed-point, vs floats
+#define AFFINE_FORMAT_16BIT		0x40	// if set, values are 32-bit, vs 16-bit
+#define AFFINE_FORMAT_FROMBUFFER	0x20	// if set, values are fetched from a buffer, rather than as part of command
 
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
