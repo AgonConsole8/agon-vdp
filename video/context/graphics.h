@@ -803,6 +803,36 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 			auto options = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 			canvas->setPaintOptions(options);
 		}
+		if (bitmapTransform != 65535) {
+			auto transformBufferIter = buffers.find(bitmapTransform);
+			if (transformBufferIter != buffers.end()) {
+				auto &transformBuffer = transformBufferIter->second;
+				if (transformBuffer.size() == 1 || transformBuffer[0]->size() >= (sizeof(float) * 9)) {
+					// we have a valid transform buffer
+					auto transform = dspm::Mat((float *)transformBuffer[0]->getBuffer(), 3,3);
+					// make a translate matrix for our position
+					auto pos = dspm::Mat::eye(3);
+					pos(0,2) = x;
+					pos(1,2) = (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y;
+					pos(2,2) = 1.0f;
+					transform = pos * transform;
+					debug_log("drawBitmap: drawing bitmap %d with transform buffer %d\n\r", currentBitmap, bitmapTransform);
+					debug_log("drawBitmap: transform matrix\n\r");
+					debug_log("drawBitmap: %f %f %f\n\r", transform(0,0), transform(0,1), transform(0,2));
+					debug_log("drawBitmap: %f %f %f\n\r", transform(1,0), transform(1,1), transform(1,2));
+					debug_log("drawBitmap: %f %f %f\n\r", transform(2,0), transform(2,1), transform(2,2));
+					float transformData[9] = {
+						transform(0,0), transform(0,1), transform(0,2),
+						transform(1,0), transform(1,1), transform(1,2),
+						transform(2,0), transform(2,1), transform(2,2),
+					};
+					canvas->drawTransformedBitmap(bitmap.get(), transformData);
+					return;
+				} else {
+					debug_log("drawBitmap: transform buffer %d has %d elements\n\r", bitmapTransform, transformBuffer.size());
+				}
+			}
+		}
 		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get());
 	} else {
 		debug_log("drawBitmap: bitmap %d not found\n\r", currentBitmap);
@@ -822,6 +852,14 @@ void Context::drawCursor(Point p) {
 			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), font->width - 1), p.Y + std::min(((int)cursorVEnd), font->height - 1));
 			canvas->setPaintOptions(tpo);
 		}
+	}
+}
+
+// Set affine transform
+//
+void Context::setAffineTransform(uint8_t flags, uint16_t bufferId) {
+	if (flags & 0x01) {
+		bitmapTransform = bufferId;
 	}
 }
 

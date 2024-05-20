@@ -91,6 +91,7 @@ class Context {
 		uint8_t			gfgc, gbgc, tfgc, tbgc;			// Logical colour values for graphics and text
 		uint8_t			lineThickness = 1;				// Line thickness
 		uint16_t		currentBitmap = BUFFERED_BITMAP_BASEID;	// Current bitmap ID
+		uint16_t		bitmapTransform = -1;			// Bitmap transform buffer ID
 		fabgl::LinePattern	linePattern = fabgl::LinePattern();				// Dotted line pattern
 		uint8_t			linePatternLength = 8;			// Dotted line pattern length
 		std::vector<uint16_t>	charToBitmap = std::vector<uint16_t>(255, 65535);	// character to bitmap mapping
@@ -270,6 +271,8 @@ class Context {
 		void plotBackspace();
 		void drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool forceSet);
 		void drawCursor(Point p);
+
+		void setAffineTransform(uint8_t flags, uint16_t bufferId);
 
 		void cls();
 		void clg();

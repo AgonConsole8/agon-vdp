@@ -62,6 +62,7 @@
 #define VDP_SCRCHAR_GRAPHICS	0x93	// Character read from screen at graphics coordinates
 #define VDP_READ_COLOUR			0x94	// Read colour
 #define VDP_FONT				0x95	// Font management commands
+#define VDP_AFFINE_TRANSFORM	0x96	// Set affine transform
 #define VDP_CONTROLKEYS			0x98	// Control keys on/off
 #define VDP_BUFFER_PRINT		0x9B	// Print a buffer of characters literally with no command interpretation
 #define VDP_TEXT_VIEWPORT		0x9C	// Set text viewport using current graphics coordinates

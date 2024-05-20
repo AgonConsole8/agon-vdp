@@ -236,6 +236,15 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_FONT: {				// VDU 23, 0, &95, command, [bufferId;] [<args>]
 			vdu_sys_font();				// Font management
 		}	break;
+		case VDP_AFFINE_TRANSFORM: {	// VDU 23, 0, &96, flags, bufferId;
+			auto flags = readByte_t();	// Set affine transform flags
+			if (flags == -1) return;
+			auto bufferId = readWord_t();
+			if (bufferId >= 0) {
+				debug_log("vdu_sys_video: affine transform, flags %d, buffer %d\n\r", flags, bufferId);
+				context->setAffineTransform(flags, bufferId);
+			}
+		}	break;
 		case VDP_CONTROLKEYS: {			// VDU 23, 0, &98, n
 			auto b = readByte_t();		// Set control keys,  0 = off, 1 = on (default)
 			if (b >= 0) {
