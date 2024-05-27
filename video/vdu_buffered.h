@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <esp_heap_caps.h>
 #include <mat.h>
+#include <dspm_mult.h>
 
 #include "agon.h"
 #include "agon_fonts.h"
@@ -1719,7 +1720,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			if (!readMatrixFromBuffer(bufferId, &transform)) {
 				return;
 			}
-			auto matrix = dspm::Mat((float *)&transform, 3, 3).inverse();
+			auto matrix = dspm::Mat(transform, 3, 3).inverse();
 			// copy data from matrix back to our working transform matrix
 			memcpy(transform, matrix.data, matrixSize);
 			replace = true;
@@ -1820,11 +1821,16 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		float existing[9] = {0.0f};
 		if (readMatrixFromBuffer(bufferId, &existing)) {
 			// combine the two matrices together
-			auto matrix = dspm::Mat((float *)&existing, 3, 3);
-			auto newMatrix = dspm::Mat((float *)&transform, 3, 3);
-			matrix = newMatrix * matrix;
+			// auto matrix = dspm::Mat(existing, 3, 3);
+			// auto newMatrix = dspm::Mat(transform, 3, 3);
+			// matrix = newMatrix * matrix;
+
+			float newTransform[9] = {0.0f};
+			dspm_mult_f32(transform, existing, newTransform, 3, 3, 3);
+
 			// copy data from matrix back to our working transform matrix
-			memcpy(transform, matrix.data, matrixSize);
+			// memcpy(transform, matrix.data, matrixSize);
+			memcpy(transform, newTransform, matrixSize);
 		}
 	}
 
@@ -1833,11 +1839,26 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 	buffers[bufferId].push_back(std::move(bufferStream));
 	debug_log("bufferAffineTransform: created new matrix buffer %d\n\r", bufferId);
 
+	debug_log(" %f %f %f\n\r", transform[0], transform[1], transform[2]);
+	debug_log(" %f %f %f\n\r", transform[3], transform[4], transform[5]);
+	debug_log(" %f %f %f\n\r", transform[6], transform[7], transform[8]);
+
 	// dump the matrix
-	auto matrix = dspm::Mat((float *)&transform, 3, 3);
-	debug_log(" %f %f %f\n\r", matrix(0, 0), matrix(0, 1), matrix(0, 2));
-	debug_log(" %f %f %f\n\r", matrix(1, 0), matrix(1, 1), matrix(1, 2));
-	debug_log(" %f %f %f\n\r", matrix(2, 0), matrix(2, 1), matrix(2, 2));
+	// auto matrix = dspm::Mat(transform, 3, 3);
+	// debug_log(" %f %f %f\n\r", matrix(0, 0), matrix(0, 1), matrix(0, 2));
+	// debug_log(" %f %f %f\n\r", matrix(1, 0), matrix(1, 1), matrix(1, 2));
+	// debug_log(" %f %f %f\n\r", matrix(2, 0), matrix(2, 1), matrix(2, 2));
+
+	// float pos[3] = {0.0f, 0.0f, 1.0f};
+	// auto posMatrix = dspm::Mat(pos, 3, 1);
+	// auto posMatrix = dspm::Mat(3, 1);
+	// posMatrix(0, 0) = 0.0f;
+	// posMatrix(1, 0) = 0.0f;
+	// posMatrix(2, 0) = 1.0f;
+	// auto transformed = matrix * posMatrix;
+
+	// debug_log("Transformed position\n\r");
+	// debug_log(" %f %f %f\n\r", transformed(0, 0), transformed(1, 0), transformed(2, 0));
 }
 
 
