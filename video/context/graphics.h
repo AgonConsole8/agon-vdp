@@ -809,21 +809,14 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 				auto &transformBuffer = transformBufferIter->second;
 				if (transformBuffer.size() == 1 || transformBuffer[0]->size() >= (sizeof(float) * 9)) {
 					// we have a valid transform buffer
-					// auto transform = dspm::Mat((float *)transformBuffer[0]->getBuffer(), 3,3);
-					// auto transform = (float *)transformBuffer[0]->getBuffer();
+					// we need to add a translate transform to set the position
+					// TODO consider omitting the translate, and just send x,y to drawTransformedBitmap
 					float pos[9] = {
 						1.0f, 0.0f, (float)x,
 						0.0f, 1.0f, (float)((compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y),
 						0.0f, 0.0f, 1.0f,
 					};
-
-					// make a translate matrix for our position
-					// auto pos = dspm::Mat::eye(3);
-					// pos(0,2) = x;
-					// pos(1,2) = (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y;
-					// pos(2,2) = 1.0f;
-					// transform = pos * transform;
-					float transform[9];
+					float transform[9];		// target matrix
 					dspm_mult_f32(pos, (float *)transformBuffer[0]->getBuffer(), transform, 3, 3, 3);
 
 					debug_log("drawBitmap: drawing bitmap %d with transform buffer %d\n\r", currentBitmap, bitmapTransform);
@@ -831,20 +824,7 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 					debug_log("drawBitmap: %f %f %f\n\r", transform[0], transform[1], transform[2]);
 					debug_log("drawBitmap: %f %f %f\n\r", transform[3], transform[4], transform[5]);
 					debug_log("drawBitmap: %f %f %f\n\r", transform[6], transform[7], transform[8]);
-					// debug_log("drawBitmap: %f %f %f\n\r", transform(0,0), transform(0,1), transform(0,2));
-					// debug_log("drawBitmap: %f %f %f\n\r", transform(1,0), transform(1,1), transform(1,2));
-					// debug_log("drawBitmap: %f %f %f\n\r", transform(2,0), transform(2,1), transform(2,2));
-					// float transformData[9] = {
-					// 	transform(0,0), transform(0,1), transform(0,2),
-					// 	transform(1,0), transform(1,1), transform(1,2),
-					// 	transform(2,0), transform(2,1), transform(2,2),
-					// };
-					// canvas->drawTransformedBitmap(bitmap.get(), transformData);
-					// canvas->waitCompletion(false);
 					canvas->drawTransformedBitmap(bitmap.get(), transform);
-					// TODO Remove this - Force queue to process in current thread
-					// works around crashing bug when drawing queue processed on vsync in ISR
-					canvas->waitCompletion(false);
 					return;
 				} else {
 					debug_log("drawBitmap: transform buffer %d has %d elements\n\r", bitmapTransform, transformBuffer.size());
