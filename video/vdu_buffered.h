@@ -1593,8 +1593,6 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		isFromBuffer = format & AFFINE_FORMAT_FROMBUFFER;
 		size = format & AFFINE_FORMAT_SIZE_MASK;
 		// ensure our size value obeys negation
-		// TODO consider whether we want to support negative fixed-point sizes
-		// this would create large numbers, which we may not actually need
 		if (size & AFFINE_FORMAT_SIZE_TOPBIT) {
 			// top bit was set, so it's a negative - so we need to set the top bits of the size
 			size = size | AFFINE_FORMAT_FLAGS;
@@ -1617,10 +1615,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			// floating point value - size ignored
 			// if we're reading a 16-bit value, we need to convert to 32-bit float
 			if (is16Bit) {
-				debug_log("bufferAffineTransform: 16-bit float not supported\n\r");
-				// return INFINITY;
 				return float16ToFloat32(rawValue);
-				// return (float)(*(__fp16*)&(int16_t)rawValue);
 			}
 			// take our raw value and interpret its bits as a float
 			return *(float*)&rawValue;
@@ -1821,15 +1816,9 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		float existing[9] = {0.0f};
 		if (readMatrixFromBuffer(bufferId, &existing)) {
 			// combine the two matrices together
-			// auto matrix = dspm::Mat(existing, 3, 3);
-			// auto newMatrix = dspm::Mat(transform, 3, 3);
-			// matrix = newMatrix * matrix;
-
 			float newTransform[9] = {0.0f};
 			dspm_mult_f32(transform, existing, newTransform, 3, 3, 3);
-
 			// copy data from matrix back to our working transform matrix
-			// memcpy(transform, matrix.data, matrixSize);
 			memcpy(transform, newTransform, matrixSize);
 		}
 	}
@@ -1842,23 +1831,6 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 	debug_log(" %f %f %f\n\r", transform[0], transform[1], transform[2]);
 	debug_log(" %f %f %f\n\r", transform[3], transform[4], transform[5]);
 	debug_log(" %f %f %f\n\r", transform[6], transform[7], transform[8]);
-
-	// dump the matrix
-	// auto matrix = dspm::Mat(transform, 3, 3);
-	// debug_log(" %f %f %f\n\r", matrix(0, 0), matrix(0, 1), matrix(0, 2));
-	// debug_log(" %f %f %f\n\r", matrix(1, 0), matrix(1, 1), matrix(1, 2));
-	// debug_log(" %f %f %f\n\r", matrix(2, 0), matrix(2, 1), matrix(2, 2));
-
-	// float pos[3] = {0.0f, 0.0f, 1.0f};
-	// auto posMatrix = dspm::Mat(pos, 3, 1);
-	// auto posMatrix = dspm::Mat(3, 1);
-	// posMatrix(0, 0) = 0.0f;
-	// posMatrix(1, 0) = 0.0f;
-	// posMatrix(2, 0) = 1.0f;
-	// auto transformed = matrix * posMatrix;
-
-	// debug_log("Transformed position\n\r");
-	// debug_log(" %f %f %f\n\r", transformed(0, 0), transformed(1, 0), transformed(2, 0));
 }
 
 
