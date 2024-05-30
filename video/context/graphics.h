@@ -13,6 +13,7 @@
 #include "agon_ttxt.h"
 #include "buffers.h"
 #include "sprites.h"
+#include "types.h"
 
 // Definitions for the functions we're implementing here
 #include "context.h"
@@ -807,29 +808,25 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 			auto transformBufferIter = buffers.find(bitmapTransform);
 			if (transformBufferIter != buffers.end()) {
 				auto &transformBuffer = transformBufferIter->second;
-				if (transformBuffer.size() == 1 || transformBuffer[0]->size() >= (sizeof(float) * 9)) {
-					// we have a valid transform buffer
-					// we need to add a translate transform to set the position
-					// TODO consider omitting the translate, and just send x,y to drawTransformedBitmap
-					float pos[9] = {
-						1.0f, 0.0f, (float)x,
-						0.0f, 1.0f, (float)((compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y),
-						0.0f, 0.0f, 1.0f,
-					};
-					float transform[9];		// target matrix
-					dspm_mult_f32(pos, (float *)transformBuffer[0]->getBuffer(), transform, 3, 3, 3);
-
-					debug_log("drawBitmap: drawing bitmap %d with transform buffer %d\n\r", currentBitmap, bitmapTransform);
-					debug_log("drawBitmap: transform matrix\n\r");
-					debug_log("drawBitmap: %f %f %f\n\r", transform[0], transform[1], transform[2]);
-					debug_log("drawBitmap: %f %f %f\n\r", transform[3], transform[4], transform[5]);
-					debug_log("drawBitmap: %f %f %f\n\r", transform[6], transform[7], transform[8]);
-					canvas->drawTransformedBitmap(bitmap.get(), transform);
-					return;
-				} else {
-					debug_log("drawBitmap: transform buffer %d has %d elements\n\r", bitmapTransform, transformBuffer.size());
+				int const matrixSize = sizeof(float) * 9;
+				if (transformBuffer.size() == 1) {
+					// make sure we have an inverse matrix cached
+					if (transformBuffer[0]->size() < matrixSize) {
+						debug_log("drawBitmap: transform buffer %d has %d elements\n\r", bitmapTransform, transformBuffer[0]->size());
+						return;
+					}
+					// create an inverse matrix, and push that to the buffer
+					auto transform = (float *)transformBuffer[0]->getBuffer();
+					auto matrix = dspm::Mat(transform, 3, 3).inverse();
+					auto bufferStream = make_shared_psram<BufferStream>(matrixSize);
+					bufferStream->writeBuffer((uint8_t *)matrix.data, matrixSize);
+					transformBuffer.push_back(bufferStream);
 				}
+				// we should have a valid transform buffer now, which includes an inverse chunk
+				canvas->drawTransformedBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get(), (float *)transformBuffer[0]->getBuffer(), (float *)transformBuffer[1]->getBuffer());
+				return;
 			}
+			// if buffer not found, we should fall back to normal drawing
 		}
 		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get());
 	} else {
