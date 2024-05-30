@@ -22,7 +22,7 @@
 
 // VDU 23, 0, &A0, bufferId; command: Buffered command support
 //
-void VDUStreamProcessor::vdu_sys_buffered() {
+void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 	auto bufferId = readWord_t(); if (bufferId == -1) return;
 	auto command = readByte_t(); if (command == -1) return;
 
