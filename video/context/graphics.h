@@ -911,6 +911,7 @@ void Context::resetGraphicsOptions() {
 	setLineThickness(1);
 	setCurrentBitmap(BUFFERED_BITMAP_BASEID);
 	setDottedLinePatternLength(0);
+	setAffineTransform(255, -1);
 }
 
 void Context::resetGraphicsPositioning() {
@@ -937,6 +938,7 @@ void Context::reset() {
 	resetTextPainting();
 	resetGraphicsPositioning();
 	setLineThickness(1);
+	setAffineTransform(255, -1);
 	resetFonts();
 	resetTextCursor();
 }
