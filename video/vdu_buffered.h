@@ -1583,7 +1583,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		return std::unique_ptr<MultiBufferStream>(new MultiBufferStream(buffer));
 	};
 
-	auto getFormatInfo = [this](bool &isFixed, bool &is16Bit, bool &isFromBuffer, int8_t &size, int16_t &sourceBufferId) {
+	auto getFormatInfo = [this](bool &isFixed, bool &is16Bit, bool &isFromBuffer, int8_t &shift, int16_t &sourceBufferId) {
 		auto format = readByte_t();
 		if (format == -1) {
 			return;
@@ -1591,28 +1591,24 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		isFixed = format & AFFINE_FORMAT_FIXED;
 		is16Bit = format & AFFINE_FORMAT_16BIT;
 		isFromBuffer = format & AFFINE_FORMAT_FROMBUFFER;
-		size = format & AFFINE_FORMAT_SIZE_MASK;
-		// ensure our size value obeys negation
-		if (size & AFFINE_FORMAT_SIZE_TOPBIT) {
-			// top bit was set, so it's a negative - so we need to set the top bits of the size
-			size = size | AFFINE_FORMAT_FLAGS;
-		}
+		shift = format & AFFINE_FORMAT_SIZE_MASK;
 		if (isFromBuffer) {
 			sourceBufferId = readWord_t();
 		}
 	};
 
-	auto convertValueToFloat = [](uint32_t rawValue, bool is16Bit, bool isFixed, int8_t size) -> float {
+	auto convertValueToFloat = [](uint32_t rawValue, bool is16Bit, bool isFixed, int8_t shift) -> float {
 		if (isFixed) {
 			// fixed point value
-			// we need to use our size value to determine how far to scale
-			auto scale = size < 0 ? 1 << -size : 1.0f / (1 << size);
-			if (is16Bit) {
-				return (float)(int16_t)rawValue * scale;
-			}
-			return (float)(int32_t)rawValue * scale;
+			// we need to use our shift value to determine how far to scale
+			auto scale = (1u << shift) / (float)(1u << 31);
+            if (is16Bit) {
+                rawValue <<= 16;
+            }
+			debug_log("bufferAffineTransform: rawValue %d, shift %d, scale %f\n\r", rawValue, shift, scale);
+            return (float)(int32_t)rawValue * scale;
 		} else {
-			// floating point value - size ignored
+			// floating point value - shift ignored
 			// if we're reading a 16-bit value, we need to convert to 32-bit float
 			if (is16Bit) {
 				return float16ToFloat32(rawValue);
@@ -1622,7 +1618,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		}
 	};
 
-	auto readValueFromBuffer = [getMultiBufferStream, convertValueToFloat](uint32_t bufferId, bool is16Bit, bool isFixed, int8_t size) -> float {
+	auto readValueFromBuffer = [getMultiBufferStream, convertValueToFloat](uint32_t bufferId, bool is16Bit, bool isFixed, int8_t shift) -> float {
 		// get the value that we're dealing with
 		uint32_t rawValue = 0;
 
@@ -1637,10 +1633,10 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			debug_log("bufferAffineTransform: failed to read %d bytes from buffer %d\n\r", bytesToRead, bufferId);
 			return INFINITY;
 		}
-		return convertValueToFloat(rawValue, is16Bit, isFixed, size);
+		return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
 	};
 
-	auto readValueFromStream = [this, convertValueToFloat](bool is16Bit, bool isFixed, int8_t size) -> float {
+	auto readValueFromStream = [this, convertValueToFloat](bool is16Bit, bool isFixed, int8_t shift) -> float {
 		// get the value that we're dealing with
 		uint32_t rawValue = 0;
 		auto bytesToRead = is16Bit ? 2 : 4;
@@ -1649,28 +1645,28 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			debug_log("bufferAffineTransform: failed to read %d bytes from stream\n\r", bytesToRead);
 			return INFINITY;
 		}
-		return convertValueToFloat(rawValue, is16Bit, isFixed, size);
+		return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
 	};
 
 	auto readFloatArgument = [getFormatInfo, readValueFromBuffer, readValueFromStream]() -> float {
 		bool isFixed, is16Bit, isFromBuffer;
-		int8_t size;
+		int8_t shift;
 		int16_t sourceBufferId = -1;
-		getFormatInfo(isFixed, is16Bit, isFromBuffer, size, sourceBufferId);
+		getFormatInfo(isFixed, is16Bit, isFromBuffer, shift, sourceBufferId);
 		if (isFromBuffer) {
-			return readValueFromBuffer(sourceBufferId, is16Bit, isFixed, size);
+			return readValueFromBuffer(sourceBufferId, is16Bit, isFixed, shift);
 		}
-		return readValueFromStream(is16Bit, isFixed, size);
+		return readValueFromStream(is16Bit, isFixed, shift);
 	};
 
 	auto readMultipleArgs = [this, getFormatInfo, readValueFromBuffer, readValueFromStream](float *values, int count) -> bool {
 		bool isFixed, is16Bit, isFromBuffer;
-		int8_t size;
+		int8_t shift;
 		int16_t sourceBufferId = -1;
-		getFormatInfo(isFixed, is16Bit, isFromBuffer, size, sourceBufferId);
+		getFormatInfo(isFixed, is16Bit, isFromBuffer, shift, sourceBufferId);
 		if (isFromBuffer) {
 			for (int i = 0; i < count; i++) {
-				values[i] = readValueFromBuffer(sourceBufferId, is16Bit, isFixed, size);
+				values[i] = readValueFromBuffer(sourceBufferId, is16Bit, isFixed, shift);
 				if (values[i] == INFINITY) {
 					return false;
 				}
@@ -1678,7 +1674,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			return true;
 		}
 		for (int i = 0; i < count; i++) {
-			values[i] = readValueFromStream(is16Bit, isFixed, size);
+			values[i] = readValueFromStream(is16Bit, isFixed, shift);
 			if (values[i] == INFINITY) {
 				return false;
 			}
