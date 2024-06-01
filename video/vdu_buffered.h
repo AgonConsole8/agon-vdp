@@ -1727,13 +1727,15 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			memcpy(transform, matrix.data, matrixSize);
 			replace = true;
 		}	break;
-		case AFFINE_ROTATE: {
+		case AFFINE_ROTATE:
+		case AFFINE_ROTATE_RAD:
+		{
 			// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
 			float angle = readFloatArgument();
 			if (angle == INFINITY) {
 				return;
 			}
-			angle = DEG_TO_RAD * angle;
+			if (op == AFFINE_ROTATE) angle = DEG_TO_RAD * angle;
 			const auto cosAngle = cosf(angle);
 			const auto sinAngle = sinf(angle);
 			transform[0] = cosAngle;
@@ -1797,6 +1799,16 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			}
 			transform[1] = tanf(DEG_TO_RAD * skewXY[0]);
 			transform[3] = tanf(DEG_TO_RAD * skewXY[1]);
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_SKEW_RAD: {
+			// skew by a given amount (angle)
+			float skewXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(skewXY, 2)) {
+				return;
+			}
+			transform[1] = tanf(skewXY[0]);
+			transform[3] = tanf(skewXY[1]);
 			transform[8] = 1.0f;
 		}	break;
 		case AFFINE_TRANSFORM: {

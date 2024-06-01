@@ -804,6 +804,7 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 			auto options = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 			canvas->setPaintOptions(options);
 		}
+		auto yPos = (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y;
 		if (bitmapTransform != 65535) {
 			auto transformBufferIter = buffers.find(bitmapTransform);
 			if (transformBufferIter != buffers.end()) {
@@ -822,13 +823,18 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 					bufferStream->writeBuffer((uint8_t *)matrix.data, matrixSize);
 					transformBuffer.push_back(bufferStream);
 				}
+				// NB: if we're drawing via PLOT and are using OS coords, then we _should_ be using bottom left of bitmap as our "origin" for transforms
+				// however we're not doing that here - the origin for transforms is top left of the bitmap
+				// attempting to transform based on bottom left would require translates to be added to the matrix, custom for the bitmap being plotted
+				// which would mean they could not be cached
+
 				// we should have a valid transform buffer now, which includes an inverse chunk
-				canvas->drawTransformedBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get(), (float *)transformBuffer[0]->getBuffer(), (float *)transformBuffer[1]->getBuffer());
+				canvas->drawTransformedBitmap(x, yPos, bitmap.get(), (float *)transformBuffer[0]->getBuffer(), (float *)transformBuffer[1]->getBuffer());
 				return;
 			}
 			// if buffer not found, we should fall back to normal drawing
 		}
-		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get());
+		canvas->drawBitmap(x, yPos, bitmap.get());
 	} else {
 		debug_log("drawBitmap: bitmap %d not found\n\r", currentBitmap);
 	}

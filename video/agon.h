@@ -322,13 +322,15 @@
 // TODO think about numbers of arguments for each operation
 #define AFFINE_IDENTITY			0		// Create/reset to an identity matrix (no arguments)
 #define AFFINE_INVERT			1		// Invert (no arguments)
-#define AFFINE_ROTATE			2		// Rotate (1 argument)
-#define AFFINE_MULTIPLY			3		// Multiply (1 argument)
-#define AFFINE_SCALE			4		// Scale (2 arguments for X and Y)
-#define AFFINE_TRANSLATE		5		// Translate (X and Y)
-#define AFFINE_SHEAR			6		// Shear (2 arguments for X and Y)
-#define AFFINE_SKEW				7		// Skew (by angle, 2 arguments)
-#define AFFINE_TRANSFORM		8		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
+#define AFFINE_ROTATE			2		// Rotate (anticlockwise by angle, 1 argument)
+#define AFFINE_ROTATE_RAD		3		// Rotate (anticlockwise by angle in radians, 1 argument)
+#define AFFINE_MULTIPLY			4		// Multiply (1 argument)
+#define AFFINE_SCALE			5		// Scale (2 arguments for X and Y)
+#define AFFINE_TRANSLATE		6		// Translate (X and Y)
+#define AFFINE_SHEAR			7		// Shear (2 arguments for X and Y)
+#define AFFINE_SKEW				8		// Skew (by angle, 2 arguments)
+#define AFFINE_SKEW_RAD			9		// Skew (by angle in radians, 2 arguments)
+#define AFFINE_TRANSFORM		10		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
 
 #define AFFINE_OP_MASK			0x0F	// operation code mask
 #define AFFINE_OP_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
