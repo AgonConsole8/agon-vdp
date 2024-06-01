@@ -331,20 +331,18 @@
 #define AFFINE_TRANSFORM		8		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
 
 #define AFFINE_OP_MASK			0x0F	// operation code mask
-// Consider having flag to indicate separate args get separate formats?
-// or flag to indicate "no formats"??
-// also consider two versions of AFFINE_TRANSFORM, one with 6 arguments, one that's 9
+#define AFFINE_OP_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
+#define AFFINE_OP_BUFFER_VALUE		0x20	// operand values are fetched from buffers
+#define AFFINE_OP_MULTI_FORMAT		0x40	// each argument has its own format byte
 
 // Affine transform format flags byte
 // a format of 0 would indicate a 32-bit float value - "native" for transform matrix data
-// using a value of 0xC8 would indicate a 16-bit fixed point value with 8 bits of fractional part
-// a value of 0xC0 indicates 16-bit fixed point values with no fractional part
-#define AFFINE_FORMAT_SIZE_MASK	0x1F	// size bits (used for fixed point values)
-#define AFFINE_FORMAT_SIZE_TOPBIT	0x10	// top bit of size (used to work out if size is negative)
+// using a value of 0xC7 would indicate a 16-bit fixed point value with the binary point shifted right 7 bits (for an 8/8 split)
+// a value of 0xCF indicates 16-bit fixed point values with no fractional part
+#define AFFINE_FORMAT_SHIFT_MASK	0x1F	// bits used for shift value (used for fixed point values)
 #define AFFINE_FORMAT_FLAGS		0xE0	// flags
-#define AFFINE_FORMAT_FIXED		0x80	// if set, values are fixed-point, vs floats
-#define AFFINE_FORMAT_16BIT		0x40	// if set, values are 32-bit, vs 16-bit
-#define AFFINE_FORMAT_FROMBUFFER	0x20	// if set, values are fetched from a buffer, rather than as part of command
+#define AFFINE_FORMAT_FIXED		0x40	// if set, values are fixed-point, vs floats
+#define AFFINE_FORMAT_16BIT		0x80	// if set, values are 16-bit, vs 32-bit
 
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
