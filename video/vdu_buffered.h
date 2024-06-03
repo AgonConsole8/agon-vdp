@@ -1586,7 +1586,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		return std::unique_ptr<MultiBufferStream>(new MultiBufferStream(buffer));
 	};
 
-	auto getFormatInfo = [this, useAdvancedOffsets](bool &isFixed, bool &is16Bit, bool isFromBuffer, int8_t &shift, int16_t &sourceBufferId, AdvancedOffset &offset) -> bool {
+	auto getFormatInfo = [this, useAdvancedOffsets, useBufferValue](bool &isFixed, bool &is16Bit, int8_t &shift, int16_t &sourceBufferId, AdvancedOffset &offset) -> bool {
 		auto format = readByte_t();
 		if (format == -1) {
 			return false;
@@ -1594,7 +1594,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		isFixed = format & AFFINE_FORMAT_FIXED;
 		is16Bit = format & AFFINE_FORMAT_16BIT;
 		shift = format & AFFINE_FORMAT_SHIFT_MASK;
-		if (isFromBuffer) {
+		if (useBufferValue) {
 			sourceBufferId = readWord_t();
 			if (sourceBufferId == -1) {
 				return false;
@@ -1626,11 +1626,11 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		}
 	};
 
-	auto readValueFromBuffer = [getMultiBufferStream, convertValueToFloat](uint32_t bufferId, AdvancedOffset offset, bool is16Bit, bool isFixed, int8_t shift) -> float {
+	auto readValueFromBuffer = [getMultiBufferStream, convertValueToFloat](uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift) -> float {
 		// get the value that we're dealing with
 		uint32_t rawValue = 0;
 
-		std::unique_ptr<MultiBufferStream> buff = getMultiBufferStream(bufferId);
+		std::unique_ptr<MultiBufferStream> buff = getMultiBufferStream(sourceBufferId);
 		if (!buff) {
 			return INFINITY;
 		}
@@ -1639,7 +1639,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		auto bytesToRead = is16Bit ? 2 : 4;
 		auto read = buff->readBytes((uint8_t *)&rawValue, bytesToRead);
 		if (read != bytesToRead) {
-			debug_log("bufferAffineTransform: failed to read %d bytes from buffer %d\n\r", bytesToRead, bufferId);
+			debug_log("bufferAffineTransform: failed to read %d bytes from buffer %d\n\r", bytesToRead, sourceBufferId);
 			return INFINITY;
 		}
 		// update our offset so repeated reads don't just re-read the same value
@@ -1659,33 +1659,33 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
 	};
 
-	auto readFloatArgument = [getFormatInfo, readValueFromBuffer, readValueFromStream]() -> float {
-		bool isFixed, is16Bit, isFromBuffer;
+	auto readFloatArgument = [getFormatInfo, readValueFromBuffer, readValueFromStream, useBufferValue]() -> float {
+		bool isFixed, is16Bit;
 		int8_t shift;
 		int16_t sourceBufferId = -1;
 		AdvancedOffset offset = {};
-		if (!getFormatInfo(isFixed, is16Bit, isFromBuffer, shift, sourceBufferId, offset)) {
+		if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
 			return INFINITY;
 		}
-		if (isFromBuffer) {
+		if (useBufferValue) {
 			return readValueFromBuffer(sourceBufferId, offset, is16Bit, isFixed, shift);
 		}
 		return readValueFromStream(is16Bit, isFixed, shift);
 	};
 
-	auto readMultipleArgs = [this, getFormatInfo, readValueFromBuffer, readValueFromStream, useMultiFormat](float *values, int count) -> bool {
-		bool isFixed, is16Bit, isFromBuffer;
+	auto readMultipleArgs = [this, getFormatInfo, readValueFromBuffer, readValueFromStream, useBufferValue, useMultiFormat](float *values, int count) -> bool {
+		bool isFixed, is16Bit;
 		int8_t shift;
 		int16_t sourceBufferId = -1;
 		AdvancedOffset offset = {};
 
 		for (int i = 0; i < count; i++) {
 			if (i == 0 || useMultiFormat) {
-				if (!getFormatInfo(isFixed, is16Bit, isFromBuffer, shift, sourceBufferId, offset)) {
+				if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
 					return false;
 				}
 			}
-			values[i] = isFromBuffer ? readValueFromBuffer(sourceBufferId, offset, is16Bit, isFixed, shift) : readValueFromStream(is16Bit, isFixed, shift);
+			values[i] = useBufferValue ? readValueFromBuffer(sourceBufferId, offset, is16Bit, isFixed, shift) : readValueFromStream(is16Bit, isFixed, shift);
 			if (values[i] == INFINITY) {
 				return false;
 			}
@@ -1693,18 +1693,18 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		return true;
 	};
 
-	auto readMatrixFromBuffer = [getMultiBufferStream, matrixSize](uint16_t bufferId, void *matrix) -> bool {
-		auto buff = getMultiBufferStream(bufferId);
+	auto readMatrixFromBuffer = [getMultiBufferStream, matrixSize](uint16_t sourceBufferId, void *matrix) -> bool {
+		auto buff = getMultiBufferStream(sourceBufferId);
 		if (!buff) {
 			return false;
 		}
 		if (buff->size() < matrixSize) {
-			debug_log("bufferAffineTransform: buffer %d too small for matrix\n\r", bufferId);
+			debug_log("bufferAffineTransform: buffer %d too small for matrix\n\r", sourceBufferId);
 			return false;
 		}
 		auto read = buff->readBytes((uint8_t *)matrix, matrixSize);
 		if (read != matrixSize) {
-			debug_log("bufferAffineTransform: failed to read 9 floats from buffer %d\n\r", bufferId);
+			debug_log("bufferAffineTransform: failed to read 9 floats from buffer %d\n\r", sourceBufferId);
 			return false;
 		}
 		return true;
@@ -1772,7 +1772,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			transform[8] = 1.0f;
 		}	break;
 		case AFFINE_TRANSLATE: {
-			// translate by a given amount
+			// translate by a given amount of pixels
 			float translateXY[2] = {0.0f, 0.0f};
 			if (!readMultipleArgs(translateXY, 2)) {
 				return;
