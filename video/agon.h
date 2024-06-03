@@ -327,10 +327,11 @@
 #define AFFINE_MULTIPLY			4		// Multiply (1 argument)
 #define AFFINE_SCALE			5		// Scale (2 arguments for X and Y)
 #define AFFINE_TRANSLATE		6		// Translate (X and Y)
-#define AFFINE_SHEAR			7		// Shear (2 arguments for X and Y)
-#define AFFINE_SKEW				8		// Skew (by angle, 2 arguments)
-#define AFFINE_SKEW_RAD			9		// Skew (by angle in radians, 2 arguments)
-#define AFFINE_TRANSFORM		10		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
+#define AFFINE_TRANSLATE_OS_COORDS		7		// Translate (X and Y)
+#define AFFINE_SHEAR			8		// Shear (2 arguments for X and Y)
+#define AFFINE_SKEW				9		// Skew (by angle, 2 arguments)
+#define AFFINE_SKEW_RAD			10		// Skew (by angle in radians, 2 arguments)
+#define AFFINE_TRANSFORM		11		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
 
 #define AFFINE_OP_MASK			0x0F	// operation code mask
 #define AFFINE_OP_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)

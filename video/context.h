@@ -132,7 +132,6 @@ class Context {
 		// Viewport management functions
 		Rect * getViewport(ViewportType type);
 		bool setTextViewport(Rect rect);
-		Point scale(int16_t X, int16_t Y);
 		Point invScale(Point p);
 
 		// Font management functions
@@ -230,6 +229,7 @@ class Context {
 		void setOrigin();
 		void shiftOrigin();
 		void setLogicalCoords(bool b);
+		Point scale(int16_t X, int16_t Y);
 		Point toCurrentCoordinates(int16_t X, int16_t Y);
 		Point toScreenCoordinates(int16_t X, int16_t Y);
 

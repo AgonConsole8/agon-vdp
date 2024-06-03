@@ -32,18 +32,9 @@ bool Context::setTextViewport(Rect r) {
 	return false;
 }
 
-// Scale a point, as appropriate for coordinate system
-//
-Point Context::scale(int16_t X, int16_t Y) {
-	if (logicalCoords) {
-		return Point((double)X / logicalScaleX, (double)Y / logicalScaleY);
-	}
-	return Point(X, Y);
-}
-
 Point Context::invScale(Point p) {
 	if (logicalCoords) {
-		return Point((double)p.X * logicalScaleX, (double)p.Y * logicalScaleY);
+		return Point((double)p.X * logicalScaleX, -(double)p.Y * logicalScaleY);
 	}
 	return p;
 }
@@ -123,13 +114,13 @@ void Context::setOrigin(int x, int y) {
 	auto newOrigin = scale(x, y);
 
 	if (logicalCoords) {
-		newOrigin.Y = canvasH - newOrigin.Y - 1;
+		newOrigin.Y = (canvasH - 1) + newOrigin.Y;
 	}
 
 	// shift up1 by the difference between the new and old origins, with scaling
 	auto delta = invScale(newOrigin.sub(origin));
 	up1.X = up1.X - delta.X;
-	up1.Y = logicalCoords ? up1.Y + delta.Y : up1.Y - delta.Y;
+	up1.Y = up1.Y - delta.Y;
 
 	origin = newOrigin;
 }
@@ -169,6 +160,15 @@ void Context::setLogicalCoords(bool b) {
 	}
 }
 
+// Scale a point, as appropriate for coordinate system
+//
+Point Context::scale(int16_t X, int16_t Y) {
+	if (logicalCoords) {
+		return Point((double)X / logicalScaleX, -(double)Y / logicalScaleY);
+	}
+	return Point(X, Y);
+}
+
 // Convert to currently active coordinate system
 //
 Point Context::toCurrentCoordinates(int16_t X, int16_t Y) {
@@ -185,7 +185,7 @@ Point Context::toCurrentCoordinates(int16_t X, int16_t Y) {
 inline Point Context::toScreenCoordinates(int16_t X, int16_t Y) {
 	auto p = scale(X, Y);
 
-	return Point(origin.X + p.X, logicalCoords ? origin.Y - p.Y : origin.Y + p.Y);
+	return Point(origin.X + p.X, origin.Y + p.Y);
 }
 
 #endif // CONTEXT_VIEWPORT_H

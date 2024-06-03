@@ -1781,6 +1781,17 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			transform[5] = translateXY[1];
 			transform[8] = 1.0f;
 		}	break;
+		case AFFINE_TRANSLATE_OS_COORDS: {
+			// translate by a given amount of pixels
+			float translateXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(translateXY, 2)) {
+				return;
+			}
+			auto scaled = context->scale(translateXY[0], translateXY[1]);
+			transform[2] = scaled.X;
+			transform[5] = scaled.Y;
+			transform[8] = 1.0f;
+		}	break;
 		case AFFINE_SHEAR: {
 			// shear by a given amount
 			float shearXY[2] = {0.0f, 0.0f};
