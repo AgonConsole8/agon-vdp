@@ -1731,6 +1731,9 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 
 	// pixelSize is our number of bits in a pixel
 	auto pixelSize = options & EXPAND_BITMAP_SIZE;
+	if (pixelSize == 0) {
+		pixelSize = 8;
+	}
 	// do we have an aligned width?
 	bool aligned = options & EXPAND_BITMAP_ALIGNED;
 	// do we have a map buffer, or are we just reading the values from the stream?
