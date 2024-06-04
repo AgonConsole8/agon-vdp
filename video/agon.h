@@ -343,6 +343,7 @@
 // using a value of 0xC7 would indicate a 16-bit fixed point value with the binary point shifted right 7 bits (for an 8/8 split)
 // a value of 0xCF indicates 16-bit fixed point values with no fractional part
 #define AFFINE_FORMAT_SHIFT_MASK	0x1F	// bits used for shift value (used for fixed point values)
+#define AFFINE_FORMAT_SHIFT_TOPBIT	0x10	// top bit of shift (used to work out if shift is negative)
 #define AFFINE_FORMAT_FLAGS		0xE0	// flags
 #define AFFINE_FORMAT_FIXED		0x40	// if set, values are fixed-point, vs floats
 #define AFFINE_FORMAT_16BIT		0x80	// if set, values are 16-bit, vs 32-bit

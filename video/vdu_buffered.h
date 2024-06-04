@@ -1594,6 +1594,11 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		isFixed = format & AFFINE_FORMAT_FIXED;
 		is16Bit = format & AFFINE_FORMAT_16BIT;
 		shift = format & AFFINE_FORMAT_SHIFT_MASK;
+		// ensure our size value obeys negation
+		if (is16Bit && (shift & AFFINE_FORMAT_SHIFT_TOPBIT)) {
+			// top bit was set, so it's a negative - so we need to set the top bits of the size
+			shift = shift | AFFINE_FORMAT_FLAGS;
+		}
 		if (useBufferValue) {
 			sourceBufferId = readWord_t();
 			if (sourceBufferId == -1) {
@@ -1608,13 +1613,23 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 	auto convertValueToFloat = [](uint32_t rawValue, bool is16Bit, bool isFixed, int8_t shift) -> float {
 		if (isFixed) {
 			// fixed point value
+			// we will scale our rawValue by a factor to create our float
+			// this version assumes base value is -1 to +1, multiplied by 2^shift
+			// so binary point starts at bit 31 and is moved right by shift
+			// auto scale = (1u << shift) / (float)(1u << 31);
+			// if (is16Bit) {
+			// 	// ensure 16-bit values are 32-bit values with their buttom 16 bits empty
+			// 	rawValue <<= 16;
+			// }
+			// in this version the binary point starts after bit 0 and is moved left by shift
+			// which is arguably a bit more intuitive in use, and matches the xtensa fixed point instruction support
 			// we need to use our shift value to determine how far to scale
-			auto scale = (1u << shift) / (float)(1u << 31);
-            if (is16Bit) {
-                rawValue <<= 16;
-            }
+			auto scale = shift < 0 ? 1 << -shift : 1.0f / (1 << shift);
+			if (is16Bit) {
+				return (float)(int16_t)rawValue * scale;
+			}
 			debug_log("bufferAffineTransform: rawValue %d, shift %d, scale %f\n\r", rawValue, shift, scale);
-            return (float)(int32_t)rawValue * scale;
+			return (float)(int32_t)rawValue * scale;
 		} else {
 			// floating point value - shift ignored
 			// if we're reading a 16-bit value, we need to convert to 32-bit float
