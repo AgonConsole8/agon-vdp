@@ -198,6 +198,12 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			if (sourceBufferId == -1) return;
 			bufferDecompress(bufferId, sourceBufferId);
 		}	break;
+		case BUFFERED_EXPAND_BITMAP: {
+			auto options = readByte_t(); if (options == -1) return;
+			auto sourceBufferId = readWord_t();
+			if (sourceBufferId == -1) return;
+			bufferExpandBitmap(bufferId, options, sourceBufferId);
+		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			// force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
 			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
@@ -1546,7 +1552,7 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 	debug_log("bufferCopyAndConsolidate: copied %d bytes into buffer %d\n\r", length, bufferId);
 }
 
-// VDU 23, 0, &A0, bufferId; &1C, sourceBufferId; : Compress blocks from a buffer
+// VDU 23, 0, &A0, bufferId; &40, sourceBufferId; : Compress blocks from a buffer
 // Compress (blocks from) a buffer into a new buffer.
 // Replaces the target buffer with the new one.
 //
@@ -1626,7 +1632,7 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 	}
 }
 
-// VDU 23, 0, &A0, bufferId; &1D, sourceBufferId; : Decompress blocks from a buffer
+// VDU 23, 0, &A0, bufferId; &41, sourceBufferId; : Decompress blocks from a buffer
 // Decompress (blocks from) a buffer into a new buffer.
 // Replaces the target buffer with the new one.
 //
@@ -1708,6 +1714,166 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 	#ifdef DEBUG
 	debug_log("Decompress took %u ms\n\r", millis() - start);
 	#endif
+}
+
+// VDU 23, 0, &A0, bufferId; &48, options, sourceBufferId; [width;] [mapBufferId;] [mapValues...] : Expand a bitmap buffer
+// Expands a bitmap buffer into a new buffer with 8-bit values
+// options dictates how the expansion is done
+// width will be provided to give a pixel width at which a byte-align is done
+//
+void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId) {
+	auto sourceBufferIter = buffers.find(sourceBufferId);
+	if (sourceBufferIter == buffers.end()) {
+		debug_log("bufferExpandBitmap: source buffer %d not found\n\r", sourceBufferId);
+		return;
+	}
+	auto &sourceBuffer = sourceBufferIter->second;
+
+	// pixelSize is our number of bits in a pixel
+	auto pixelSize = options & EXPAND_BITMAP_SIZE;
+	if (pixelSize == 0) {
+		pixelSize = 8;
+	}
+	// do we have an aligned width?
+	bool aligned = options & EXPAND_BITMAP_ALIGNED;
+	// do we have a map buffer, or are we just reading the values from the stream?
+	bool useBuffer = options & EXPAND_BITMAP_USEBUFFER;
+	int16_t width = -1;
+
+	uint8_t * mapValues = nullptr;
+
+	if (aligned) {
+		width = readWord_t();
+		if (width == -1) {
+			debug_log("bufferExpandBitmap: failed to read width\n\r");
+			return;
+		}
+	}
+
+	auto numValues = 1 << pixelSize;
+
+	if (useBuffer) {
+		auto mapId = readWord_t();
+		if (mapId == -1) {
+			debug_log("bufferExpandBitmap: failed to read map buffer ID\n\r");
+			return;
+		}
+		auto bufferIter = buffers.find(mapId);
+		if (bufferIter == buffers.end()) {
+			debug_log("bufferExpandBitmap: map buffer %d not found\n\r", mapId);
+			return;
+		}
+		auto &buffer = bufferIter->second;
+		if (buffer.size() != 1) {
+			debug_log("bufferExpandBitmap: map buffer %d does not contain a single block\n\r", mapId);
+			return;
+		}
+		if (buffer[0]->size() < numValues) {
+			debug_log("bufferExpandBitmap: map buffer %d does not contain at least %d values\n\r", mapId, numValues);
+			return;
+		}
+		mapValues = buffer[0]->getBuffer();
+	} else {
+		// read pixelSize bytes from stream
+		mapValues = (uint8_t *) ps_malloc(numValues);
+		if (!mapValues) {
+			debug_log("bufferExpandBitmap: failed to allocate map values\n\r");
+			return;
+		}
+		if (readIntoBuffer(mapValues, 1 << pixelSize) != 0) {
+			debug_log("bufferExpandBitmap: failed to read map values\n\r");
+			free(mapValues);
+			return;
+		}
+		debug_log("bufferExpandBitmap: read map values ");
+		for (int i = 0; i < numValues; i++) {
+			debug_log("%02hX ", mapValues[i]);
+		}
+		debug_log("\n\r");
+	}
+
+	// work out source size
+	uint32_t sourceSize = 0;
+	for (const auto &block : sourceBuffer) {
+		sourceSize += block->size();
+	}
+
+	// if we are aligning we need to work out our byte width, based off the pixel width
+	uint32_t byteWidth = 0;	
+	if (aligned) {
+		byteWidth = ((pixelSize * width) + (8 - pixelSize)) / 8;
+	}
+
+	// work out our output size
+	uint32_t outputSize = 0;
+	if (aligned) {
+		outputSize = (sourceSize / byteWidth) * width;
+	} else {
+		outputSize = (sourceSize * 8) / pixelSize;
+	}
+
+	debug_log("bufferExpandBitmap: source size %d, output size %d, pixel size %d, width %d, byte width %d\n\r",
+		sourceSize, outputSize, pixelSize, width, byteWidth);
+
+	// create output buffer
+	auto bufferStream = make_shared_psram<BufferStream>(outputSize);
+
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		// buffer couldn't be created
+		debug_log("bufferExpandBitmap: failed to create buffer %d\n\r", bufferId);
+		if (!useBuffer) {
+			free(mapValues);
+		}
+		return;
+	}
+
+	auto destination = bufferStream->getBuffer();
+
+	// iterate through source buffer
+	auto p_data = destination;
+	uint8_t bit = 0;
+	uint8_t pixel = 0;
+	uint16_t pixelCount = 0;
+	for (const auto &block : sourceBuffer) {
+		auto bufferLength = block->size();
+		auto p_source = block->getBuffer();
+
+		// go through one byte at a time,
+		// and expand the pixels into the destination buffer
+		// aligning when our pixel count reaches our pixel width if required
+
+		while (bufferLength--) {
+			auto value = *p_source++;
+			for (uint8_t i = 0; i < 8; i++) {
+				debug_log("pixel bit is %d ", ((value >> 7 - i) & 1));
+				pixel = (pixel << 1) | ((value >> (7 - i)) & 1);
+				bit++;
+				if (bit == pixelSize) {
+					bit = 0;
+					*p_data++ = mapValues[pixel];
+					debug_log(" %02hX %02hX (%02hX) %d\n\r", pixel, mapValues[pixel], value, i);
+					pixel = 0;
+					if (aligned) {
+						if (++pixelCount == width) {
+							// byte align
+							debug_log("aligned... skipping to next byte at byte bit %d\n\r", i);
+							pixelCount = 0;
+							// jump to next byte
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// save our bufferStream to the buffer
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(std::move(bufferStream));
+	if (!useBuffer) {
+		free(mapValues);
+	}
+	debug_log("bufferExpandBitmap: expanded %d bytes into buffer %d\n\r", outputSize, bufferId);
 }
 
 #endif // VDU_BUFFERED_H

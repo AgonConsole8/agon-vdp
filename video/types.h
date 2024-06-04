@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <memory>
 
 // PreferPSRAMAlloc
 //

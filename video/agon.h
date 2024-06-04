@@ -262,6 +262,7 @@
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
+#define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
 
 #define BUFFERED_DEBUG_INFO				0x80	// Get debug info about a buffer
 
@@ -306,6 +307,11 @@
 #define REVERSE_CHUNKED			0x04	// chunked reverse, 16-bit size value follows
 #define REVERSE_BLOCK			0x08	// reverse block order
 #define REVERSE_UNUSED_BITS		0xF0	// unused bits
+
+// Expand bitmap operation flags
+#define EXPAND_BITMAP_SIZE		0x07	// bottom bits indicate the number of bits per pixel in bitmap, 0=8bpp
+#define EXPAND_BITMAP_ALIGNED	0x08	// includes pixel width value to indicate where a byte alignment should be performed
+#define EXPAND_BITMAP_USEBUFFER	0x10	// use buffer ID for mapping data
 
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
