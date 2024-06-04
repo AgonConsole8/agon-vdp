@@ -242,6 +242,11 @@ void VDUStreamProcessor::vdu_sys_video() {
 				controlKeys = (bool) b;
 			}
 		}	break;
+		case VDP_BUFFER_PRINT: {		// VDU 23, 0, &9B
+			auto bufferId = readWord_t();
+			if (bufferId == -1) return;
+			printBuffer(bufferId);
+		}	break;
 		case VDP_TEXT_VIEWPORT: {		// VDU 23, 0, &9C
 			// Set text viewport using graphics coordinates
 			if (ttxtMode) {
@@ -399,6 +404,30 @@ void VDUStreamProcessor::sendColour(uint8_t colour) {
 		colour,
 	};
 	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);
+}
+
+void VDUStreamProcessor::printBuffer(uint16_t bufferId) {
+	auto bufferIter = buffers.find(bufferId);
+	if (bufferIter == buffers.end()) {
+		debug_log("vdp_bufferPrint: buffer %d not found\n\r", bufferId);
+		return;
+	}
+
+	auto buffer = bufferIter->second;
+	for (const auto &block : bufferIter->second) {
+		auto buff = block->getBuffer();
+		auto remaining = block->size();
+		
+		while (remaining > 0) {
+			// grab strings from the buffer, limiting to 40 characters
+			std::string stringFromBuffer;
+			for (int i = 0; i < 40 && remaining > 0; i++) {
+				stringFromBuffer += buff[i];
+				remaining--;
+			}
+			context->plotString(stringFromBuffer);
+		}
+	}
 }
 
 // VDU 23, 0, &87, 0: Send TIME information (from ESP32 RTC)
