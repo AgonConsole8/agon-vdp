@@ -10,6 +10,7 @@
 #include "agon.h"
 #include "agon_ps2.h"
 #include "agon_screen.h"
+#include "test_flags.h"
 #include "vdu_audio.h"
 #include "vdu_buffered.h"
 #include "vdu_context.h"
@@ -237,6 +238,9 @@ void VDUStreamProcessor::vdu_sys_video() {
 			vdu_sys_font();				// Font management
 		}	break;
 		case VDP_AFFINE_TRANSFORM: {	// VDU 23, 0, &96, flags, bufferId;
+			if (!isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+				return;
+			}
 			auto flags = readByte_t();	// Set affine transform flags
 			if (flags == -1) return;
 			auto bufferId = readWord_t();
@@ -318,6 +322,15 @@ void VDUStreamProcessor::vdu_sys_video() {
 			if (b >= 0) {
 				context->setDottedLinePatternLength(b);
 			}
+		}	break;
+		case VDP_TESTFLAG_SET: {		// VDU 23, 0, &F8, flag; value;
+			auto flag = readWord_t();	// Set a test flag
+			auto value = readWord_t();
+			setTestFlag(flag, value);
+		}	break;
+		case VDP_TESTFLAG_CLEAR: {		// VDU 23, 0, &F9, flag
+			auto flag = readWord_t();	// Clear a test flag
+			clearTestFlag(flag);
 		}	break;
 		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
 			auto b = readByte_t();

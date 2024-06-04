@@ -17,6 +17,7 @@
 #include "mem_helpers.h"
 #include "multi_buffer_stream.h"
 #include "sprites.h"
+#include "test_flags.h"
 #include "types.h"
 #include "vdu_stream_processor.h"
 
@@ -191,7 +192,9 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
 		}	break;
 		case BUFFERED_AFFINE_TRANSFORM: {
-			bufferAffineTransform(bufferId);
+			if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+				bufferAffineTransform(bufferId);
+			}
 		}	break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
