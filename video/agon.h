@@ -62,6 +62,7 @@
 #define VDP_SCRCHAR_GRAPHICS	0x93	// Character read from screen at graphics coordinates
 #define VDP_READ_COLOUR			0x94	// Read colour
 #define VDP_FONT				0x95	// Font management commands
+#define VDP_AFFINE_TRANSFORM	0x96	// Set affine transform
 #define VDP_CONTROLKEYS			0x98	// Control keys on/off
 #define VDP_BUFFER_PRINT		0x9B	// Print a buffer of characters literally with no command interpretation
 #define VDP_TEXT_VIEWPORT		0x9C	// Set text viewport using current graphics coordinates
@@ -76,6 +77,8 @@
 #define VDP_CONTEXT				0xC8	// Context management commands
 #define VDP_FLUSH_DRAWING_QUEUE	0xCA	// Flush the drawing queue
 #define VDP_PATTERN_LENGTH		0xF2	// Set pattern length (*FX 163,242,n)
+#define VDP_TESTFLAG_SET		0xF8	// Set a test flag
+#define VDP_TESTFLAG_CLEAR		0xF9	// Clear a test flag
 #define VDP_CONSOLEMODE			0xFE	// Switch console mode on and off
 #define VDP_TERMINALMODE		0xFF	// Switch to terminal mode
 
@@ -260,6 +263,8 @@
 #define BUFFERED_REVERSE				0x18	// Reverse the order of data in a buffer
 #define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
+#define BUFFERED_AFFINE_TRANSFORM		0x20	// Create or combine affine transform matrix buffer
+#define BUFFERED_AFFINE_TRANSFORM_APPLY	0x21	// Apply an affine transform matrix to a buffer
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
@@ -313,9 +318,44 @@
 #define EXPAND_BITMAP_ALIGNED	0x08	// includes pixel width value to indicate where a byte alignment should be performed
 #define EXPAND_BITMAP_USEBUFFER	0x10	// use buffer ID for mapping data
 
+// Affine transform operation codes
+// if applying to an empty buffer, generate a matrix with the given operation
+// otherwise combine the existing matrix with the given operation
+// TODO think about numbers of arguments for each operation
+#define AFFINE_IDENTITY			0		// Create/reset to an identity matrix (no arguments)
+#define AFFINE_INVERT			1		// Invert (no arguments)
+#define AFFINE_ROTATE			2		// Rotate (anticlockwise by angle, 1 argument)
+#define AFFINE_ROTATE_RAD		3		// Rotate (anticlockwise by angle in radians, 1 argument)
+#define AFFINE_MULTIPLY			4		// Multiply (1 argument)
+#define AFFINE_SCALE			5		// Scale (2 arguments for X and Y)
+#define AFFINE_TRANSLATE		6		// Translate (X and Y)
+#define AFFINE_TRANSLATE_OS_COORDS		7		// Translate (X and Y)
+#define AFFINE_SHEAR			8		// Shear (2 arguments for X and Y)
+#define AFFINE_SKEW				9		// Skew (by angle, 2 arguments)
+#define AFFINE_SKEW_RAD			10		// Skew (by angle in radians, 2 arguments)
+#define AFFINE_TRANSFORM		11		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
+
+#define AFFINE_OP_MASK			0x0F	// operation code mask
+#define AFFINE_OP_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
+#define AFFINE_OP_BUFFER_VALUE		0x20	// operand values are fetched from buffers
+#define AFFINE_OP_MULTI_FORMAT		0x40	// each argument has its own format byte
+
+// Affine transform format flags byte
+// a format of 0 would indicate a 32-bit float value - "native" for transform matrix data
+// using a value of 0xC7 would indicate a 16-bit fixed point value with the binary point shifted right 7 bits (for an 8/8 split)
+// a value of 0xCF indicates 16-bit fixed point values with no fractional part
+#define AFFINE_FORMAT_SHIFT_MASK	0x1F	// bits used for shift value (used for fixed point values)
+#define AFFINE_FORMAT_SHIFT_TOPBIT	0x10	// top bit of shift (used to work out if shift is negative)
+#define AFFINE_FORMAT_FLAGS		0xE0	// flags
+#define AFFINE_FORMAT_FIXED		0x40	// if set, values are fixed-point, vs floats
+#define AFFINE_FORMAT_16BIT		0x80	// if set, values are 16-bit, vs 32-bit
+
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
 #define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples
+
+// Test flags
+#define TEST_FLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024
