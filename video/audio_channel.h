@@ -30,7 +30,7 @@ class AudioChannel {
 		~AudioChannel();
 		uint8_t		playNote(uint8_t volume, uint16_t frequency, int32_t duration);
 		uint8_t		getStatus();
-		uint8_t		setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel> channelRef, uint16_t sampleId = 0);
+		uint8_t		setWaveform(int8_t waveformType, uint16_t sampleId = 0);
 		uint8_t		setVolume(uint8_t volume);
 		uint8_t		setFrequency(uint16_t frequency);
 		uint8_t		setDuration(int32_t duration);
@@ -39,14 +39,14 @@ class AudioChannel {
 		uint8_t		setSampleRate(uint16_t sampleRate);
 		uint8_t		setDutyCycle(uint8_t dutyCycle);
 		uint8_t		setParameter(uint8_t parameter, uint16_t value);
-		WaveformGenerator * getWaveform() { return this->_waveform.get(); }
 		void		attachSoundGenerator();
 		void		detachSoundGenerator();
 		uint8_t		seekTo(uint32_t position);
 		void		loop();
 		uint8_t		channel() { return _channel; }
 	private:
-		std::shared_ptr<WaveformGenerator>	getSampleWaveform(uint16_t sampleId, std::shared_ptr<AudioChannel> channelRef);
+		WaveformGenerator * getWaveform() { return this->_waveform.get(); }
+		std::shared_ptr<WaveformGenerator>	getSampleWaveform(uint16_t sampleId, AudioChannel *channelRef);
 		void		waitForAbort();
 		uint8_t		getVolume(uint32_t elapsed);
 		uint16_t	getFrequency(uint32_t elapsed);
@@ -70,7 +70,7 @@ extern std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// St
 
 AudioChannel::AudioChannel(uint8_t channel) : _channel(channel), _state(AudioState::Idle), _volume(64), _frequency(750), _duration(-1) {
 	debug_log("AudioChannel: init %d\n\r", channel);
-	setWaveform(AUDIO_WAVE_DEFAULT, nullptr);
+	setWaveform(AUDIO_WAVE_DEFAULT);
 	debug_log("free mem: %d\n\r", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 }
 
@@ -146,7 +146,7 @@ uint8_t AudioChannel::getStatus() {
 	return status;
 }
 
-std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t sampleId, std::shared_ptr<AudioChannel> channelRef) {
+std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t sampleId, AudioChannel *channelRef) {
 	if (samples.find(sampleId) != samples.end()) {
 		auto sample = samples.at(sampleId);
 		// if (sample->channels.find(_channel) != sample->channels.end()) {
@@ -170,7 +170,7 @@ std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t samp
 	return nullptr;
 }
 
-uint8_t AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChannel> channelRef, uint16_t sampleId) {
+uint8_t AudioChannel::setWaveform(int8_t waveformType, uint16_t sampleId) {
 	std::shared_ptr<WaveformGenerator> newWaveform = nullptr;
 
 	switch (waveformType) {
@@ -195,7 +195,7 @@ uint8_t AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChan
 		case AUDIO_WAVE_SAMPLE:
 			// Buffer-based sample playback
 			debug_log("AudioChannel: using sample buffer %d for waveform on channel %d\n\r", sampleId, channel());
-			newWaveform = getSampleWaveform(sampleId, channelRef);
+			newWaveform = getSampleWaveform(sampleId, this);
 			break;
 		default:
 			// negative values indicate a sample number
@@ -203,7 +203,7 @@ uint8_t AudioChannel::setWaveform(int8_t waveformType, std::shared_ptr<AudioChan
 				// convert our negative sample number to a positive sample number starting at our base buffer ID
 				int16_t sampleNum = BUFFERED_SAMPLE_BASEID + (-waveformType - 1);
 				debug_log("AudioChannel: using sample %d for waveform (%d) on channel %d\n\r", waveformType, sampleNum, channel());
-				newWaveform = getSampleWaveform(sampleNum, channelRef);
+				newWaveform = getSampleWaveform(sampleNum, this);
 				waveformType = AUDIO_WAVE_SAMPLE;
 			} else {
 				debug_log("AudioChannel: unknown waveform type %d on channel %d\n\r", waveformType, channel());
@@ -403,6 +403,7 @@ void AudioChannel::detachSoundGenerator() {
 	if (this->_waveform) {
 		soundGenerator->detach(getWaveform());
 	}
+	this->_state.store(AudioState::Idle);
 }
 
 uint8_t AudioChannel::seekTo(uint32_t position) {
