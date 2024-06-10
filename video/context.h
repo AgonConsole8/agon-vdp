@@ -93,7 +93,7 @@ class Context {
 		uint16_t		currentBitmap = BUFFERED_BITMAP_BASEID;	// Current bitmap ID
 		fabgl::LinePattern	linePattern = fabgl::LinePattern();				// Dotted line pattern
 		uint8_t			linePatternLength = 8;			// Dotted line pattern length
-		std::vector<uint16_t>	charToBitmap = std::vector<uint16_t>(255, 65535);	// character to bitmap mapping
+		std::vector<uint16_t>	charToBitmap = std::vector<uint16_t>(256, 65535);	// character to bitmap mapping
 
 		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
 
@@ -140,7 +140,7 @@ class Context {
 		bool cmpChar(uint8_t * c1, uint8_t *c2, uint8_t len);
 		char getScreenChar(Point p);
 		inline void setCharacterOverwrite(bool overwrite);		// TODO integrate into setActiveCursor?
-		inline std::shared_ptr<Bitmap> getBitmapFromChar(char c) {
+		inline std::shared_ptr<Bitmap> getBitmapFromChar(uint8_t c) {
 			return getBitmap(charToBitmap[c]);
 		}
 
