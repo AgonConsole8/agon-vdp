@@ -14,70 +14,54 @@
 #include <vector>
 #include <unordered_map>
 #include <fabgl.h>
+#include <mutex>
 
+std::mutex soundGeneratorMutex;
+
+#include "agon.h"
 #include "audio_channel.h"
 #include "audio_sample.h"
 #include "types.h"
 
 // audio channels and their associated tasks
-std::unordered_map<uint8_t, std::shared_ptr<AudioChannel>> audioChannels;
-std::vector<TaskHandle_t, psram_allocator<TaskHandle_t>> audioHandlers;
-
+AudioChannel *audioChannels[MAX_AUDIO_CHANNELS];
+TaskHandle_t audioTask;
 std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage for the sample data
-
-std::unique_ptr<fabgl::SoundGenerator> soundGenerator;				// audio handling sub-system
+fabgl::SoundGenerator *soundGenerator;  // audio handling sub-system
 
 extern void force_debug_log(const char *format, ...);
+bool channelEnabled(uint8_t channel);
 
 // Audio channel driver task
 //
 void audioDriver(void * parameters) {
-	uint8_t channelNum = (uint8_t)(uintptr_t)parameters;
-	// auto counter = 0;
-	auto channel = audioChannels[channelNum];
-
 	while (true) {
-		channel->loop();
-		vTaskDelay(1);
-		// counter++;
-		// if (counter > 3000) {
-		// 	force_debug_log("audioDriver: channel %d stack highwater %d\n\r", channelNum, uxTaskGetStackHighWaterMark(nullptr));
-		// 	counter = 0;
-		// }
+		auto now = millis();
+		for (int i=0; i<MAX_AUDIO_CHANNELS; i++) {
+			if (audioChannels[i]) {
+				audioChannels[i]->loop(now);
+			}
+		}
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }
 
-BaseType_t initAudioChannel(uint8_t channelNum) {
-	debug_log("initAudioChannel: channel %d\n\r", channelNum);
-
-	auto channel = make_shared_psram<AudioChannel>(channelNum);
-	audioChannels[channelNum] = channel;
-
-	return xTaskCreatePinnedToCore(audioDriver,  "audioDriver",
-		1792,						// Checked & adjusted by reading the Stack Highwater
-		(void*)(uintptr_t) channelNum,	// Parameters
+BaseType_t initAudioTask() {
+	return xTaskCreatePinnedToCore(audioDriver, "audioDriver",
+		2048,
+		nullptr,
 		AUDIO_CHANNEL_PRIORITY,		// Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-		&audioHandlers[channelNum],	// Task handle
+		&audioTask,
 		AUDIO_CORE
 	);
 }
 
-void audioTaskAbortDelay(uint8_t channel) {
-	if (audioHandlers[channel]) {
-		xTaskAbortDelay(audioHandlers[channel]);
+BaseType_t initAudioChannel(int channel) {
+	if (!channelEnabled(channel)) {
+		audioChannels[channel] = new AudioChannel(channel);
+		return pdPASS;
 	}
-}
-
-void audioTaskKill(uint8_t channel) {
-	if (audioHandlers[channel]) {
-		vTaskDelete(audioHandlers[channel]);
-		audioChannels[channel]->detachSoundGenerator();
-		audioHandlers[channel] = nullptr;
-		audioChannels.erase(channel);
-		debug_log("audioTaskKill: channel %d killed\n\r", channel);
-	} else {
-		debug_log("audioTaskKill: channel %d not found\n\r", channel);
-	}
+	return 0;
 }
 
 // Change the sample rate
@@ -87,23 +71,21 @@ void setSampleRate(uint16_t sampleRate) {
 	if (sampleRate == 65535) {
 		sampleRate = AUDIO_DEFAULT_SAMPLE_RATE;
 	}
-	// detach the old sound generator
-	if (soundGenerator) {
-		soundGenerator->play(false);
-		for (const auto &channelPair : audioChannels) {
-			if (!channelPair.second) {
-				debug_log("duff channel pair for channel %d, skipping\n\r", channelPair.first);
-				audioChannels.erase(channelPair.first);
-				continue;
-			}
-			channelPair.second->detachSoundGenerator();
+	{
+		// detach the old sound generator
+		auto lock = std::unique_lock<std::mutex>(soundGeneratorMutex);
+		// delete the old sound generator
+		if (soundGenerator) {
+			soundGenerator->clear();
+			delete soundGenerator;
 		}
+		soundGenerator = new fabgl::SoundGenerator(sampleRate);
 	}
-	// delete the old sound generator
-	soundGenerator = nullptr;
-	soundGenerator = std::unique_ptr<fabgl::SoundGenerator>(new fabgl::SoundGenerator(sampleRate));
-	for (const auto &channelPair : audioChannels) {
-		channelPair.second->attachSoundGenerator();
+	for (int chan=0; chan<MAX_AUDIO_CHANNELS; chan++) {
+		if (audioChannels[chan]) {
+			auto lock = audioChannels[chan]->lock();
+			audioChannels[chan]->attachSoundGenerator();
+		}
 	}
 	soundGenerator->play(true);
 }
@@ -111,26 +93,26 @@ void setSampleRate(uint16_t sampleRate) {
 // Initialise the sound driver
 //
 void initAudio() {
-	// make new sound generator
+	for (int i=0; i<MAX_AUDIO_CHANNELS; i++) {
+		audioChannels[i] = nullptr;
+	}
 	setSampleRate(AUDIO_DEFAULT_SAMPLE_RATE);
-	audioHandlers.reserve(MAX_AUDIO_CHANNELS);
-	debug_log("initAudio: we have reserved %d channels\n\r", audioHandlers.capacity());
 	for (uint8_t i = 0; i < AUDIO_CHANNELS; i++) {
 		initAudioChannel(i);
-		vTaskDelay(1);
 	}
+	initAudioTask();
 }
 
 // Channel enabled?
 //
 bool channelEnabled(uint8_t channel) {
-	return channel < MAX_AUDIO_CHANNELS && audioChannels.find(channel) != audioChannels.end();
+	return channel < MAX_AUDIO_CHANNELS && audioChannels[channel] != nullptr;
 }
 
 // Play a note
 //
 uint8_t playNote(uint8_t channel, uint8_t volume, uint16_t frequency, uint16_t duration) {
-	if (channelEnabled(channel)) {
+	if (audioChannels[channel]) {
 		return audioChannels[channel]->playNote(volume, frequency, duration);
 	}
 	return 1;
@@ -173,8 +155,7 @@ uint8_t setFrequency(uint8_t channel, uint16_t frequency) {
 //
 uint8_t setWaveform(uint8_t channel, int8_t waveformType, uint16_t sampleId) {
 	if (channelEnabled(channel)) {
-		auto channelRef = audioChannels[channel];
-		return channelRef->setWaveform(waveformType, channelRef, sampleId);
+		return audioChannels[channel]->setWaveform(waveformType, sampleId);
 	}
 	return 0;
 }
@@ -231,10 +212,14 @@ uint8_t enableChannel(uint8_t channel) {
 //
 uint8_t disableChannel(uint8_t channel) {
 	if (channelEnabled(channel)) {
-		audioTaskKill(channel);
+		audioChannels[channel]->goIdle();
 		return 1;
 	}
 	return 0;
+}
+
+void audioTaskKill(int channel) {
+	disableChannel(channel);
 }
 
 // Clear a sample
