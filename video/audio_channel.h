@@ -2,16 +2,15 @@
 #define AUDIO_CHANNEL_H
 
 #include <memory>
-#include <atomic>
 #include <unordered_map>
+#include <mutex>
 #include <fabgl.h>
 
 #include "agon.h"
 #include "types.h"
 #include "envelopes/types.h"
 
-extern fabgl::SoundGenerator *soundGenerator;	// audio handling sub-system
-extern void audioTaskAbortDelay(uint8_t channel);
+extern fabgl::SoundGenerator *soundGenerator;  // audio handling sub-system
 
 enum AudioState : uint8_t {	// Audio channel state
 	Idle = 0,				// currently idle/silent
@@ -42,24 +41,27 @@ class AudioChannel {
 		void		attachSoundGenerator();
 		void		detachSoundGenerator();
 		uint8_t		seekTo(uint32_t position);
-		void		loop();
+		void		loop(uint64_t now);
 		uint8_t		channel() { return _channel; }
+		void            goIdle();
+		std::unique_lock<std::mutex> lock() { return std::unique_lock<std::mutex>(_channelMutex); }
 	private:
-		WaveformGenerator * getWaveform() { return this->_waveform.get(); }
-		std::shared_ptr<WaveformGenerator>	getSampleWaveform(uint16_t sampleId, AudioChannel *channelRef);
-		void		waitForAbort();
-		uint8_t		getVolume(uint32_t elapsed);
-		uint16_t	getFrequency(uint32_t elapsed);
-		bool		isReleasing(uint32_t elapsed);
-		bool		isFinished(uint32_t elapsed);
+		uint8_t		_seekTo(uint32_t position);
+		void            _goIdle();
+		WaveformGenerator *getSampleWaveform(uint16_t sampleId, AudioChannel *channelRef);
+		uint8_t		_getVolume(uint32_t elapsed);
+		uint16_t	_getFrequency(uint32_t elapsed);
+		bool		_isReleasing(uint32_t elapsed);
+		bool		_isFinished(uint32_t elapsed);
 		uint8_t		_channel;
 		uint8_t		_volume;
 		uint16_t	_frequency;
 		int32_t		_duration;
-		uint32_t	_startTime;
+		uint64_t	_startTime;
 		uint8_t		_waveformType;
-		std::atomic<AudioState>				_state;
-		std::shared_ptr<WaveformGenerator>	_waveform = nullptr;
+		AudioState	_state;
+		std::unique_ptr<WaveformGenerator>	_waveform;
+		std::mutex                              _channelMutex;
 		std::unique_ptr<VolumeEnvelope>		_volumeEnvelope;
 		std::unique_ptr<FrequencyEnvelope>	_frequencyEnvelope;
 };
@@ -68,7 +70,7 @@ class AudioChannel {
 #include "enhanced_samples_generator.h"
 extern std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage for the sample data
 
-AudioChannel::AudioChannel(uint8_t channel) : _channel(channel), _state(AudioState::Idle), _volume(64), _frequency(750), _duration(-1) {
+AudioChannel::AudioChannel(uint8_t channel) : _waveform(nullptr), _channel(channel), _state(AudioState::Idle), _volume(64), _frequency(750), _duration(-1) {
 	debug_log("AudioChannel: init %d\n\r", channel);
 	setWaveform(AUDIO_WAVE_DEFAULT);
 	debug_log("free mem: %d\n\r", heap_caps_get_free_size(MALLOC_CAP_8BIT));
@@ -76,25 +78,40 @@ AudioChannel::AudioChannel(uint8_t channel) : _channel(channel), _state(AudioSta
 
 AudioChannel::~AudioChannel() {
 	debug_log("AudioChannel: deiniting %d\n\r", channel());
-	if (this->_waveform != nullptr) {
-		this->_waveform->enable(false);
-		soundGenerator->detach(getWaveform());
-	}
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
+	detachSoundGenerator();
 	debug_log("AudioChannel: deinit %d\n\r", channel());
 }
 
+void AudioChannel::goIdle() {
+	debug_log("AudioChannel: abort %d\n\r", channel());
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
+	if (this->_waveform) {
+		this->_waveform->enable(false);
+	}
+	this->_state = AudioState::Idle;
+}
+
+// expects the lock to already be held
+void AudioChannel::_goIdle() {
+	debug_log("AudioChannel: abort %d\n\r", channel());
+	if (this->_waveform) {
+		this->_waveform->enable(false);
+	}
+	this->_state = AudioState::Idle;
+}
+
 uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t duration) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	if (!this->_waveform) {
 		debug_log("AudioChannel: no waveform on channel %d\n\r", channel());
 		return 0;
 	}
 	if (this->_waveformType == AUDIO_WAVE_SAMPLE && this->_volume == 0 && this->_state != AudioState::Idle) {
 		// we're playing a silenced sample, so we're free to play a new note, so abort
-		this->_state = AudioState::Abort;
-		audioTaskAbortDelay(this->_channel);
-		waitForAbort();
+		this->_goIdle();
 	}
-	switch (this->_state.load()) {
+	switch (this->_state) {
 		case AudioState::Idle:
 		case AudioState::Release:
 			this->_volume = volume;
@@ -104,7 +121,7 @@ uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t durat
 				// zero duration means play whole sample
 				// NB this can only work out sample duration based on sample provided
 				// so if sample data is streaming in an explicit length should be used instead
-				this->_duration = ((EnhancedSamplesGenerator *)getWaveform())->getDuration(frequency);
+				this->_duration = ((EnhancedSamplesGenerator *)&*_waveform)->getDuration(frequency);
 				if (this->_volumeEnvelope) {
 					// subtract the "release" time from the duration
 					this->_duration -= this->_volumeEnvelope->getRelease();
@@ -121,6 +138,7 @@ uint8_t AudioChannel::playNote(uint8_t volume, uint16_t frequency, int32_t durat
 }
 
 uint8_t AudioChannel::getStatus() {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	uint8_t status = 0;
 	if (this->_waveform && this->_waveform->enabled()) {
 		status |= AUDIO_STATUS_ACTIVE;
@@ -128,7 +146,7 @@ uint8_t AudioChannel::getStatus() {
 			status |= AUDIO_STATUS_INDEFINITE;
 		}
 	}
-	switch (this->_state.load()) {
+	switch (this->_state) {
 		case AudioState::Pending:
 		case AudioState::Playing:
 		case AudioState::PlayLoop:
@@ -146,7 +164,7 @@ uint8_t AudioChannel::getStatus() {
 	return status;
 }
 
-std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t sampleId, AudioChannel *channelRef) {
+WaveformGenerator *AudioChannel::getSampleWaveform(uint16_t sampleId, AudioChannel *channelRef) {
 	if (samples.find(sampleId) != samples.end()) {
 		auto sample = samples.at(sampleId);
 		// if (sample->channels.find(_channel) != sample->channels.end()) {
@@ -164,33 +182,34 @@ std::shared_ptr<WaveformGenerator> AudioChannel::getSampleWaveform(uint16_t samp
 		// }
 		// sample->channels[_channel] = channelRef;
 
-		return std::make_shared<EnhancedSamplesGenerator>(sample);
+		return new EnhancedSamplesGenerator(sample);
 	}
 	debug_log("sample %d not found\n\r", sampleId);
 	return nullptr;
 }
 
 uint8_t AudioChannel::setWaveform(int8_t waveformType, uint16_t sampleId) {
-	std::shared_ptr<WaveformGenerator> newWaveform = nullptr;
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
+	WaveformGenerator *newWaveform = nullptr;
 
 	switch (waveformType) {
 		case AUDIO_WAVE_SAWTOOTH:
-			newWaveform = std::make_shared<SawtoothWaveformGenerator>();
+			newWaveform = new SawtoothWaveformGenerator();
 			break;
 		case AUDIO_WAVE_SQUARE:
-			newWaveform = std::make_shared<SquareWaveformGenerator>();
+			newWaveform = new SquareWaveformGenerator();
 			break;
 		case AUDIO_WAVE_SINE:
-			newWaveform = std::make_shared<SineWaveformGenerator>();
+			newWaveform = new SineWaveformGenerator();
 			break;
 		case AUDIO_WAVE_TRIANGLE:
-			newWaveform = std::make_shared<TriangleWaveformGenerator>();
+			newWaveform = new TriangleWaveformGenerator();
 			break;
 		case AUDIO_WAVE_NOISE:
-			newWaveform = std::make_shared<NoiseWaveformGenerator>();
+			newWaveform = new NoiseWaveformGenerator();
 			break;
 		case AUDIO_WAVE_VICNOISE:
-			newWaveform = std::make_shared<VICNoiseGenerator>();
+			newWaveform = new VICNoiseGenerator();
 			break;
 		case AUDIO_WAVE_SAMPLE:
 			// Buffer-based sample playback
@@ -216,15 +235,13 @@ uint8_t AudioChannel::setWaveform(int8_t waveformType, uint16_t sampleId) {
 		if (this->_state != AudioState::Idle) {
 			debug_log("AudioChannel: aborting current playback\n\r");
 			// some kind of playback is happening, so abort any current task delay to allow playback to end
-			this->_state = AudioState::Abort;
-			audioTaskAbortDelay(this->_channel);
-			waitForAbort();
+			this->_goIdle();
 		}
 		if (this->_waveform != nullptr) {
 			debug_log("AudioChannel: detaching old waveform\n\r");
 			detachSoundGenerator();
 		}
-		this->_waveform = newWaveform;
+		this->_waveform.reset(newWaveform);
 		_waveformType = waveformType;
 		attachSoundGenerator();
 		debug_log("AudioChannel: setWaveform %d done on channel %d\n\r", waveformType, channel());
@@ -235,6 +252,7 @@ uint8_t AudioChannel::setWaveform(int8_t waveformType, uint16_t sampleId) {
 }
 
 uint8_t AudioChannel::setVolume(uint8_t volume) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	debug_log("AudioChannel: setVolume %d on channel %d\n\r", volume, channel());
 	if (volume == 255) {
 		return this->_volume;
@@ -244,8 +262,7 @@ uint8_t AudioChannel::setVolume(uint8_t volume) {
 	}
 
 	if (this->_waveform) {
-		waitForAbort();
-		switch (this->_state.load()) {
+		switch (this->_state) {
 			case AudioState::Idle:
 				if (volume > 0) {
 					// new note playback
@@ -279,8 +296,7 @@ uint8_t AudioChannel::setVolume(uint8_t volume) {
 				this->_waveform->setVolume(volume);
 				if (volume == 0 && this->_waveformType != AUDIO_WAVE_SAMPLE) {
 					// we're going silent, so abort any current playback
-					this->_state = AudioState::Abort;
-					audioTaskAbortDelay(this->_channel);
+					this->_goIdle();
 				}
 				break;
 		}
@@ -290,12 +306,12 @@ uint8_t AudioChannel::setVolume(uint8_t volume) {
 }
 
 uint8_t AudioChannel::setFrequency(uint16_t frequency) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	debug_log("AudioChannel: setFrequency %d on channel %d\n\r", frequency, channel());
 	this->_frequency = frequency;
 
 	if (this->_waveform) {
-		waitForAbort();
-		switch (this->_state.load()) {
+		switch (this->_state) {
 			case AudioState::Pending:
 			case AudioState::PlayLoop:
 			case AudioState::Release:
@@ -310,6 +326,7 @@ uint8_t AudioChannel::setFrequency(uint16_t frequency) {
 }
 
 uint8_t AudioChannel::setDuration(int32_t duration) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	debug_log("AudioChannel: setDuration %d on channel %d\n\r", duration, channel());
 	if (duration == 0xFFFFFF) {
 		duration = -1;
@@ -317,14 +334,13 @@ uint8_t AudioChannel::setDuration(int32_t duration) {
 	this->_duration = duration;
 
 	if (this->_waveform) {
-		waitForAbort();
-		switch (this->_state.load()) {
+		switch (this->_state) {
 			case AudioState::Idle:
 				// kick off a new note playback
 				this->_state = AudioState::Pending;
 				break;
 			case AudioState::Playing:
-				audioTaskAbortDelay(this->_channel);
+				this->_goIdle();
 				break;
 			default:
 				// any other state we should be looping so it will just get picked up
@@ -336,26 +352,29 @@ uint8_t AudioChannel::setDuration(int32_t duration) {
 }
 
 uint8_t AudioChannel::setVolumeEnvelope(std::unique_ptr<VolumeEnvelope> envelope) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	this->_volumeEnvelope = std::move(envelope);
 	if (envelope && this->_state == AudioState::Playing) {
 		// swap to looping
+		this->_goIdle();
 		this->_state = AudioState::PlayLoop;
-		audioTaskAbortDelay(this->_channel);
 	}
 	return 1;
 }
 
 uint8_t AudioChannel::setFrequencyEnvelope(std::unique_ptr<FrequencyEnvelope> envelope) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	this->_frequencyEnvelope = std::move(envelope);
 	if (envelope && this->_state == AudioState::Playing) {
 		// swap to looping
+		this->_goIdle();
 		this->_state = AudioState::PlayLoop;
-		audioTaskAbortDelay(this->_channel);
 	}
 	return 1;
 }
 
 uint8_t AudioChannel::setSampleRate(uint16_t sampleRate) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	if (this->_waveform) {
 		this->_waveform->setSampleRate(sampleRate);
 		return 1;
@@ -364,14 +383,16 @@ uint8_t AudioChannel::setSampleRate(uint16_t sampleRate) {
 }
 
 uint8_t AudioChannel::setDutyCycle(uint8_t dutyCycle) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	if (this->_waveform && this->_waveformType == AUDIO_WAVE_SQUARE) {
-		((SquareWaveformGenerator *)getWaveform())->setDutyCycle(dutyCycle);
+		((SquareWaveformGenerator *)&*_waveform)->setDutyCycle(dutyCycle);
 		return 1;
 	}
 	return 0;
 }
 
 uint8_t AudioChannel::setParameter(uint8_t parameter, uint16_t value) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 	if (this->_waveform) {
 		bool use16Bit = parameter & AUDIO_PARAM_16BIT;
 		auto param = parameter & AUDIO_PARAM_MASK;
@@ -393,49 +414,55 @@ uint8_t AudioChannel::setParameter(uint8_t parameter, uint16_t value) {
 	return 0;
 }
 
+// caller must hold channel lock
 void AudioChannel::attachSoundGenerator() {
 	if (this->_waveform) {
-		soundGenerator->attach(getWaveform());
+		auto lock = std::unique_lock<std::mutex>(soundGeneratorMutex);
+		soundGenerator->attach(&*_waveform);
 	}
 }
 
+// caller must hold channel lock
 void AudioChannel::detachSoundGenerator() {
 	if (this->_waveform) {
-		soundGenerator->detach(getWaveform());
+		auto lock = std::unique_lock<std::mutex>(soundGeneratorMutex);
+		soundGenerator->detach(&*_waveform);
 	}
-	this->_state.store(AudioState::Idle);
+	this->_state = AudioState::Idle;
 }
 
-uint8_t AudioChannel::seekTo(uint32_t position) {
+// caller must hold channel lock
+uint8_t AudioChannel::_seekTo(uint32_t position) {
 	if (this->_waveformType == AUDIO_WAVE_SAMPLE) {
-		((EnhancedSamplesGenerator *)getWaveform())->seekTo(position);
+		((EnhancedSamplesGenerator *)&*_waveform)->seekTo(position);
 		return 1;
 	}
 	return 0;
 }
 
-void AudioChannel::waitForAbort() {
-	while (this->_state == AudioState::Abort) {
-		// wait for abort to complete
-		vTaskDelay(1);
-	}
+uint8_t AudioChannel::seekTo(uint32_t position) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
+	return _seekTo(position);
 }
 
-uint8_t AudioChannel::getVolume(uint32_t elapsed) {
+// caller must hold channel lock
+uint8_t AudioChannel::_getVolume(uint32_t elapsed) {
 	if (this->_volumeEnvelope) {
 		return this->_volumeEnvelope->getVolume(this->_volume, elapsed, this->_duration);
 	}
 	return this->_volume;
 }
 
-uint16_t AudioChannel::getFrequency(uint32_t elapsed) {
+// caller must hold channel lock
+uint16_t AudioChannel::_getFrequency(uint32_t elapsed) {
 	if (this->_frequencyEnvelope) {
 		return this->_frequencyEnvelope->getFrequency(this->_frequency, elapsed, this->_duration);
 	}
 	return this->_frequency;
 }
 
-bool AudioChannel::isReleasing(uint32_t elapsed) {
+// caller must hold channel lock
+bool AudioChannel::_isReleasing(uint32_t elapsed) {
 	if (this->_volumeEnvelope) {
 		return this->_volumeEnvelope->isReleasing(elapsed, this->_duration);
 	}
@@ -445,7 +472,8 @@ bool AudioChannel::isReleasing(uint32_t elapsed) {
 	return elapsed >= this->_duration;
 }
 
-bool AudioChannel::isFinished(uint32_t elapsed) {
+// caller must hold channel lock
+bool AudioChannel::_isFinished(uint32_t elapsed) {
 	if (this->_volumeEnvelope) {
 		return this->_volumeEnvelope->isFinished(elapsed, this->_duration);
 	}
@@ -455,73 +483,69 @@ bool AudioChannel::isFinished(uint32_t elapsed) {
 	return (elapsed >= this->_duration);
 }
 
-void AudioChannel::loop() {
-	int delay = 0;
+void AudioChannel::loop(uint64_t now) {
+	auto lock = std::unique_lock<std::mutex>(_channelMutex);
 
-	switch (this->_state.load()) {
+	switch (this->_state) {
 		case AudioState::Pending:
 			debug_log("AudioChannel: play %d,%d,%d,%d\n\r", channel(), this->_volume, this->_frequency, this->_duration);
 			// we have a new note to play
-			this->_startTime = millis();
+			this->_startTime = now;
 			// set our initial volume and frequency
-			this->_waveform->setVolume(this->getVolume(0));
-			this->seekTo(0);
-			this->_waveform->setFrequency(this->getFrequency(0));
+			this->_waveform->setVolume(this->_getVolume(0));
+			this->_seekTo(0);
+			this->_waveform->setFrequency(this->_getFrequency(0));
 			this->_waveform->enable(true);
 			// if we have an envelope then we loop, otherwise just delay for duration
 			if (this->_volumeEnvelope || this->_frequencyEnvelope) {
 				this->_state = AudioState::PlayLoop;
 			} else {
 				this->_state = AudioState::Playing;
-				// if delay value is negative then this delays for a super long time
-				delay = this->_duration;
 			}
 			break;
 
 		case AudioState::Playing:
 			if (this->_duration >= 0) {
 				// simple playback - delay until we have reached our duration
-				uint32_t elapsed = millis() - this->_startTime;
-				debug_log("AudioChannel: %d elapsed %d\n\r", channel(), elapsed);
+				uint32_t elapsed = now - this->_startTime;
+				//debug_log("AudioChannel: %d elapsed %d\n\r", channel(), elapsed);
 				if (elapsed >= this->_duration) {
 					this->_waveform->enable(false);
-					debug_log("AudioChannel: %d end\n\r", channel());
+					//debug_log("AudioChannel: %d end\n\r", channel());
 					this->_state = AudioState::Idle;
 				} else {
-					debug_log("AudioChannel: %d loop (%d)\n\r", channel(), this->_duration - elapsed);
-					delay = this->_duration - elapsed;
+					//debug_log("AudioChannel: %d loop (%d)\n\r", channel(), this->_duration - elapsed);
 				}
 			} else {
 				// our duration is indefinite, so delay for a long time
-				debug_log("AudioChannel: %d loop (indefinite playback)\n\r", channel());
-				delay = -1;
+				//debug_log("AudioChannel: %d loop (indefinite playback)\n\r", channel());
 			}
 			break;
 
 		// loop and release states used for envelopes
 		case AudioState::PlayLoop: {
-			uint32_t elapsed = millis() - this->_startTime;
-			if (isReleasing(elapsed)) {
+			uint32_t elapsed = now - this->_startTime;
+			if (_isReleasing(elapsed)) {
 				debug_log("AudioChannel: releasing %d...\n\r", channel());
 				this->_state = AudioState::Release;
 			}
 			// update volume and frequency as appropriate
 			if (this->_volumeEnvelope)
-				this->_waveform->setVolume(this->getVolume(elapsed));
+				this->_waveform->setVolume(this->_getVolume(elapsed));
 			if (this->_frequencyEnvelope)
-				this->_waveform->setFrequency(this->getFrequency(elapsed));
+				this->_waveform->setFrequency(this->_getFrequency(elapsed));
 			break;
 		}
 
 		case AudioState::Release: {
-			uint32_t elapsed = millis() - this->_startTime;
+			uint32_t elapsed = now - this->_startTime;
 			// update volume and frequency as appropriate
 			if (this->_volumeEnvelope)
-				this->_waveform->setVolume(this->getVolume(elapsed));
+				this->_waveform->setVolume(this->_getVolume(elapsed));
 			if (this->_frequencyEnvelope)
-				this->_waveform->setFrequency(this->getFrequency(elapsed));
+				this->_waveform->setFrequency(this->_getFrequency(elapsed));
 
-			if (isFinished(elapsed)) {
+			if (_isFinished(elapsed)) {
 				this->_waveform->enable(false);
 				debug_log("AudioChannel: end (released %d)\n\r", channel());
 				this->_state = AudioState::Idle;
@@ -534,17 +558,10 @@ void AudioChannel::loop() {
 			debug_log("AudioChannel: abort %d\n\r", channel());
 			this->_state = AudioState::Idle;
 			break;
-	}
 
-	/*
-	 * in USERSPACE, xTaskAbortDelay is not implemented, so audioTaskAbortDelay
-	 * won't work, and waitForAbort() will freeze vdu stream processor for the
-	 * whole delay duration. So don't delay here, allowing 'abort' state to be
-	 * transitioned rapidly (at some small CPU cost).
-	if (delay > 0) {
-		// -TM-
-		vTaskDelay(pdMS_TO_TICKS(delay));
-	}*/
+		case AudioState::Idle:
+			break;
+	}
 }
 
 #endif // AUDIO_CHANNEL_H
