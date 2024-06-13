@@ -42,6 +42,10 @@ void echo_checksum(uint8_t ihexchecksum, uint8_t ez80checksum) {
 }
 
 void VDUStreamProcessor::vdu_sys_hexload(void) {
+#ifdef USERSPACE
+	// no hexload for emulators :)
+	return;
+#endif /* USERSPACE */
 	uint32_t segment_address;
 	uint8_t u,h,l,tmp;
 	uint8_t bytecount;
