@@ -250,6 +250,8 @@ void VDUStreamProcessor::vdu_palette() {
 	auto g = readByte_t(); if (g == -1) return; // The green component
 	auto b = readByte_t(); if (b == -1) return; // The blue component
 
+	// keep logical colour index in bounds
+	l &= 63;
 	auto index = setLogicalPalette(l, p, r, g, b);
 
 	if (index != -1) {
