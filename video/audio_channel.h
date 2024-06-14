@@ -12,7 +12,7 @@
 
 extern fabgl::SoundGenerator *soundGenerator;  // audio handling sub-system
 
-enum AudioState : uint8_t {	// Audio channel state
+enum class AudioState : uint8_t {	// Audio channel state
 	Idle = 0,				// currently idle/silent
 	Pending,				// note will be played next loop call
 	Playing,				// playing (passive)

@@ -29,16 +29,16 @@ typedef union {
 	};
 } CursorBehaviour;
 
-enum CursorType : uint8_t {
-	TextCursor,
-	GraphicsCursor,
+enum class CursorType : uint8_t {
+	Text,
+	Graphics,
 };
 
-enum ViewportType : uint8_t {
-	TextViewport = 0,		// Text viewport
-	DefaultViewport,		// Default (whole screen) viewport
-	GraphicsViewport,		// Graphics viewport
-	ActiveViewport,			// Active viewport
+enum class ViewportType : uint8_t {
+	Text = 0,		// Text viewport
+	Default,		// Default (whole screen) viewport
+	Graphics,		// Graphics viewport
+	Active,			// Active viewport
 };
 
 

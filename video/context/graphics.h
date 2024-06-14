@@ -875,7 +875,7 @@ void Context::cls() {
 		canvas->setBrushColor(tbg);
 		canvas->setPaintOptions(tpo);
 		setClippingRect(textViewport);
-		clearViewport(ViewportType::TextViewport);
+		clearViewport(ViewportType::Text);
 	}
 	cursorHome();
 	setPagedMode(pagedMode);
@@ -889,7 +889,7 @@ void Context::clg() {
 		canvas->setBrushColor(gbg);
 		canvas->setPaintOptions(gpobg);
 		setClippingRect(graphicsViewport);
-		clearViewport(ViewportType::GraphicsViewport);
+		clearViewport(ViewportType::Graphics);
 	}
 	pushPoint(0, 0);		// Reset graphics cursor position (as per BBC Micro CLG)
 }

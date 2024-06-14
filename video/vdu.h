@@ -72,12 +72,12 @@ void VDUStreamProcessor::vdu(uint8_t c, bool usePeek) {
 			break;
 		case 0x04:
 			// enable text cursor
-			context->setActiveCursor(CursorType::TextCursor);
+			context->setActiveCursor(CursorType::Text);
 			sendModeInformation();
 			break;
 		case 0x05:
 			// enable graphics cursor
-			context->setActiveCursor(CursorType::GraphicsCursor);
+			context->setActiveCursor(CursorType::Graphics);
 			sendModeInformation();
 			break;
 		case 0x06:
