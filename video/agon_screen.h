@@ -200,7 +200,7 @@ int8_t changeResolution(uint8_t colours, const char * modeLine, bool doubleBuffe
 	}
 
 	_VGAController->enableBackgroundPrimitiveExecution(true);
-	_VGAController->enableBackgroundPrimitiveTimeout(true);
+	_VGAController->enableBackgroundPrimitiveTimeout(false);
 
 	canvas.reset(new fabgl::Canvas(_VGAController.get()));		// Create the new canvas
 	debug_log("after change of canvas...\n\r");
