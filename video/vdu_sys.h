@@ -437,18 +437,8 @@ void VDUStreamProcessor::printBuffer(uint16_t bufferId) {
 
 	auto buffer = bufferIter->second;
 	for (const auto &block : bufferIter->second) {
-		auto buff = block->getBuffer();
-		auto remaining = block->size();
-		
-		while (remaining > 0) {
-			// grab strings from the buffer, limiting to 40 characters
-			std::string stringFromBuffer;
-			for (int i = 0; i < 40 && remaining > 0; i++) {
-				stringFromBuffer += buff[i];
-				remaining--;
-			}
-			context->plotString(stringFromBuffer);
-		}
+		// grab strings from the buffer
+		context->plotString(std::string((const char*)block->getBuffer(), block->size()));
 	}
 }
 
