@@ -12,10 +12,10 @@
 
 Rect * Context::getViewport(ViewportType type) {
 	switch (type) {
-		case ViewportType::TextViewport: return &textViewport;
-		case ViewportType::DefaultViewport: return &defaultViewport;
-		case ViewportType::GraphicsViewport: return &graphicsViewport;
-		case ViewportType::ActiveViewport: return activeViewport;
+		case ViewportType::Text: return &textViewport;
+		case ViewportType::Default: return &defaultViewport;
+		case ViewportType::Graphics: return &graphicsViewport;
+		case ViewportType::Active: return activeViewport;
 		default: return &defaultViewport;
 	}
 }

@@ -366,7 +366,7 @@ void debug_log(const char *format, ...);
 
 // Terminal states
 //
-enum TerminalState {
+enum class TerminalState {
 	Disabled,
 	Disabling,
 	Enabling,
