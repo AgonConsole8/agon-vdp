@@ -194,25 +194,25 @@ void VDUStreamProcessor::vdu_print(char c, bool usePeek) {
 	s += c;
 	// gather our string for printing
 	if (usePeek) {
-		auto limit = 39;
+		auto limit = 15;
 		while (--limit) {
 			if (!byteAvailable()) {
 				break;
 			}
-			auto next = peekByte_t(FAST_COMMS_TIMEOUT);
+			auto next = inputStream->peek();
 			if (next == 27) {
-				readByte_t();
+				inputStream->read();
 				if (consoleMode) {
 					DBGSerial.write(next);
 				}
-				next = readByte_t(FAST_COMMS_TIMEOUT);
+				next = readByte_t();
 				if (next == -1) {
 					break;
 				}
 				s += (char)next;
-			} else if (next != -1 && ((next >= 0x20 && next <= 0x7E) || (next >= 0x80 && next <= 0xFF))) {
+			} else if ((next >= 0x20 && next <= 0x7E) || (next >= 0x80 && next <= 0xFF)) {
 				s += (char)next;
-				readByte_t();
+				inputStream->read();
 			} else {
 				break;
 			}

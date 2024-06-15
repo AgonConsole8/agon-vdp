@@ -95,6 +95,7 @@ class Context {
 		fabgl::LinePattern	linePattern = fabgl::LinePattern();				// Dotted line pattern
 		uint8_t			linePatternLength = 8;			// Dotted line pattern length
 		std::vector<uint16_t>	charToBitmap = std::vector<uint16_t>(256, 65535);	// character to bitmap mapping
+		bool			plottingText = false;			// Are we currently plotting text?
 
 		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
 
