@@ -331,6 +331,7 @@ void Context::plotBitmap(uint8_t mode) {
 		canvas->setPaintOptions(paintOptions);
 	}
 	drawBitmap(p1.X, p1.Y, true, false);
+	plottingText = false;
 }
 
 
@@ -351,6 +352,7 @@ void Context::scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 	canvas->setPenColor(tbg);
 	canvas->setBrushColor(tbg);
 	canvas->setPaintOptions(tpo);
+	plottingText = false;
 	switch (direction) {
 		case 0:		// Right
 			moveX = 1;
@@ -488,11 +490,17 @@ void Context::setTextColour(uint8_t colour) {
 	if (colour < 64) {
 		tfg = colourLookup[c];
 		tfgc = col;
+		if (plottingText && textCursorActive()) {
+			canvas->setPenColor(tfg);
+		}
 		debug_log("vdu_colour: tfg %d = %02X : %02X,%02X,%02X\n\r", colour, c, tfg.R, tfg.G, tfg.B);
 	}
 	else if (colour >= 128 && colour < 192) {
 		tbg = colourLookup[c];
 		tbgc = col;
+		if (plottingText && textCursorActive()) {
+			canvas->setBrushColor(tbg);
+		}
 		debug_log("vdu_colour: tbg %d = %02X : %02X,%02X,%02X\n\r", colour, c, tbg.R, tbg.G, tbg.B);
 	}
 	else {
@@ -611,6 +619,7 @@ bool IRAM_ATTR Context::plot(int16_t x, int16_t y, uint8_t command) {
 	auto mode = command & 0x07;
 	auto operation = command & 0xF8;
 	bool pending = false;
+	plottingText = false;
 
 	if (mode < 4) {
 		pushPointRelative(x, y);
@@ -748,7 +757,7 @@ void Context::plotPending(int16_t peeked) {
 // Plot a string
 //
 void Context::plotString(const std::string& s) {
-	if (!ttxtMode) {
+	if (!ttxtMode && !plottingText) {
 		if (textCursorActive()) {
 			setClippingRect(textViewport);
 			canvas->setPenColor(tfg);
@@ -759,6 +768,7 @@ void Context::plotString(const std::string& s) {
 			canvas->setPenColor(gfg);
 			canvas->setPaintOptions(gpofg);
 		}
+		plottingText = true;
 	}
 
 	auto font = getFont();
@@ -792,6 +802,7 @@ void Context::plotBackspace() {
 	} else {
 		canvas->setBrushColor(textCursorActive() ? tbg : gbg);
 		canvas->fillRectangle(activeCursor->X, activeCursor->Y, activeCursor->X + getFont()->width - 1, activeCursor->Y + getFont()->height - 1);
+		plottingText = false;
 	}
 }
 
@@ -852,6 +863,7 @@ void Context::drawCursor(Point p) {
 			canvas->setBrushColor(tfg);
 			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), font->width - 1), p.Y + std::min(((int)cursorVEnd), font->height - 1));
 			canvas->setPaintOptions(tpo);
+			plottingText = false;
 		}
 	}
 }
@@ -876,6 +888,7 @@ void Context::cls() {
 		canvas->setPaintOptions(tpo);
 		setClippingRect(textViewport);
 		clearViewport(ViewportType::Text);
+		plottingText = true;
 	}
 	cursorHome();
 	setPagedMode(pagedMode);
@@ -890,6 +903,7 @@ void Context::clg() {
 		canvas->setPaintOptions(gpobg);
 		setClippingRect(graphicsViewport);
 		clearViewport(ViewportType::Graphics);
+		plottingText = false;
 	}
 	pushPoint(0, 0);		// Reset graphics cursor position (as per BBC Micro CLG)
 }
@@ -931,6 +945,7 @@ void Context::resetTextPainting() {
 	tbg = colourLookup[0x00];
 	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
 	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
+	plottingText = false;
 }
 
 // Reset graphics context, called after a mode change
@@ -949,6 +964,7 @@ void Context::reset() {
 // Activate the context, setting up canvas as required
 //
 void Context::activate() {
+	plottingText = false;
 	if (!ttxtMode) {
 		canvas->selectFont(font == nullptr ? &FONT_AGON : font.get());
 	}
