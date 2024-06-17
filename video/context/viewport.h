@@ -23,6 +23,7 @@ Rect * Context::getViewport(ViewportType type) {
 bool Context::setTextViewport(Rect r) {
 	if (r.X2 >= canvasW) r.X2 = canvasW - 1;
 	if (r.Y2 >= canvasH) r.Y2 = canvasH - 1;
+	plottingText = false;
 
 	if (r.X2 > r.X1 && r.Y2 > r.Y1) {
 		textViewport = r;
@@ -49,16 +50,19 @@ void Context::viewportReset() {
 	textViewport =	Rect(0, 0, canvasW - 1, canvasH - 1);
 	graphicsViewport = Rect(0, 0, canvasW - 1, canvasH - 1);
 	activeViewport = &textViewport;
+	plottingText = false;
 }
 
 void Context::setActiveViewport(ViewportType type) {
 	activeViewport = getViewport(type);
+	plottingText = false;
 }
 
 // Set graphics viewport
 bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
 	auto p1 = toScreenCoordinates(x1, y1);
 	auto p2 = toScreenCoordinates(x2, y2);
+	plottingText = false;
 
 	if (p1.X >= 0 && p2.X < canvasW && p1.Y >= 0 && p2.Y < canvasH && p2.X >= p1.X && p2.Y >= p1.Y) {
 		graphicsViewport = Rect(p1.X, p1.Y, p2.X, p2.Y);
@@ -73,6 +77,7 @@ bool Context::setGraphicsViewport() {
 		return false;
 	}
 	graphicsViewport = newViewport;
+	plottingText = false;
 	return true;
 }
 
