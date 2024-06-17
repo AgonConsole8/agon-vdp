@@ -264,7 +264,8 @@
 #define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
 #define BUFFERED_AFFINE_TRANSFORM		0x20	// Create or combine affine transform matrix buffer
-#define BUFFERED_AFFINE_TRANSFORM_APPLY	0x21	// Apply an affine transform matrix to a buffer
+#define BUFFERED_TRANSFORM_BITMAP		0x21	// Create a new bitmap from an existing one by applying a 2d transform
+#define BUFFERED_TRANSFORM_DATA			0x22	// Transform data using a 2d affine transform matrix
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
@@ -334,6 +335,7 @@
 #define AFFINE_SKEW				9		// Skew (by angle, 2 arguments)
 #define AFFINE_SKEW_RAD			10		// Skew (by angle in radians, 2 arguments)
 #define AFFINE_TRANSFORM		11		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
+#define AFFINE_TRANSLATE_BITMAP	12		// Translate using bitmap size multiplier (X and Y)
 
 #define AFFINE_OP_MASK			0x0F	// operation code mask
 #define AFFINE_OP_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)

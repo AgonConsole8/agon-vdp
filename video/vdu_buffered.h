@@ -1847,6 +1847,26 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			}
 			transform[8] = 1.0f;
 		}	break;
+		case AFFINE_TRANSLATE_BITMAP: {
+			// translates by amounts proportional to width and height of bitmap
+			// first argument is a 16-bit bitmap ID
+			auto bitmapId = readWord_t();
+			if (bitmapId == -1) {
+				return;
+			}
+			float translateXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(translateXY, 2)) {
+				return;
+			}
+			auto bitmap = getBitmap(bitmapId);
+			if (!bitmap) {
+				debug_log("bufferAffineTransform: bitmap %d not found\n\r", bitmapId);
+				return;
+			}
+			transform[2] = translateXY[0] * bitmap->width;
+			transform[5] = translateXY[1] * bitmap->height;
+			transform[8] = 1.0f;
+		}	break;
 		default:
 			debug_log("bufferAffineTransform: unknown operation %d\n\r", op);
 			return;
