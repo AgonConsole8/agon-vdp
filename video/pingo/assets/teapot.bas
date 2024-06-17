@@ -628,15 +628,15 @@
  6280 sid%=100: mid%=1: oid%=1: bmid1%=101: bmid2%=102
  6290 PRINT "Creating control structure"
  6300 scene_width%=96: scene_height%=96
- 6310 VDU 23,0, &A0, sid%; &48, 0, scene_width%; scene_height%; : REM Create Control Structure
+ 6310 VDU 23,0, &A0, sid%; &49, 0, scene_width%; scene_height%; : REM Create Control Structure
  6320 f=32767.0/256.0
  6330 distx=0*f: disty=2*f: distz=-20*f
- 6340 VDU 23,0, &A0, sid%; &48, 25, distx; disty; distz; : REM Set Camera XYZ Translation Distances
+ 6340 VDU 23,0, &A0, sid%; &49, 25, distx; disty; distz; : REM Set Camera XYZ Translation Distances
  6350 pi2=PI*2.0: f=32767.0/pi2
  6360 anglex=-0.4*f
- 6370 VDU 23,0, &A0, sid%; &48, 18, anglex; : REM Set Camera X Rotation Angle
+ 6370 VDU 23,0, &A0, sid%; &49, 18, anglex; : REM Set Camera X Rotation Angle
  6380 PRINT "Sending vertices using factor ";factor
- 6390 VDU 23,0, &A0, sid%; &48, 1, mid%; teapot_vertices%; : REM Define Mesh Vertices
+ 6390 VDU 23,0, &A0, sid%; &49, 1, mid%; teapot_vertices%; : REM Define Mesh Vertices
  6400 FOR i%=0 TO total_coords%-1
  6410   val%=vertices(i%)*factor
  6420   VDU val%;
@@ -644,7 +644,7 @@
  6440   IF TIME-T%<1 GOTO 6440
  6450 NEXT i%
  6460 PRINT "Reading and sending vertex indexes"
- 6470 VDU 23,0, &A0, sid%; &48, 2, mid%; teapot_vertices%; : REM Set Mesh Vertex Indexes
+ 6470 VDU 23,0, &A0, sid%; &49, 2, mid%; teapot_vertices%; : REM Set Mesh Vertex Indexes
  6480 FOR i%=0 TO teapot_vertices%-1
  6490   READ val%
  6500   VDU val%;
@@ -652,8 +652,8 @@
  6520   IF TIME-T%<1 GOTO 6520
  6530 NEXT i%
  6540 PRINT "Sending texture coordinate indexes"
- 6550 VDU 23,0, &A0, sid%; &48, 3, mid%; 1; 32768; 32768; : REM Define Texture Coordinates
- 6560 VDU 23,0, &A0, sid%; &48, 4, mid%; teapot_vertices%; : REM Set Texture Coordinate Indexes
+ 6550 VDU 23,0, &A0, sid%; &49, 3, mid%; 1; 32768; 32768; : REM Define Texture Coordinates
+ 6560 VDU 23,0, &A0, sid%; &49, 4, mid%; teapot_vertices%; : REM Set Texture Coordinate Indexes
  6570 FOR i%=0 TO teapot_vertices%-1
  6580   VDU 0;
  6590 NEXT i%
@@ -662,10 +662,10 @@
  6620 PRINT "Setting texture pixel"
  6630 VDU 23, 27, 1, 1; 1; &55, &AA, &FF, &C0 : REM Set a pixel in the bitmap
  6640 PRINT "Create 3D object"
- 6650 VDU 23,0, &A0, sid%; &48, 5, oid%; mid%; bmid1%+64000; : REM Create Object
+ 6650 VDU 23,0, &A0, sid%; &49, 5, oid%; mid%; bmid1%+64000; : REM Create Object
  6660 PRINT "Scale object"
  6670 scale=6.0*256.0
- 6680 VDU 23, 0, &A0, sid%; &48, 9, oid%; scale; scale; scale; : REM Set Object XYZ Scale Factors
+ 6680 VDU 23, 0, &A0, sid%; &49, 9, oid%; scale; scale; scale; : REM Set Object XYZ Scale Factors
  6690 PRINT "Create target bitmap"
  6700 VDU 23, 27, 0, bmid2% : REM Select output bitmap
  6710 VDU 23, 27, 2, scene_width%; scene_height%; &0000; &00C0; : REM Create solid color bitmap
@@ -677,7 +677,7 @@
  6770 VDU 22, 136: REM 320x240x64
  6780 VDU 23, 0, &C0, 0: REM Normal coordinates
  6790 CLG
- 6800 VDU 23, 0, &A0, sid%; &48, 38, bmid2%+64000; : REM Render To Bitmap
+ 6800 VDU 23, 0, &A0, sid%; &49, 38, bmid2%+64000; : REM Render To Bitmap
  6810 VDU 23, 27, 3, 50; 50; : REM Display output bitmap
  6820 VDU 23, 0, &C3: REM Flip buffer
  6830 *FX 19
@@ -685,5 +685,5 @@
  6850 rotatey=rotatey+incy: IF rotatey>=pi2 THEN rotatey=rotatey-pi2
  6860 rotatez=rotatez+incz: IF rotatez>=pi2 THEN rotatez=rotatez-pi2
  6870 rx=rotatex*factor: ry=rotatey*factor: rz=rotatez*factor
- 6880 VDU 23, 0, &A0, sid%; &48, 13, oid%; rx; ry; rz; : REM Set Object XYZ Rotation Angles
+ 6880 VDU 23, 0, &A0, sid%; &49, 13, oid%; rx; ry; rz; : REM Set Object XYZ Rotation Angles
  6890 GOTO 6790

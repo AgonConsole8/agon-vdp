@@ -87,49 +87,49 @@ VDU ... PDX; PDY; PDZ; ...
 
 ## Overview of Commands
 
-<b>VDU 23, 0, &A0, sid; &48, 0, w; h;</b> :  Create Control Structure<br>
-<b>VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices<br>
-<b>VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indexes<br>
-<b>VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates<br>
-<b>VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indexes<br>
-<b>VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid;</b> :  Create Object<br>
-<b>VDU 23, 0, &A0, sid; &48, 6, oid; scalex;</b> :  Set Object X Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 7, oid; scaley;</b> :  Set Object Y Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 8, oid; scalez;</b> :  Set Object Z Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez;</b> :  Set Object XYZ Scale Factors<br>
-<b>VDU 23, 0, &A0, sid; &48, 10, oid; anglex;</b> :  Set Object X Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 11, oid; angley;</b> :  Set Object Y Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 12, oid; anglez;</b> :  Set Object Z Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 13, oid; anglex; angley; anglez;</b> :  Set Object XYZ Rotation Angles<br>
-<b>VDU 23, 0, &A0, sid; &48, 14, oid; distx;</b> :  Set Object X Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 15, oid; disty;</b> :  Set Object Y Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 16, oid; distz;</b> :  Set Object Z Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances<br>
-<b>VDU 23, 0, &A0, sid; &48, 18, anglex;</b> :  Set Camera X Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 19, angley;</b> :  Set Camera Y Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 20, anglez;</b> :  Set Camera Z Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 21, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles<br>
-<b>VDU 23, 0, &A0, sid; &48, 22, distx;</b> :  Set Camera X Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 23, disty;</b> :  Set Camera Y Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 24, distz;</b> :  Set Camera Z Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 25, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances<br>
-<b>VDU 23, 0, &A0, sid; &48, 26, scalex;</b> :  Set Scene X Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 27, scaley;</b> :  Set Scene Y Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 28, scalez;</b> :  Set Scene Z Scale Factor<br>
-<b>VDU 23, 0, &A0, sid; &48, 29, scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors<br>
-<b>VDU 23, 0, &A0, sid; &48, 30, anglex;</b> :  Set Scene X Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 31, angley;</b> :  Set Scene Y Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 32, anglez;</b> :  Set Scene Z Rotation Angle<br>
-<b>VDU 23, 0, &A0, sid; &48, 33, anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles<br>
-<b>VDU 23, 0, &A0, sid; &48, 34, distx;</b> :  Set Scene X Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 35, disty;</b> :  Set Scene Y Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 36, distz;</b> :  Set Scene Z Translation Distance<br>
-<b>VDU 23, 0, &A0, sid; &48, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances<br>
-<b>VDU 23, 0, &A0, sid; &48, 38, bmid;</b> :  Render To Bitmap<br>
-<b>VDU 23, 0, &A0, sid; &48, 39</b> :  Delete Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &49, 0, w; h;</b> :  Create Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &49, 1, mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices<br>
+<b>VDU 23, 0, &A0, sid; &49, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indexes<br>
+<b>VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates<br>
+<b>VDU 23, 0, &A0, sid; &49, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indexes<br>
+<b>VDU 23, 0, &A0, sid; &49, 5, oid; mid; bmid;</b> :  Create Object<br>
+<b>VDU 23, 0, &A0, sid; &49, 6, oid; scalex;</b> :  Set Object X Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &49, 7, oid; scaley;</b> :  Set Object Y Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &49, 8, oid; scalez;</b> :  Set Object Z Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &49, 9, oid; scalex; scaley; scalez;</b> :  Set Object XYZ Scale Factors<br>
+<b>VDU 23, 0, &A0, sid; &49, 10, oid; anglex;</b> :  Set Object X Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 11, oid; angley;</b> :  Set Object Y Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 12, oid; anglez;</b> :  Set Object Z Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 13, oid; anglex; angley; anglez;</b> :  Set Object XYZ Rotation Angles<br>
+<b>VDU 23, 0, &A0, sid; &49, 14, oid; distx;</b> :  Set Object X Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 15, oid; disty;</b> :  Set Object Y Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 16, oid; distz;</b> :  Set Object Z Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances<br>
+<b>VDU 23, 0, &A0, sid; &49, 18, anglex;</b> :  Set Camera X Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 19, angley;</b> :  Set Camera Y Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 20, anglez;</b> :  Set Camera Z Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 21, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles<br>
+<b>VDU 23, 0, &A0, sid; &49, 22, distx;</b> :  Set Camera X Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 23, disty;</b> :  Set Camera Y Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 24, distz;</b> :  Set Camera Z Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 25, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances<br>
+<b>VDU 23, 0, &A0, sid; &49, 26, scalex;</b> :  Set Scene X Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &49, 27, scaley;</b> :  Set Scene Y Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &49, 28, scalez;</b> :  Set Scene Z Scale Factor<br>
+<b>VDU 23, 0, &A0, sid; &49, 29, scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors<br>
+<b>VDU 23, 0, &A0, sid; &49, 30, anglex;</b> :  Set Scene X Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 31, angley;</b> :  Set Scene Y Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 32, anglez;</b> :  Set Scene Z Rotation Angle<br>
+<b>VDU 23, 0, &A0, sid; &49, 33, anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles<br>
+<b>VDU 23, 0, &A0, sid; &49, 34, distx;</b> :  Set Scene X Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 35, disty;</b> :  Set Scene Y Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 36, distz;</b> :  Set Scene Z Translation Distance<br>
+<b>VDU 23, 0, &A0, sid; &49, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances<br>
+<b>VDU 23, 0, &A0, sid; &49, 38, bmid;</b> :  Render To Bitmap<br>
+<b>VDU 23, 0, &A0, sid; &49, 39</b> :  Delete Control Structure<br>
 
 ## Create Control Structure
-<b>VDU 23, 0, &A0, sid; &48, 0, w; h;</b> :  Create Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &49, 0, w; h;</b> :  Create Control Structure<br>
 
 This command initializes a control structure used to
 do 3D rendering. The structure is housed inside the designated buffer. The buffer
@@ -138,7 +138,7 @@ referred to by the scene ID (sid) is created, if it does not already exist.
 The given width and height determine the size of the final rendered scene.
 
 ## Define Mesh Vertices
-<b>VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices
+<b>VDU 23, 0, &A0, sid; &49, 1, mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices
 
 This command establishes the list of mesh coordinates to be used to define
 a surface structure. The mesh may be referenced by multiple objects.
@@ -146,7 +146,7 @@ a surface structure. The mesh may be referenced by multiple objects.
 The "n" parameter is the number of vertices, so the total number of coordinates specified equals n*3.
 
 ## Set Mesh Vertex Indexes
-<b>VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indexes
+<b>VDU 23, 0, &A0, sid; &49, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indexes
 
 This command lists the indexes of the vertices that define a 3D mesh. Individual
 vertices are often referenced multiple times within a mesh, because they are
@@ -157,7 +157,7 @@ The "n" parameter is the number of indexes, and must match the "n" in subcommand
 (Set Texture Coordinate Indexes).
 
 ## Define Texture Coordinates
-<b>VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates
+<b>VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates
 
 This command establishes the list of U/V texture coordinates that define texturing
 for a mesh.
@@ -165,7 +165,7 @@ for a mesh.
 The "n" parameter is the number of coordinate pairs, so the total number of coordinates specified equals n*2.
 
 ## Set Texture Coordinate Indexes
-<b>VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indexes
+<b>VDU 23, 0, &A0, sid; &49, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indexes
 
 This command lists the indexes of the coordinates that define a 3D texture for a mesh.
 Individual coordinates may be referenced multiple times within a texture,
@@ -177,7 +177,7 @@ The "n" parameter is the number of indexes, and must match the "n" in subcommand
 (Set Mesh Vertex Indexes).
 
 ## Define Object
-<b>VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid;</b> :  Create Object
+<b>VDU 23, 0, &A0, sid; &49, 5, oid; mid; bmid;</b> :  Create Object
 
 This command defines a renderable object in terms of its already-defined mesh,
 plus a reference to an existing bitmap that provides its coloring, via the
@@ -186,179 +186,179 @@ with the same or different bitmaps for coloring. The bitmap must be in the
 RGBA8888 format (4 bytes per pixel).
 
 ## Set Object X Scale Factor
-<b>VDU 23, 0, &A0, sid; &48, 6, oid; scalex;</b> :  Set Object X Scale Factor
+<b>VDU 23, 0, &A0, sid; &49, 6, oid; scalex;</b> :  Set Object X Scale Factor
 
 This command sets the X scale factor for an object.
 
 ## Set Object Y Scale Factor
-<b>VDU 23, 0, &A0, sid; &48, 7, oid; scaley;</b> :  Set Object Y Scale Factor
+<b>VDU 23, 0, &A0, sid; &49, 7, oid; scaley;</b> :  Set Object Y Scale Factor
 
 This command sets the Y scale factor for an object.
 
 ## Set Object Z Scale Factor
-<b>VDU 23, 0, &A0, sid; &48, 8, oid; scalez;</b> :  Set Object Z Scale Factor
+<b>VDU 23, 0, &A0, sid; &49, 8, oid; scalez;</b> :  Set Object Z Scale Factor
 
 This command sets the Z scale factor for an object.
 
 ## Set Object XYZ Scale Factors
-<b>VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez;</b> :  Set Object XYZ Scale Factors
+<b>VDU 23, 0, &A0, sid; &49, 9, oid; scalex; scaley; scalez;</b> :  Set Object XYZ Scale Factors
 
 This command sets the X, Y, and Z scale factors for an object.
 
 ## Set Object X Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 10, oid; anglex;</b> :  Set Object X Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 10, oid; anglex;</b> :  Set Object X Rotation Angle
 
 This command sets the X rotation angle for an object.
 
 ## Set Object Y Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 11, oid; angley;</b> :  Set Object Y Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 11, oid; angley;</b> :  Set Object Y Rotation Angle
 
 This command sets the Y rotation angle for an object.
 
 ## Set Object Z Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 12, oid; anglez;</b> :  Set Object Z Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 12, oid; anglez;</b> :  Set Object Z Rotation Angle
 
 This command sets the Z rotation angle for an object.
 
 ## Set Object XYZ Rotation Angles
-<b>VDU 23, 0, &A0, sid; &48, 13, oid; anglex; angley; anglez;</b> :  Set Object XYZ Rotation Angles
+<b>VDU 23, 0, &A0, sid; &49, 13, oid; anglex; angley; anglez;</b> :  Set Object XYZ Rotation Angles
 
 This command sets the X, Y, and Z rotation angles for an object.
 
 ## Set Object X Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 14, oid; distx;</b> :  Set Object X Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 14, oid; distx;</b> :  Set Object X Translation Distance
 
 This command sets the X translation distance for an object.
 Note that 3D translation of an object is independent of 2D translation of the the rendered bitmap.
 
 ## Set Object Y Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 15, oid; disty;</b> :  Set Object Y Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 15, oid; disty;</b> :  Set Object Y Translation Distance
 
 This command sets the Y translation distance for an object.
 Note that 3D translation of an object is independent of 2D translation of the the rendered bitmap.
 
 ## Set Object Z Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 16, oid; distz;</b> :  Set Object Z Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 16, oid; distz;</b> :  Set Object Z Translation Distance
 
 This command sets the Z translation distance for an object.
 Note that 3D translation of an object is independent of 2D translation of the the rendered bitmap.
 
 ## Set Object XYZ Translation Distances
-<b>VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances
+<b>VDU 23, 0, &A0, sid; &49, 17, oid; distx; disty; distz;</b> :  Set Object XYZ Translation Distances
 
 This command sets the X, Y, and Z translation distances for an object.
 Note that 3D translation of an object is independent of 2D translation of the the rendered bitmap.
 
 ## Set Camera X Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 18, anglex;</b> :  Set Camera X Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 18, anglex;</b> :  Set Camera X Rotation Angle
 
 This command sets the X rotation angle for the camera.
 
 ## Set Camera Y Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 19, angley;</b> :  Set Camera Y Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 19, angley;</b> :  Set Camera Y Rotation Angle
 
 This command sets the Y rotation angle for the camera.
 
 ## Set Camera Z Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 20, anglez;</b> :  Set Camera Z Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 20, anglez;</b> :  Set Camera Z Rotation Angle
 
 This command sets the Z rotation angle for the camera.
 
 ## Set Camera XYZ Rotation Angles
-<b>VDU 23, 0, &A0, sid; &48, 21, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles
+<b>VDU 23, 0, &A0, sid; &49, 21, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles
 
 This command sets the X, Y, and Z rotation angles for the camera.
 
 ## Set Camera X Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 22, distx;</b> :  Set Camera X Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 22, distx;</b> :  Set Camera X Translation Distance
 
 This command sets the X translation distance for the camera.
 Note that 3D translation of the camera is independent of 2D translation of the the rendered bitmap.
 
 ## Set Camera Y Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 23, disty;</b> :  Set Camera Y Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 23, disty;</b> :  Set Camera Y Translation Distance
 
 This command sets the Y translation distance for the camera.
 Note that 3D translation of the camera is independent of 2D translation of the the rendered bitmap.
 
 ## Set Camera Z Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 24, distz;</b> :  Set Camera Z Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 24, distz;</b> :  Set Camera Z Translation Distance
 
 This command sets the Z translation distance for the camera.
 Note that 3D translation of the camera is independent of 2D translation of the the rendered bitmap.
 
 ## Set Camera XYZ Translation Distances
-<b>VDU 23, 0, &A0, sid; &48, 25, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances
+<b>VDU 23, 0, &A0, sid; &49, 25, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances
 
 This command sets the X, Y, and Z translation distances for the camera.
 Note that 3D translation of the camera is independent of 2D translation of the the rendered bitmap.
 
 ## Set Scene X Scale Factor
-<b>VDU 23, 0, &A0, sid; &48, 26, scalex;</b> :  Set Scene X Scale Factor
+<b>VDU 23, 0, &A0, sid; &49, 26, scalex;</b> :  Set Scene X Scale Factor
 
 This command sets the X scale factor for the scene.
 
 ## Set Scene Y Scale Factor
-<b>VDU 23, 0, &A0, sid; &48, 27, scaley;</b> :  Set Scene Y Scale Factor
+<b>VDU 23, 0, &A0, sid; &49, 27, scaley;</b> :  Set Scene Y Scale Factor
 
 This command sets the Y scale factor for the scene.
 
 ## Set Scene Z Scale Factor
-<b>VDU 23, 0, &A0, sid; &48, 28, scalez;</b> :  Set Scene Z Scale Factor
+<b>VDU 23, 0, &A0, sid; &49, 28, scalez;</b> :  Set Scene Z Scale Factor
 
 This command sets the Z scale factor for the scene.
 
 ## Set Scene XYZ Scale Factors
-<b>VDU 23, 0, &A0, sid; &48, 29, scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors
+<b>VDU 23, 0, &A0, sid; &49, 29, scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors
 
 This command sets the X, Y, and Z scale factors for the scene.
 
 ## Set Scene X Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 30, anglex;</b> :  Set Scene X Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 30, anglex;</b> :  Set Scene X Rotation Angle
 
 This command sets the X rotation angle for the scene.
 
 ## Set Scene Y Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 31, angley;</b> :  Set Scene Y Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 31, angley;</b> :  Set Scene Y Rotation Angle
 
 This command sets the Y rotation angle for the scene.
 
 ## Set Scene Z Rotation Angle
-<b>VDU 23, 0, &A0, sid; &48, 32, anglez;</b> :  Set Scene Z Rotation Angle
+<b>VDU 23, 0, &A0, sid; &49, 32, anglez;</b> :  Set Scene Z Rotation Angle
 
 This command sets the Z rotation angle for the scene.
 
 ## Set Scene XYZ Rotation Angles
-<b>VDU 23, 0, &A0, sid; &48, 33, anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles
+<b>VDU 23, 0, &A0, sid; &49, 33, anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles
 
 This command sets the X, Y, and Z rotation angles for the scene.
 
 ## Set Scene X Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 34, distx;</b> :  Set Scene X Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 34, distx;</b> :  Set Scene X Translation Distance
 
 This command sets the X translation distance for the scene.
 Note that 3D translation of the scene is independent of 2D translation of the the rendered bitmap.
 
 ## Set Scene Y Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 35, disty;</b> :  Set Scene Y Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 35, disty;</b> :  Set Scene Y Translation Distance
 
 This command sets the Y translation distance for the scene.
 Note that 3D translation of the scene is independent of 2D translation of the the rendered bitmap.
 
 ## Set Scene Z Translation Distance
-<b>VDU 23, 0, &A0, sid; &48, 36, distz;</b> :  Set Scene Z Translation Distance
+<b>VDU 23, 0, &A0, sid; &49, 36, distz;</b> :  Set Scene Z Translation Distance
 
 This command sets the Z translation distance for the scene.
 Note that 3D translation of the scene is independent of 2D translation of the the rendered bitmap.
 
 ## Set Scene XYZ Translation Distances
-<b>VDU 23, 0, &A0, sid; &48, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances
+<b>VDU 23, 0, &A0, sid; &49, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances
 
 This command sets the X, Y, and Z translation distances for the scene.
 Note that 3D translation of the scene is independent of 2D translation of the the rendered bitmap.
 
 ## Render To Bitmap
-<b>VDU 23, 0, &A0, sid; &48, 38, bmid;</b> :  Render To Bitmap
+<b>VDU 23, 0, &A0, sid; &49, 38, bmid;</b> :  Render To Bitmap
 
 This command uses information provided by the above commands to render the 3D scene
 onto the specified bitmap. This command must be used in
@@ -366,7 +366,7 @@ order to perform the render operation; it does <i>not</i> happen automatically, 
 commands change some of the render parameters.
 
 ## Delete Control Structure
-<b>VDU 23, 0, &A0, sid; &48, 39</b> :  Delete Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &49, 39</b> :  Delete Control Structure<br>
 
 This command deinitializes an existing control structure,
 assuming that it exists in the designated buffer. The buffer is subsequently
