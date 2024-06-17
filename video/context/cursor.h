@@ -269,7 +269,6 @@ inline void Context::setActiveCursor(CursorType type) {
 			setActiveViewport(ViewportType::Graphics);
 			break;
 	}
-	plottingText = false;
 }
 
 inline void Context::setCursorBehaviour(uint8_t setting, uint8_t mask = 0xFF) {
