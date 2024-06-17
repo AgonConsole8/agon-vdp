@@ -6,6 +6,8 @@
 #include <vector>
 #include <unordered_map>
 #include <esp_heap_caps.h>
+#include <mat.h>
+#include <dspm_mult.h>
 
 #include "agon.h"
 #include "agon_fonts.h"
@@ -15,13 +17,14 @@
 #include "mem_helpers.h"
 #include "multi_buffer_stream.h"
 #include "sprites.h"
+#include "test_flags.h"
 #include "types.h"
 #include "vdu_stream_processor.h"
 #include "pingo_3d.h"
 
 // VDU 23, 0, &A0, bufferId; command: Buffered command support
 //
-void VDUStreamProcessor::vdu_sys_buffered() {
+void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 	auto bufferId = readWord_t(); if (bufferId == -1) return;
 	auto command = readByte_t(); if (command == -1) return;
 
@@ -189,6 +192,11 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
 		}	break;
+		case BUFFERED_AFFINE_TRANSFORM: {
+			if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+				bufferAffineTransform(bufferId);
+			}
+		}	break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
 			if (sourceBufferId == -1) return;
@@ -198,6 +206,12 @@ void VDUStreamProcessor::vdu_sys_buffered() {
 			auto sourceBufferId = readWord_t();
 			if (sourceBufferId == -1) return;
 			bufferDecompress(bufferId, sourceBufferId);
+		}	break;
+		case BUFFERED_EXPAND_BITMAP: {
+			auto options = readByte_t(); if (options == -1) return;
+			auto sourceBufferId = readWord_t();
+			if (sourceBufferId == -1) return;
+			bufferExpandBitmap(bufferId, options, sourceBufferId);
 		}	break;
         case BUFFERED_PINGO_3D: {
 			bufferUsePingo3D(bufferId);
@@ -1550,7 +1564,329 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 	debug_log("bufferCopyAndConsolidate: copied %d bytes into buffer %d\n\r", length, bufferId);
 }
 
-// VDU 23, 0, &A0, bufferId; &1C, sourceBufferId; : Compress blocks from a buffer
+// VDU 23, 0, &A0, bufferId; &20, operation, <args> : Affine transform creation/combination
+// Create or combine an affine transformaiton matrix
+//
+void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
+	const auto command = readByte_t();
+	const auto op = command & AFFINE_OP_MASK;
+	const bool useAdvancedOffsets = command & AFFINE_OP_ADVANCED_OFFSETS;
+	const bool useBufferValue = command & AFFINE_OP_BUFFER_VALUE;
+	const bool useMultiFormat = command & AFFINE_OP_MULTI_FORMAT;
+
+	// transform is a 3x3 matrix of float values
+	float transform[9] = {0.0f};
+	transform[0] = 1.0f;
+	transform[4] = 1.0f;
+	transform[8] = 1.0f;
+	auto matrixSize = 9 * sizeof(float);
+
+	// get a MultiBufferStream object for a buffer
+	// NB this will rewind all the streams in the buffer
+	auto getMultiBufferStream = [this](uint16_t bufferId) -> std::unique_ptr<MultiBufferStream> {
+		auto bufferIter = buffers.find(bufferId);
+		if (bufferIter == buffers.end()) {
+			debug_log("bufferAffineTransform: buffer %d not found\n\r", bufferId);
+			return nullptr;
+		}
+		auto buffer = bufferIter->second;
+		return std::unique_ptr<MultiBufferStream>(new MultiBufferStream(buffer));
+	};
+
+	auto getFormatInfo = [this, useAdvancedOffsets, useBufferValue](bool &isFixed, bool &is16Bit, int8_t &shift, int16_t &sourceBufferId, AdvancedOffset &offset) -> bool {
+		auto format = readByte_t();
+		if (format == -1) {
+			return false;
+		}
+		isFixed = format & AFFINE_FORMAT_FIXED;
+		is16Bit = format & AFFINE_FORMAT_16BIT;
+		shift = format & AFFINE_FORMAT_SHIFT_MASK;
+		// ensure our size value obeys negation
+		if (is16Bit && (shift & AFFINE_FORMAT_SHIFT_TOPBIT)) {
+			// top bit was set, so it's a negative - so we need to set the top bits of the size
+			shift = shift | AFFINE_FORMAT_FLAGS;
+		}
+		if (useBufferValue) {
+			sourceBufferId = readWord_t();
+			if (sourceBufferId == -1) {
+				return false;
+			}
+			offset = getOffsetFromStream(useAdvancedOffsets);
+			return offset.blockOffset != -1;
+		}
+		return true;
+	};
+
+	auto convertValueToFloat = [](uint32_t rawValue, bool is16Bit, bool isFixed, int8_t shift) -> float {
+		if (isFixed) {
+			// fixed point value
+			// we will scale our rawValue by a factor to create our float
+			// this version assumes base value is -1 to +1, multiplied by 2^shift
+			// so binary point starts at bit 31 and is moved right by shift
+			// auto scale = (1u << shift) / (float)(1u << 31);
+			// if (is16Bit) {
+			// 	// ensure 16-bit values are 32-bit values with their buttom 16 bits empty
+			// 	rawValue <<= 16;
+			// }
+			// in this version the binary point starts after bit 0 and is moved left by shift
+			// which is arguably a bit more intuitive in use, and matches the xtensa fixed point instruction support
+			// we need to use our shift value to determine how far to scale
+			auto scale = shift < 0 ? 1 << -shift : 1.0f / (1 << shift);
+			if (is16Bit) {
+				return (float)(int16_t)rawValue * scale;
+			}
+			debug_log("bufferAffineTransform: rawValue %d, shift %d, scale %f\n\r", rawValue, shift, scale);
+			return (float)(int32_t)rawValue * scale;
+		} else {
+			// floating point value - shift ignored
+			// if we're reading a 16-bit value, we need to convert to 32-bit float
+			if (is16Bit) {
+				return float16ToFloat32(rawValue);
+			}
+			// take our raw value and interpret its bits as a float
+			return *(float*)&rawValue;
+		}
+	};
+
+	auto readValueFromBuffer = [getMultiBufferStream, convertValueToFloat](uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift) -> float {
+		// get the value that we're dealing with
+		uint32_t rawValue = 0;
+
+		std::unique_ptr<MultiBufferStream> buff = getMultiBufferStream(sourceBufferId);
+		if (!buff) {
+			return INFINITY;
+		}
+		buff->seekTo(offset.blockOffset, offset.blockIndex);
+
+		auto bytesToRead = is16Bit ? 2 : 4;
+		auto read = buff->readBytes((uint8_t *)&rawValue, bytesToRead);
+		if (read != bytesToRead) {
+			debug_log("bufferAffineTransform: failed to read %d bytes from buffer %d\n\r", bytesToRead, sourceBufferId);
+			return INFINITY;
+		}
+		// update our offset so repeated reads don't just re-read the same value
+		buff->tellBuffer(offset.blockOffset, offset.blockIndex);
+		return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
+	};
+
+	auto readValueFromStream = [this, convertValueToFloat](bool is16Bit, bool isFixed, int8_t shift) -> float {
+		// get the value that we're dealing with
+		uint32_t rawValue = 0;
+		auto bytesToRead = is16Bit ? 2 : 4;
+		// read the value from the stream
+		if (readIntoBuffer((uint8_t *)&rawValue, bytesToRead) != 0) {
+			debug_log("bufferAffineTransform: failed to read %d bytes from stream\n\r", bytesToRead);
+			return INFINITY;
+		}
+		return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
+	};
+
+	auto readFloatArgument = [getFormatInfo, readValueFromBuffer, readValueFromStream, useBufferValue]() -> float {
+		bool isFixed, is16Bit;
+		int8_t shift;
+		int16_t sourceBufferId = -1;
+		AdvancedOffset offset = {};
+		if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
+			return INFINITY;
+		}
+		if (useBufferValue) {
+			return readValueFromBuffer(sourceBufferId, offset, is16Bit, isFixed, shift);
+		}
+		return readValueFromStream(is16Bit, isFixed, shift);
+	};
+
+	auto readMultipleArgs = [this, getFormatInfo, readValueFromBuffer, readValueFromStream, useBufferValue, useMultiFormat](float *values, int count) -> bool {
+		bool isFixed, is16Bit;
+		int8_t shift;
+		int16_t sourceBufferId = -1;
+		AdvancedOffset offset = {};
+
+		for (int i = 0; i < count; i++) {
+			if (i == 0 || useMultiFormat) {
+				if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
+					return false;
+				}
+			}
+			values[i] = useBufferValue ? readValueFromBuffer(sourceBufferId, offset, is16Bit, isFixed, shift) : readValueFromStream(is16Bit, isFixed, shift);
+			if (values[i] == INFINITY) {
+				return false;
+			}
+		}
+		return true;
+	};
+
+	auto readMatrixFromBuffer = [getMultiBufferStream, matrixSize](uint16_t sourceBufferId, void *matrix) -> bool {
+		auto buff = getMultiBufferStream(sourceBufferId);
+		if (!buff) {
+			return false;
+		}
+		if (buff->size() < matrixSize) {
+			debug_log("bufferAffineTransform: buffer %d too small for matrix\n\r", sourceBufferId);
+			return false;
+		}
+		auto read = buff->readBytes((uint8_t *)matrix, matrixSize);
+		if (read != matrixSize) {
+			debug_log("bufferAffineTransform: failed to read 9 floats from buffer %d\n\r", sourceBufferId);
+			return false;
+		}
+		return true;
+	};
+
+	bool replace = false;
+	switch (op) {
+		case AFFINE_IDENTITY: {
+			// create an identity matrix
+			replace = true;
+		}	break;
+		case AFFINE_INVERT: {
+			// this will only work if we have a 3x3 matrix...
+			// first of all, get our existing matrix
+			if (!readMatrixFromBuffer(bufferId, &transform)) {
+				return;
+			}
+			auto matrix = dspm::Mat(transform, 3, 3).inverse();
+			// copy data from matrix back to our working transform matrix
+			memcpy(transform, matrix.data, matrixSize);
+			replace = true;
+		}	break;
+		case AFFINE_ROTATE:
+		case AFFINE_ROTATE_RAD:
+		{
+			// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
+			float angle = readFloatArgument();
+			if (angle == INFINITY) {
+				return;
+			}
+			if (op == AFFINE_ROTATE) angle = DEG_TO_RAD * angle;
+			const auto cosAngle = cosf(angle);
+			const auto sinAngle = sinf(angle);
+			transform[0] = cosAngle;
+			transform[1] = sinAngle;
+			transform[3] = -sinAngle;
+			transform[4] = cosAngle;
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_MULTIPLY: {
+			// multiply values in a matrix by (single) argument value
+			// fetch matrix buffer, then multiply all values except last row by value
+			float scalar = readFloatArgument();
+			if (scalar == INFINITY) {
+				return;
+			}
+			if (!readMatrixFromBuffer(bufferId, &transform)) {
+				return;
+			}
+			// scale transform matrix by scalar, skipping last value (as that needs to remain a 1)
+			for (int i = 0; i < 7; i++) {
+				transform[i] *= scalar;
+			}
+			replace = true;
+		}	break;
+		case AFFINE_SCALE: {
+			// scale by a given factor
+			// get an array of 2 float values
+			float scales[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(scales, 2)) {
+				return;
+			}
+			transform[0] = scales[0];
+			transform[4] = scales[1];
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_TRANSLATE: {
+			// translate by a given amount of pixels
+			float translateXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(translateXY, 2)) {
+				return;
+			}
+			transform[2] = translateXY[0];
+			transform[5] = translateXY[1];
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_TRANSLATE_OS_COORDS: {
+			// translate by a given amount of pixels
+			float translateXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(translateXY, 2)) {
+				return;
+			}
+			auto scaled = context->scale(translateXY[0], translateXY[1]);
+			transform[2] = scaled.X;
+			transform[5] = scaled.Y;
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_SHEAR: {
+			// shear by a given amount
+			float shearXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(shearXY, 2)) {
+				return;
+			}
+			transform[1] = shearXY[0];
+			transform[3] = shearXY[1];
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_SKEW: {
+			// skew by a given amount (angle)
+			float skewXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(skewXY, 2)) {
+				return;
+			}
+			transform[1] = tanf(DEG_TO_RAD * skewXY[0]);
+			transform[3] = tanf(DEG_TO_RAD * skewXY[1]);
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_SKEW_RAD: {
+			// skew by a given amount (angle)
+			float skewXY[2] = {0.0f, 0.0f};
+			if (!readMultipleArgs(skewXY, 2)) {
+				return;
+			}
+			transform[1] = tanf(skewXY[0]);
+			transform[3] = tanf(skewXY[1]);
+			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_TRANSFORM: {
+			// we'll either be creating a new matrix, or combining with an existing one
+			if (!readMultipleArgs(transform, 6)) {
+				return;
+			}
+			transform[8] = 1.0f;
+		}	break;
+		default:
+			debug_log("bufferAffineTransform: unknown operation %d\n\r", op);
+			return;
+	}
+
+	auto bufferStream = make_shared_psram<BufferStream>(matrixSize);
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		// buffer couldn't be created
+		debug_log("bufferAffineTransform: failed to create buffer %d\n\r", bufferId);
+		return;
+	}
+
+	if (!replace) {
+		// we are combining, if we have an existing matrix
+		float existing[9] = {0.0f};
+		if (readMatrixFromBuffer(bufferId, &existing)) {
+			// combine the two matrices together
+			float newTransform[9] = {0.0f};
+			dspm_mult_f32(transform, existing, newTransform, 3, 3, 3);
+			// copy data from matrix back to our working transform matrix
+			memcpy(transform, newTransform, matrixSize);
+		}
+	}
+
+	bufferStream->writeBuffer((uint8_t *)transform, matrixSize);
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(std::move(bufferStream));
+	debug_log("bufferAffineTransform: created new matrix buffer %d\n\r", bufferId);
+
+	debug_log(" %f %f %f\n\r", transform[0], transform[1], transform[2]);
+	debug_log(" %f %f %f\n\r", transform[3], transform[4], transform[5]);
+	debug_log(" %f %f %f\n\r", transform[6], transform[7], transform[8]);
+}
+
+
+// VDU 23, 0, &A0, bufferId; &40, sourceBufferId; : Compress blocks from a buffer
 // Compress (blocks from) a buffer into a new buffer.
 // Replaces the target buffer with the new one.
 //
@@ -1630,7 +1966,7 @@ void VDUStreamProcessor::bufferCompress(uint16_t bufferId, uint16_t sourceBuffer
 	}
 }
 
-// VDU 23, 0, &A0, bufferId; &1D, sourceBufferId; : Decompress blocks from a buffer
+// VDU 23, 0, &A0, bufferId; &41, sourceBufferId; : Decompress blocks from a buffer
 // Decompress (blocks from) a buffer into a new buffer.
 // Replaces the target buffer with the new one.
 //
@@ -1714,48 +2050,208 @@ void VDUStreamProcessor::bufferDecompress(uint16_t bufferId, uint16_t sourceBuff
 	#endif
 }
 
-// VDU 23, 0, &A0, bufferId; &48, subcommand - Configure/render using Pingo 3D
+// VDU 23, 0, &A0, bufferId; &48, options, sourceBufferId; [width;] [mapBufferId;] [mapValues...] : Expand a bitmap buffer
+// Expands a bitmap buffer into a new buffer with 8-bit values
+// options dictates how the expansion is done
+// width will be provided to give a pixel width at which a byte-align is done
 //
-// VDU 23, 0, &A0, sid; &48, 0, w; h; :  Create Control Structure
-// VDU 23, 0, &A0, sid; &48, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
-// VDU 23, 0, &A0, sid; &48, 2, mid; n; i0; ... :  Set Mesh Vertex Indexes
-// VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
-// VDU 23, 0, &A0, sid; &48, 4, mid; n; i0; ... :  Set Texture Coordinate Indexes
-// VDU 23, 0, &A0, sid; &48, 5, oid; mid; bmid; :  Create Object
-// VDU 23, 0, &A0, sid; &48, 6, oid; scalex; :  Set Object X Scale Factor
-// VDU 23, 0, &A0, sid; &48, 7, oid; scaley; :  Set Object Y Scale Factor
-// VDU 23, 0, &A0, sid; &48, 8, oid; scalez; :  Set Object Z Scale Factor
-// VDU 23, 0, &A0, sid; &48, 9, oid; scalex; scaley; scalez :  Set Object XYZ Scale Factors
-// VDU 23, 0, &A0, sid; &48, 10, oid; anglex; :  Set Object X Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 11, oid; angley; :  Set Object Y Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 12, oid; anglez; :  Set Object Z Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 13, oid; anglex; angley; anglez; :  Set Object XYZ Rotation Angles
-// VDU 23, 0, &A0, sid; &48, 14, oid; distx; :  Set Object X Translation Distance
-// VDU 23, 0, &A0, sid; &48, 15, oid; disty; :  Set Object Y Translation Distance
-// VDU 23, 0, &A0, sid; &48, 16, oid; distz; :  Set Object Z Translation Distance
-// VDU 23, 0, &A0, sid; &48, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances
-// VDU 23, 0, &A0, sid; &48, 18, anglex;</b> :  Set Camera X Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 19, angley;</b> :  Set Camera Y Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 20, anglez;</b> :  Set Camera Z Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 21, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles
-// VDU 23, 0, &A0, sid; &48, 22, distx;</b> :  Set Camera X Translation Distance
-// VDU 23, 0, &A0, sid; &48, 23, disty;</b> :  Set Camera Y Translation Distance
-// VDU 23, 0, &A0, sid; &48, 24, distz;</b> :  Set Camera Z Translation Distance
-// VDU 23, 0, &A0, sid; &48, 25, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances
-// VDU 23, 0, &A0, sid; &48, 26, scalex;</b> :  Set Scene X Scale Factor
-// VDU 23, 0, &A0, sid; &48, 27, scaley;</b> :  Set Scene Y Scale Factor
-// VDU 23, 0, &A0, sid; &48, 28, scalez;</b> :  Set Scene Z Scale Factor
-// VDU 23, 0, &A0, sid; &48, 29, scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors
-// VDU 23, 0, &A0, sid; &48, 30, anglex;</b> :  Set Scene X Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 31, angley;</b> :  Set Scene Y Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 32, anglez;</b> :  Set Scene Z Rotation Angle
-// VDU 23, 0, &A0, sid; &48, 33, anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles
-// VDU 23, 0, &A0, sid; &48, 34, distx;</b> :  Set Scene X Translation Distance
-// VDU 23, 0, &A0, sid; &48, 35, disty;</b> :  Set Scene Y Translation Distance
-// VDU 23, 0, &A0, sid; &48, 36, distz;</b> :  Set Scene Z Translation Distance
-// VDU 23, 0, &A0, sid; &48, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances
-// VDU 23, 0, &A0, sid; &48, 38, bmid; :  Render To Bitmap
-// VDU 23, 0, &A0, sid; &48, 39 :  Delete Control Structure
+void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId) {
+	auto sourceBufferIter = buffers.find(sourceBufferId);
+	if (sourceBufferIter == buffers.end()) {
+		debug_log("bufferExpandBitmap: source buffer %d not found\n\r", sourceBufferId);
+		return;
+	}
+	auto &sourceBuffer = sourceBufferIter->second;
+
+	// pixelSize is our number of bits in a pixel
+	auto pixelSize = options & EXPAND_BITMAP_SIZE;
+	if (pixelSize == 0) {
+		pixelSize = 8;
+	}
+	// do we have an aligned width?
+	bool aligned = options & EXPAND_BITMAP_ALIGNED;
+	// do we have a map buffer, or are we just reading the values from the stream?
+	bool useBuffer = options & EXPAND_BITMAP_USEBUFFER;
+	int16_t width = -1;
+
+	uint8_t * mapValues = nullptr;
+
+	if (aligned) {
+		width = readWord_t();
+		if (width == -1) {
+			debug_log("bufferExpandBitmap: failed to read width\n\r");
+			return;
+		}
+	}
+
+	auto numValues = 1 << pixelSize;
+
+	if (useBuffer) {
+		auto mapId = readWord_t();
+		if (mapId == -1) {
+			debug_log("bufferExpandBitmap: failed to read map buffer ID\n\r");
+			return;
+		}
+		auto bufferIter = buffers.find(mapId);
+		if (bufferIter == buffers.end()) {
+			debug_log("bufferExpandBitmap: map buffer %d not found\n\r", mapId);
+			return;
+		}
+		auto &buffer = bufferIter->second;
+		if (buffer.size() != 1) {
+			debug_log("bufferExpandBitmap: map buffer %d does not contain a single block\n\r", mapId);
+			return;
+		}
+		if (buffer[0]->size() < numValues) {
+			debug_log("bufferExpandBitmap: map buffer %d does not contain at least %d values\n\r", mapId, numValues);
+			return;
+		}
+		mapValues = buffer[0]->getBuffer();
+	} else {
+		// read pixelSize bytes from stream
+		mapValues = (uint8_t *) ps_malloc(numValues);
+		if (!mapValues) {
+			debug_log("bufferExpandBitmap: failed to allocate map values\n\r");
+			return;
+		}
+		if (readIntoBuffer(mapValues, 1 << pixelSize) != 0) {
+			debug_log("bufferExpandBitmap: failed to read map values\n\r");
+			free(mapValues);
+			return;
+		}
+		debug_log("bufferExpandBitmap: read map values ");
+		for (int i = 0; i < numValues; i++) {
+			debug_log("%02hX ", mapValues[i]);
+		}
+		debug_log("\n\r");
+	}
+
+	// work out source size
+	uint32_t sourceSize = 0;
+	for (const auto &block : sourceBuffer) {
+		sourceSize += block->size();
+	}
+
+	// if we are aligning we need to work out our byte width, based off the pixel width
+	uint32_t byteWidth = 0;	
+	if (aligned) {
+		byteWidth = ((pixelSize * width) + (8 - pixelSize)) / 8;
+	}
+
+	// work out our output size
+	uint32_t outputSize = 0;
+	if (aligned) {
+		outputSize = (sourceSize / byteWidth) * width;
+	} else {
+		outputSize = (sourceSize * 8) / pixelSize;
+	}
+
+	debug_log("bufferExpandBitmap: source size %d, output size %d, pixel size %d, width %d, byte width %d\n\r",
+		sourceSize, outputSize, pixelSize, width, byteWidth);
+
+	// create output buffer
+	auto bufferStream = make_shared_psram<BufferStream>(outputSize);
+
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		// buffer couldn't be created
+		debug_log("bufferExpandBitmap: failed to create buffer %d\n\r", bufferId);
+		if (!useBuffer) {
+			free(mapValues);
+		}
+		return;
+	}
+
+	auto destination = bufferStream->getBuffer();
+
+	// iterate through source buffer
+	auto p_data = destination;
+	uint8_t bit = 0;
+	uint8_t pixel = 0;
+	uint16_t pixelCount = 0;
+	for (const auto &block : sourceBuffer) {
+		auto bufferLength = block->size();
+		auto p_source = block->getBuffer();
+
+		// go through one byte at a time,
+		// and expand the pixels into the destination buffer
+		// aligning when our pixel count reaches our pixel width if required
+
+		while (bufferLength--) {
+			auto value = *p_source++;
+			for (uint8_t i = 0; i < 8; i++) {
+				debug_log("pixel bit is %d ", ((value >> 7 - i) & 1));
+				pixel = (pixel << 1) | ((value >> (7 - i)) & 1);
+				bit++;
+				if (bit == pixelSize) {
+					bit = 0;
+					*p_data++ = mapValues[pixel];
+					debug_log(" %02hX %02hX (%02hX) %d\n\r", pixel, mapValues[pixel], value, i);
+					pixel = 0;
+					if (aligned) {
+						if (++pixelCount == width) {
+							// byte align
+							debug_log("aligned... skipping to next byte at byte bit %d\n\r", i);
+							pixelCount = 0;
+							// jump to next byte
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// save our bufferStream to the buffer
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(std::move(bufferStream));
+	if (!useBuffer) {
+		free(mapValues);
+	}
+	debug_log("bufferExpandBitmap: expanded %d bytes into buffer %d\n\r", outputSize, bufferId);
+}
+
+// VDU 23, 0, &A0, bufferId; &49, subcommand - Configure/render using Pingo 3D
+//
+// VDU 23, 0, &A0, sid; &49, 0, w; h; :  Create Control Structure
+// VDU 23, 0, &A0, sid; &49, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
+// VDU 23, 0, &A0, sid; &49, 2, mid; n; i0; ... :  Set Mesh Vertex Indexes
+// VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
+// VDU 23, 0, &A0, sid; &49, 4, mid; n; i0; ... :  Set Texture Coordinate Indexes
+// VDU 23, 0, &A0, sid; &49, 5, oid; mid; bmid; :  Create Object
+// VDU 23, 0, &A0, sid; &49, 6, oid; scalex; :  Set Object X Scale Factor
+// VDU 23, 0, &A0, sid; &49, 7, oid; scaley; :  Set Object Y Scale Factor
+// VDU 23, 0, &A0, sid; &49, 8, oid; scalez; :  Set Object Z Scale Factor
+// VDU 23, 0, &A0, sid; &49, 9, oid; scalex; scaley; scalez :  Set Object XYZ Scale Factors
+// VDU 23, 0, &A0, sid; &49, 10, oid; anglex; :  Set Object X Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 11, oid; angley; :  Set Object Y Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 12, oid; anglez; :  Set Object Z Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 13, oid; anglex; angley; anglez; :  Set Object XYZ Rotation Angles
+// VDU 23, 0, &A0, sid; &49, 14, oid; distx; :  Set Object X Translation Distance
+// VDU 23, 0, &A0, sid; &49, 15, oid; disty; :  Set Object Y Translation Distance
+// VDU 23, 0, &A0, sid; &49, 16, oid; distz; :  Set Object Z Translation Distance
+// VDU 23, 0, &A0, sid; &49, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances
+// VDU 23, 0, &A0, sid; &49, 18, anglex;</b> :  Set Camera X Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 19, angley;</b> :  Set Camera Y Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 20, anglez;</b> :  Set Camera Z Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 21, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles
+// VDU 23, 0, &A0, sid; &49, 22, distx;</b> :  Set Camera X Translation Distance
+// VDU 23, 0, &A0, sid; &49, 23, disty;</b> :  Set Camera Y Translation Distance
+// VDU 23, 0, &A0, sid; &49, 24, distz;</b> :  Set Camera Z Translation Distance
+// VDU 23, 0, &A0, sid; &49, 25, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances
+// VDU 23, 0, &A0, sid; &49, 26, scalex;</b> :  Set Scene X Scale Factor
+// VDU 23, 0, &A0, sid; &49, 27, scaley;</b> :  Set Scene Y Scale Factor
+// VDU 23, 0, &A0, sid; &49, 28, scalez;</b> :  Set Scene Z Scale Factor
+// VDU 23, 0, &A0, sid; &49, 29, scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors
+// VDU 23, 0, &A0, sid; &49, 30, anglex;</b> :  Set Scene X Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 31, angley;</b> :  Set Scene Y Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 32, anglez;</b> :  Set Scene Z Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 33, anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles
+// VDU 23, 0, &A0, sid; &49, 34, distx;</b> :  Set Scene X Translation Distance
+// VDU 23, 0, &A0, sid; &49, 35, disty;</b> :  Set Scene Y Translation Distance
+// VDU 23, 0, &A0, sid; &49, 36, distz;</b> :  Set Scene Z Translation Distance
+// VDU 23, 0, &A0, sid; &49, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances
+// VDU 23, 0, &A0, sid; &49, 38, bmid; :  Render To Bitmap
+// VDU 23, 0, &A0, sid; &49, 39 :  Delete Control Structure
 //
 void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
     auto subcmd = readByte_t();

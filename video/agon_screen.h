@@ -173,8 +173,6 @@ bool updateVGAController(uint8_t colours) {
 	}
 	_VGAController = std::move(controller);		// Switch to the new controller
 	_VGAController->begin();					// And spin it up
-	_VGAController->enableBackgroundPrimitiveExecution(true);
-	_VGAController->enableBackgroundPrimitiveTimeout(false);
 
 	return true;
 }
@@ -200,6 +198,9 @@ int8_t changeResolution(uint8_t colours, const char * modeLine, bool doubleBuffe
 	} else {
 		debug_log("changeResolution: modeLine is null\n\r");
 	}
+
+	_VGAController->enableBackgroundPrimitiveExecution(true);
+	_VGAController->enableBackgroundPrimitiveTimeout(false);
 
 	canvas.reset(new fabgl::Canvas(_VGAController.get()));		// Create the new canvas
 	debug_log("after change of canvas...\n\r");

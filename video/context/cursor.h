@@ -256,17 +256,17 @@ inline bool Context::textCursorActive() {
 
 inline void Context::setActiveCursor(CursorType type) {
 	switch (type) {
-		case CursorType::TextCursor:
+		case CursorType::Text:
 			activeCursor = &textCursor;
 			changeFont(textFont, textFontData, 0);
 			setCharacterOverwrite(true);
-			setActiveViewport(ViewportType::TextViewport);
+			setActiveViewport(ViewportType::Text);
 			break;
-		case CursorType::GraphicsCursor:
+		case CursorType::Graphics:
 			activeCursor = &p1;
 			changeFont(graphicsFont, graphicsFontData, 0);
 			setCharacterOverwrite(false);
-			setActiveViewport(ViewportType::GraphicsViewport);
+			setActiveViewport(ViewportType::Graphics);
 			break;
 	}
 }
@@ -341,7 +341,7 @@ void Context::resetTextCursor() {
 	// reset text viewport
 	// and set the active viewport to text
 	textViewport =	Rect(0, 0, canvasW - 1, canvasH - 1);
-	setActiveCursor(CursorType::TextCursor);
+	setActiveCursor(CursorType::Text);
 
 	// cursor behaviour however is _not_ reset here
 	cursorHome();

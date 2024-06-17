@@ -72,12 +72,12 @@ void VDUStreamProcessor::vdu(uint8_t c, bool usePeek) {
 			break;
 		case 0x04:
 			// enable text cursor
-			context->setActiveCursor(CursorType::TextCursor);
+			context->setActiveCursor(CursorType::Text);
 			sendModeInformation();
 			break;
 		case 0x05:
 			// enable graphics cursor
-			context->setActiveCursor(CursorType::GraphicsCursor);
+			context->setActiveCursor(CursorType::Graphics);
 			sendModeInformation();
 			break;
 		case 0x06:
@@ -194,25 +194,25 @@ void VDUStreamProcessor::vdu_print(char c, bool usePeek) {
 	s += c;
 	// gather our string for printing
 	if (usePeek) {
-		auto limit = 39;
+		auto limit = 15;
 		while (--limit) {
 			if (!byteAvailable()) {
 				break;
 			}
-			auto next = peekByte_t(FAST_COMMS_TIMEOUT);
+			auto next = inputStream->peek();
 			if (next == 27) {
-				readByte_t();
+				inputStream->read();
 				if (consoleMode) {
 					DBGSerial.write(next);
 				}
-				next = readByte_t(FAST_COMMS_TIMEOUT);
+				next = readByte_t();
 				if (next == -1) {
 					break;
 				}
 				s += (char)next;
-			} else if (next != -1 && ((next >= 0x20 && next <= 0x7E) || (next >= 0x80 && next <= 0xFF))) {
+			} else if ((next >= 0x20 && next <= 0x7E) || (next >= 0x80 && next <= 0xFF)) {
 				s += (char)next;
-				readByte_t();
+				inputStream->read();
 			} else {
 				break;
 			}
@@ -250,6 +250,8 @@ void VDUStreamProcessor::vdu_palette() {
 	auto g = readByte_t(); if (g == -1) return; // The green component
 	auto b = readByte_t(); if (b == -1) return; // The blue component
 
+	// keep logical colour index in bounds
+	l &= 63;
 	auto index = setLogicalPalette(l, p, r, g, b);
 
 	if (index != -1) {
@@ -354,7 +356,8 @@ void VDUStreamProcessor::vdu_textViewport() {
 		if (cy2 > 24) cy2 = 24;
 		if (cx2 >= cx1 && cy2 >= cy1)
 		ttxt_instance.set_window(cx1,cy2,cx2,cy1);
-	} else if (context->setTextViewport(cx1, cy1, cx2, cy2)) {
+	}
+	if (context->setTextViewport(cx1, cy1, cx2, cy2)) {
 		debug_log("vdu_textViewport: OK %d,%d,%d,%d\n\r", cx1, cy1, cx2, cy2);
 	} else {
 		debug_log("vdu_textViewport: Invalid Viewport %d,%d,%d,%d\n\r", cx1, cy1, cx2, cy2);

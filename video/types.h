@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <memory>
 
 // PreferPSRAMAlloc
 //
@@ -169,3 +170,37 @@ std::shared_ptr<T> make_shared_psram_array(size_t size)
 	return std::allocate_shared<T>(allocator, size);
 }
 
+float float16ToFloat32(uint16_t h) {
+    uint32_t sign = ((h >> 15) & 1) << 31;
+    uint32_t exponent = ((h >> 10) & 0x1f);
+    uint32_t fraction = h & 0x3ff;
+
+    if (exponent == 0) {
+        if (fraction == 0) {
+            // Zero
+            return sign == 0 ? +0.0f : -0.0f;
+        } else {
+            // Subnormal number
+            while ((fraction & 0x400) == 0) {
+                fraction <<= 1;
+                exponent--;
+            }
+            exponent++;
+            fraction &= 0x3ff;
+        }
+    } else if (exponent == 31) {
+        if (fraction == 0) {
+            // Infinity
+            return sign == 0 ? +INFINITY : -INFINITY;
+        } else {
+            // NaN
+            return NAN;
+        }
+    }
+
+    exponent = (exponent + 127 - 15) << 23;
+    fraction <<= 13;
+
+    uint32_t f = sign | exponent | fraction;
+    return reinterpret_cast<float&>(f);
+}
