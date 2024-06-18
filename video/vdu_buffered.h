@@ -8,6 +8,7 @@
 #include <esp_heap_caps.h>
 #include <mat.h>
 #include <dspm_mult.h>
+#include <fabutils.h>
 
 #include "agon.h"
 #include "agon_fonts.h"
@@ -195,6 +196,15 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
 				bufferAffineTransform(bufferId);
 			}
+		}	break;
+		case BUFFERED_TRANSFORM_BITMAP: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+			auto options = readByte_t();
+			auto transformBufferId = readWord_t();
+			auto bitmapId = readWord_t();
+			if (options == -1 || transformBufferId == -1 || bitmapId == -1) {
+				return;
+			}
+			bufferTransformBitmap(bufferId, options, transformBufferId, bitmapId);
 		}	break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
@@ -1901,6 +1911,160 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 	debug_log(" %f %f %f\n\r", transform[6], transform[7], transform[8]);
 }
 
+// VDU 23, 0, &A0, bufferId; &21, options, transformBufferId; bitmapId; : Apply affine transformation to bitmap
+// Apply an affine transformation to a bitmap, creating a new bitmap
+// Replaces the target buffer with the new bitmap, and creates a corresponding bitmap
+//
+void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t bitmapId) {
+	// resize flag indicates that new bitmap should get a new size
+	bool shouldResize = options & TRANSFORM_BITMAP_RESIZE;
+	bool explicitSize = options & TRANSFORM_BITMAP_EXPLICIT_SIZE;
+	bool autoTranslate = options & TRANSFORM_BITMAP_TRANSLATE;
+
+	if (explicitSize && !shouldResize) {
+		debug_log("bufferTransformBitmap: warning - explicit size without resize flag\n\r");
+		// we'll let this pass for now, but it may be an error
+	}
+
+	int xOffset = 0;
+	int yOffset = 0;
+	int width = 0;
+	int height = 0;
+	if (explicitSize) {
+		width = readWord_t();
+		height = readWord_t();
+	}
+	if (width == -1 || height == -1) {
+		debug_log("bufferTransformBitmap: failed to read explicit size\n\r");
+		return;
+	}
+
+	auto bitmap = getBitmap(bitmapId);
+
+	if (!bitmap) {
+		debug_log("bufferTransformBitmap: bitmap %d not found\n\r", bitmapId);
+		return;
+	}
+
+	// NB source bitmap is currently assumed to be RGBA2222 format
+	auto srcWidth = bitmap->width;
+	auto srcHeight = bitmap->height;
+
+	auto transformBufferIter = buffers.find(transformBufferId);
+	if (transformBufferIter == buffers.end()) {
+		debug_log("bufferTransformBitmap: buffer %d not found\n\r", transformBufferId);
+		return;
+	}
+	auto &transformBuffer = transformBufferIter->second;
+	if (!checkTransformBuffer(transformBuffer)) {
+		debug_log("bufferTransformBitmap: buffer %d not a 2d transform matrix\n\r", transformBufferId);
+		return;
+	}
+
+	auto transform = (float *)transformBuffer[0]->getBuffer();
+	auto inverse = (float *)transformBuffer[1]->getBuffer();
+
+	auto sourceIter = buffers.find(bitmapId);
+	if (sourceIter == buffers.end()) {
+		debug_log("bufferTransformBitmap: source buffer %d not found\n\r", bitmapId);
+		return;
+	}
+	auto &sourceBuffer = sourceIter->second;
+	auto source = sourceBuffer[0]->getBuffer();
+
+	if (!explicitSize) {
+		width = srcWidth;
+		height = srcHeight;
+	}
+	if (shouldResize || autoTranslate) {
+		int minX = INT_MAX;
+		int minY = INT_MAX;
+		int maxX = INT_MIN;
+		int maxY = INT_MIN;
+		float pos[3] = { 0.0f, 0.0f, 1.0f };
+		float transformed[3];
+		dspm_mult_3x3x1_f32(transform, pos, transformed);
+		minX = fabgl::imin(minX, (int)transformed[0]);
+		minY = fabgl::imin(minY, (int)transformed[1]);
+		maxX = fabgl::imax(maxX, (int)transformed[0]);
+		maxY = fabgl::imax(maxY, (int)transformed[1]);
+
+		pos[0] = (float)srcWidth;
+		dspm_mult_3x3x1_f32(transform, pos, transformed);
+		minX = fabgl::imin(minX, (int)transformed[0]);
+		minY = fabgl::imin(minY, (int)transformed[1]);
+		maxX = fabgl::imax(maxX, (int)transformed[0]);
+		maxY = fabgl::imax(maxY, (int)transformed[1]);
+
+		pos[1] = (float)srcHeight;
+		dspm_mult_3x3x1_f32(transform, pos, transformed);
+		minX = fabgl::imin(minX, (int)transformed[0]);
+		minY = fabgl::imin(minY, (int)transformed[1]);
+		maxX = fabgl::imax(maxX, (int)transformed[0]);
+		maxY = fabgl::imax(maxY, (int)transformed[1]);
+
+		pos[0] = 0.0f;
+		dspm_mult_3x3x1_f32(transform, pos, transformed);
+		minX = fabgl::imin(minX, (int)transformed[0]);
+		minY = fabgl::imin(minY, (int)transformed[1]);
+		maxX = fabgl::imax(maxX, (int)transformed[0]);
+		maxY = fabgl::imax(maxY, (int)transformed[1]);
+
+		debug_log("bufferTransformBitmap: minX %d, minY %d, maxX %d, maxY %d\n\r", minX, minY, maxX, maxY);
+
+		Rect transformedBox = Rect(minX, minY, maxX, maxY);
+		debug_log("bufferTransformBitmap: transformed box %d, %d\n\r", transformedBox.width(), transformedBox.height());
+
+		if (shouldResize && !explicitSize) {
+			width = (maxX - (autoTranslate ? minX : 0)) + 1;
+			height = (maxY - (autoTranslate ? minY : 0)) + 1;
+		}
+		if (autoTranslate) {
+			xOffset = minX;
+			yOffset = minY;
+		}
+	}
+
+	// create a destination buffer using our calculated width and height
+	// assuming we are doing RGBA2222 format (1 byte per pixel)
+	auto bufferStream = make_shared_psram<BufferStream>(width * height);
+
+	// iterate over our destination buffer, and apply the transformation to each pixel
+	auto destination = bufferStream->getBuffer();
+	float pos[3] = {0.0f, 0.0f, 1.0f};
+	float srcPos[3] = {0.0f, 0.0f, 1.0f};
+
+	debug_log("bufferTransformBitmap: width %d, height %d, xOffset %d, yOffset %d\n\r", width, height, xOffset, yOffset);
+
+    for (int y = 0; y < height; y++) {
+    	for (int x = 0; x < width; x++) {
+			// calculate the source pixel
+			// NB we will need to adjust x,y here if we are auto-translating
+			pos[0] = (float)x + xOffset;
+			pos[1] = (float)y + yOffset;
+			dspm_mult_3x3x1_f32(inverse, pos, srcPos);
+
+			auto srcPixel = 0;
+			int srcX = (int)srcPos[0];
+			int srcY = (int)srcPos[1];
+
+			if (srcX >= 0 && srcX < srcWidth && srcY >= 0 && srcY < srcHeight) {
+				// get the source pixel
+				// NB this currently assumes source is RGBA2222 format
+				auto src = source + srcY * srcWidth + srcX;
+				srcPixel = *src;
+			}
+			destination[(int)y * width + (int)x] = srcPixel;
+		}
+    }
+
+	// save new bitmap data to target buffer
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(bufferStream);
+
+	// create a new bitmap object
+	createBitmapFromBuffer(bufferId, 1, width, height);
+}
 
 // VDU 23, 0, &A0, bufferId; &40, sourceBufferId; : Compress blocks from a buffer
 // Compress (blocks from) a buffer into a new buffer.

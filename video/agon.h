@@ -352,6 +352,11 @@
 #define AFFINE_FORMAT_FIXED		0x40	// if set, values are fixed-point, vs floats
 #define AFFINE_FORMAT_16BIT		0x80	// if set, values are 16-bit, vs 32-bit
 
+// Transform bitmap flags
+#define TRANSFORM_BITMAP_RESIZE		0x01	// Resize
+#define TRANSFORM_BITMAP_EXPLICIT_SIZE	0x02	// Use an explicit size (width and height)
+#define TRANSFORM_BITMAP_TRANSLATE	0x04	// Translate
+
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
 #define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples

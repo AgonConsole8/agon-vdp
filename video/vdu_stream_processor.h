@@ -129,6 +129,7 @@ class VDUStreamProcessor {
 		void bufferCopyRef(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferAffineTransform(uint16_t bufferId);
+		void bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
