@@ -82,7 +82,7 @@ extern Pixel pixelFromRGBA( uint8_t r, uint8_t g, uint8_t b, uint8_t a){
 
 extern Pixel pixelMul(Pixel p, float f)
 {
-    return (Pixel){p.b*f,p.g*f,p.r*f,p.a};
+    return (Pixel){p.r*f, p.g*f, p.b*f, p.a};
 }
 
 #endif

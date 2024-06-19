@@ -84,12 +84,15 @@ int orient2d( Vec2i a,  Vec2i b,  Vec2i c)
 }
 
 void backendDrawPixel (Renderer * r, Texture * f, Vec2i pos, Pixel color, float illumination) {
-    //If backend spcifies something..
-    if (r->backEnd->drawPixel != 0)
+    // If backend specifies something..
+    if (r->backEnd->drawPixel != 0) {
+        // Draw using the backend
         r->backEnd->drawPixel(f, pos, color, illumination);
-
-    //By default call this
-    texture_draw(f, pos, pixelMul(color,illumination));
+    }
+    else {
+        // By default call this
+        texture_draw(f, pos, pixelMul(color,illumination));
+    }
 }
 
 int renderObject(Mat4 object_transform, Renderer * r, Renderable ren) {
