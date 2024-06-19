@@ -4,9 +4,12 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <mat.h>
 
 #include "buffer_stream.h"
 #include "span.h"
+
+extern void debug_log(const char * format, ...);		// Debug log function
 
 std::unordered_map<uint16_t, std::vector<std::shared_ptr<BufferStream>>> buffers;
 
@@ -125,6 +128,30 @@ std::vector<std::shared_ptr<BufferStream>> splitBuffer(std::shared_ptr<BufferStr
 		remaining -= bufferLength;
 	}
 	return chunks;
+}
+
+// check buffer looks like a transform, and ensure there's an inverse
+bool checkTransformBuffer(std::vector<std::shared_ptr<BufferStream>> &transformBuffer) {
+	int const matrixSize = sizeof(float) * 9;
+
+	if (transformBuffer.size() == 1) {
+		// make sure we have an inverse matrix cached
+		if (transformBuffer[0]->size() < matrixSize) {
+			return false;
+		}
+		// create an inverse matrix, and push that to the buffer
+		auto transform = (float *)transformBuffer[0]->getBuffer();
+		auto matrix = dspm::Mat(transform, 3, 3).inverse();
+		auto bufferStream = make_shared_psram<BufferStream>(matrixSize);
+		bufferStream->writeBuffer((uint8_t *)matrix.data, matrixSize);
+		transformBuffer.push_back(bufferStream);
+	}
+
+	if (transformBuffer[0]->size() < matrixSize || transformBuffer[1]->size() < matrixSize) {
+		return false;
+	}
+
+	return true;
 }
 
 #endif // BUFFERS_H

@@ -29,7 +29,6 @@ TaskHandle_t audioTask;
 std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage for the sample data
 fabgl::SoundGenerator *soundGenerator;  // audio handling sub-system
 
-extern void force_debug_log(const char *format, ...);
 bool channelEnabled(uint8_t channel);
 
 // Audio channel driver task
