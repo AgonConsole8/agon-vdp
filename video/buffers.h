@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <mat.h>
 
+#include "agon.h"
 #include "buffer_stream.h"
 #include "span.h"
 
@@ -153,5 +154,17 @@ bool checkTransformBuffer(std::vector<std::shared_ptr<BufferStream>> &transformB
 
 	return true;
 }
+
+void extractFormatInfo(uint8_t format, bool &isFixed, bool &is16Bit, int8_t &shift) {
+	isFixed = format & AFFINE_FORMAT_FIXED;
+	is16Bit = format & AFFINE_FORMAT_16BIT;
+	shift = format & AFFINE_FORMAT_SHIFT_MASK;
+	// ensure our size value obeys negation
+	if (is16Bit && (shift & AFFINE_FORMAT_SHIFT_TOPBIT)) {
+		// top bit was set, so it's a negative - so we need to set the top bits of the size
+		shift = shift | AFFINE_FORMAT_FLAGS;
+	}
+};
+
 
 #endif // BUFFERS_H

@@ -263,9 +263,11 @@
 #define BUFFERED_REVERSE				0x18	// Reverse the order of data in a buffer
 #define BUFFERED_COPY_REF				0x19	// Copy references to blocks from multiple buffers into one buffer
 #define BUFFERED_COPY_AND_CONSOLIDATE	0x1A	// Copy blocks from multiple buffers into one buffer and consolidate them
-#define BUFFERED_AFFINE_TRANSFORM		0x20	// Create or combine affine transform matrix buffer
-#define BUFFERED_TRANSFORM_BITMAP		0x21	// Create a new bitmap from an existing one by applying a 2d transform
-#define BUFFERED_TRANSFORM_DATA			0x22	// Transform data using a 2d affine transform matrix
+#define BUFFERED_AFFINE_TRANSFORM		0x20	// Create or combine a 3x3 2d affine transform matrix buffer
+#define BUFFERED_AFFINE_TRANSFORM_3D	0x21	// Create or combine a 4x4 3d affine transform matrix buffer
+#define BUFFERED_MATRIX					0x22	// Create or combine a matrix buffer of arbitrary dimensions
+#define BUFFERED_TRANSFORM_BITMAP		0x28	// Create a new bitmap from an existing one by applying a 2d transform
+#define BUFFERED_TRANSFORM_DATA			0x29	// Transform data using a 2d affine transform matrix
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
@@ -356,6 +358,9 @@
 #define TRANSFORM_BITMAP_RESIZE		0x01	// Resize
 #define TRANSFORM_BITMAP_EXPLICIT_SIZE	0x02	// Use an explicit size (width and height)
 #define TRANSFORM_BITMAP_TRANSLATE	0x04	// Translate
+
+// Transform data flags
+#define TRANSFORM_DATA_NO_PAD	0x01	// Data does not need padding
 
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps

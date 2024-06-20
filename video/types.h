@@ -2,7 +2,7 @@
 //
 // File:        types.h
 //
-// Original Source info:
+// Original Source info for psram_allocator and associated code:
 // NightDriverStrip - (c) 2023 Plummer's Software LLC.  All Rights Reserved.
 //
 // This file is part of the NightDriver software project.
@@ -170,6 +170,9 @@ std::shared_ptr<T> make_shared_psram_array(size_t size)
 	return std::allocate_shared<T>(allocator, size);
 }
 
+
+// Data type conversion functions
+
 float float16ToFloat32(uint16_t h) {
     uint32_t sign = ((h >> 15) & 1) << 31;
     uint32_t exponent = ((h >> 10) & 0x1f);
@@ -204,3 +207,104 @@ float float16ToFloat32(uint16_t h) {
     uint32_t f = sign | exponent | fraction;
     return reinterpret_cast<float&>(f);
 }
+
+// uint16_t float32ToFloat16(const float x) { // IEEE-754 16-bit floating-point format (without infinity): 1-5-10, exp-15, +-131008.0, +-6.1035156E-5, +-5.9604645E-8, 3.311 digits
+//     const uint b = (*(uint*)&x)+0x00001000; // round-to-nearest-even: add last bit after truncated mantissa
+//     const uint e = (b&0x7F800000)>>23; // exponent
+//     const uint m = b&0x007FFFFF; // mantissa; in line below: 0x007FF000 = 0x00800000-0x00001000 = decimal indicator flag - initial rounding
+//     return (b&0x80000000)>>16 | (e>112)*((((e-112)<<10)&0x7C00)|m>>13) | ((e<113)&(e>101))*((((0x007FF000+m)>>(125-e))+1)>>1) | (e>143)*0x7FFF; // sign : normalized : denormalized : saturate
+// }
+
+
+
+uint16_t float32ToFloat16(float h) {
+	uint32_t f = reinterpret_cast<uint32_t&>(h);
+	uint32_t sign = (f >> 31) & 0x8000;
+	uint32_t exponent = (f >> 23) & 0xff;
+	uint32_t fraction = f & 0x7fffff;
+
+	if (exponent == 0) {
+		if (fraction == 0) {
+			// Zero
+			return sign >> 16;
+		} else {
+			// Subnormal number
+			while ((fraction & 0x400000) == 0) {
+				fraction <<= 1;
+				exponent--;
+			}
+			exponent++;
+			fraction &= 0x7fffff;
+		}
+	} else if (exponent == 0xff) {
+		if (fraction == 0) {
+			// Infinity
+			return (sign >> 16) | 0x7c00;
+		} else {
+			// NaN
+			return (sign >> 16) | 0x7c00 | (fraction >> 13);
+		}
+	}
+
+	exponent = (exponent - 127 + 15) << 10;
+	fraction >>= 13;
+
+	return (sign >> 16) | exponent | fraction;
+}
+
+float convertValueToFloat(uint32_t rawValue, bool is16Bit, bool isFixed, int8_t shift) {
+	if (isFixed) {
+		// fixed point value
+		// we will scale our rawValue by a factor to create our float
+		// this version assumes base value is -1 to +1, multiplied by 2^shift
+		// so binary point starts at bit 31 and is moved right by shift
+		// auto scale = (1u << shift) / (float)(1u << 31);
+		// if (is16Bit) {
+		// 	// ensure 16-bit values are 32-bit values with their buttom 16 bits empty
+		// 	rawValue <<= 16;
+		// }
+		// in this version the binary point starts after bit 0 and is moved left by shift
+		// which is arguably a bit more intuitive in use, and matches the xtensa fixed point instruction support
+		// we need to use our shift value to determine how far to scale
+		auto scale = shift < 0 ? 1 << -shift : 1.0f / (1 << shift);
+		if (is16Bit) {
+			return (float)(int16_t)rawValue * scale;
+		}
+		return (float)(int32_t)rawValue * scale;
+	} else {
+		// floating point value - shift ignored
+		// if we're reading a 16-bit value, we need to convert to 32-bit float
+		if (is16Bit) {
+			return float16ToFloat32(rawValue);
+		}
+		// take our raw value and interpret its bits as a float
+		return *(float*)&rawValue;
+	}
+};
+
+uint32_t convertFloatToValue(float rawValue, bool is16Bit, bool isFixed, int8_t shift) {
+	if (isFixed) {
+		// fixed point value
+		// we will scale our rawValue by a factor to create our float
+		// this version assumes base value is -1 to +1, multiplied by 2^shift
+		// so binary point starts at bit 31 and is moved right by shift
+		// auto scale = (1u << shift) / (float)(1u << 31);
+		// in this version the binary point starts after bit 0 and is moved left by shift
+		// which is arguably a bit more intuitive in use, and matches the xtensa fixed point instruction support
+		// we need to use our shift value to determine how far to scale
+		auto scale = shift < 0 ? 1 << -shift : 1.0f / (1 << shift);
+		if (is16Bit) {
+			return (uint16_t)(rawValue / scale);
+		}
+		return (uint32_t)(rawValue / scale);
+	} else {
+		// floating point value - shift ignored
+		// if we're writing a 16-bit value, we need to convert from 32-bit float
+		if (is16Bit) {
+			return float32ToFloat16(rawValue);
+		}
+		// take our raw value and interpret its bits as a float
+		return *(uint32_t*)&rawValue;
+	}
+};
+

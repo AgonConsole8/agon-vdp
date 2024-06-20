@@ -206,6 +206,19 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferTransformBitmap(bufferId, options, transformBufferId, bitmapId);
 		}	break;
+		case BUFFERED_TRANSFORM_DATA: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+			// VDU 23, 0, &A0, bufferId; &29, options, offset; stride; format, transformBufferId; sourceBufferId; : Apply transform matrix to data in a buffer
+			auto options = readByte_t();
+			auto offset = readWord_t();
+			auto stride = readWord_t();
+			auto format = readByte_t();
+			auto transformBufferId = readWord_t();
+			auto sourceBufferId = readWord_t();
+			if (options == -1 || offset == -1 || stride == -1 || format == -1 || transformBufferId == -1 || sourceBufferId == -1) {
+				return;
+			}
+			bufferTransformData(bufferId, options, offset, stride, format, transformBufferId, sourceBufferId);
+		}	break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
 			if (sourceBufferId == -1) return;
@@ -1604,14 +1617,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		if (format == -1) {
 			return false;
 		}
-		isFixed = format & AFFINE_FORMAT_FIXED;
-		is16Bit = format & AFFINE_FORMAT_16BIT;
-		shift = format & AFFINE_FORMAT_SHIFT_MASK;
-		// ensure our size value obeys negation
-		if (is16Bit && (shift & AFFINE_FORMAT_SHIFT_TOPBIT)) {
-			// top bit was set, so it's a negative - so we need to set the top bits of the size
-			shift = shift | AFFINE_FORMAT_FLAGS;
-		}
+		extractFormatInfo(format, isFixed, is16Bit, shift);
 		if (useBufferValue) {
 			sourceBufferId = readWord_t();
 			if (sourceBufferId == -1) {
@@ -1623,38 +1629,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		return true;
 	};
 
-	auto convertValueToFloat = [](uint32_t rawValue, bool is16Bit, bool isFixed, int8_t shift) -> float {
-		if (isFixed) {
-			// fixed point value
-			// we will scale our rawValue by a factor to create our float
-			// this version assumes base value is -1 to +1, multiplied by 2^shift
-			// so binary point starts at bit 31 and is moved right by shift
-			// auto scale = (1u << shift) / (float)(1u << 31);
-			// if (is16Bit) {
-			// 	// ensure 16-bit values are 32-bit values with their buttom 16 bits empty
-			// 	rawValue <<= 16;
-			// }
-			// in this version the binary point starts after bit 0 and is moved left by shift
-			// which is arguably a bit more intuitive in use, and matches the xtensa fixed point instruction support
-			// we need to use our shift value to determine how far to scale
-			auto scale = shift < 0 ? 1 << -shift : 1.0f / (1 << shift);
-			if (is16Bit) {
-				return (float)(int16_t)rawValue * scale;
-			}
-			debug_log("bufferAffineTransform: rawValue %d, shift %d, scale %f\n\r", rawValue, shift, scale);
-			return (float)(int32_t)rawValue * scale;
-		} else {
-			// floating point value - shift ignored
-			// if we're reading a 16-bit value, we need to convert to 32-bit float
-			if (is16Bit) {
-				return float16ToFloat32(rawValue);
-			}
-			// take our raw value and interpret its bits as a float
-			return *(float*)&rawValue;
-		}
-	};
-
-	auto readValueFromBuffer = [getMultiBufferStream, convertValueToFloat](uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift) -> float {
+	auto readValueFromBuffer = [getMultiBufferStream](uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift) -> float {
 		// get the value that we're dealing with
 		uint32_t rawValue = 0;
 
@@ -1675,7 +1650,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
 	};
 
-	auto readValueFromStream = [this, convertValueToFloat](bool is16Bit, bool isFixed, int8_t shift) -> float {
+	auto readValueFromStream = [this](bool is16Bit, bool isFixed, int8_t shift) -> float {
 		// get the value that we're dealing with
 		uint32_t rawValue = 0;
 		auto bytesToRead = is16Bit ? 2 : 4;
@@ -1911,7 +1886,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 	debug_log(" %f %f %f\n\r", transform[6], transform[7], transform[8]);
 }
 
-// VDU 23, 0, &A0, bufferId; &21, options, transformBufferId; bitmapId; : Apply affine transformation to bitmap
+// VDU 23, 0, &A0, bufferId; &28, options, transformBufferId; bitmapId; : Apply affine transformation to bitmap
 // Apply an affine transformation to a bitmap, creating a new bitmap
 // Replaces the target buffer with the new bitmap, and creates a corresponding bitmap
 //
@@ -2065,6 +2040,135 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 	// create a new bitmap object
 	createBitmapFromBuffer(bufferId, 1, width, height);
 }
+
+// VDU 23, 0, &A0, bufferId; &29, options, offset; stride; format, transformBufferId; sourceBufferId; : Apply transform matrix to data in a buffer
+// Apply a transform matrix to data in a buffer, creating a new buffer
+// Replaces the target buffer with the new buffer
+// Will accept options to control the transformation
+//
+void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options, uint16_t offset, uint16_t stride, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId) {
+	// our source data is assumed to be a 1d matrix of values - we need to know how many of them we will be using
+	// so 2 values for 2d coordinates, 3 for 3d coordinates, etc
+	// which would need to be padded out to 3 values for the 3x3 matrix multiplication, or 4 for 4x4, etc
+	// _but_ data _could_ be provided without need for padding
+
+	// initially we will support 2d coordinates only, and 2d (3x3) matrices
+
+	// for source buffer info, we need to know offset to first set of coordinates, and then the stride from that to _next_ set
+	// and possibly whether this is to be done on a per-block basis, or for the whole buffer
+
+	// by default we assume that we're dealing with 2d affines, and that we need to pad out our source data to match matrix size
+	// matrix _for now_ is assumed to be 3x3, but should instead get size from matrix metadata
+	// padding means adding a 3rd value that is a 1.0f
+
+	// if we're padding 2d data for a 3d transform, then we need to add 0.0f for the z value and 1.0f for the w value
+	
+	bool padData = !(options & TRANSFORM_DATA_NO_PAD);
+
+	// for now we are assuming transforms should be done on a block-by-block basis
+	// so we reset offset position for each block, and step thru by stride bytes
+
+	// setting stride to 0 means stride should default to the size of the format, for changing contiguous data
+	// setting stride to -1 means no stride at all - so we adjust only a single set of coordinates, per block
+
+	auto transformBufferIter = buffers.find(transformBufferId);
+	if (transformBufferIter == buffers.end()) {
+		debug_log("bufferTransformBitmap: buffer %d not found\n\r", transformBufferId);
+		return;
+	}
+	auto &transformBuffer = transformBufferIter->second;
+
+	// we should check metadata for the buffer - for now we'll assume it's a 3x3 matrix
+	if (transformBuffer.size() == 0 || transformBuffer[0]->size() != 9 * sizeof(float)) {
+		debug_log("bufferTransformData: buffer %d not a 3x3 matrix\n\r", transformBufferId);
+		return;
+	}
+
+	auto transform = (float *)transformBuffer[0]->getBuffer();
+
+	// For now we are hard-coding our sizes
+	// we should instead get these from the metadata for the matrix being used
+	auto sourceSize = 3;		// 3 values for 2d coordinates for transforms
+	auto sourceDataSize = padData ? 2 : 3;	// 2 values for (x, y) 2d coordinates
+
+	auto sourceBufferIter = buffers.find(sourceBufferId);
+	if (sourceBufferIter == buffers.end()) {
+		debug_log("bufferTransformData: buffer %d not found\n\r", sourceBufferId);
+		return;
+	}
+
+	bool isFixed, is16Bit;
+	int8_t shift;
+	extractFormatInfo(format, isFixed, is16Bit, shift);
+	auto bytesPerValue = is16Bit ? 2 : 4;
+
+	float srcPos[sourceSize];
+	float transformed[sourceSize];
+	if (padData) {
+		// default last value to be a 1, in case we're padding
+		srcPos[sourceSize - 1] = 1.0f;
+	}
+
+	if (stride == 0) {
+		stride = bytesPerValue * sourceDataSize;
+	}
+
+	// our destination buffer will be a copy of the source, with the data transformed
+
+	// prepare a vector for storing our buffers
+	std::vector<std::shared_ptr<BufferStream>, psram_allocator<std::shared_ptr<BufferStream>>> streams;
+	// loop thru buffer IDs
+	for (const auto &block : sourceBufferIter->second) {
+		// push a copy of the block into our vector
+		auto bufferStream = make_shared_psram<BufferStream>(block->size());
+		if (!bufferStream || !bufferStream->getBuffer()) {
+			debug_log("bufferTransformData: failed to create buffer\n\r");
+			return;
+		}
+		debug_log("bufferTransformData: copying stream %d bytes\n\r", block->size());
+		bufferStream->writeBuffer(block->getBuffer(), block->size());
+		// now transform data in the buffer, according to the rules we have
+		auto pos = offset;
+		uint32_t sourceData = 0;
+		while (pos < block->size()) {
+			// read the source data
+			bufferStream->seekTo(pos);
+			bool read = true;
+			for (int i = 0; i < sourceDataSize; i++) {
+				auto read = bufferStream->readBytes((uint8_t *)&sourceData, bytesPerValue);
+				if (read != bytesPerValue) {
+					// block does not contain whole number, so we have to skip to next block
+					read = false;
+					break;
+				}
+				srcPos[i] = convertValueToFloat(sourceData, is16Bit, isFixed, shift);
+			}
+			if (!read) {
+				// failed to read all the data, so move on to next block
+				break;
+			}
+			// apply the transform
+			dspm_mult_f32(transform, srcPos, transformed, sourceSize, sourceSize, 1);
+			// write the transformed data back to the buffer
+			for (int i = 0; i < sourceDataSize; i++) {
+				auto value = convertFloatToValue(transformed[i], is16Bit, isFixed, shift);
+				bufferStream->writeBuffer((uint8_t *)&value, bytesPerValue, pos + (i * bytesPerValue));
+			}
+			// move to next set of coordinates
+			if (stride == 65535) {
+				// no stride - so we're done with this block
+				break;
+			}
+			pos += stride;
+		}
+		streams.push_back(std::move(bufferStream));
+	}
+	// replace buffer with new one
+	bufferRemoveUsers(bufferId);
+	buffers[bufferId].assign(std::make_move_iterator(streams.begin()), std::make_move_iterator(streams.end()));
+	debug_log("bufferTransformData: copied %d streams into buffer %d (%d)\n\r", streams.size(), bufferId, buffers[bufferId].size());
+}
+
 
 // VDU 23, 0, &A0, bufferId; &40, sourceBufferId; : Compress blocks from a buffer
 // Compress (blocks from) a buffer into a new buffer.
