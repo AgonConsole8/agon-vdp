@@ -12,10 +12,10 @@
 
 Rect * Context::getViewport(ViewportType type) {
 	switch (type) {
-		case ViewportType::TextViewport: return &textViewport;
-		case ViewportType::DefaultViewport: return &defaultViewport;
-		case ViewportType::GraphicsViewport: return &graphicsViewport;
-		case ViewportType::ActiveViewport: return activeViewport;
+		case ViewportType::Text: return &textViewport;
+		case ViewportType::Default: return &defaultViewport;
+		case ViewportType::Graphics: return &graphicsViewport;
+		case ViewportType::Active: return activeViewport;
 		default: return &defaultViewport;
 	}
 }
@@ -23,6 +23,7 @@ Rect * Context::getViewport(ViewportType type) {
 bool Context::setTextViewport(Rect r) {
 	if (r.X2 >= canvasW) r.X2 = canvasW - 1;
 	if (r.Y2 >= canvasH) r.Y2 = canvasH - 1;
+	plottingText = false;
 
 	if (r.X2 > r.X1 && r.Y2 > r.Y1) {
 		textViewport = r;
@@ -32,18 +33,9 @@ bool Context::setTextViewport(Rect r) {
 	return false;
 }
 
-// Scale a point, as appropriate for coordinate system
-//
-Point Context::scale(int16_t X, int16_t Y) {
-	if (logicalCoords) {
-		return Point((double)X / logicalScaleX, (double)Y / logicalScaleY);
-	}
-	return Point(X, Y);
-}
-
 Point Context::invScale(Point p) {
 	if (logicalCoords) {
-		return Point((double)p.X * logicalScaleX, (double)p.Y * logicalScaleY);
+		return Point((double)p.X * logicalScaleX, -(double)p.Y * logicalScaleY);
 	}
 	return p;
 }
@@ -58,16 +50,19 @@ void Context::viewportReset() {
 	textViewport =	Rect(0, 0, canvasW - 1, canvasH - 1);
 	graphicsViewport = Rect(0, 0, canvasW - 1, canvasH - 1);
 	activeViewport = &textViewport;
+	plottingText = false;
 }
 
 void Context::setActiveViewport(ViewportType type) {
 	activeViewport = getViewport(type);
+	plottingText = false;
 }
 
 // Set graphics viewport
 bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
 	auto p1 = toScreenCoordinates(x1, y1);
 	auto p2 = toScreenCoordinates(x2, y2);
+	plottingText = false;
 
 	if (p1.X >= 0 && p2.X < canvasW && p1.Y >= 0 && p2.Y < canvasH && p2.X >= p1.X && p2.Y >= p1.Y) {
 		graphicsViewport = Rect(p1.X, p1.Y, p2.X, p2.Y);
@@ -82,6 +77,7 @@ bool Context::setGraphicsViewport() {
 		return false;
 	}
 	graphicsViewport = newViewport;
+	plottingText = false;
 	return true;
 }
 
@@ -123,13 +119,13 @@ void Context::setOrigin(int x, int y) {
 	auto newOrigin = scale(x, y);
 
 	if (logicalCoords) {
-		newOrigin.Y = canvasH - newOrigin.Y - 1;
+		newOrigin.Y = (canvasH - 1) + newOrigin.Y;
 	}
 
 	// shift up1 by the difference between the new and old origins, with scaling
 	auto delta = invScale(newOrigin.sub(origin));
 	up1.X = up1.X - delta.X;
-	up1.Y = logicalCoords ? up1.Y + delta.Y : up1.Y - delta.Y;
+	up1.Y = up1.Y - delta.Y;
 
 	origin = newOrigin;
 }
@@ -169,6 +165,15 @@ void Context::setLogicalCoords(bool b) {
 	}
 }
 
+// Scale a point, as appropriate for coordinate system
+//
+Point Context::scale(int16_t X, int16_t Y) {
+	if (logicalCoords) {
+		return Point((double)X / logicalScaleX, -(double)Y / logicalScaleY);
+	}
+	return Point(X, Y);
+}
+
 // Convert to currently active coordinate system
 //
 Point Context::toCurrentCoordinates(int16_t X, int16_t Y) {
@@ -185,7 +190,7 @@ Point Context::toCurrentCoordinates(int16_t X, int16_t Y) {
 inline Point Context::toScreenCoordinates(int16_t X, int16_t Y) {
 	auto p = scale(X, Y);
 
-	return Point(origin.X + p.X, logicalCoords ? origin.Y - p.Y : origin.Y + p.Y);
+	return Point(origin.X + p.X, origin.Y + p.Y);
 }
 
 #endif // CONTEXT_VIEWPORT_H

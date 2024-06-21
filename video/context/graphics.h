@@ -13,6 +13,8 @@
 #include "agon_ttxt.h"
 #include "buffers.h"
 #include "sprites.h"
+#include "types.h"
+#include "mat.h"
 
 // Definitions for the functions we're implementing here
 #include "context.h"
@@ -330,6 +332,7 @@ void Context::plotBitmap(uint8_t mode) {
 		canvas->setPaintOptions(paintOptions);
 	}
 	drawBitmap(p1.X, p1.Y, true, false);
+	plottingText = false;
 }
 
 
@@ -350,6 +353,7 @@ void Context::scrollRegion(Rect * region, uint8_t direction, int16_t movement) {
 	canvas->setPenColor(tbg);
 	canvas->setBrushColor(tbg);
 	canvas->setPaintOptions(tpo);
+	plottingText = false;
 	switch (direction) {
 		case 0:		// Right
 			moveX = 1;
@@ -487,11 +491,17 @@ void Context::setTextColour(uint8_t colour) {
 	if (colour < 64) {
 		tfg = colourLookup[c];
 		tfgc = col;
+		if (plottingText && textCursorActive()) {
+			canvas->setPenColor(tfg);
+		}
 		debug_log("vdu_colour: tfg %d = %02X : %02X,%02X,%02X\n\r", colour, c, tfg.R, tfg.G, tfg.B);
 	}
 	else if (colour >= 128 && colour < 192) {
 		tbg = colourLookup[c];
 		tbgc = col;
+		if (plottingText && textCursorActive()) {
+			canvas->setBrushColor(tbg);
+		}
 		debug_log("vdu_colour: tbg %d = %02X : %02X,%02X,%02X\n\r", colour, c, tbg.R, tbg.G, tbg.B);
 	}
 	else {
@@ -610,6 +620,7 @@ bool IRAM_ATTR Context::plot(int16_t x, int16_t y, uint8_t command) {
 	auto mode = command & 0x07;
 	auto operation = command & 0xF8;
 	bool pending = false;
+	plottingText = false;
 
 	if (mode < 4) {
 		pushPointRelative(x, y);
@@ -747,7 +758,7 @@ void Context::plotPending(int16_t peeked) {
 // Plot a string
 //
 void Context::plotString(const std::string& s) {
-	if (!ttxtMode) {
+	if (!ttxtMode && !plottingText) {
 		if (textCursorActive()) {
 			setClippingRect(textViewport);
 			canvas->setPenColor(tfg);
@@ -758,6 +769,7 @@ void Context::plotString(const std::string& s) {
 			canvas->setPenColor(gfg);
 			canvas->setPaintOptions(gpofg);
 		}
+		plottingText = true;
 	}
 
 	auto font = getFont();
@@ -791,6 +803,7 @@ void Context::plotBackspace() {
 	} else {
 		canvas->setBrushColor(textCursorActive() ? tbg : gbg);
 		canvas->fillRectangle(activeCursor->X, activeCursor->Y, activeCursor->X + getFont()->width - 1, activeCursor->Y + getFont()->height - 1);
+		plottingText = false;
 	}
 }
 
@@ -803,7 +816,37 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 			auto options = getPaintOptions(fabgl::PaintMode::Set, gpofg);
 			canvas->setPaintOptions(options);
 		}
-		canvas->drawBitmap(x, (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y, bitmap.get());
+		auto yPos = (compensateHeight && logicalCoords) ? (y + 1 - bitmap->height) : y;
+		if (bitmapTransform != 65535) {
+			auto transformBufferIter = buffers.find(bitmapTransform);
+			if (transformBufferIter != buffers.end()) {
+				auto &transformBuffer = transformBufferIter->second;
+				int const matrixSize = sizeof(float) * 9;
+				if (transformBuffer.size() == 1) {
+					// make sure we have an inverse matrix cached
+					if (transformBuffer[0]->size() < matrixSize) {
+						debug_log("drawBitmap: transform buffer %d has %d elements\n\r", bitmapTransform, transformBuffer[0]->size());
+						return;
+					}
+					// create an inverse matrix, and push that to the buffer
+					auto transform = (float *)transformBuffer[0]->getBuffer();
+					auto matrix = dspm::Mat(transform, 3, 3).inverse();
+					auto bufferStream = make_shared_psram<BufferStream>(matrixSize);
+					bufferStream->writeBuffer((uint8_t *)matrix.data, matrixSize);
+					transformBuffer.push_back(bufferStream);
+				}
+				// NB: if we're drawing via PLOT and are using OS coords, then we _should_ be using bottom left of bitmap as our "origin" for transforms
+				// however we're not doing that here - the origin for transforms is top left of the bitmap
+				// attempting to transform based on bottom left would require translates to be added to the matrix, custom for the bitmap being plotted
+				// which would mean they could not be cached
+
+				// we should have a valid transform buffer now, which includes an inverse chunk
+				canvas->drawTransformedBitmap(x, yPos, bitmap.get(), (float *)transformBuffer[0]->getBuffer(), (float *)transformBuffer[1]->getBuffer());
+				return;
+			}
+			// if buffer not found, we should fall back to normal drawing
+		}
+		canvas->drawBitmap(x, yPos, bitmap.get());
 	} else {
 		debug_log("drawBitmap: bitmap %d not found\n\r", currentBitmap);
 	}
@@ -821,7 +864,16 @@ void Context::drawCursor(Point p) {
 			canvas->setBrushColor(tfg);
 			canvas->fillRectangle(p.X + cursorHStart, p.Y + cursorVStart, p.X + std::min(((int)cursorHEnd), font->width - 1), p.Y + std::min(((int)cursorVEnd), font->height - 1));
 			canvas->setPaintOptions(tpo);
+			plottingText = false;
 		}
+	}
+}
+
+// Set affine transform
+//
+void Context::setAffineTransform(uint8_t flags, uint16_t bufferId) {
+	if (flags & 0x01) {
+		bitmapTransform = bufferId;
 	}
 }
 
@@ -836,7 +888,8 @@ void Context::cls() {
 		canvas->setBrushColor(tbg);
 		canvas->setPaintOptions(tpo);
 		setClippingRect(textViewport);
-		clearViewport(ViewportType::TextViewport);
+		clearViewport(ViewportType::Text);
+		plottingText = true;
 	}
 	cursorHome();
 	setPagedMode(pagedMode);
@@ -850,7 +903,8 @@ void Context::clg() {
 		canvas->setBrushColor(gbg);
 		canvas->setPaintOptions(gpobg);
 		setClippingRect(graphicsViewport);
-		clearViewport(ViewportType::GraphicsViewport);
+		clearViewport(ViewportType::Graphics);
+		plottingText = false;
 	}
 	pushPoint(0, 0);		// Reset graphics cursor position (as per BBC Micro CLG)
 }
@@ -875,6 +929,7 @@ void Context::resetGraphicsOptions() {
 	setLineThickness(1);
 	setCurrentBitmap(BUFFERED_BITMAP_BASEID);
 	setDottedLinePatternLength(0);
+	setAffineTransform(255, -1);
 }
 
 void Context::resetGraphicsPositioning() {
@@ -891,6 +946,7 @@ void Context::resetTextPainting() {
 	tbg = colourLookup[0x00];
 	tpo = getPaintOptions(fabgl::PaintMode::Set, tpo);
 	cpo = getPaintOptions(fabgl::PaintMode::XOR, tpo);
+	plottingText = false;
 }
 
 // Reset graphics context, called after a mode change
@@ -901,6 +957,7 @@ void Context::reset() {
 	resetTextPainting();
 	resetGraphicsPositioning();
 	setLineThickness(1);
+	setAffineTransform(255, -1);
 	resetFonts();
 	resetTextCursor();
 }
@@ -908,6 +965,7 @@ void Context::reset() {
 // Activate the context, setting up canvas as required
 //
 void Context::activate() {
+	plottingText = false;
 	if (!ttxtMode) {
 		canvas->selectFont(font == nullptr ? &FONT_AGON : font.get());
 	}
