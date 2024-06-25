@@ -40,6 +40,7 @@ class VDUStreamProcessor {
 		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
 		uint32_t discardBytes(uint32_t length, uint16_t timeout);
 		int16_t peekByte_t(uint16_t timeout);
+		float readFloat_t(bool is16Bit, bool isFixed, int8_t shift, uint16_t timeout);
 
 		void vdu_print(char c, bool usePeek);
 		void vdu_colour();
@@ -112,8 +113,11 @@ class VDUStreamProcessor {
 		void setOutputStream(uint16_t bufferId);
 		AdvancedOffset getOffsetFromStream(bool isAdvanced);
 		std::vector<uint16_t> getBufferIdsFromStream();
-		static tcb::span<uint8_t> getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset);
+		static tcb::span<uint8_t> getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, uint8_t size = 1);
+		static tcb::span<uint8_t> getBufferSpan(uint16_t bufferId, AdvancedOffset &offset, uint8_t size = 1);
 		static int16_t getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
+		static bool readBufferBytes(uint16_t bufferId, AdvancedOffset &offset, void *target, uint16_t size, bool iterate = false);
+		static float readBufferFloat(uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift, bool iterate = false);
 		static bool setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
@@ -130,7 +134,8 @@ class VDUStreamProcessor {
 		void bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferAffineTransform(uint16_t bufferId);
 		void bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t sourceBufferId);
-		void bufferTransformData(uint16_t bufferId, uint8_t options, uint16_t offset, uint16_t stride, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
+		// void bufferTransformData(uint16_t bufferId, uint8_t options, uint16_t offset, uint16_t stride, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
+		void bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
@@ -324,6 +329,18 @@ int16_t VDUStreamProcessor::peekByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 	}
 	return -1;
 }
+
+float VDUStreamProcessor::readFloat_t(bool is16Bit, bool isFixed, int8_t shift, uint16_t timeout = COMMS_TIMEOUT) {
+	// get the value that we're dealing with
+	uint32_t rawValue = 0;
+	auto bytesToRead = is16Bit ? 2 : 4;
+	// read the value from the stream
+	if (readIntoBuffer((uint8_t *)&rawValue, bytesToRead, timeout) != 0) {
+		return INFINITY;
+	}
+	return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
+}
+
 
 // Send a packet of data to the MOS
 //

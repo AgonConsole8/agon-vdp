@@ -360,7 +360,14 @@
 #define TRANSFORM_BITMAP_TRANSLATE	0x04	// Translate
 
 // Transform data flags
-#define TRANSFORM_DATA_NO_PAD	0x01	// Data does not need padding
+#define TRANSFORM_DATA_NO_PAD		0x01	// Data does not need padding
+#define TRANSFORM_DATA_HAS_OFFSET	0x02	// Has an offset to the data
+#define TRANSFORM_DATA_HAS_STRIDE	0x04	// Has an explicit stride (in bytes) between value sets
+#define TRANSFORM_DATA_HAS_LIMIT	0x08	// Has a limited number of data items transformed
+#define TRANSFORM_DATA_ADVANCED		0x10	// Advanced offsets
+#define TRANSFORM_DATA_OFFSET_BUFF	0x20	// Offset value is buffer-fetched
+#define TRANSFORM_DATA_STRIDE_BUFF	0x40	// Stride value is buffer-fetched
+#define TRANSFORM_DATA_LIMIT_BUFF	0x80	// Limit value is buffer-fetched
 
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
