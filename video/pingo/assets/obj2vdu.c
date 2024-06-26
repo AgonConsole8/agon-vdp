@@ -119,10 +119,100 @@ void note_faces() {
     }
 }
 
+void write_ivalue(FILE* fout, int16_t value) {
+    fwrite(&value, sizeof(value), 1, fout);
+}
+
+void write_uvalue(FILE* fout, uint16_t value) {
+    fwrite(&value, sizeof(value), 1, fout);
+}
+
+void write_vertex_coord(FILE* fout, double coord) {
+    int16_t value = (int16_t)(value*32767.0/max_coord);
+    write_ivalue(fout, value);
+}
+
+void write_tex_coord(FILE* fout, double coord) {
+    uint16_t value = (uint16_t)(value*65535.0);
+    write_uvalue(fout, value);
+}
+
 int write_object(FILE* fout) {
+    long start;
+    int face_pts;
+    int pt_inc;
+    int ipt0, ipt1, ipt2;
+    int cnt;
+
+    if (!num_vertexes && !num_tex_coords && !num_faces) return 0;
+
     note_vertexes();
     note_tex_coords();
     note_faces();
+
+    start = ftell(fout);
+    printf("Vertexes start at file position %lu\n", start);
+    int16_t zero = 0;
+    write_ivalue(fout, zero); // dummy x
+    write_ivalue(fout, zero); // dummy y
+    write_ivalue(fout, zero); // dummy z
+    for (int i = 0; i < num_vertexes; i++) {
+        Vertex* vertex = &vertexes[i];
+        write_vertex_coord(fout, vertex->x);
+        write_vertex_coord(fout, vertex->y);
+        write_vertex_coord(fout, vertex->z);
+    }
+    printf("Size of %i vertexes is %lu bytes\n",
+        num_vertexes+1, ftell(fout)-start);
+
+    start = ftell(fout);
+    printf("Texture coordinates start at file position %lu\n", ftell(fout));
+    write_uvalue(fout, zero); // dummy u
+    write_uvalue(fout, zero); // dummy v
+    for (int i = 0; i < num_tex_coords; i++) {
+        TexCoord* t = &tex_coords[i];
+        write_tex_coord(fout, t->u);
+        write_tex_coord(fout, t->v);
+    }
+    printf("Size of %i texture coordinates is %lu bytes\n",
+        num_tex_coords+1, ftell(fout)-start);
+
+    start = ftell(fout);
+    printf("Vertex indexes start at file position %lu\n", ftell(fout));
+    cnt = 0;
+    for (int i = 0; i < num_faces; i++) {
+        Face* face = &faces[i];
+        face_pts = face->num_pts;
+        pt_inc = 1;
+        ipt0 = 0;
+        while (face_pts >= 3) {
+            ipt1 = ipt0 + pt_inc;
+            ipt2 = ipt1 + pt_inc;
+            if (ipt2 >= face->num_pts) {
+                ipt2 = 0;
+            }
+
+            PolyPoint* pt = &face->points[ipt0];
+            write_uvalue(fout, (uint16_t)(pt->ivertex));
+
+            pt = &face->points[ipt1];
+            write_uvalue(fout, (uint16_t)(pt->ivertex));
+
+            pt = &face->points[ipt2];
+            write_uvalue(fout, (uint16_t)(pt->ivertex));
+
+            cnt++;
+            ipt0 = ipt2;
+            face_pts--;
+            if (!ipt0) {
+                pt_inc *= 2;
+            }
+        }
+    }
+    printf("Size of %i vertex indexes is %lu bytes\n",
+        cnt, ftell(fout)-start);
+
+    printf("Total file size is %lu bytes\n", ftell(fout));
 
     num_vertexes = 0;
     num_tex_coords = 0;
@@ -130,6 +220,7 @@ int write_object(FILE* fout) {
     max_coord = -99999999.0;
     *obj_name = 0;
     *grp_name = 0;
+    return 0;
 }
 
 int convert(FILE* fin, FILE* fout) {
