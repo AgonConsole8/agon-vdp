@@ -138,7 +138,7 @@ int renderObject(Mat4 object_transform, Renderer * r, Renderable ren) {
         Vec3f na = vec3fsubV(*((Vec3f*)(&a)), *((Vec3f*)(&b)));
         Vec3f nb = vec3fsubV(*((Vec3f*)(&a)), *((Vec3f*)(&c)));
         Vec3f normal = vec3Normalize(vec3Cross(na, nb));
-        Vec3f light = vec3Normalize((Vec3f){-8,5,5});
+        Vec3f light = vec3Normalize((Vec3f){-8,-5,5});
         float diffuseLight = (1.0 + vec3Dot(normal, light)) *0.5;
         diffuseLight = MIN(1.0, MAX(diffuseLight, 0));
 
