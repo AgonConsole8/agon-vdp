@@ -14,12 +14,16 @@
  4380 REM
  4390 REM -- VERTEX INDEXES --
  4400 DATA 0,1,5, 5,6,0, 1,2,3, 3,4,5, 5,1,3
- 4410 DATA 7,8,12, 12,13,7, 8,9,10, 10,11,12, 12,8,10
+ 4410 DATA 8,7,12, 12,7,13, 9,8,10, 10,12,11, 12,10,8
+ 4420 DATA 13,7,6, 7,0,6, 7,8,0, 0,8,1
+ 4430 DATA 13,12,6, 6,12,5, 8,9,2, 8,2,1
+ 4440 DATA 11,12,5, 11,5,4, 2,9,10, 3,2,10
+ 4450 DATA 3,4,11, 3,11,10
  6130 REM
  6140 REM -- CODE --
  6150 PRINT "Reading vertices"
  6160 total_coords%=arrow_vertices%*3
- 6165 total_indexes%=10*3
+ 6165 total_indexes%=24*3
  6170 max_abs=-99999
  6180 DIM vertices(total_coords%)
  6190 FOR i%=0 TO total_coords%-1
@@ -36,7 +40,7 @@
  6300 scene_width%=96: scene_height%=96
  6310 VDU 23,0, &A0, sid%; &49, 0, scene_width%; scene_height%; : REM Create Control Structure
  6320 f=32767.0/256.0
- 6330 distx=0*f: disty=2*f: distz=-20*f
+ 6330 distx=0.6*f: disty=2*f: distz=-20*f
  6340 VDU 23,0, &A0, sid%; &49, 25, distx; disty; distz; : REM Set Camera XYZ Translation Distances
  6350 pi2=PI*2.0: f=32767.0/pi2
  6360 anglex=-0.4*f
@@ -49,7 +53,7 @@
  6430   T%=TIME
  6440   IF TIME-T%<1 GOTO 6440
  6450 NEXT i%
- 6460 PRINT "Reading and sending vertex indexes"
+ 6460 PRINT "Sending vertex indexes"
  6470 VDU 23,0, &A0, sid%; &49, 2, mid%; total_indexes%; : REM Set Mesh Vertex Indexes
  6480 FOR i%=0 TO total_indexes%-1
  6490   READ val%
@@ -57,10 +61,15 @@
  6510   T%=TIME
  6520   IF TIME-T%<1 GOTO 6520
  6530 NEXT i%
- 6540 PRINT "Sending texture coordinate indexes"
- 6545 RESTORE 4400
- 6550 VDU 23,0, &A0, sid%; &49, 3, mid%; 1; 32768; 32768; : REM Define Texture Coordinates
- 6560 VDU 23,0, &A0, sid%; &49, 4, mid%; total_indexes%; : REM Set Texture Coordinate Indexes
+ 6540 PRINT "Sending texture coordinates"
+ 6550 VDU 23,0, &A0, sid%; &49, 3, mid%; arrow_vertices%; : REM Define Texture Coordinates
+ 6552 FOR i%=0 TO arrow_vertices%-1
+ 6554   VDU 0;
+ 6556   VDU 0;
+ 6558 NEXT i%
+ 6560 PRINT "Sending texture coordinate indexes"
+ 6562 RESTORE 4400
+ 6564 VDU 23,0, &A0, sid%; &49, 4, mid%; total_indexes%; : REM Set Texture Coordinate Indexes
  6570 FOR i%=0 TO total_indexes%-1
  6575   READ val%
  6580   VDU val%;
@@ -68,7 +77,9 @@
  6600 PRINT "Creating texture bitmap"
  6610 VDU 23, 27, 0, bmid1%: REM Create a bitmap for a texture
  6620 PRINT "Setting texture pixel"
- 6630 VDU 23, 27, 1, 1; 1; &55, &AA, &FF, &C0 : REM Set a pixel in the bitmap
+ 6630 VDU 23, 27, 1, 3; 1; &FF, &00, &00, &C0 : REM Set a RED pixel in the bitmap
+ 6632 VDU &00, &FF, &00, &C0 : REM Set a GREEN pixel in the bitmap
+ 6634 VDU &00, &00, &FF, &C0 : REM Set a BLUE pixel in the bitmap
  6640 PRINT "Create 3D object"
  6650 VDU 23,0, &A0, sid%; &49, 5, oid%; mid%; bmid1%+64000; : REM Create Object
  6660 PRINT "Scale object"
@@ -80,7 +91,7 @@
  6720 PRINT "Render 3D object"
  6730 VDU 23, 0, &C3: REM Flip buffer
  6740 rotatex=0.0: rotatey=0.0: rotatez=0.0
- 6750 incx=PI/16.0: incy=PI/32.0: incz=PI/64.0
+ 6750 incx=PI/155.0: incy=PI/143.0: incz=PI/137.0
  6760 factor=32767.0/pi2
  6770 VDU 22, 136: REM 320x240x64
  6780 VDU 23, 0, &C0, 0: REM Normal coordinates
