@@ -35,8 +35,8 @@
  6250 factor=32767.0/max_abs
  6260 PRINT "Max absolute value = ";max_abs
  6270 PRINT "Factor = ";factor
- 6280 sid%=100: mid%=1: oid1%=1: oid2%=2: oid3%=3
- 6282 bmid1%=101: bmid2%=102
+ 6280 sid%=100: mid1%=1: oid1%=1: oid2%=2: oid3%=3
+ 6282 bmid1%=101: bmid2%=102: bmid3%=103: bmido%=104
  6290 PRINT "Creating control structure"
  6300 scene_width%=200: scene_height%=200
  6310 VDU 23,0, &A0, sid%; &49, 0, scene_width%; scene_height%; : REM Create Control Structure
@@ -47,7 +47,7 @@
  6360 anglex=-0.4*f
  6370 VDU 23,0, &A0, sid%; &49, 18, anglex; : REM Set Camera X Rotation Angle
  6380 PRINT "Sending vertices using factor ";factor
- 6390 VDU 23,0, &A0, sid%; &49, 1, mid%; arrow_vertices%; : REM Define Mesh Vertices
+ 6390 VDU 23,0, &A0, sid%; &49, 1, mid1%; arrow_vertices%; : REM Define Mesh Vertices
  6400 FOR i%=0 TO total_coords%-1
  6410   val%=vertices(i%)*factor
  6420   VDU val%;
@@ -55,7 +55,7 @@
  6440   IF TIME-T%<1 GOTO 6440
  6450 NEXT i%
  6460 PRINT "Sending vertex indexes"
- 6470 VDU 23,0, &A0, sid%; &49, 2, mid%; total_indexes%; : REM Set Mesh Vertex Indexes
+ 6470 VDU 23,0, &A0, sid%; &49, 2, mid1%; total_indexes%; : REM Set Mesh Vertex Indexes
  6480 FOR i%=0 TO total_indexes%-1
  6490   READ val%
  6500   VDU val%;
@@ -63,35 +63,36 @@
  6520   IF TIME-T%<1 GOTO 6520
  6530 NEXT i%
  6540 PRINT "Sending texture coordinates"
- 6550 VDU 23,0, &A0, sid%; &49, 3, mid%; arrow_vertices%; : REM Define Texture Coordinates
+ 6550 VDU 23,0, &A0, sid%; &49, 3, mid1%; arrow_vertices%; : REM Define Texture Coordinates
  6552 FOR i%=0 TO arrow_vertices%-1
  6554   VDU 0;
  6556   VDU 0;
  6558 NEXT i%
  6560 PRINT "Sending texture coordinate indexes"
  6562 RESTORE 4400
- 6564 VDU 23,0, &A0, sid%; &49, 4, mid%; total_indexes%; : REM Set Texture Coordinate Indexes
+ 6564 VDU 23,0, &A0, sid%; &49, 4, mid1%; total_indexes%; : REM Set Texture Coordinate Indexes
  6570 FOR i%=0 TO total_indexes%-1
  6575   READ val%
  6580   VDU val%;
  6590 NEXT i%
  6600 PRINT "Creating texture bitmap"
  6610 VDU 23, 27, 0, bmid1%: REM Create a bitmap for a texture
- 6620 PRINT "Setting texture pixel"
- 6630 VDU 23, 27, 1, 3; 1; &FF, &00, &00, &C0 : REM Set a RED pixel in the bitmap
- 6632 VDU &00, &FF, &00, &C0 : REM Set a GREEN pixel in the bitmap
- 6634 VDU &00, &00, &FF, &C0 : REM Set a BLUE pixel in the bitmap
+ 6612 VDU 23, 27, 1, 1; 1; &FF, &00, &00, &C0 : REM Set a RED pixel in the bitmap
+ 6614 VDU 23, 27, 0, bmid2%: REM Create a bitmap for a texture
+ 6616 VDU 23, 27, 1, 1; 1; &00, &FF, &00, &C0 : REM Set a GREEN pixel in the bitmap
+ 6618 VDU 23, 27, 0, bmid3%: REM Create a bitmap for a texture
+ 6620 VDU 23, 27, 1, 1; 1; &00, &00, &FF, &C0 : REM Set a BLUE pixel in the bitmap
  6640 PRINT "Create 3D object"
- 6650 VDU 23,0, &A0, sid%; &49, 5, oid1%; mid%; bmid1%+64000; : REM Create Object
- 6652 VDU 23,0, &A0, sid%; &49, 5, oid2%; mid%; bmid1%+64000; : REM Create Object
- 6654 VDU 23,0, &A0, sid%; &49, 5, oid3%; mid%; bmid1%+64000; : REM Create Object
+ 6650 VDU 23,0, &A0, sid%; &49, 5, oid1%; mid1%; bmid1%+64000; : REM Create Object
+ 6652 VDU 23,0, &A0, sid%; &49, 5, oid2%; mid1%; bmid2%+64000; : REM Create Object
+ 6654 VDU 23,0, &A0, sid%; &49, 5, oid3%; mid1%; bmid3%+64000; : REM Create Object
  6660 PRINT "Scale object"
  6670 scale=5.0*256.0
  6680 VDU 23, 0, &A0, sid%; &49, 9, oid1%; scale; scale; scale; : REM Set Object XYZ Scale Factors
  6682 VDU 23, 0, &A0, sid%; &49, 9, oid2%; scale; scale; scale; : REM Set Object XYZ Scale Factors
  6684 VDU 23, 0, &A0, sid%; &49, 9, oid3%; scale; scale; scale; : REM Set Object XYZ Scale Factors
  6690 PRINT "Create target bitmap"
- 6700 VDU 23, 27, 0, bmid2% : REM Select output bitmap
+ 6700 VDU 23, 27, 0, bmido% : REM Select output bitmap
  6710 VDU 23, 27, 2, scene_width%; scene_height%; &0000; &00C0; : REM Create solid color bitmap
  6720 PRINT "Render 3D object"
  6730 VDU 23, 0, &C3: REM Flip buffer
@@ -111,7 +112,7 @@
  6860 VDU 23, 0, &A0, sid%; &49, 10, oid1%; rx; : REM Set Object X Rotation Angle
  6870 VDU 23, 0, &A0, sid%; &49, 11, oid2%; ry; : REM Set Object Y Rotation Angle
  6880 VDU 23, 0, &A0, sid%; &49, 12, oid3%; rz; : REM Set Object Z Rotation Angle
- 6890 VDU 23, 0, &A0, sid%; &49, 38, bmid2%+64000; : REM Render To Bitmap
+ 6890 VDU 23, 0, &A0, sid%; &49, 38, bmido%+64000; : REM Render To Bitmap
  6900 VDU 23, 27, 3, 320/2-200/2; 240/2-200/2; : REM Display output bitmap
  6910 VDU 23, 0, &C3: REM Flip buffer
  6920 *FX 19
