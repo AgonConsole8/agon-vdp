@@ -132,9 +132,8 @@ class VDUStreamProcessor {
 		void bufferReverse(uint16_t bufferId, uint8_t options);
 		void bufferCopyRef(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
-		void bufferAffineTransform(uint16_t bufferId);
+		void bufferAffineTransform(uint16_t bufferId, bool is3D);
 		void bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t sourceBufferId);
-		// void bufferTransformData(uint16_t bufferId, uint8_t options, uint16_t offset, uint16_t stride, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);

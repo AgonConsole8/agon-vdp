@@ -194,7 +194,12 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 		}	break;
 		case BUFFERED_AFFINE_TRANSFORM: {
 			if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
-				bufferAffineTransform(bufferId);
+				bufferAffineTransform(bufferId, false);
+			}
+		}	break;
+		case BUFFERED_AFFINE_TRANSFORM_3D: {
+			if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+				bufferAffineTransform(bufferId, true);
 			}
 		}	break;
 		case BUFFERED_TRANSFORM_BITMAP: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
@@ -1616,19 +1621,22 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 // VDU 23, 0, &A0, bufferId; &20, operation, <args> : Affine transform creation/combination
 // Create or combine an affine transformaiton matrix
 //
-void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
+void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 	const auto command = readByte_t();
 	const auto op = command & AFFINE_OP_MASK;
 	const bool useAdvancedOffsets = command & AFFINE_OP_ADVANCED_OFFSETS;
 	const bool useBufferValue = command & AFFINE_OP_BUFFER_VALUE;
 	const bool useMultiFormat = command & AFFINE_OP_MULTI_FORMAT;
 
-	// transform is a 3x3 matrix of float values
-	float transform[9] = {0.0f};
-	transform[0] = 1.0f;
-	transform[4] = 1.0f;
-	transform[8] = 1.0f;
-	auto matrixSize = 9 * sizeof(float);
+	// transform is a 3x3 identity matrix of float values
+	auto valueCount = is3D ? 16 : 9;
+	auto dimensions = is3D ? 3 : 2;
+	auto cols = dimensions + 1;			// columns (and rows too) in the matrix
+	float transform[valueCount] = {0.0f};
+	for (int i = 0; i < cols; i++) {
+		transform[i * cols + i] = 1.0f;
+	}
+	auto matrixSize = valueCount * sizeof(float);
 
 	auto getFormatInfo = [this, useAdvancedOffsets, useBufferValue](bool &isFixed, bool &is16Bit, int8_t &shift, int16_t &sourceBufferId, AdvancedOffset &offset) -> bool {
 		auto format = readByte_t();
@@ -1647,7 +1655,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		return true;
 	};
 
-	auto readFloatArgument = [this, getFormatInfo, useBufferValue]() -> float {
+	auto readFloatArgument = [this, getFormatInfo](bool fromBuffer) -> float {
 		bool isFixed, is16Bit;
 		int8_t shift;
 		int16_t sourceBufferId = -1;
@@ -1655,7 +1663,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
 			return INFINITY;
 		}
-		if (useBufferValue) {
+		if (fromBuffer) {
 			return readBufferFloat(sourceBufferId, offset, is16Bit, isFixed, shift, true);
 		}
 		return readFloat_t(is16Bit, isFixed, shift);
@@ -1681,11 +1689,6 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 		return true;
 	};
 
-	auto readMatrixFromBuffer = [this, matrixSize](uint16_t sourceBufferId, void *matrix) -> bool {
-		AdvancedOffset offset = {};
-		return readBufferBytes(sourceBufferId, offset, matrix, matrixSize);
-	};
-
 	bool replace = false;
 	switch (op) {
 		case AFFINE_IDENTITY: {
@@ -1693,122 +1696,138 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 			replace = true;
 		}	break;
 		case AFFINE_INVERT: {
-			// this will only work if we have a 3x3 matrix...
-			// first of all, get our existing matrix
-			if (!readMatrixFromBuffer(bufferId, &transform)) {
+			// this will only work if we already have a transform matrix...
+			AdvancedOffset offset = {};
+			if (!readBufferBytes(bufferId, offset, &transform, matrixSize)) {
 				debug_log("bufferAffineTransform: failed to read matrix from buffer %d to invert\n\r", bufferId);
 				return;
 			}
-			auto matrix = dspm::Mat(transform, 3, 3).inverse();
+			auto matrix = dspm::Mat(transform, cols, cols).inverse();
 			// copy data from matrix back to our working transform matrix
 			memcpy(transform, matrix.data, matrixSize);
 			replace = true;
 		}	break;
 		case AFFINE_ROTATE:
-		case AFFINE_ROTATE_RAD:
-		{
-			// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
-			float angle = readFloatArgument();
-			if (angle == INFINITY) {
-				return;
+		case AFFINE_ROTATE_RAD: {
+			bool conversion = op == AFFINE_ROTATE ? DEG_TO_RAD : 1.0f;
+			if (!is3D) {
+				// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
+				float angle = readFloatArgument(useBufferValue);
+				if (angle == INFINITY) {
+					return;
+				}
+				angle = angle * conversion;
+				const auto cosAngle = cosf(angle);
+				const auto sinAngle = sinf(angle);
+				transform[0] = cosAngle;
+				transform[1] = sinAngle;
+				transform[3] = -sinAngle;
+				transform[4] = cosAngle;
+			} else {
+				float angles[3] = {0.0f, 0.0f, 0.0f};
+				if (!readMultipleArgs(angles, 3)) {
+					return;
+				}
+				// rotate around X, Y, Z axes
+				const auto cosX = cosf(angles[0] * conversion);
+				const auto sinX = sinf(angles[0] * conversion);
+				const auto cosY = cosf(angles[1] * conversion);
+				const auto sinY = sinf(angles[1] * conversion);
+				const auto cosZ = cosf(angles[2] * conversion);
+				const auto sinZ = sinf(angles[2] * conversion);
+				transform[0] = cosY * cosZ;
+				transform[1] = cosY * sinZ;
+				transform[2] = -sinY;
+				transform[4] = sinX * sinY * cosZ - cosX * sinZ;
+				transform[5] = sinX * sinY * sinZ + cosX * cosZ;
+				transform[6] = sinX * cosY;
+				transform[8] = cosX * sinY * cosZ + sinX * sinZ;
+				transform[9] = cosX * sinY * sinZ - sinX * cosZ;
+				transform[10] = cosX * cosY;
 			}
-			if (op == AFFINE_ROTATE) angle = DEG_TO_RAD * angle;
-			const auto cosAngle = cosf(angle);
-			const auto sinAngle = sinf(angle);
-			transform[0] = cosAngle;
-			transform[1] = sinAngle;
-			transform[3] = -sinAngle;
-			transform[4] = cosAngle;
-			transform[8] = 1.0f;
 		}	break;
 		case AFFINE_MULTIPLY: {
 			// multiply values in a matrix by (single) argument value
 			// fetch matrix buffer, then multiply all values except last row by value
-			float scalar = readFloatArgument();
+			float scalar = readFloatArgument(useBufferValue);
 			if (scalar == INFINITY) {
 				return;
 			}
-			if (!readMatrixFromBuffer(bufferId, &transform)) {
+			AdvancedOffset offset = {};
+			if (!readBufferBytes(bufferId, offset, &transform, matrixSize)) {
 				debug_log("bufferAffineTransform: failed to read matrix from buffer %d to multiply\n\r", bufferId);
 				return;
 			}
 			// scale transform matrix by scalar, skipping last value (as that needs to remain a 1)
-			for (int i = 0; i < 7; i++) {
+			for (int i = 0; i < (valueCount - 1); i++) {
 				transform[i] *= scalar;
 			}
 			replace = true;
 		}	break;
 		case AFFINE_SCALE: {
-			// scale by a given factor
-			// get an array of 2 float values
-			float scales[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(scales, 2)) {
+			// scale by a given factor in each dimension
+			float scales[dimensions] = {0.0f};
+			if (!readMultipleArgs(scales, dimensions)) {
 				return;
 			}
-			transform[0] = scales[0];
-			transform[4] = scales[1];
-			transform[8] = 1.0f;
+			for (int i = 0; i < dimensions; i++) {
+				transform[i * cols + i] = scales[i];
+			}
 		}	break;
 		case AFFINE_TRANSLATE: {
 			// translate by a given amount of pixels
-			float translateXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(translateXY, 2)) {
+			float translateXY[dimensions] = {0.0f};
+			if (!readMultipleArgs(translateXY, dimensions)) {
 				return;
 			}
-			transform[2] = translateXY[0];
-			transform[5] = translateXY[1];
-			transform[8] = 1.0f;
+			for (int i = 0; i < dimensions; i++) {
+				transform[i * cols + dimensions] = translateXY[i];
+			}
 		}	break;
 		case AFFINE_TRANSLATE_OS_COORDS: {
-			// translate by a given amount of pixels
-			float translateXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(translateXY, 2)) {
+			// translate by a given amount of pixels (x and y are scaled to be OS coordinates)
+			float translateXY[dimensions] = {0.0f};
+			if (!readMultipleArgs(translateXY, dimensions)) {
 				return;
 			}
 			auto scaled = context->scale(translateXY[0], translateXY[1]);
-			transform[2] = scaled.X;
-			transform[5] = scaled.Y;
-			transform[8] = 1.0f;
+			transform[dimensions] = scaled.X;
+			transform[cols + dimensions] = scaled.Y;
+			if (is3D) {		// Y translate is not scaled in 3D
+				transform[cols * dimensions - 1] = translateXY[2];
+			}
 		}	break;
 		case AFFINE_SHEAR: {
 			// shear by a given amount
-			float shearXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(shearXY, 2)) {
+			float shearXY[dimensions] = {0.0f};
+			if (!readMultipleArgs(shearXY, dimensions)) {
 				return;
 			}
-			transform[1] = shearXY[0];
-			transform[3] = shearXY[1];
-			transform[8] = 1.0f;
-		}	break;
-		case AFFINE_SKEW: {
-			// skew by a given amount (angle)
-			float skewXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(skewXY, 2)) {
-				return;
+			for (int i = 0; i < dimensions; i++) {
+				transform[i * cols + (i + 1)] = shearXY[i];
 			}
-			transform[1] = tanf(DEG_TO_RAD * skewXY[0]);
-			transform[3] = tanf(DEG_TO_RAD * skewXY[1]);
-			transform[8] = 1.0f;
 		}	break;
+		case AFFINE_SKEW:
 		case AFFINE_SKEW_RAD: {
 			// skew by a given amount (angle)
-			float skewXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(skewXY, 2)) {
+			bool conversion = op == AFFINE_SKEW ? DEG_TO_RAD : 1.0f;
+			float skewXY[dimensions] = {0.0f};
+			if (!readMultipleArgs(skewXY, dimensions)) {
 				return;
 			}
-			transform[1] = tanf(skewXY[0]);
-			transform[3] = tanf(skewXY[1]);
-			transform[8] = 1.0f;
+			for (int i = 0; i < dimensions; i++) {
+				transform[i * cols + (i + 1)] = tanf(conversion * skewXY[i]);
+			}
 		}	break;
 		case AFFINE_TRANSFORM: {
 			// we'll either be creating a new matrix, or combining with an existing one
-			if (!readMultipleArgs(transform, 6)) {
+			// we omit reading the last row, as it will always be 0,0,1 for 2d or 0,0,0,1 for 3d
+			if (!readMultipleArgs(transform, valueCount - cols)) {
 				return;
 			}
-			transform[8] = 1.0f;
 		}	break;
 		case AFFINE_TRANSLATE_BITMAP: {
-			// translates by amounts proportional to width and height of bitmap
+			// translates x and y by amounts proportional to width and height of bitmap
 			// first argument is a 16-bit bitmap ID
 			auto bitmapId = readWord_t();
 			if (bitmapId == -1) {
@@ -1823,9 +1842,8 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 				debug_log("bufferAffineTransform: bitmap %d not found\n\r", bitmapId);
 				return;
 			}
-			transform[2] = translateXY[0] * bitmap->width;
-			transform[5] = translateXY[1] * bitmap->height;
-			transform[8] = 1.0f;
+			transform[dimensions] = translateXY[0] * bitmap->width;
+			transform[dimensions + cols] = translateXY[1] * bitmap->height;
 		}	break;
 		default:
 			debug_log("bufferAffineTransform: unknown operation %d\n\r", op);
@@ -1841,11 +1859,12 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 
 	if (!replace) {
 		// we are combining, if we have an existing matrix
-		float existing[9] = {0.0f};
-		if (readMatrixFromBuffer(bufferId, &existing)) {
+		float existing[valueCount] = {0.0f};
+		AdvancedOffset offset = {};
+		if (readBufferBytes(bufferId, offset, &existing, matrixSize)) {
 			// combine the two matrices together
-			float newTransform[9] = {0.0f};
-			dspm_mult_f32(transform, existing, newTransform, 3, 3, 3);
+			float newTransform[valueCount] = {0.0f};
+			dspm_mult_f32(transform, existing, newTransform, cols, cols, cols);
 			// copy data from matrix back to our working transform matrix
 			memcpy(transform, newTransform, matrixSize);
 		}
@@ -1856,9 +1875,12 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
 	buffers[bufferId].push_back(std::move(bufferStream));
 	debug_log("bufferAffineTransform: created new matrix buffer %d\n\r", bufferId);
 
-	debug_log(" %f %f %f\n\r", transform[0], transform[1], transform[2]);
-	debug_log(" %f %f %f\n\r", transform[3], transform[4], transform[5]);
-	debug_log(" %f %f %f\n\r", transform[6], transform[7], transform[8]);
+	for (int i = 0; i < cols; i++) {
+		for (int j = 0; j < cols; j++) {
+			debug_log(" %f", transform[i * cols + j]);
+		}
+		debug_log("\n\r");
+	}
 }
 
 // VDU 23, 0, &A0, bufferId; &28, options, transformBufferId; bitmapId; : Apply affine transformation to bitmap
