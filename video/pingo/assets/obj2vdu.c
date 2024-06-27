@@ -64,6 +64,11 @@ int iv, ivt, ivn, line_nbr;
 bool in_vertexes;
 bool in_tex_coords;
 bool in_faces;
+bool reverse_coords;
+bool dump_vertexes;
+bool dump_tex_coords;
+bool dump_vertex_indexes;
+bool dump_tex_indexes;
 
 void extract_point(const char* pt_info, Face* face) {
     PolyPoint *pt = &face->points[face->num_pts++];
@@ -195,11 +200,17 @@ int write_object(FILE* fout) {
             PolyPoint* pt = &face->points[ipt0];
             write_uvalue(fout, (uint16_t)(pt->ivertex));
 
-            pt = &face->points[ipt1];
-            write_uvalue(fout, (uint16_t)(pt->ivertex));
-
-            pt = &face->points[ipt2];
-            write_uvalue(fout, (uint16_t)(pt->ivertex));
+            if (reverse_coords) {
+                pt = &face->points[ipt1];
+                write_uvalue(fout, (uint16_t)(pt->ivertex));
+                pt = &face->points[ipt2];
+                write_uvalue(fout, (uint16_t)(pt->ivertex));
+            } else {
+                pt = &face->points[ipt2];
+                write_uvalue(fout, (uint16_t)(pt->ivertex));
+                pt = &face->points[ipt1];
+                write_uvalue(fout, (uint16_t)(pt->ivertex));
+            }
 
             cnt++;
             ipt0 = ipt2;
@@ -210,6 +221,47 @@ int write_object(FILE* fout) {
         }
     }
     printf("Size of %i vertex indexes is %lu bytes\n",
+        cnt, ftell(fout)-start);
+
+    start = ftell(fout);
+    printf("Texture indexes start at file position %lu\n", ftell(fout));
+    cnt = 0;
+    for (int i = 0; i < num_faces; i++) {
+        Face* face = &faces[i];
+        face_pts = face->num_pts;
+        pt_inc = 1;
+        ipt0 = 0;
+        while (face_pts >= 3) {
+            ipt1 = ipt0 + pt_inc;
+            ipt2 = ipt1 + pt_inc;
+            if (ipt2 >= face->num_pts) {
+                ipt2 = 0;
+            }
+
+            PolyPoint* pt = &face->points[ipt0];
+            write_uvalue(fout, (uint16_t)(pt->itexture));
+
+            if (reverse_coords) {
+                pt = &face->points[ipt1];
+                write_uvalue(fout, (uint16_t)(pt->itexture));
+                pt = &face->points[ipt2];
+                write_uvalue(fout, (uint16_t)(pt->itexture));
+            } else {
+                pt = &face->points[ipt2];
+                write_uvalue(fout, (uint16_t)(pt->itexture));
+                pt = &face->points[ipt1];
+                write_uvalue(fout, (uint16_t)(pt->itexture));
+            }
+
+            cnt++;
+            ipt0 = ipt2;
+            face_pts--;
+            if (!ipt0) {
+                pt_inc *= 2;
+            }
+        }
+    }
+    printf("Size of %i texture indexes is %lu bytes\n",
         cnt, ftell(fout)-start);
 
     printf("Total file size is %lu bytes\n", ftell(fout));
@@ -327,13 +379,45 @@ int convert(FILE* fin, FILE* fout) {
 }
 
 int main(int argc, const char* argv[]) {
+    int iarg = 1;
+
     printf("OBJ-to-VDU File Convertor V0.1\n");
     if (argc < 2) {
-        printf("Usage: obj2vdu file1 [file2, ...]\n");
+        printf("Usage: [-r] [-vc] [-tc] [-vi] [-ti] obj2vdu file1 [file2, ...]\n");
+        printf("       '-r'  reverse coordinate winding\n");
+        printf("       '-vc' dump vertex coordinates\n");
+        printf("       '-tc' dump texture coordinates\n");
+        printf("       '-vi' dump vertex indexes\n");
+        printf("       '-ti' dump texture indexes\n");
         return 0;
     }
 
-    for (int i = 1; i < argc; i++) {
+    if (!strcasecmp(argv[iarg], "-r")) {
+        reverse_coords = true;
+        iarg++;
+    }
+
+    if (!strcasecmp(argv[iarg], "-vc")) {
+        dump_vertexes = true;
+        iarg++;
+    }
+
+    if (!strcasecmp(argv[iarg], "-tc")) {
+        dump_tex_coords = true;
+        iarg++;
+    }
+
+    if (!strcasecmp(argv[iarg], "-vi")) {
+        dump_vertex_indexes = true;
+        iarg++;
+    }
+
+    if (!strcasecmp(argv[iarg], "-ti")) {
+        dump_tex_indexes = true;
+        iarg++;
+    }
+
+    for (int i = iarg; i < argc; i++) {
         FILE* fin = fopen(argv[i], "r");
         if (fin) {
             char oname[128];
@@ -360,6 +444,5 @@ int main(int argc, const char* argv[]) {
             printf("Cannot open '%s'\n", argv[i]);
             return 1;
         }
-
     }        
 }
