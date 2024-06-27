@@ -96,20 +96,23 @@
  6720 PRINT "Render 3D object"
  6730 VDU 23, 0, &C3: REM Flip buffer
  6740 rotatex=0.0: rotatey=0.0: rotatez=0.0
- 6750 incx=PI/155.0: incy=PI/143.0: incz=PI/137.0
+ 6750 incx=PI/67.0: incy=PI/59.0: incz=PI/73.0
  6760 factor=32767.0/pi2
  6770 VDU 22, 136: REM 320x240x64
  6780 VDU 23, 0, &C0, 0: REM Normal coordinates
  6790 GCOL 0,136: CLG
- 6800 VDU 23, 0, &A0, sid%; &49, 38, bmid2%+64000; : REM Render To Bitmap
- 6810 VDU 23, 27, 3, 320/2-200/2; 240/2-200/2; : REM Display output bitmap
- 6820 VDU 23, 0, &C3: REM Flip buffer
- 6830 *FX 19
- 6840 rotatex=rotatex+incx: IF rotatex>=pi2 THEN rotatex=rotatex-pi2
- 6850 rotatey=rotatey+incy: IF rotatey>=pi2 THEN rotatey=rotatey-pi2
- 6860 rotatez=rotatez+incz: IF rotatez>=pi2 THEN rotatez=rotatez-pi2
- 6870 rx=rotatex*factor: ry=rotatey*factor: rz=rotatez*factor
- 6880 VDU 23, 0, &A0, sid%; &49, 13, oid1%; rx; 0; 0; : REM Set Object XYZ Rotation Angles
- 6880 VDU 23, 0, &A0, sid%; &49, 13, oid2%; 0; ry; 0; : REM Set Object XYZ Rotation Angles
- 6880 VDU 23, 0, &A0, sid%; &49, 13, oid3%; 0; 0; rz; : REM Set Object XYZ Rotation Angles
- 6890 GOTO 6790
+ 6810 rotatex=rotatex+incx: IF rotatex>=pi2 THEN rotatex=rotatex-pi2
+ 6820 rotatey=rotatey+incy: IF rotatey>=pi2 THEN rotatey=rotatey-pi2
+ 6830 rotatez=rotatez+incz: IF rotatez>=pi2 THEN rotatez=rotatez-pi2
+ 6840 rx=rotatex*factor: ry=rotatey*factor: rz=rotatez*factor
+ 6850 PRINT TAB(1,1) rx,rotatex
+ 6852 PRINT TAB(1,2) ry,rotatey
+ 6854 PRINT TAB(1,3) rz,rotatez
+ 6860 VDU 23, 0, &A0, sid%; &49, 10, oid1%; rx; : REM Set Object X Rotation Angle
+ 6870 VDU 23, 0, &A0, sid%; &49, 11, oid2%; ry; : REM Set Object Y Rotation Angle
+ 6880 VDU 23, 0, &A0, sid%; &49, 12, oid3%; rz; : REM Set Object Z Rotation Angle
+ 6890 VDU 23, 0, &A0, sid%; &49, 38, bmid2%+64000; : REM Render To Bitmap
+ 6900 VDU 23, 27, 3, 320/2-200/2; 240/2-200/2; : REM Display output bitmap
+ 6910 VDU 23, 0, &C3: REM Flip buffer
+ 6920 *FX 19
+ 6930 GOTO 6790

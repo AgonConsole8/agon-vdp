@@ -21,9 +21,9 @@ Mat4 mat4Translate(Vec3f l) {
     F_TYPE z = l.z;
     return (Mat4){{
             1,  0,  0, x,
-                    0,  1,  0, y,
-                    0,  0,  1, z,
-                    0,  0,  0, 1,
+            0,  1,  0, y,
+            0,  0,  1, z,
+            0,  0,  0, 1,
         }};
 }
 
@@ -33,8 +33,8 @@ Mat4 mat4RotateX(F_TYPE phi) {
     return (Mat4){{
             1,  0,  0, 0,
             0,  c, -s, 0,
-                    0,  s,  c, 0,
-                    0,  0,  0, 1,
+            0,  s,  c, 0,
+            0,  0,  0, 1,
         }};
 }
 Mat4 mat4RotateY(F_TYPE phi) {
@@ -42,9 +42,9 @@ Mat4 mat4RotateY(F_TYPE phi) {
     F_TYPE c = cos(phi);
     return (Mat4){{
             c,  0,  s, 0,
-                    0,  1,  0, 0,
-                    -s,  0,  c, 0,
-                    0,  0,  0, 1,
+            0,  1,  0, 0,
+            -s,  0,  c, 0,
+            0,  0,  0, 1,
         }};
 }
 Mat4 mat4RotateZ(F_TYPE phi) {
@@ -52,9 +52,9 @@ Mat4 mat4RotateZ(F_TYPE phi) {
     F_TYPE c = cos(phi);
     return (Mat4){{
             c, -s,  0, 0,
-                    s,  c,  0, 0,
-                    0,  0,  1, 0,
-                    0,  0,  0, 1,
+            s,  c,  0, 0,
+            0,  0,  1, 0,
+            0,  0,  0, 1,
         }};
 }
 
