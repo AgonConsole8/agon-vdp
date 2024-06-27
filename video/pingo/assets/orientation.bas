@@ -16,9 +16,9 @@
  4400 DATA 0,1,5, 5,6,0, 1,2,3, 3,4,5, 5,1,3
  4410 DATA 8,7,12, 12,7,13, 9,8,10, 10,12,11, 12,10,8
  4420 DATA 13,7,6, 7,0,6, 7,8,0, 0,8,1
- 4430 DATA 13,12,6, 6,12,5, 8,9,2, 8,2,1
+ 4430 DATA 13,6,12, 6,5,12, 8,9,2, 8,2,1
  4440 DATA 11,12,5, 11,5,4, 2,9,10, 3,2,10
- 4450 DATA 3,4,11, 3,11,10
+ 4450 DATA 3,11,4, 3,10,11
  6130 REM
  6140 REM -- CODE --
  6150 PRINT "Reading vertices"
@@ -35,12 +35,13 @@
  6250 factor=32767.0/max_abs
  6260 PRINT "Max absolute value = ";max_abs
  6270 PRINT "Factor = ";factor
- 6280 sid%=100: mid%=1: oid%=1: bmid1%=101: bmid2%=102
+ 6280 sid%=100: mid%=1: oid1%=1: oid2%=2: oid3%=3
+ 6282 bmid1%=101: bmid2%=102
  6290 PRINT "Creating control structure"
- 6300 scene_width%=96: scene_height%=96
+ 6300 scene_width%=200: scene_height%=200
  6310 VDU 23,0, &A0, sid%; &49, 0, scene_width%; scene_height%; : REM Create Control Structure
  6320 f=32767.0/256.0
- 6330 distx=0.6*f: disty=2*f: distz=-20*f
+ 6330 distx=0.6*f: disty=2*f: distz=-25*f
  6340 VDU 23,0, &A0, sid%; &49, 25, distx; disty; distz; : REM Set Camera XYZ Translation Distances
  6350 pi2=PI*2.0: f=32767.0/pi2
  6360 anglex=-0.4*f
@@ -81,10 +82,14 @@
  6632 VDU &00, &FF, &00, &C0 : REM Set a GREEN pixel in the bitmap
  6634 VDU &00, &00, &FF, &C0 : REM Set a BLUE pixel in the bitmap
  6640 PRINT "Create 3D object"
- 6650 VDU 23,0, &A0, sid%; &49, 5, oid%; mid%; bmid1%+64000; : REM Create Object
+ 6650 VDU 23,0, &A0, sid%; &49, 5, oid1%; mid%; bmid1%+64000; : REM Create Object
+ 6652 VDU 23,0, &A0, sid%; &49, 5, oid2%; mid%; bmid1%+64000; : REM Create Object
+ 6654 VDU 23,0, &A0, sid%; &49, 5, oid3%; mid%; bmid1%+64000; : REM Create Object
  6660 PRINT "Scale object"
- 6670 scale=6.0*256.0
- 6680 VDU 23, 0, &A0, sid%; &49, 9, oid%; scale; scale; scale; : REM Set Object XYZ Scale Factors
+ 6670 scale=5.0*256.0
+ 6680 VDU 23, 0, &A0, sid%; &49, 9, oid1%; scale; scale; scale; : REM Set Object XYZ Scale Factors
+ 6682 VDU 23, 0, &A0, sid%; &49, 9, oid2%; scale; scale; scale; : REM Set Object XYZ Scale Factors
+ 6684 VDU 23, 0, &A0, sid%; &49, 9, oid3%; scale; scale; scale; : REM Set Object XYZ Scale Factors
  6690 PRINT "Create target bitmap"
  6700 VDU 23, 27, 0, bmid2% : REM Select output bitmap
  6710 VDU 23, 27, 2, scene_width%; scene_height%; &0000; &00C0; : REM Create solid color bitmap
@@ -95,14 +100,16 @@
  6760 factor=32767.0/pi2
  6770 VDU 22, 136: REM 320x240x64
  6780 VDU 23, 0, &C0, 0: REM Normal coordinates
- 6790 CLG
+ 6790 GCOL 0,136: CLG
  6800 VDU 23, 0, &A0, sid%; &49, 38, bmid2%+64000; : REM Render To Bitmap
- 6810 VDU 23, 27, 3, 50; 50; : REM Display output bitmap
+ 6810 VDU 23, 27, 3, 320/2-200/2; 240/2-200/2; : REM Display output bitmap
  6820 VDU 23, 0, &C3: REM Flip buffer
  6830 *FX 19
  6840 rotatex=rotatex+incx: IF rotatex>=pi2 THEN rotatex=rotatex-pi2
  6850 rotatey=rotatey+incy: IF rotatey>=pi2 THEN rotatey=rotatey-pi2
  6860 rotatez=rotatez+incz: IF rotatez>=pi2 THEN rotatez=rotatez-pi2
  6870 rx=rotatex*factor: ry=rotatey*factor: rz=rotatez*factor
- 6880 VDU 23, 0, &A0, sid%; &49, 13, oid%; rx; ry; rz; : REM Set Object XYZ Rotation Angles
+ 6880 VDU 23, 0, &A0, sid%; &49, 13, oid1%; rx; 0; 0; : REM Set Object XYZ Rotation Angles
+ 6880 VDU 23, 0, &A0, sid%; &49, 13, oid2%; 0; ry; 0; : REM Set Object XYZ Rotation Angles
+ 6880 VDU 23, 0, &A0, sid%; &49, 13, oid3%; 0; 0; rz; : REM Set Object XYZ Rotation Angles
  6890 GOTO 6790
