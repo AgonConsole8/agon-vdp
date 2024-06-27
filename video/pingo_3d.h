@@ -60,7 +60,7 @@ typedef struct tag_Transformable {
             m_transform = mat4MultiplyM(&m_transform, &t);
         }
         if (m_rotation.z) {
-            auto t = p3d::mat4RotateY(m_rotation.z);
+            auto t = p3d::mat4RotateZ(m_rotation.z);
             m_transform = mat4MultiplyM(&m_transform, &t);
         }
         if (m_translation.x || m_translation.y || m_translation.z) {
