@@ -44,12 +44,18 @@ int MultiBufferStream::available() {
 
 int MultiBufferStream::read() {
 	auto buffer = getBuffer();
-	return buffer->read();
+	if (buffer) {
+		return buffer->read();
+	}
+	return -1;
 }
 
 int MultiBufferStream::peek() {
 	auto buffer = getBuffer();
-	return buffer->peek();
+	if (buffer) {
+		return buffer->peek();
+	}
+	return -1;
 }
 
 size_t MultiBufferStream::readBytes(char * outBuffer, size_t length) {
