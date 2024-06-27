@@ -90,9 +90,10 @@ VDU ... PDX; PDY; PDZ; ...
 <b>VDU 23, 0, &A0, sid; &49, 0, w; h;</b> :  Create Control Structure<br>
 <b>VDU 23, 0, &A0, sid; &49, 1, mid; n; x0; y0; z0; ...</b> :  Define Mesh Vertices<br>
 <b>VDU 23, 0, &A0, sid; &49, 2, mid; n; i0; ...</b> :  Set Mesh Vertex Indexes<br>
-<b>VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates<br>
+<b>VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ...</b> :  Define Mesh Texture Coordinates<br>
 <b>VDU 23, 0, &A0, sid; &49, 4, mid; n; i0; ...</b> :  Set Texture Coordinate Indexes<br>
 <b>VDU 23, 0, &A0, sid; &49, 5, oid; mid; bmid;</b> :  Create Object<br>
+<b>VDU 23, 0, &A0, sid; &49, 40, oid; n; u0; v0; ...</b> :  Define Object Texture Coordinates<br>
 <b>VDU 23, 0, &A0, sid; &49, 6, oid; scalex;</b> :  Set Object X Scale Factor<br>
 <b>VDU 23, 0, &A0, sid; &49, 7, oid; scaley;</b> :  Set Object Y Scale Factor<br>
 <b>VDU 23, 0, &A0, sid; &49, 8, oid; scalez;</b> :  Set Object Z Scale Factor<br>
@@ -126,7 +127,7 @@ VDU ... PDX; PDY; PDZ; ...
 <b>VDU 23, 0, &A0, sid; &49, 36, distz;</b> :  Set Scene Z Translation Distance<br>
 <b>VDU 23, 0, &A0, sid; &49, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances<br>
 <b>VDU 23, 0, &A0, sid; &49, 38, bmid;</b> :  Render To Bitmap<br>
-<b>VDU 23, 0, &A0, sid; &49, 39</b> :  Delete Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &49, 39</b> :  Delete Control Structure (not implemented yet)<br>
 
 ## Create Control Structure
 <b>VDU 23, 0, &A0, sid; &49, 0, w; h;</b> :  Create Control Structure<br>
@@ -156,11 +157,15 @@ the number of defined mesh vertices.
 The "n" parameter is the number of indexes, and must match the "n" in subcommand 4
 (Set Texture Coordinate Indexes).
 
-## Define Texture Coordinates
-<b>VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ...</b> :  Define Texture Coordinates
+## Define Mesh Texture Coordinates
+<b>VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ...</b> :  Define Mesh Texture Coordinates
 
 This command establishes the list of U/V texture coordinates that define texturing
-for a mesh.
+for a mesh. For any object that does not have its texture coordinates set separately,
+those texture coordinates belonging to the mesh that is referenced by the object
+will be employed. See also subcommand #40.
+
+The mesh must still have texture indexes established.
 
 The "n" parameter is the number of coordinate pairs, so the total number of coordinates specified equals n*2.
 
@@ -184,6 +189,17 @@ plus a reference to an existing bitmap that provides its coloring, via the
 texture coordinates used by the mesh. The same mesh can be used multiple times,
 with the same or different bitmaps for coloring. The bitmap must be in the
 RGBA8888 format (4 bytes per pixel).
+
+## Define Object Texture Coordinates
+<b>VDU 23, 0, &A0, sid; &49, 40, oid; n; u0; v0; ...</b> :  Define Object Texture Coordinates
+
+This command establishes the list of U/V texture coordinates that define texturing
+for an object, as opposed to a mesh. For that object, it will override any texture coordinates defined
+for the mesh that the object references. See also subcommand #3.
+
+The mesh must still have texture indexes established.
+
+The "n" parameter is the number of coordinate pairs, so the total number of coordinates specified equals n*2.
 
 ## Set Object X Scale Factor
 <b>VDU 23, 0, &A0, sid; &49, 6, oid; scalex;</b> :  Set Object X Scale Factor
@@ -366,7 +382,7 @@ order to perform the render operation; it does <i>not</i> happen automatically, 
 commands change some of the render parameters.
 
 ## Delete Control Structure
-<b>VDU 23, 0, &A0, sid; &49, 39</b> :  Delete Control Structure<br>
+<b>VDU 23, 0, &A0, sid; &49, 39</b> :  Delete Control Structure (not implemented yet)<br>
 
 This command deinitializes an existing control structure,
 assuming that it exists in the designated buffer. The buffer is subsequently

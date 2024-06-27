@@ -200,9 +200,10 @@ typedef struct tag_Pingo3dControl {
         switch (subcmd) {
             case 1: define_mesh_vertices(); break;
             case 2: set_mesh_vertex_indexes(); break;
-            case 3: define_texture_coordinates(); break;
+            case 3: define_mesh_texture_coordinates(); break;
             case 4: set_texture_coordinate_indexes(); break;
             case 5: create_object(); break;
+            case 40: define_object_texture_coordinates(); break;
             case 6: set_object_x_scale_factor(); break;
             case 7: set_object_y_scale_factor(); break;
             case 8: set_object_z_scale_factor(); break;
@@ -344,8 +345,8 @@ typedef struct tag_Pingo3dControl {
         }
     }
 
-    // VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
-    void define_texture_coordinates() {
+    // VDU 23, 0, &A0, sid; &48, 3, mid; n; u0; v0; ... :  Define Mesh Texture Coordinates
+    void define_mesh_texture_coordinates() {
         auto mesh = get_mesh();
         if (mesh->textCoord) {
             heap_caps_free(mesh->textCoord);
@@ -358,6 +359,35 @@ typedef struct tag_Pingo3dControl {
             auto coord = mesh->textCoord;
             if (!coord) {
                 debug_log("set_mesh_vertex_indexes: failed to allocate %u bytes\n", size);
+                show_free_ram();
+            }
+            debug_log("Reading %u texture coordinates\n", n);
+            for (uint32_t i = 0; i < n; i++) {
+                uint16_t u = m_proc->readWord_t();
+                uint16_t v = m_proc->readWord_t();
+                if (coord) {
+                    coord->x = convert_texture_coordinate_value(u);
+                    coord->y = convert_texture_coordinate_value(v);
+                    coord++;
+                }
+            }
+        }
+    }
+
+    // VDU 23, 0, &A0, sid; &48, 40, oid; n; u0; v0; ... :  Define Object Texture Coordinates
+    void define_object_texture_coordinates() {
+        auto object = get_object();
+        if (object->m_object.textCoord) {
+            heap_caps_free(object->m_object.textCoord);
+            object->m_object.textCoord = NULL;
+        }
+        auto n = (uint32_t) m_proc->readWord_t();
+        if (n > 0) {
+            auto size = n*sizeof(p3d::Vec2f);
+            object->m_object.textCoord = (p3d::Vec2f*) heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+            auto coord = object->m_object.textCoord;
+            if (!coord) {
+                debug_log("set_object_vertex_indexes: failed to allocate %u bytes\n", size);
                 show_free_ram();
             }
             debug_log("Reading %u texture coordinates\n", n);

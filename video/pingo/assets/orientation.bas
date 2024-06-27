@@ -63,7 +63,7 @@
  6520   IF TIME-T%<1 GOTO 6520
  6530 NEXT i%
  6540 PRINT "Sending texture coordinates"
- 6550 VDU 23,0, &A0, sid%; &49, 3, mid1%; arrow_vertices%; : REM Define Texture Coordinates
+ 6550 VDU 23,0, &A0, sid%; &49, 3, mid1%; arrow_vertices%; : REM Define Mesh Texture Coordinates
  6552 FOR i%=0 TO arrow_vertices%-1
  6554   VDU 0;
  6556   VDU 0;

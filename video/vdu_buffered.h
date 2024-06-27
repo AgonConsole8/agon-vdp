@@ -2215,9 +2215,10 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 // VDU 23, 0, &A0, sid; &49, 0, w; h; :  Create Control Structure
 // VDU 23, 0, &A0, sid; &49, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
 // VDU 23, 0, &A0, sid; &49, 2, mid; n; i0; ... :  Set Mesh Vertex Indexes
-// VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ... :  Define Texture Coordinates
+// VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ... :  Define Mesh Texture Coordinates
 // VDU 23, 0, &A0, sid; &49, 4, mid; n; i0; ... :  Set Texture Coordinate Indexes
 // VDU 23, 0, &A0, sid; &49, 5, oid; mid; bmid; :  Create Object
+// VDU 23, 0, &A0, sid; &49, 40, oid; n; u0; v0; ... :  Define Object Texture Coordinates
 // VDU 23, 0, &A0, sid; &49, 6, oid; scalex; :  Set Object X Scale Factor
 // VDU 23, 0, &A0, sid; &49, 7, oid; scaley; :  Set Object Y Scale Factor
 // VDU 23, 0, &A0, sid; &49, 8, oid; scalez; :  Set Object Z Scale Factor
@@ -2251,7 +2252,7 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 // VDU 23, 0, &A0, sid; &49, 36, distz;</b> :  Set Scene Z Translation Distance
 // VDU 23, 0, &A0, sid; &49, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances
 // VDU 23, 0, &A0, sid; &49, 38, bmid; :  Render To Bitmap
-// VDU 23, 0, &A0, sid; &49, 39 :  Delete Control Structure
+// VDU 23, 0, &A0, sid; &49, 39 :  Delete Control Structure (not implemented yet)
 //
 void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
     auto subcmd = readByte_t();
