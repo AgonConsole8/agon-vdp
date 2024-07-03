@@ -41,6 +41,7 @@ class VDUStreamProcessor {
 		uint32_t discardBytes(uint32_t length, uint16_t timeout);
 		int16_t peekByte_t(uint16_t timeout);
 		float readFloat_t(bool is16Bit, bool isFixed, int8_t shift, uint16_t timeout);
+		bool readFloatArguments(float *values, int count, bool useBufferValue, bool useAdvancedOffsets, bool useMultiFormat);
 
 		void vdu_print(char c, bool usePeek);
 		void vdu_colour();
@@ -132,7 +133,8 @@ class VDUStreamProcessor {
 		void bufferReverse(uint16_t bufferId, uint8_t options);
 		void bufferCopyRef(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
-		void bufferAffineTransform(uint16_t bufferId, bool is3D);
+		void bufferAffineTransform(uint16_t bufferId, uint8_t command, bool is3D);
+		void bufferMatrixManipulate(uint16_t bufferId, uint8_t command, uint8_t rows, uint8_t columns);
 		void bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
@@ -329,6 +331,9 @@ int16_t VDUStreamProcessor::peekByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 	return -1;
 }
 
+// Read a float value from the stream, given the specified format
+// Returns the float value, or INFINITY if timed out
+//
 float VDUStreamProcessor::readFloat_t(bool is16Bit, bool isFixed, int8_t shift, uint16_t timeout = COMMS_TIMEOUT) {
 	// get the value that we're dealing with
 	uint32_t rawValue = 0;
@@ -339,6 +344,45 @@ float VDUStreamProcessor::readFloat_t(bool is16Bit, bool isFixed, int8_t shift, 
 	}
 	return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
 }
+
+// Reads a series of float values from the stream
+// Returns true if all values were read,
+// or false if timed out or another issue occurred, such as a non-existant buffer was specified
+// Stream will contain a format byte, followed by float values
+// if useMultiFormat is true, then each float will be preceded by a format byte
+// if useBufferValue is true, then the "value" will be a buffer ID and offset to fetch the value from
+//
+bool VDUStreamProcessor::readFloatArguments(float *values, int count, bool useBufferValue, bool useAdvancedOffsets, bool useMultiFormat) {
+	bool isFixed, is16Bit;
+	int8_t shift;
+	int32_t sourceBufferId = -1;
+	AdvancedOffset offset = {};
+
+	for (int i = 0; i < count; i++) {
+		if (i == 0 || useMultiFormat) {
+			auto format = readByte_t();
+			if (format == -1) {
+				return false;
+			}
+			extractFormatInfo(format, isFixed, is16Bit, shift);
+			if (useBufferValue) {
+				sourceBufferId = readWord_t();
+				if (sourceBufferId == -1) {
+					return false;
+				}
+				offset = getOffsetFromStream(useAdvancedOffsets);
+				if (offset.blockOffset == -1) {
+					return false;
+				}
+			}
+		}
+		values[i] = useBufferValue ? readBufferFloat(sourceBufferId, offset, is16Bit, isFixed, shift, true) : readFloat_t(is16Bit, isFixed, shift);
+		if (values[i] == INFINITY) {
+			return false;
+		}
+	}
+	return true;
+};
 
 
 // Send a packet of data to the MOS

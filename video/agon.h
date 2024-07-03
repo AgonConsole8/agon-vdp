@@ -327,32 +327,51 @@
 // TODO think about numbers of arguments for each operation
 #define AFFINE_IDENTITY			0		// Create/reset to an identity matrix (no arguments)
 #define AFFINE_INVERT			1		// Invert (no arguments)
-#define AFFINE_ROTATE			2		// Rotate (anticlockwise by angle, 1 argument)
-#define AFFINE_ROTATE_RAD		3		// Rotate (anticlockwise by angle in radians, 1 argument)
-#define AFFINE_MULTIPLY			4		// Multiply (1 argument)
-#define AFFINE_SCALE			5		// Scale (2 arguments for X and Y)
-#define AFFINE_TRANSLATE		6		// Translate (X and Y)
-#define AFFINE_TRANSLATE_OS_COORDS		7		// Translate (X and Y)
-#define AFFINE_SHEAR			8		// Shear (2 arguments for X and Y)
-#define AFFINE_SKEW				9		// Skew (by angle, 2 arguments)
-#define AFFINE_SKEW_RAD			10		// Skew (by angle in radians, 2 arguments)
-#define AFFINE_TRANSFORM		11		// Combine in a transform matrix (6 arguments, last row automatically 0 0 1, or a buffer)
-#define AFFINE_TRANSLATE_BITMAP	12		// Translate using bitmap size multiplier (X and Y)
+#define AFFINE_ROTATE			2		// Rotate (anticlockwise by angle, 1 argument for 2d, 3 arguments for 3d)
+#define AFFINE_ROTATE_RAD		3		// Rotate (anticlockwise by angle in radians, 1 argument for 2d, 3 arguments for 3d)
+#define AFFINE_MULTIPLY			4		// Scalar multiply (1 argument)
+#define AFFINE_SCALE			5		// Scale (1 argument per dimension for X, Y and Z)
+#define AFFINE_TRANSLATE		6		// Translate (1 argument per dimension)
+#define AFFINE_TRANSLATE_OS_COORDS		7		// Translate (1 argument per dimension, X and Y in OS coordinates, Z un-scaled)
+#define AFFINE_SHEAR			8		// Shear (1 argument per dimension)
+#define AFFINE_SKEW				9		// Skew (by angle, 1 argument per dimension)
+#define AFFINE_SKEW_RAD			10		// Skew (by angle in radians, 1 argument per dimension)
+#define AFFINE_TRANSFORM		11		// Combine in a transform matrix (6 arguments for 2d, 12 for 3d, last row automatically identity value, or a buffer)
+#define AFFINE_TRANSLATE_BITMAP	12		// Translate using bitmap size multiplier (X and Y only)
 
 #define AFFINE_OP_MASK			0x0F	// operation code mask
 #define AFFINE_OP_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
 #define AFFINE_OP_BUFFER_VALUE		0x20	// operand values are fetched from buffers
 #define AFFINE_OP_MULTI_FORMAT		0x40	// each argument has its own format byte
 
-// Affine transform format flags byte
+// Floating point value format byte
 // a format of 0 would indicate a 32-bit float value - "native" for transform matrix data
-// using a value of 0xC7 would indicate a 16-bit fixed point value with the binary point shifted right 7 bits (for an 8/8 split)
-// a value of 0xCF indicates 16-bit fixed point values with no fractional part
-#define AFFINE_FORMAT_SHIFT_MASK	0x1F	// bits used for shift value (used for fixed point values)
-#define AFFINE_FORMAT_SHIFT_TOPBIT	0x10	// top bit of shift (used to work out if shift is negative)
-#define AFFINE_FORMAT_FLAGS		0xE0	// flags
-#define AFFINE_FORMAT_FIXED		0x40	// if set, values are fixed-point, vs floats
-#define AFFINE_FORMAT_16BIT		0x80	// if set, values are 16-bit, vs 32-bit
+// using a value of 0xC8 would indicate a 16-bit fixed point value with the binary point shifted left 8 bits (for an 8/8 split)
+// a value of 0xC0 indicates 16-bit fixed point values with no fractional part
+#define FLOAT_FORMAT_SHIFT_MASK	0x1F	// bits used for shift value (used for fixed point values)
+#define FLOAT_FORMAT_SHIFT_TOPBIT	0x10	// top bit of shift (used to work out if shift is negative)
+#define FLOAT_FORMAT_FLAGS		0xE0	// flags
+#define FLOAT_FORMAT_FIXED		0x40	// if set, values are fixed-point, vs floats
+#define FLOAT_FORMAT_16BIT		0x80	// if set, values are 16-bit, vs 32-bit
+
+// Matrix operations
+#define MATRIX_SET				0		// Set a new matrix with given values
+#define MATRIX_SET_VALUE		1		// New matrix with single value set at row/column
+#define MATRIX_FILL				2		// Fill a matrix with a given value
+#define MATRIX_DIAGONAL			3		// Diagonal matrix from input values
+#define MATRIX_ADD				4		// Add matrixes (target = source1 + source2)
+#define MATRIX_SUBTRACT			5		// Subtract (target = source1 - source2)
+#define MATRIX_MULTIPLY			6		// Multiply (target = source1 * source2)
+#define MATRIX_SCALAR_MULTIPLY	7		// Scalar multiply (target = source1 * scalar)
+#define MATRIX_SUBMATRIX		8		// Extract a submatrix
+// #define MATRIX_INSERT_ROW		9		// Insert a row
+// #define MATRIX_INSERT_COLUMN	10		// Insert a column
+// #define MATRIX_DELETE_ROW		11		// Delete a row
+// #define MATRIX_DELETE_COLUMN	12		// Delete a column
+
+#define MATRIX_OP_MASK			0x0F	// operation code mask
+#define MATRIX_OP_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
+#define MATRIX_OP_BUFFER_VALUE	0x20	// operand values are fetched from buffers
 
 // Transform bitmap flags
 #define TRANSFORM_BITMAP_RESIZE		0x01	// Resize

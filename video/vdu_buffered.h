@@ -194,12 +194,14 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 		}	break;
 		case BUFFERED_AFFINE_TRANSFORM: {
 			if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
-				bufferAffineTransform(bufferId, false);
+				auto operation = readByte_t(); if (operation == -1) return;
+				bufferAffineTransform(bufferId, operation, false);
 			}
 		}	break;
 		case BUFFERED_AFFINE_TRANSFORM_3D: {
 			if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
-				bufferAffineTransform(bufferId, true);
+				auto operation = readByte_t(); if (operation == -1) return;
+				bufferAffineTransform(bufferId, operation, true);
 			}
 		}	break;
 		case BUFFERED_TRANSFORM_BITMAP: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
@@ -1618,78 +1620,28 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 	debug_log("bufferCopyAndConsolidate: copied %d bytes into buffer %d\n\r", length, bufferId);
 }
 
-// VDU 23, 0, &A0, bufferId; &20, operation, <args> : Affine transform creation/combination
-// Create or combine an affine transformaiton matrix
+// VDU 23, 0, &A0, bufferId; &20, operation, <args> : Affine transform creation/combination (2D)
+// VDU 23, 0, &A0, bufferId; &21, operation, <args> : Affine transform creation/combination (3D)
+// Create or combine an affine transformation matrix
 //
-void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
-	const auto command = readByte_t();
+void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t command, bool is3D) {
 	const auto op = command & AFFINE_OP_MASK;
 	const bool useAdvancedOffsets = command & AFFINE_OP_ADVANCED_OFFSETS;
 	const bool useBufferValue = command & AFFINE_OP_BUFFER_VALUE;
 	const bool useMultiFormat = command & AFFINE_OP_MULTI_FORMAT;
 
-	// transform is a 3x3 identity matrix of float values
-	auto valueCount = is3D ? 16 : 9;
+	// transform is a 3x3 or 4x4 identity matrix of float values
 	auto dimensions = is3D ? 3 : 2;
-	auto cols = dimensions + 1;			// columns (and rows too) in the matrix
+	auto rows = dimensions + 1;			// columns (and rows too) in the matrix
+	auto columns = rows;
+	auto valueCount = rows * columns;
 	float transform[valueCount] = {0.0f};
-	for (int i = 0; i < cols; i++) {
-		transform[i * cols + i] = 1.0f;
+	for (int i = 0; i < rows; i++) {
+		transform[i * rows + i] = 1.0f;
 	}
 	auto matrixSize = valueCount * sizeof(float);
-
-	auto getFormatInfo = [this, useAdvancedOffsets, useBufferValue](bool &isFixed, bool &is16Bit, int8_t &shift, int16_t &sourceBufferId, AdvancedOffset &offset) -> bool {
-		auto format = readByte_t();
-		if (format == -1) {
-			return false;
-		}
-		extractFormatInfo(format, isFixed, is16Bit, shift);
-		if (useBufferValue) {
-			sourceBufferId = readWord_t();
-			if (sourceBufferId == -1) {
-				return false;
-			}
-			offset = getOffsetFromStream(useAdvancedOffsets);
-			return offset.blockOffset != -1;
-		}
-		return true;
-	};
-
-	auto readFloatArgument = [this, getFormatInfo](bool fromBuffer) -> float {
-		bool isFixed, is16Bit;
-		int8_t shift;
-		int16_t sourceBufferId = -1;
-		AdvancedOffset offset = {};
-		if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
-			return INFINITY;
-		}
-		if (fromBuffer) {
-			return readBufferFloat(sourceBufferId, offset, is16Bit, isFixed, shift, true);
-		}
-		return readFloat_t(is16Bit, isFixed, shift);
-	};
-
-	auto readMultipleArgs = [this, getFormatInfo, useBufferValue, useMultiFormat](float *values, int count) -> bool {
-		bool isFixed, is16Bit;
-		int8_t shift;
-		int16_t sourceBufferId = -1;
-		AdvancedOffset offset = {};
-
-		for (int i = 0; i < count; i++) {
-			if (i == 0 || useMultiFormat) {
-				if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
-					return false;
-				}
-			}
-			values[i] = useBufferValue ? readBufferFloat(sourceBufferId, offset, is16Bit, isFixed, shift, true) : readFloat_t(is16Bit, isFixed, shift);
-			if (values[i] == INFINITY) {
-				return false;
-			}
-		}
-		return true;
-	};
-
 	bool replace = false;
+
 	switch (op) {
 		case AFFINE_IDENTITY: {
 			// create an identity matrix
@@ -1702,7 +1654,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 				debug_log("bufferAffineTransform: failed to read matrix from buffer %d to invert\n\r", bufferId);
 				return;
 			}
-			auto matrix = dspm::Mat(transform, cols, cols).inverse();
+			auto matrix = dspm::Mat(transform, rows, columns).inverse();
 			// copy data from matrix back to our working transform matrix
 			memcpy(transform, matrix.data, matrixSize);
 			replace = true;
@@ -1712,8 +1664,8 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 			bool conversion = op == AFFINE_ROTATE ? DEG_TO_RAD : 1.0f;
 			if (!is3D) {
 				// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
-				float angle = readFloatArgument(useBufferValue);
-				if (angle == INFINITY) {
+				float angle;
+				if (!readFloatArguments(&angle, 1, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 					return;
 				}
 				angle = angle * conversion;
@@ -1725,7 +1677,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 				transform[4] = cosAngle;
 			} else {
 				float angles[3] = {0.0f, 0.0f, 0.0f};
-				if (!readMultipleArgs(angles, 3)) {
+				if (!readFloatArguments(angles, 3, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 					return;
 				}
 				// rotate around X, Y, Z axes
@@ -1749,8 +1701,8 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 		case AFFINE_MULTIPLY: {
 			// multiply values in a matrix by (single) argument value
 			// fetch matrix buffer, then multiply all values except last row by value
-			float scalar = readFloatArgument(useBufferValue);
-			if (scalar == INFINITY) {
+			float scalar;
+			if (!readFloatArguments(&scalar, 1, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 			AdvancedOffset offset = {};
@@ -1767,44 +1719,44 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 		case AFFINE_SCALE: {
 			// scale by a given factor in each dimension
 			float scales[dimensions] = {0.0f};
-			if (!readMultipleArgs(scales, dimensions)) {
+			if (!readFloatArguments(scales, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 			for (int i = 0; i < dimensions; i++) {
-				transform[i * cols + i] = scales[i];
+				transform[i * columns + i] = scales[i];
 			}
 		}	break;
 		case AFFINE_TRANSLATE: {
 			// translate by a given amount of pixels
 			float translateXY[dimensions] = {0.0f};
-			if (!readMultipleArgs(translateXY, dimensions)) {
+			if (!readFloatArguments(translateXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 			for (int i = 0; i < dimensions; i++) {
-				transform[i * cols + dimensions] = translateXY[i];
+				transform[i * columns + dimensions] = translateXY[i];
 			}
 		}	break;
 		case AFFINE_TRANSLATE_OS_COORDS: {
 			// translate by a given amount of pixels (x and y are scaled to be OS coordinates)
 			float translateXY[dimensions] = {0.0f};
-			if (!readMultipleArgs(translateXY, dimensions)) {
+			if (!readFloatArguments(translateXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 			auto scaled = context->scale(translateXY[0], translateXY[1]);
 			transform[dimensions] = scaled.X;
-			transform[cols + dimensions] = scaled.Y;
+			transform[columns + dimensions] = scaled.Y;
 			if (is3D) {		// Y translate is not scaled in 3D
-				transform[cols * dimensions - 1] = translateXY[2];
+				transform[columns * dimensions - 1] = translateXY[2];
 			}
 		}	break;
 		case AFFINE_SHEAR: {
 			// shear by a given amount
 			float shearXY[dimensions] = {0.0f};
-			if (!readMultipleArgs(shearXY, dimensions)) {
+			if (!readFloatArguments(shearXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 			for (int i = 0; i < dimensions; i++) {
-				transform[i * cols + (i + 1)] = shearXY[i];
+				transform[i * columns + (i + 1)] = shearXY[i];
 			}
 		}	break;
 		case AFFINE_SKEW:
@@ -1812,17 +1764,17 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 			// skew by a given amount (angle)
 			bool conversion = op == AFFINE_SKEW ? DEG_TO_RAD : 1.0f;
 			float skewXY[dimensions] = {0.0f};
-			if (!readMultipleArgs(skewXY, dimensions)) {
+			if (!readFloatArguments(skewXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 			for (int i = 0; i < dimensions; i++) {
-				transform[i * cols + (i + 1)] = tanf(conversion * skewXY[i]);
+				transform[i * columns + (i + 1)] = tanf(conversion * skewXY[i]);
 			}
 		}	break;
 		case AFFINE_TRANSFORM: {
 			// we'll either be creating a new matrix, or combining with an existing one
 			// we omit reading the last row, as it will always be 0,0,1 for 2d or 0,0,0,1 for 3d
-			if (!readMultipleArgs(transform, valueCount - cols)) {
+			if (!readFloatArguments(transform, valueCount - columns, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 		}	break;
@@ -1834,7 +1786,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 				return;
 			}
 			float translateXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(translateXY, 2)) {
+			if (!readFloatArguments(translateXY, 2, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 			auto bitmap = getBitmap(bitmapId);
@@ -1843,7 +1795,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 				return;
 			}
 			transform[dimensions] = translateXY[0] * bitmap->width;
-			transform[dimensions + cols] = translateXY[1] * bitmap->height;
+			transform[dimensions + columns] = translateXY[1] * bitmap->height;
 		}	break;
 		default:
 			debug_log("bufferAffineTransform: unknown operation %d\n\r", op);
@@ -1864,7 +1816,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 		if (readBufferBytes(bufferId, offset, &existing, matrixSize)) {
 			// combine the two matrices together
 			float newTransform[valueCount] = {0.0f};
-			dspm_mult_f32(transform, existing, newTransform, cols, cols, cols);
+			dspm_mult_f32(transform, existing, newTransform, rows, columns, columns);
 			// copy data from matrix back to our working transform matrix
 			memcpy(transform, newTransform, matrixSize);
 		}
@@ -1875,15 +1827,135 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, bool is3D) {
 	buffers[bufferId].push_back(std::move(bufferStream));
 	debug_log("bufferAffineTransform: created new matrix buffer %d\n\r", bufferId);
 
-	for (int i = 0; i < cols; i++) {
-		for (int j = 0; j < cols; j++) {
-			debug_log(" %f", transform[i * cols + j]);
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < columns; j++) {
+			debug_log(" %f", transform[i * columns + j]);
 		}
 		debug_log("\n\r");
 	}
 }
 
-// VDU 23, 0, &A0, bufferId; &28, options, transformBufferId; bitmapId; : Apply affine transformation to bitmap
+// VDU 23, 0, &A0, bufferId; &22, operation, rows, columns, <args> : Generic matrix creation/manipulation
+// Create or manipulate a matrix of float values
+// These operations will always replace the target buffer, so long as they succeed
+//
+void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t command, uint8_t rows, uint8_t columns) {
+	const auto op = command & MATRIX_OP_MASK;
+	const bool useAdvancedOffsets = command & MATRIX_OP_ADVANCED_OFFSETS;
+	const bool useBufferValue = command & MATRIX_OP_BUFFER_VALUE;
+
+	auto valueCount = rows * columns;
+	float matrix[valueCount] = {0.0f};
+	auto floatSize = sizeof(float);
+	auto rowSize = columns * floatSize;
+	auto matrixSize = valueCount * floatSize;
+
+	// question:
+	// should these _all_ replace, or should this work like affine
+	// and by default combine with existing matrix?
+	//
+	// this may be dependent on specific operations
+	// or rather it may inform the arguments
+	// alternatively, this could inform the above affine API??
+
+	// for all this stuff to work, we need to have metadata for matrix buffers
+	// so we can verify that operations are dealing with compatible matrices
+
+	switch (op) {
+		case MATRIX_SET: {
+			// read valueCount values into the matrix
+			// source data is assumed to be raw values
+			if (!readFloatArguments(matrix, valueCount, useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+		} break;
+		case MATRIX_SET_VALUE: {
+			// get a matrix buffer
+			auto sourceId = readWord_t();
+			if (sourceId == -1) {
+				return;
+			}
+			// then set a single value in the matrix
+			auto row = readByte_t();
+			auto column = readByte_t();
+			if (row == -1 || column == -1 || row >= rows || column >= columns) {
+				return;
+			}
+			if (!readFloatArguments(matrix + (rowSize * row) + (column * floatSize), 1, useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+		} break;
+		case MATRIX_FILL: {
+			float value;
+			if (!readFloatArguments(&value, 1, useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+			// set all values in matrix to the given value
+			for (int i = 0; i < valueCount; i++) {
+				matrix[i] = value;
+			}
+		} break;
+		case MATRIX_DIAGONAL: {
+			// diagonal matrix with given values
+			auto argCount = fabgl::imin(rows, columns);
+			float args[argCount] = {0.0f};
+			if (!readFloatArguments(args, argCount, useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+			for (int i = 0; i < argCount; i++) {
+				matrix[i * columns + i] = args[i];
+			}
+		} break;
+		case MATRIX_ADD: {
+			// simple add of two matrixes
+			// source and target must be same size
+		} break;
+		case MATRIX_SUBTRACT: {
+			// simple subtract of two matrixes
+			// source and target must be same size
+		} break;
+		case MATRIX_MULTIPLY: {
+			// multiply two matrixes
+			// number of columns in source1 must match number of rows in source2
+		} break;
+		case MATRIX_SCALAR_MULTIPLY: {
+			// multiply all values in a source matrix by a scalar
+		} break;
+		case MATRIX_SUBMATRIX: {
+			// extract a submatrix from a source matrix at given row and column
+			// target matrix will be filled from top-left
+			// if source matrix is smaller than target, it will be padded with zeros
+			// if target matrix is smaller than source, it will be truncated
+		} break;
+		// case MATRIX_INSERT_ROW: {
+
+		// } break;
+		// case MATRIX_INSERT_COLUMN: {
+
+		// } break;
+		// case MATRIX_DELETE_ROW: {
+
+		// } break;
+		// case MATRIX_DELETE_COLUMN: {
+
+		// } break;
+	}
+
+	auto bufferStream = make_shared_psram<BufferStream>(matrixSize);
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		// buffer couldn't be created
+		debug_log("bufferMatrixManipulate: failed to create buffer %d\n\r", bufferId);
+		return;
+	}
+
+	bufferStream->writeBuffer((uint8_t *)matrix, matrixSize);
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(std::move(bufferStream));
+	debug_log("bufferMatrixManipulate: created new matrix buffer %d\n\r", bufferId);
+}
+
+
+// VDU 23, 0, &A0, bufferId; &28, options, transformBufferId; bitmapId; : Apply 2d affine transformation to bitmap
 // Apply an affine transformation to a bitmap, creating a new bitmap
 // Replaces the target buffer with the new bitmap, and creates a corresponding bitmap
 //
@@ -2000,6 +2072,11 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 	// create a destination buffer using our calculated width and height
 	// assuming we are doing RGBA2222 format (1 byte per pixel)
 	auto bufferStream = make_shared_psram<BufferStream>(width * height);
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		// buffer couldn't be created
+		debug_log("bufferTransformBitmap: failed to create buffer %d\n\r", bufferId);
+		return;
+	}
 
 	// iterate over our destination buffer, and apply the transformation to each pixel
 	auto destination = bufferStream->getBuffer();
@@ -2054,6 +2131,12 @@ void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options,
 	bool useBufferForStride = options & TRANSFORM_DATA_STRIDE_BUFF;
 	bool useBufferForLimit = options & TRANSFORM_DATA_LIMIT_BUFF;
 	bool perBlock = false;
+
+	// Potential other options:
+	// explicit matrix size - nope, use metadata only
+	// explicit data size
+
+	// do we _really_ need separate flags for "use buffer for offset" etc?
 
 	// optional arguments are used to specify an offset, stride (inclusive of data itself) and limit
 	// arguments can be fetched from buffers or directly from the command stream

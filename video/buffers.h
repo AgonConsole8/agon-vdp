@@ -156,13 +156,13 @@ bool checkTransformBuffer(std::vector<std::shared_ptr<BufferStream>> &transformB
 }
 
 void extractFormatInfo(uint8_t format, bool &isFixed, bool &is16Bit, int8_t &shift) {
-	isFixed = format & AFFINE_FORMAT_FIXED;
-	is16Bit = format & AFFINE_FORMAT_16BIT;
-	shift = format & AFFINE_FORMAT_SHIFT_MASK;
+	isFixed = format & FLOAT_FORMAT_FIXED;
+	is16Bit = format & FLOAT_FORMAT_16BIT;
+	shift = format & FLOAT_FORMAT_SHIFT_MASK;
 	// ensure our size value obeys negation
-	if (is16Bit && (shift & AFFINE_FORMAT_SHIFT_TOPBIT)) {
+	if (is16Bit && (shift & FLOAT_FORMAT_SHIFT_TOPBIT)) {
 		// top bit was set, so it's a negative - so we need to set the top bits of the size
-		shift = shift | AFFINE_FORMAT_FLAGS;
+		shift = shift | FLOAT_FORMAT_FLAGS;
 	}
 };
 
