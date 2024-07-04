@@ -1992,7 +1992,9 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 
 	// NB source bitmap is currently assumed to be RGBA2222 format
 	auto srcWidth = bitmap->width;
+	float srcWidthF = (float)srcWidth;
 	auto srcHeight = bitmap->height;
+	float srcHeightF = (float)srcHeight;
 
 	auto transformBufferIter = buffers.find(transformBufferId);
 	if (transformBufferIter == buffers.end()) {
@@ -2033,14 +2035,14 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 		maxX = fabgl::imax(maxX, (int)transformed[0]);
 		maxY = fabgl::imax(maxY, (int)transformed[1]);
 
-		pos[0] = (float)srcWidth;
+		pos[0] = srcWidthF;
 		dspm_mult_3x3x1_f32(transform, pos, transformed);
 		minX = fabgl::imin(minX, (int)transformed[0]);
 		minY = fabgl::imin(minY, (int)transformed[1]);
 		maxX = fabgl::imax(maxX, (int)transformed[0]);
 		maxY = fabgl::imax(maxY, (int)transformed[1]);
 
-		pos[1] = (float)srcHeight;
+		pos[1] = srcHeightF;
 		dspm_mult_3x3x1_f32(transform, pos, transformed);
 		minX = fabgl::imin(minX, (int)transformed[0]);
 		minY = fabgl::imin(minY, (int)transformed[1]);
@@ -2094,13 +2096,10 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 			dspm_mult_3x3x1_f32(inverse, pos, srcPos);
 
 			auto srcPixel = 0;
-			int srcX = (int)srcPos[0];
-			int srcY = (int)srcPos[1];
-
-			if (srcX >= 0 && srcX < srcWidth && srcY >= 0 && srcY < srcHeight) {
+			if (srcPos[0] >= 0.0f && srcPos[0] < srcWidthF && srcPos[1] >= 0.0f && srcPos[1] < srcHeightF) {
 				// get the source pixel
 				// NB this currently assumes source is RGBA2222 format
-				auto src = source + srcY * srcWidth + srcX;
+				auto src = source + (int)srcPos[1] * srcWidth + (int)srcPos[0];
 				srcPixel = *src;
 			}
 			destination[(int)y * width + (int)x] = srcPixel;
