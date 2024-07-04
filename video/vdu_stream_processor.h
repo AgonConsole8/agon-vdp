@@ -14,7 +14,11 @@
 #include "span.h"
 #include "types.h"
 
-std::unordered_map<uint8_t, std::shared_ptr<std::vector<std::shared_ptr<Context>>>> contextStacks;
+using ContextVector = std::vector<std::shared_ptr<Context>, psram_allocator<std::shared_ptr<Context>>>;
+using ContextVectorPtr = std::shared_ptr<ContextVector>;
+std::unordered_map<uint16_t, ContextVectorPtr,
+	std::hash<uint16_t>, std::equal_to<uint16_t>,
+	psram_allocator<std::pair<const uint16_t, ContextVectorPtr>>> contextStacks;
 
 class VDUStreamProcessor {
 	private:
@@ -28,8 +32,8 @@ class VDUStreamProcessor {
 		std::shared_ptr<Stream> originalOutputStream;
 
 		// Graphics context storage and management
-		std::shared_ptr<Context> context;					// Current active context
-		std::shared_ptr<std::vector<std::shared_ptr<Context>>> contextStack;	// Current active context stack
+		std::shared_ptr<Context> context;		// Current active context
+		ContextVectorPtr contextStack;			// Current active context stack
 
 		bool commandsEnabled = true;
 
@@ -114,12 +118,12 @@ class VDUStreamProcessor {
 		void setOutputStream(uint16_t bufferId);
 		AdvancedOffset getOffsetFromStream(bool isAdvanced);
 		std::vector<uint16_t> getBufferIdsFromStream();
-		static tcb::span<uint8_t> getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, uint8_t size = 1);
+		static tcb::span<uint8_t> getBufferSpan(const BufferVector &buffer, AdvancedOffset &offset, uint8_t size = 1);
 		static tcb::span<uint8_t> getBufferSpan(uint16_t bufferId, AdvancedOffset &offset, uint8_t size = 1);
-		static int16_t getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
+		static int16_t getBufferByte(const BufferVector &buffer, AdvancedOffset &offset, bool iterate = false);
 		static bool readBufferBytes(uint16_t bufferId, AdvancedOffset &offset, void *target, uint16_t size, bool iterate = false);
 		static float readBufferFloat(uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift, bool iterate = false);
-		static bool setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
+		static bool setBufferByte(uint8_t value, const BufferVector &buffer, AdvancedOffset &offset, bool iterate = false);
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
 		void bufferJump(uint16_t bufferId, AdvancedOffset offset);
@@ -153,13 +157,13 @@ class VDUStreamProcessor {
 			context(_context), inputStream(std::move(input)), outputStream(std::move(output)), originalOutputStream(outputStream), id(bufferId) {
 				// NB this will become obsolete when merging in the buffered command optimisations
 				context = make_shared_psram<Context>(*_context);
-				contextStack = make_shared_psram<std::vector<std::shared_ptr<Context>>>();
+				contextStack = make_shared_psram<ContextVector>();
 				contextStack->push_back(context);
 			}
 		VDUStreamProcessor(Stream *input) :
 			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {
 				context = make_shared_psram<Context>();
-				contextStack = make_shared_psram<std::vector<std::shared_ptr<Context>>>();
+				contextStack = make_shared_psram<ContextVector>();
 				contextStack->push_back(context);
 			}
 

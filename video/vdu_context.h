@@ -74,7 +74,7 @@ void VDUStreamProcessor::selectContext(uint8_t id) {
 	} else {
 		debug_log("selectContext: creating new context %d\n\r", id);
 		// copy current stack
-		auto newStack = make_shared_psram<std::vector<std::shared_ptr<Context>>>();
+		auto newStack = make_shared_psram<ContextVector>();
 		for (auto it = contextStack->begin(); it != contextStack->end(); ++it) {
 			newStack->push_back(make_shared_psram<Context>(*it->get()));
 		}

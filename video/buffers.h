@@ -9,10 +9,12 @@
 #include "agon.h"
 #include "buffer_stream.h"
 #include "span.h"
+#include "types.h"
 
 extern void debug_log(const char * format, ...);		// Debug log function
 
-std::unordered_map<uint16_t, std::vector<std::shared_ptr<BufferStream>>> buffers;
+using BufferVector = std::vector<std::shared_ptr<BufferStream>, psram_allocator<std::shared_ptr<BufferStream>>>;
+std::unordered_map<uint16_t, BufferVector, std::hash<uint16_t>, std::equal_to<uint16_t>, psram_allocator<std::pair<const uint16_t, BufferVector>>> buffers;
 
 // Utility functions for buffer management:
 
@@ -79,7 +81,7 @@ bool updateTarget(tcb::span<uint16_t> targets, tcb::span<uint16_t>::iterator &ta
 }
 
 // consolidate blocks/streams into a single buffer
-std::shared_ptr<BufferStream> consolidateBuffers(const std::vector<std::shared_ptr<BufferStream>> &streams) {
+std::shared_ptr<BufferStream> consolidateBuffers(const BufferVector &streams) {
 	// don't do anything if only one stream
 	if (streams.size() == 1) {
 		return streams.front();
@@ -104,8 +106,8 @@ std::shared_ptr<BufferStream> consolidateBuffers(const std::vector<std::shared_p
 }
 
 // split a buffer into multiple blocks/chunks
-std::vector<std::shared_ptr<BufferStream>> splitBuffer(std::shared_ptr<BufferStream> buffer, uint16_t length) {
-	std::vector<std::shared_ptr<BufferStream>> chunks;
+BufferVector splitBuffer(std::shared_ptr<BufferStream> buffer, uint16_t length) {
+	BufferVector chunks;
 	auto totalLength = buffer->size();
 	auto remaining = totalLength;
 	auto sourceData = buffer->getBuffer();
@@ -132,7 +134,7 @@ std::vector<std::shared_ptr<BufferStream>> splitBuffer(std::shared_ptr<BufferStr
 }
 
 // check buffer looks like a transform, and ensure there's an inverse
-bool checkTransformBuffer(std::vector<std::shared_ptr<BufferStream>> &transformBuffer) {
+bool checkTransformBuffer(BufferVector &transformBuffer) {
 	int const matrixSize = sizeof(float) * 9;
 
 	if (transformBuffer.size() == 1) {

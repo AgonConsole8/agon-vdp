@@ -471,7 +471,7 @@ std::vector<uint16_t> VDUStreamProcessor::getBufferIdsFromStream() {
 
 // Get the longest contiguous span at the given buffer offset. Updates the offset to the correct block index.
 // accepts a size to dictate the minimum span size, and will align offset if block didn't contain the required size of data
-tcb::span<uint8_t> VDUStreamProcessor::getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, uint8_t size) {
+tcb::span<uint8_t> VDUStreamProcessor::getBufferSpan(const BufferVector &buffer, AdvancedOffset &offset, uint8_t size) {
 	while (offset.blockIndex < buffer.size()) {
 		// check for available bytes in the current block
 		auto &block = buffer[offset.blockIndex];
@@ -496,7 +496,7 @@ tcb::span<uint8_t> VDUStreamProcessor::getBufferSpan(const uint16_t bufferId, Ad
 }
 
 // Utility call to read a byte from a buffer at the given offset
-int16_t VDUStreamProcessor::getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
+int16_t VDUStreamProcessor::getBufferByte(const BufferVector &buffer, AdvancedOffset &offset, bool iterate) {
 	auto bufferSpan = getBufferSpan(buffer, offset);
 	if (bufferSpan.empty()) {	// offset not found in buffer
 		return -1;
@@ -532,7 +532,7 @@ float VDUStreamProcessor::readBufferFloat(uint32_t sourceBufferId, AdvancedOffse
 };
 
 // Utility call to set a byte in a buffer at the given offset
-bool VDUStreamProcessor::setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
+bool VDUStreamProcessor::setBufferByte(uint8_t value, const BufferVector &buffer, AdvancedOffset &offset, bool iterate) {
 	auto bufferSpan = getBufferSpan(buffer, offset);
 	if (bufferSpan.empty()) {
 		// offset not found in buffer
@@ -887,7 +887,7 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 	const bool hasOperand = op > ADJUST_NEG;
 
 	auto offset = getOffsetFromStream(useAdvancedOffsets);
-	const std::vector<std::shared_ptr<BufferStream>> * operandBuffer = nullptr;
+	const BufferVector * operandBuffer = nullptr;
 	auto operandBufferId = 0;
 	AdvancedOffset operandOffset = {};
 	auto count = 1;
@@ -1095,7 +1095,7 @@ bool VDUStreamProcessor::bufferConditional() {
 	bool hasOperand = op > COND_NOT_EXISTS;
 
 	auto offset = getOffsetFromStream(useAdvancedOffsets);
-	const std::vector<std::shared_ptr<BufferStream>> * operandBuffer = nullptr;
+	const BufferVector * operandBuffer = nullptr;
 	auto operandBufferId = 0;
 	AdvancedOffset operandOffset = {};
 
@@ -1351,7 +1351,7 @@ void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, ui
 		clearTargets(newBufferIds);
 	}
 
-	std::vector<std::vector<std::shared_ptr<BufferStream>>> chunks;
+	std::vector<BufferVector> chunks;
 	chunks.resize(chunkCount);
 	{
 		// split to get raw chunks
@@ -1401,7 +1401,7 @@ void VDUStreamProcessor::bufferSpreadInto(uint16_t bufferId, tcb::span<uint16_t>
 	}
 	auto &buffer = bufferIter->second;
 	// swap the source buffer contents into a local vector so it can be iterated safely even if it's a target
-	std::vector<std::shared_ptr<BufferStream>> localBuffer;
+	BufferVector localBuffer;
 	localBuffer.swap(buffer);
 	if (!iterate) {
 		clearTargets(newBufferIds);
@@ -2272,7 +2272,7 @@ void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options,
 	auto workingLimit = limit;
 
 	// prepare a vector for storing our buffers
-	std::vector<std::shared_ptr<BufferStream>> streams;
+	BufferVector streams;
 	// loop thru buffer IDs
 	for (const auto &block : sourceBufferIter->second) {
 		// push a copy of the source block into our new vector
@@ -2622,18 +2622,17 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 		while (bufferLength--) {
 			auto value = *p_source++;
 			for (uint8_t i = 0; i < 8; i++) {
-				debug_log("pixel bit is %d ", ((value >> 7 - i) & 1));
 				pixel = (pixel << 1) | ((value >> (7 - i)) & 1);
 				bit++;
 				if (bit == pixelSize) {
 					bit = 0;
 					*p_data++ = mapValues[pixel];
-					debug_log(" %02hX %02hX (%02hX) %d\n\r", pixel, mapValues[pixel], value, i);
+					// debug_log("pixel map: %02hX %02hX (%02hX) %d\n\r", pixel, mapValues[pixel], value, i);
 					pixel = 0;
 					if (aligned) {
 						if (++pixelCount == width) {
 							// byte align
-							debug_log("aligned... skipping to next byte at byte bit %d\n\r", i);
+							// debug_log("aligned... skipping to next byte at byte bit %d\n\r", i);
 							pixelCount = 0;
 							// jump to next byte
 							break;

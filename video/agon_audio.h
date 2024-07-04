@@ -26,7 +26,10 @@ std::mutex soundGeneratorMutex;
 // audio channels and their associated tasks
 AudioChannel *audioChannels[MAX_AUDIO_CHANNELS];
 TaskHandle_t audioTask;
-std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage for the sample data
+// Storage for our sample data
+std::unordered_map<uint16_t, std::shared_ptr<AudioSample>,
+	std::hash<uint16_t>, std::equal_to<uint16_t>,
+	psram_allocator<std::pair<const uint16_t, std::shared_ptr<AudioSample>>>> samples;
 fabgl::SoundGenerator *soundGenerator;  // audio handling sub-system
 
 bool channelEnabled(uint8_t channel);
