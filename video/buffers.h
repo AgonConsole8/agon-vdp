@@ -16,6 +16,30 @@ extern void debug_log(const char * format, ...);		// Debug log function
 using BufferVector = std::vector<std::shared_ptr<BufferStream>, psram_allocator<std::shared_ptr<BufferStream>>>;
 std::unordered_map<uint16_t, BufferVector, std::hash<uint16_t>, std::equal_to<uint16_t>, psram_allocator<std::pair<const uint16_t, BufferVector>>> buffers;
 
+struct AdvancedOffset {
+	uint32_t blockOffset = 0;
+	size_t blockIndex = 0;
+};
+
+typedef union {
+	struct {
+		uint8_t rows : 4;
+		uint8_t columns : 4;
+	};
+	uint8_t value = 0;
+	uint8_t size() const {
+		return rows * columns;
+	}
+	uint8_t rowSizeBytes() const {
+		return columns * sizeof(float);
+	}
+	uint8_t sizeBytes() const {
+		return size() * sizeof(float);
+	}
+} MatrixSize;
+
+std::unordered_map<uint16_t, MatrixSize, std::hash<uint16_t>, std::equal_to<uint16_t>, psram_allocator<std::pair<const uint16_t, MatrixSize>>> matrixMetadata;
+
 // Utility functions for buffer management:
 
 // Resolve a buffer id
@@ -168,5 +192,131 @@ void extractFormatInfo(uint8_t format, bool &isFixed, bool &is16Bit, int8_t &shi
 	}
 };
 
+// Get the longest contiguous span at the given buffer offset. Updates the offset to the correct block index.
+// accepts a size to dictate the minimum span size, and will align offset if block didn't contain the required size of data
+tcb::span<uint8_t> getBufferSpan(const BufferVector &buffer, AdvancedOffset &offset, uint8_t size = 1) {
+	while (offset.blockIndex < buffer.size()) {
+		// check for available bytes in the current block
+		auto &block = buffer[offset.blockIndex];
+		if ((offset.blockOffset + size) <= block->size()) {
+			return { block->getBuffer() + offset.blockOffset, block->size() - offset.blockOffset };
+		}
+		// if offset exceeds the block size, loop to find the correct block
+		// ensuring our offset doesn't go below zero in the event that we didn't have enough data in the block
+		offset.blockOffset = std::max<int32_t>(0, offset.blockOffset - block->size());
+		offset.blockIndex++;
+	}
+	// offset not found in buffer
+	return {};
+}
+
+tcb::span<uint8_t> getBufferSpan(const uint16_t bufferId, AdvancedOffset &offset, uint8_t size = 1) {
+	auto bufferIter = buffers.find(bufferId);
+	if (bufferIter == buffers.end()) {	// buffer not found
+		return {};
+	}
+	return getBufferSpan(bufferIter->second, offset, size);
+}
+
+// Utility call to read a byte from a buffer at the given offset
+int16_t getBufferByte(const BufferVector &buffer, AdvancedOffset &offset, bool iterate = false) {
+	auto bufferSpan = getBufferSpan(buffer, offset);
+	if (bufferSpan.empty()) {	// offset not found in buffer
+		return -1;
+	}
+	if (iterate) {
+		offset.blockOffset++;
+	}
+	return bufferSpan.front();
+}
+
+// utility call to read multiple bytes from a buffer at a given offset
+bool readBufferBytes(const uint16_t bufferId, AdvancedOffset &offset, void *target, uint16_t size, bool iterate = false) {
+	auto bufferSpan = getBufferSpan(bufferId, offset, size);
+	if (bufferSpan.empty()) {	// offset not found in buffer
+		return false;
+	}
+	memcpy(target, bufferSpan.data(), size);
+	if (iterate) {
+		offset.blockOffset += size;
+	}
+	return true;
+}
+
+// Utility call to read a float from a buffer at the given offset, in the given format
+// NB float must not span over buffer block boundaries
+float readBufferFloat(uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift, bool iterate = false) {
+	uint32_t rawValue = 0;
+	if (!readBufferBytes(sourceBufferId, offset, &rawValue, is16Bit ? 2 : 4, iterate)) {
+		// failed to read value from buffer
+		return INFINITY;
+	}
+	return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
+};
+
+// Utility call to set a byte in a buffer at the given offset
+bool setBufferByte(uint8_t value, const BufferVector &buffer, AdvancedOffset &offset, bool iterate = false) {
+	auto bufferSpan = getBufferSpan(buffer, offset);
+	if (bufferSpan.empty()) {
+		// offset not found in buffer
+		return false;
+	}
+	bufferSpan.front() = value;
+	if (iterate) {
+		offset.blockOffset++;
+	}
+	return true;
+}
+
+MatrixSize getMatrixSize(uint16_t bufferId) {
+	auto sizeIter = matrixMetadata.find(bufferId);
+	if (sizeIter == matrixMetadata.end()) {
+		return {};
+	}
+	return sizeIter->second;
+}
+
+bool getMatrixFromBuffer(uint16_t bufferId, float* matrix, MatrixSize size, bool allowSubmatrix = true) {
+	// Does the buffer contain the matrix?
+	auto sourceSize = getMatrixSize(bufferId);
+	if (sourceSize.size() == 0) {
+		// No size information for this buffer
+		return false;
+	}
+	if (buffers.find(bufferId) == buffers.end()) {
+		// This check should be unnecessary, but it's here for safety
+		return false;
+	}
+
+	if (sourceSize.rows == size.rows && sourceSize.columns == size.columns) {
+		// The matrix is the correct size, so we can copy it directly
+		AdvancedOffset offset = {};
+		return readBufferBytes(bufferId, offset, matrix, size.sizeBytes());
+	}
+
+	if (!allowSubmatrix) {
+		// Matrix sizes don't match, and we're not allowed to grab a submatrix
+		return false;
+	}
+	// Matrix sizes don't match, so we will grab a submatrix
+	// Assumption is that matrix pointer is pre-filled as appropriate (probably with an identity matrix, or zeros)
+
+	auto rows = std::min(sourceSize.rows, size.rows);
+	auto columns = std::min(sourceSize.columns, size.columns);
+	for (auto i = 0; i < rows; i++) {
+		AdvancedOffset offset = {};
+		offset.blockOffset = i * sourceSize.rowSizeBytes();
+		for (auto j = 0; j < columns; j++) {
+			auto value = readBufferFloat(bufferId, offset, false, false, 0, true);
+			if (value == INFINITY) {
+				// failed to read value from buffer
+				return false;
+			}
+			matrix[i * size.columns + j] = value;
+		}
+	}
+
+	return true;
+}
 
 #endif // BUFFERS_H

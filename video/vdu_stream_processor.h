@@ -9,6 +9,7 @@
 #include <fabgl.h>
 
 #include "agon.h"
+#include "buffers.h"
 #include "context.h"
 #include "buffer_stream.h"
 #include "span.h"
@@ -22,11 +23,6 @@ std::unordered_map<uint16_t, ContextVectorPtr,
 
 class VDUStreamProcessor {
 	private:
-		struct AdvancedOffset {
-			uint32_t blockOffset = 0;
-			size_t blockIndex = 0;
-		};
-
 		std::shared_ptr<Stream> inputStream;
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
@@ -118,12 +114,6 @@ class VDUStreamProcessor {
 		void setOutputStream(uint16_t bufferId);
 		AdvancedOffset getOffsetFromStream(bool isAdvanced);
 		std::vector<uint16_t> getBufferIdsFromStream();
-		static tcb::span<uint8_t> getBufferSpan(const BufferVector &buffer, AdvancedOffset &offset, uint8_t size = 1);
-		static tcb::span<uint8_t> getBufferSpan(uint16_t bufferId, AdvancedOffset &offset, uint8_t size = 1);
-		static int16_t getBufferByte(const BufferVector &buffer, AdvancedOffset &offset, bool iterate = false);
-		static bool readBufferBytes(uint16_t bufferId, AdvancedOffset &offset, void *target, uint16_t size, bool iterate = false);
-		static float readBufferFloat(uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift, bool iterate = false);
-		static bool setBufferByte(uint8_t value, const BufferVector &buffer, AdvancedOffset &offset, bool iterate = false);
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
 		void bufferJump(uint16_t bufferId, AdvancedOffset offset);
@@ -138,7 +128,7 @@ class VDUStreamProcessor {
 		void bufferCopyRef(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferAffineTransform(uint16_t bufferId, uint8_t command, bool is3D);
-		void bufferMatrixManipulate(uint16_t bufferId, uint8_t command, uint8_t rows, uint8_t columns);
+		void bufferMatrixManipulate(uint16_t bufferId, uint8_t command, MatrixSize size);
 		void bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
