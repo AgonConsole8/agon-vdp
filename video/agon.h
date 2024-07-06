@@ -364,10 +364,10 @@
 #define MATRIX_MULTIPLY			6		// Multiply (target = source1 * source2)
 #define MATRIX_SCALAR_MULTIPLY	7		// Scalar multiply (target = source1 * scalar)
 #define MATRIX_SUBMATRIX		8		// Extract a submatrix
-// #define MATRIX_INSERT_ROW		9		// Insert a row
-// #define MATRIX_INSERT_COLUMN	10		// Insert a column
-// #define MATRIX_DELETE_ROW		11		// Delete a row
-// #define MATRIX_DELETE_COLUMN	12		// Delete a column
+#define MATRIX_INSERT_ROW		9		// Insert a row
+#define MATRIX_INSERT_COLUMN	10		// Insert a column
+#define MATRIX_DELETE_ROW		11		// Delete a row
+#define MATRIX_DELETE_COLUMN	12		// Delete a column
 
 #define MATRIX_OP_MASK			0x0F	// operation code mask
 #define MATRIX_OP_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)

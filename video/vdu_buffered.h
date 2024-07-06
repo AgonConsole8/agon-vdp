@@ -251,6 +251,20 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			if (buffers[bufferId].empty()) {
 				return;
 			}
+			auto matrixSize = getMatrixSize(bufferId);
+			if (matrixSize.value != 0) {
+				float transform[matrixSize.size()] = {0.0f};
+				if (getMatrixFromBuffer(bufferId, transform, matrixSize)) {
+					debug_log("buffer contains a %d x %d matrix with contents:\n\r", matrixSize.rows, matrixSize.columns);
+					for (int i = 0; i < matrixSize.rows; i++) {
+						for (int j = 0; j < matrixSize.columns; j++) {
+							debug_log(" %f", transform[i * matrixSize.columns + j]);
+						}
+						debug_log("\n\r");
+					}
+					return;
+				}
+			}
 			// output contents of buffer stream 0
 			auto buffer = buffers[bufferId][0];
 			auto bufferLength = buffer->size();
@@ -1628,16 +1642,15 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 			}
 		}	break;
 		case AFFINE_MULTIPLY: {
-			// multiply values in a matrix by (single) argument value
-			// fetch matrix buffer, then multiply all values except last row by value
+			// scalar multiply of values in an existing matrix by (single) argument value
 			float scalar;
 			if (!readFloatArguments(&scalar, 1, useBufferValue, useAdvancedOffsets, useMultiFormat)
 				|| !getMatrixFromBuffer(bufferId, transform, size, false)) {
 				debug_log("bufferAffineTransform: failed to read scalar, or matrix from buffer %d to multiply\n\r", bufferId);
 				return;
 			}
-			// scale transform matrix by scalar, skipping last value (as that needs to remain a 1)
-			for (int i = 0; i < (size.size() - 1); i++) {
+			// scale transform matrix by scalar, skipping last row
+			for (int i = 0; i < (size.size() - size.columns); i++) {
 				transform[i] *= scalar;
 			}
 			replace = true;
@@ -1653,7 +1666,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 			}
 		}	break;
 		case AFFINE_TRANSLATE: {
-			// translate by a given amount of pixels
+			// translate by a given amount
 			float translateXY[dimensions] = {0.0f};
 			if (!readFloatArguments(translateXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
@@ -1663,7 +1676,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 			}
 		}	break;
 		case AFFINE_TRANSLATE_OS_COORDS: {
-			// translate by a given amount of pixels (x and y are scaled to be OS coordinates)
+			// translate by a given amount of pixels where x and y match current coordinate system scaling
 			float translateXY[dimensions] = {0.0f};
 			if (!readFloatArguments(translateXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
@@ -1671,7 +1684,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 			auto scaled = context->scale(translateXY[0], translateXY[1]);
 			transform[dimensions] = scaled.X;
 			transform[size.columns + dimensions] = scaled.Y;
-			if (is3D) {		// Y translate is not scaled in 3D
+			if (is3D) {		// Z translate is not scaled in 3D
 				transform[size.columns * dimensions - 1] = translateXY[2];
 			}
 		}	break;
@@ -1699,7 +1712,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		}	break;
 		case AFFINE_TRANSFORM: {
 			// we'll either be creating a new matrix, or combining with an existing one
-			// we omit reading the last row, as it will always be 0,0,1 for 2d or 0,0,0,1 for 3d
+			// omit reading the last row, as these are affine transforms so don't need setting
 			if (!readFloatArguments(transform, size.size() - size.columns, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
@@ -1728,16 +1741,9 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 			return;
 	}
 
-	auto bufferStream = make_shared_psram<BufferStream>(size.sizeBytes());
-	if (!bufferStream || !bufferStream->getBuffer()) {
-		// buffer couldn't be created
-		debug_log("bufferAffineTransform: failed to create buffer %d\n\r", bufferId);
-		return;
-	}
-
 	if (!replace) {
 		// we are combining - for now, only if the existing matrix is the same size
-		// TODO handle different size matrices - should really combine at larger size, and then truncate
+		// TODO consider handling different size matrices - could combine at larger size, and then truncate
 		float existing[size.size()] = {0.0f};
 		if (getMatrixFromBuffer(bufferId, existing, size, false)) {
 			// combine the two matrices together
@@ -1748,19 +1754,16 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		}
 	}
 
+	auto bufferStream = make_shared_psram<BufferStream>(size.sizeBytes());
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		debug_log("bufferAffineTransform: failed to create buffer %d\n\r", bufferId);
+		return;
+	}
 	bufferStream->writeBuffer((uint8_t *)transform, size.sizeBytes());
 	bufferClear(bufferId);
 	buffers[bufferId].push_back(std::move(bufferStream));
-	debug_log("bufferAffineTransform: created new matrix buffer %d\n\r", bufferId);
 	matrixMetadata[bufferId] = size;
-
-	for (int i = 0; i < size.rows; i++) {
-		for (int j = 0; j < size.columns; j++) {
-			debug_log(" %f", transform[i * size.columns + j]);
-		}
-		debug_log("\n\r");
-	}
-	debug_log("matrix size %d x %d\n\r", size.rows, size.columns);
+	debug_log("bufferAffineTransform: created new matrix buffer %d\n\r", bufferId);
 }
 
 // VDU 23, 0, &A0, bufferId; &22, operation, rows, columns, <args> : Generic matrix creation/manipulation
@@ -1779,17 +1782,16 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			if (!readFloatArguments(matrix, size.size(), useBufferValue, useAdvancedOffsets, false)) {
 				return;
 			}
-		} break;
+		}	break;
 		case MATRIX_SET_VALUE: {
 			// sets a single value at a given row and column within the source matrix
 			auto sourceId = readWord_t();
 			if (sourceId == -1) {
 				return;
 			}
-			// then set a single value in the matrix
 			auto row = readByte_t();
 			auto column = readByte_t();
-			if (row == -1 || column == -1 || row >= size.rows || column >= size.columns) {
+			if (row < 0 || column < 0 || row >= size.rows || column >= size.columns) {
 				return;
 			}
 			// read source matrix into matrix, enforcing size match
@@ -1801,7 +1803,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			if (!readFloatArguments(&matrix[row * size.columns + column], 1, useBufferValue, useAdvancedOffsets, false)) {
 				return;
 			}
-		} break;
+		}	break;
 		case MATRIX_FILL: {
 			float value;
 			if (!readFloatArguments(&value, 1, useBufferValue, useAdvancedOffsets, false)) {
@@ -1811,7 +1813,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			for (int i = 0; i < size.size(); i++) {
 				matrix[i] = value;
 			}
-		} break;
+		}	break;
 		case MATRIX_DIAGONAL: {
 			// diagonal matrix with given values
 			auto argCount = fabgl::imin(size.rows, size.columns);
@@ -1822,7 +1824,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			for (int i = 0; i < argCount; i++) {
 				matrix[i * size.columns + i] = args[i];
 			}
-		} break;
+		}	break;
 		case MATRIX_ADD: {
 			// simple add of two matrixes
 			auto sourceId1 = readWord_t(); if (sourceId1 == -1) return;
@@ -1837,7 +1839,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			for (int i = 0; i < size.size(); i++) {
 				matrix[i] += source[i];
 			}
-		} break;
+		}	break;
 		case MATRIX_SUBTRACT: {
 			// simple subtract of two matrixes
 			auto sourceId1 = readWord_t(); if (sourceId1 == -1) return;
@@ -1852,26 +1854,23 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			for (int i = 0; i < size.size(); i++) {
 				matrix[i] -= source[i];
 			}
-		} break;
+		}	break;
 		case MATRIX_MULTIPLY: {
 			// multiply two matrixes
-			auto sourceId1 = readWord_t(); if (sourceId1 == -1) return;
-			auto sourceId2 = readWord_t(); if (sourceId2 == -1) return;
-
 			// matrixes of arbitrary dimensions can be multiplied by making them square and padding with zeros
 			// where the square size is the maximum of the two source size dimensions and target dimensions
+			auto sourceId1 = readWord_t(); if (sourceId1 == -1) return;
+			auto sourceId2 = readWord_t(); if (sourceId2 == -1) return;
 			auto sourceSize1 = getMatrixSize(sourceId1);
 			auto sourceSize2 = getMatrixSize(sourceId2);
 			if (sourceSize1.value == 0 || sourceSize2.value == 0) {
 				debug_log("bufferMatrixManipulate: source matrix %d or %d not found\n\r", sourceId1, sourceId2);
 				return;
 			}
-
 			uint8_t dimensions = std::max({ (uint8_t)size.rows, (uint8_t)size.columns, (uint8_t)sourceSize1.rows, (uint8_t)sourceSize1.columns, (uint8_t)sourceSize2.rows, (uint8_t)sourceSize2.columns });
 			MatrixSize resultSize;
 			resultSize.rows = dimensions;
 			resultSize.columns = dimensions;
-			
 			float source1[resultSize.size()] = {0.0f};
 			float source2[resultSize.size()] = {0.0f};
 			if (!getMatrixFromBuffer(sourceId1, source1, resultSize) || !getMatrixFromBuffer(sourceId2, source2, resultSize)) {
@@ -1881,13 +1880,12 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			// multiply values in source1 and source2
 			float result[resultSize.size()] = {0.0f};
 			dspm_mult_f32(source1, source2, result, resultSize.rows, resultSize.columns, resultSize.columns);
-			// copy data from matrix back to our working transform matrix
 			for (int row = 0; row < size.rows; row++) {
 				for (int column = 0; column < size.columns; column++) {
 					matrix[row * size.columns + column] = result[row * resultSize.columns + column];
 				}
 			}
-		} break;
+		}	break;
 		case MATRIX_SCALAR_MULTIPLY: {
 			// multiply all values in a source matrix by a scalar
 			auto sourceId = readWord_t(); if (sourceId == -1) return;
@@ -1895,7 +1893,6 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			if (!readFloatArguments(&scalar, 1, useBufferValue, useAdvancedOffsets, false)) {
 				return;
 			}
-			// read source matrix
 			if (!getMatrixFromBuffer(sourceId, matrix, size)) {
 				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
 				return;
@@ -1904,15 +1901,39 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			for (int i = 0; i < size.size(); i++) {
 				matrix[i] *= scalar;
 			}
-		} break;
+		}	break;
 		case MATRIX_SUBMATRIX: {
 			// extract a submatrix from a source matrix at given row and column
-			// target matrix will be filled from top-left
-			// if source matrix is smaller than target, it will be padded with zeros
-			// if target matrix is smaller than source, it will be truncated
+			// target matrix will be filled from top-left, truncating or padding as necessary
 			auto sourceId = readWord_t(); if (sourceId == -1) return;
 			auto row = readByte_t(); if (row == -1) return;
 			auto column = readByte_t(); if (column == -1) return;
+			auto sourceSize = getMatrixSize(sourceId);
+			if (sourceSize.value == 0) {
+				debug_log("bufferMatrixManipulate: source matrix %d not found\n\r", sourceId);
+				return;
+			}
+			float source[sourceSize.size()] = {0.0f};
+			if (!getMatrixFromBuffer(sourceId, source, sourceSize)) {
+				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
+				return;
+			}
+			for (int i = 0; i < size.rows; i++) {
+				for (int j = 0; j < size.columns; j++) {
+					if (i + row < sourceSize.rows && j + column < sourceSize.columns) {
+						matrix[i * size.columns + j] = source[(i + row) * sourceSize.columns + (j + column)];
+					}
+				}
+			}
+		}	break;
+		case MATRIX_INSERT_ROW:
+		case MATRIX_INSERT_COLUMN:
+		case MATRIX_DELETE_ROW:
+		case MATRIX_DELETE_COLUMN: {
+			bool rowOp = op == MATRIX_INSERT_ROW || op == MATRIX_DELETE_ROW;
+			bool insertOp = op == MATRIX_INSERT_ROW || op == MATRIX_INSERT_COLUMN;
+			auto sourceId = readWord_t(); if (sourceId == -1) return;
+			auto index = readByte_t(); if (index == -1) return;
 			auto sourceSize = getMatrixSize(sourceId);
 			if (sourceSize.value == 0) {
 				debug_log("bufferMatrixManipulate: source matrix %d not found\n\r", sourceId);
@@ -1924,39 +1945,41 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
 				return;
 			}
-			// copy submatrix into target matrix
+			// iterate over target matrix, copying from source matrix, skipping as necessary
 			for (int i = 0; i < size.rows; i++) {
 				for (int j = 0; j < size.columns; j++) {
-					if (i + row < sourceSize.rows && j + column < sourceSize.columns) {
-						matrix[i * size.columns + j] = source[(i + row) * sourceSize.columns + (j + column)];
+					if (insertOp && (rowOp && i == index || !rowOp && j == index)) {
+						// skip target at row/column we're inserting
+						continue;
 					}
+					int sourceRow = i;
+					int sourceColumn = j;
+					// adjust our source row/column if we're past the index
+					if (rowOp && i >= index) {
+						sourceRow = sourceRow + insertOp ? -1 : 1;
+					}
+					if (!rowOp && j >= index) {
+						sourceColumn = sourceColumn + insertOp ? -1 : 1;
+					}
+					if (sourceRow < 0 || sourceRow >= sourceSize.rows || sourceColumn < 0 || sourceColumn >= sourceSize.columns) {
+						// out of bounds, so skip
+						continue;
+					}
+					matrix[i * size.columns + j] = source[sourceRow * sourceSize.columns + sourceColumn];
 				}
 			}
-		} break;
-		// case MATRIX_INSERT_ROW: {
-
-		// } break;
-		// case MATRIX_INSERT_COLUMN: {
-
-		// } break;
-		// case MATRIX_DELETE_ROW: {
-
-		// } break;
-		// case MATRIX_DELETE_COLUMN: {
-
-		// } break;
+		}	break;
 	}
 
 	auto bufferStream = make_shared_psram<BufferStream>(size.sizeBytes());
 	if (!bufferStream || !bufferStream->getBuffer()) {
-		// buffer couldn't be created
 		debug_log("bufferMatrixManipulate: failed to create buffer %d\n\r", bufferId);
 		return;
 	}
-
 	bufferStream->writeBuffer((uint8_t *)matrix, size.sizeBytes());
 	bufferClear(bufferId);
 	buffers[bufferId].push_back(std::move(bufferStream));
+	matrixMetadata[bufferId] = size;
 	debug_log("bufferMatrixManipulate: created new matrix buffer %d\n\r", bufferId);
 }
 
@@ -1970,7 +1993,6 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 	bool shouldResize = options & TRANSFORM_BITMAP_RESIZE;
 	bool explicitSize = options & TRANSFORM_BITMAP_EXPLICIT_SIZE;
 	bool autoTranslate = options & TRANSFORM_BITMAP_TRANSLATE;
-
 	if (explicitSize && !shouldResize) {
 		debug_log("bufferTransformBitmap: warning - explicit size without resize flag\n\r");
 		// we'll let this pass for now, but it may be an error
@@ -1990,18 +2012,10 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 	}
 
 	auto bitmap = getBitmap(bitmapId);
-
 	if (!bitmap) {
 		debug_log("bufferTransformBitmap: bitmap %d not found\n\r", bitmapId);
 		return;
 	}
-
-	// NB source bitmap is currently assumed to be RGBA2222 format
-	auto srcWidth = bitmap->width;
-	float srcWidthF = (float)srcWidth;
-	auto srcHeight = bitmap->height;
-	float srcHeightF = (float)srcHeight;
-
 	auto transformBufferIter = buffers.find(transformBufferId);
 	if (transformBufferIter == buffers.end()) {
 		debug_log("bufferTransformBitmap: buffer %d not found\n\r", transformBufferId);
@@ -2013,16 +2027,14 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 		return;
 	}
 
+	// NB source bitmap is currently assumed to be RGBA2222 format
+	auto srcWidth = bitmap->width;
+	float srcWidthF = (float)srcWidth;
+	auto srcHeight = bitmap->height;
+	float srcHeightF = (float)srcHeight;
 	auto transform = (float *)transformBuffer[0]->getBuffer();
 	auto inverse = (float *)transformBuffer[1]->getBuffer();
-
-	auto sourceIter = buffers.find(bitmapId);
-	if (sourceIter == buffers.end()) {
-		debug_log("bufferTransformBitmap: source buffer %d not found\n\r", bitmapId);
-		return;
-	}
-	auto &sourceBuffer = sourceIter->second;
-	auto source = sourceBuffer[0]->getBuffer();
+	auto source = bitmap->data;
 
 	if (!explicitSize) {
 		width = srcWidth;
@@ -2081,7 +2093,6 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 	// assuming we are doing RGBA2222 format (1 byte per pixel)
 	auto bufferStream = make_shared_psram<BufferStream>(width * height);
 	if (!bufferStream || !bufferStream->getBuffer()) {
-		// buffer couldn't be created
 		debug_log("bufferTransformBitmap: failed to create buffer %d\n\r", bufferId);
 		return;
 	}
