@@ -1956,10 +1956,10 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 					int sourceColumn = j;
 					// adjust our source row/column if we're past the index
 					if (rowOp && i >= index) {
-						sourceRow = sourceRow + insertOp ? -1 : 1;
+						sourceRow += insertOp ? -1 : 1;
 					}
 					if (!rowOp && j >= index) {
-						sourceColumn = sourceColumn + insertOp ? -1 : 1;
+						sourceColumn += insertOp ? -1 : 1;
 					}
 					if (sourceRow < 0 || sourceRow >= sourceSize.rows || sourceColumn < 0 || sourceColumn >= sourceSize.columns) {
 						// out of bounds, so skip
@@ -2137,36 +2137,50 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 // Will accept options to control the transformation
 //
 void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId) {
-	// Interpret our options
-	bool padData = !(options & TRANSFORM_DATA_NO_PAD);
+	bool hasSize = options & TRANSFORM_DATA_HAS_SIZE;
 	bool hasOffset = options & TRANSFORM_DATA_HAS_OFFSET;
 	bool hasStride = options & TRANSFORM_DATA_HAS_STRIDE;
 	bool hasLimit = options & TRANSFORM_DATA_HAS_LIMIT;
 	bool advancedOffsets = options & TRANSFORM_DATA_ADVANCED;
-	// do we _really_ want/need separate flags for "use buffer for offset" etc?
-	bool useBufferForOffset = options & TRANSFORM_DATA_OFFSET_BUFF;
-	bool useBufferForStride = options & TRANSFORM_DATA_STRIDE_BUFF;
-	bool useBufferForLimit = options & TRANSFORM_DATA_LIMIT_BUFF;
-	bool perBlock = false;
+	bool useBufferArgs = options & TRANSFORM_DATA_BUFFER_ARGS;
+	bool perBlock = options & TRANSFORM_DATA_PER_BLOCK;
 
-	// Potential other options:
-	// explicit data size - this would allow us to pad out data to a specific size
-	// set bit in options for per-block, instead of in stride?
-
-	// Transform assumes sets of data are contiguous, and cannot overlap block boundaries
-	// If top-bit of stride is set, transforms will be done on a per-block basis
-	// stride will default to data size if not set, or explicitly set to 0
-	// a stride of -1 (65535) means no stride at all - so we adjust only a single set of coordinates, per block (equivalent to setting a limit of 1)
-
-	// Data blocks are currently assumed to include 1 less value than matrix row count, i.e. 2 values for a 3x3 (2d transform) matrix
-	// A flag can be set to indicate that data should _not_ be padded out (with a 1.0f value) to match the matrix size
+	// Default data size is derived from the transform matrix size (rows-1)
+	// If "has size" flag is set, but a zero size is read, then the number of data elements will be matrix row count
+	// A set of data elements to be transformed must to be contiguous, and cannot overlap block boundaries
+	// Stride will default to the data size if not set (or explicitly set to 0) (in bytes)
 
 	AdvancedOffset offsetInfo = {};
 	uint32_t stride = 0;
-	uint32_t limit = 0xFFFFFFFF;
+	uint32_t limit = 0;
+	uint32_t dataSize = 0;
+
+	// Utility lambda to get an 8 or 16-bit argument, possibly from a buffer+offset
+	auto getArg = [this](uint32_t &value, bool useBuffer, bool useAdvancedOffsets, bool is16Bit = true) -> bool {
+		if (useBuffer) {
+			auto bufferId = readWord_t();
+			if (bufferId == -1) {
+				return false;
+			}
+			auto offset = getOffsetFromStream(useAdvancedOffsets);
+			if (!readBufferBytes(bufferId, offset, &value, is16Bit ? 2 : 1)) {
+				return false;
+			}
+		} else {
+			value = is16Bit ? readWord_t() : readByte_t();
+			if (value == -1) {
+				return false;
+			}
+		}
+		return true;
+	};
+
+	if (hasSize && !getArg(dataSize, useBufferArgs, advancedOffsets, false)) {
+		return;
+	}
 
 	if (hasOffset) {
-		if (useBufferForOffset) {
+		if (useBufferArgs) {
 			auto argBuffer = readWord_t();
 			if (argBuffer == -1) {
 				return;
@@ -2195,42 +2209,14 @@ void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options,
 		}
 	}
 
-	// Utility lambda to get a 16-bit argument, possibly from a buffer+offset
-	auto getArg = [this](uint32_t &value, bool useBuffer, bool useAdvancedOffsets) -> bool {
-		if (useBuffer) {
-			auto bufferId = readWord_t();
-			if (bufferId == -1) {
-				return false;
-			}
-			auto offset = getOffsetFromStream(useAdvancedOffsets);
-			if (!readBufferBytes(bufferId, offset, &value, 2)) {
-				return false;
-			}
-		} else {
-			value = readWord_t();
-			if (value == -1) {
-				return false;
-			}
-		}
-		return true;
-	};
-
-	if (hasStride) {
-		if (!getArg(stride, useBufferForStride, advancedOffsets)) {
-			return;
-		}
-		perBlock = stride & 0x8000;
-		if (stride != 0xFFFF) {
-			stride &= 0x7FFF;
-		}
+	if (hasStride && !getArg(stride, useBufferArgs, advancedOffsets)) {
+		return;
 	}
-	if (hasLimit) {
-		if (!getArg(limit, useBufferForLimit, advancedOffsets)) {
-			return;
-		}
-		if (limit == 0) {	// limit of 0 means transform all the data
-			limit = 0xFFFFFFFF;
-		}
+	if (hasLimit && !getArg(limit, useBufferArgs, advancedOffsets)) {
+		return;
+	}
+	if (limit == 0) {	// limit of 0 means transform all the data
+		limit = 0xFFFFFFFF;
 	}
 
 	auto sourceBufferIter = buffers.find(sourceBufferId);
@@ -2245,7 +2231,14 @@ void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options,
 		return;
 	}
 	// How many source values are we reading at a time for this matrix size?
-	auto sourceDataValues = transformSize.rows - (padData ? 1 : 0);
+	if (dataSize == 0) {
+		// no explicit data size set, so we'll use 1 row less than the matrix size
+		dataSize = transformSize.rows - (hasSize ? 0 : 1);
+	}
+	if (dataSize > transformSize.rows) {
+		debug_log("bufferTransformData: data size %d exceeds matrix rows %d\n\r", dataSize, transformSize.rows);
+		return;
+	}
 	// as we have metadata, buffer _should_ exist, but we'll check anyway
 	auto transformBufferIter = buffers.find(transformBufferId);
 	if (transformBufferIter == buffers.end()) {
@@ -2264,14 +2257,14 @@ void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options,
 	extractFormatInfo(format, isFixed, is16Bit, shift);
 	auto bytesPerValue = is16Bit ? 2 : 4;
 	if (stride == 0) {
-		stride = bytesPerValue * sourceDataValues;
+		stride = bytesPerValue * dataSize;
 	}
 
 	// Make 1-dimensional arrays for our source and transformed data
-	float srcPos[transformSize.rows] = {1.0f};	// default to 1.0f for padding
+	float srcData[transformSize.rows];
+	std::fill_n(srcData, transformSize.rows, 1.0f);
 	float transformed[transformSize.rows];
 
-	// prepare a vector for storing our buffers
 	// our destination buffer will be a copy of the source, with the data transformed
 	BufferVector streams;
 	auto workingOffset = offsetInfo;
@@ -2295,32 +2288,23 @@ void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options,
 
 		// now transform data in the buffer, according to the rules we have
 		uint32_t sourceData = 0;
-		while (!getBufferSpan(streams, workingOffset, bytesPerValue * sourceDataValues).empty() && workingLimit) {
+		while (!getBufferSpan(streams, workingOffset, bytesPerValue * dataSize).empty() && workingLimit) {
 			workingLimit--;
 			// read the source data - we will always have enough data to read
 			auto sourceOffset = workingOffset;
-			for (int i = 0; i < sourceDataValues; i++) {
+			for (int i = 0; i < dataSize; i++) {
 				auto span = getBufferSpan(streams, sourceOffset, bytesPerValue);
 				sourceOffset.blockOffset += bytesPerValue;
 				sourceData = 0;
 				memcpy(&sourceData, span.data(), bytesPerValue);
-				srcPos[i] = convertValueToFloat(sourceData, is16Bit, isFixed, shift);
+				srcData[i] = convertValueToFloat(sourceData, is16Bit, isFixed, shift);
 			}
-
-			// apply the transform
-			dspm_mult_f32(transform, srcPos, transformed, transformSize.rows, transformSize.columns, 1);
-			// write the transformed data back to the buffer
-			for (int i = 0; i < sourceDataValues; i++) {
+			// apply the transform and write back to the buffer
+			dspm_mult_f32(transform, srcData, transformed, transformSize.rows, transformSize.columns, 1);
+			for (int i = 0; i < dataSize; i++) {
 				auto value = convertFloatToValue(transformed[i], is16Bit, isFixed, shift);
 				bufferStream->writeBuffer((uint8_t *)&value, bytesPerValue, workingOffset.blockOffset + (i * bytesPerValue));
 			}
-
-			if (stride == 65535) {
-				// stride of 65535 means no stride - so we're done with this block
-				break;
-			}
-
-			// increment by our stride
 			workingOffset.blockOffset += stride;
 		}
 	}
