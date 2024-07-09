@@ -267,7 +267,7 @@
 #define BUFFERED_AFFINE_TRANSFORM_3D	0x21	// Create or combine a 4x4 3d affine transform matrix buffer
 #define BUFFERED_MATRIX					0x22	// Create or combine a matrix buffer of arbitrary dimensions
 #define BUFFERED_TRANSFORM_BITMAP		0x28	// Create a new bitmap from an existing one by applying a 2d transform
-#define BUFFERED_TRANSFORM_DATA			0x29	// Transform data using a 2d affine transform matrix
+#define BUFFERED_TRANSFORM_DATA			0x29	// Transform data using a given matrix
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
@@ -324,7 +324,6 @@
 // Affine transform operation codes
 // if applying to an empty buffer, generate a matrix with the given operation
 // otherwise combine the existing matrix with the given operation
-// TODO think about numbers of arguments for each operation
 #define AFFINE_IDENTITY			0		// Create/reset to an identity matrix (no arguments)
 #define AFFINE_INVERT			1		// Invert (no arguments)
 #define AFFINE_ROTATE			2		// Rotate (anticlockwise by angle, 1 argument for 2d, 3 arguments for 3d)

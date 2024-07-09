@@ -1985,7 +1985,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 
 
 // VDU 23, 0, &A0, bufferId; &28, options, transformBufferId; bitmapId; : Apply 2d affine transformation to bitmap
-// Apply an affine transformation to a bitmap, creating a new bitmap
+// Apply an affine transformation to a bitmap, creating a new RGBA2222 format bitmap
 // Replaces the target buffer with the new bitmap, and creates a corresponding bitmap
 //
 void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t bitmapId) {
@@ -2027,14 +2027,12 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 		return;
 	}
 
-	// NB source bitmap is currently assumed to be RGBA2222 format
 	auto srcWidth = bitmap->width;
 	float srcWidthF = (float)srcWidth;
 	auto srcHeight = bitmap->height;
 	float srcHeightF = (float)srcHeight;
 	auto transform = (float *)transformBuffer[0]->getBuffer();
 	auto inverse = (float *)transformBuffer[1]->getBuffer();
-	auto source = bitmap->data;
 
 	if (!explicitSize) {
 		width = srcWidth;
@@ -2090,7 +2088,6 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 	}
 
 	// create a destination buffer using our calculated width and height
-	// assuming we are doing RGBA2222 format (1 byte per pixel)
 	auto bufferStream = make_shared_psram<BufferStream>(width * height);
 	if (!bufferStream || !bufferStream->getBuffer()) {
 		debug_log("bufferTransformBitmap: failed to create buffer %d\n\r", bufferId);
@@ -2098,7 +2095,7 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 	}
 
 	// iterate over our destination buffer, and apply the transformation to each pixel
-	auto destination = bufferStream->getBuffer();
+	auto destination = (RGBA2222 *)bufferStream->getBuffer();
 	float pos[3] = {0.0f, 0.0f, 1.0f};
 	float srcPos[3] = {0.0f, 0.0f, 1.0f};
 
@@ -2111,13 +2108,9 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 			pos[0] = (float)x + xOffset;
 			pos[1] = (float)y + yOffset;
 			dspm_mult_3x3x1_f32(inverse, pos, srcPos);
-
-			auto srcPixel = 0;
+			auto srcPixel = RGBA2222(0,0,0,0);
 			if (srcPos[0] >= 0.0f && srcPos[0] < srcWidthF && srcPos[1] >= 0.0f && srcPos[1] < srcHeightF) {
-				// get the source pixel
-				// NB this currently assumes source is RGBA2222 format
-				auto src = source + (int)srcPos[1] * srcWidth + (int)srcPos[0];
-				srcPixel = *src;
+				srcPixel = bitmap->getPixel2222((int)srcPos[0], (int)srcPos[1]);
 			}
 			destination[(int)y * width + (int)x] = srcPixel;
 		}
