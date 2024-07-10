@@ -9,27 +9,27 @@
 #include <fabgl.h>
 
 #include "agon.h"
+#include "buffers.h"
 #include "context.h"
 #include "buffer_stream.h"
 #include "span.h"
 #include "types.h"
 
-std::unordered_map<uint8_t, std::shared_ptr<std::vector<std::shared_ptr<Context>>>> contextStacks;
+using ContextVector = std::vector<std::shared_ptr<Context>, psram_allocator<std::shared_ptr<Context>>>;
+using ContextVectorPtr = std::shared_ptr<ContextVector>;
+std::unordered_map<uint16_t, ContextVectorPtr,
+	std::hash<uint16_t>, std::equal_to<uint16_t>,
+	psram_allocator<std::pair<const uint16_t, ContextVectorPtr>>> contextStacks;
 
 class VDUStreamProcessor {
 	private:
-		struct AdvancedOffset {
-			uint32_t blockOffset = 0;
-			size_t blockIndex = 0;
-		};
-
 		std::shared_ptr<Stream> inputStream;
 		std::shared_ptr<Stream> outputStream;
 		std::shared_ptr<Stream> originalOutputStream;
 
 		// Graphics context storage and management
-		std::shared_ptr<Context> context;					// Current active context
-		std::shared_ptr<std::vector<std::shared_ptr<Context>>> contextStack;	// Current active context stack
+		std::shared_ptr<Context> context;		// Current active context
+		ContextVectorPtr contextStack;			// Current active context stack
 
 		bool commandsEnabled = true;
 
@@ -40,6 +40,8 @@ class VDUStreamProcessor {
 		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
 		uint32_t discardBytes(uint32_t length, uint16_t timeout);
 		int16_t peekByte_t(uint16_t timeout);
+		float readFloat_t(bool is16Bit, bool isFixed, int8_t shift, uint16_t timeout);
+		bool readFloatArguments(float *values, int count, bool useBufferValue, bool useAdvancedOffsets, bool useMultiFormat);
 
 		void vdu_print(char c, bool usePeek);
 		void vdu_colour();
@@ -112,9 +114,6 @@ class VDUStreamProcessor {
 		void setOutputStream(uint16_t bufferId);
 		AdvancedOffset getOffsetFromStream(bool isAdvanced);
 		std::vector<uint16_t> getBufferIdsFromStream();
-		static tcb::span<uint8_t> getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset);
-		static int16_t getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
-		static bool setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate = false);
 		void bufferAdjust(uint16_t bufferId);
 		bool bufferConditional();
 		void bufferJump(uint16_t bufferId, AdvancedOffset offset);
@@ -128,7 +127,10 @@ class VDUStreamProcessor {
 		void bufferReverse(uint16_t bufferId, uint8_t options);
 		void bufferCopyRef(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
 		void bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<const uint16_t> sourceBufferIds);
-		void bufferAffineTransform(uint16_t bufferId);
+		void bufferAffineTransform(uint16_t bufferId, uint8_t command, bool is3D);
+		void bufferMatrixManipulate(uint16_t bufferId, uint8_t command, MatrixSize size);
+		void bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t sourceBufferId);
+		void bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
@@ -145,13 +147,13 @@ class VDUStreamProcessor {
 			context(_context), inputStream(std::move(input)), outputStream(std::move(output)), originalOutputStream(outputStream), id(bufferId) {
 				// NB this will become obsolete when merging in the buffered command optimisations
 				context = make_shared_psram<Context>(*_context);
-				contextStack = make_shared_psram<std::vector<std::shared_ptr<Context>>>();
+				contextStack = make_shared_psram<ContextVector>();
 				contextStack->push_back(context);
 			}
 		VDUStreamProcessor(Stream *input) :
 			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {
 				context = make_shared_psram<Context>();
-				contextStack = make_shared_psram<std::vector<std::shared_ptr<Context>>>();
+				contextStack = make_shared_psram<ContextVector>();
 				contextStack->push_back(context);
 			}
 
@@ -322,6 +324,60 @@ int16_t VDUStreamProcessor::peekByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 	}
 	return -1;
 }
+
+// Read a float value from the stream, given the specified format
+// Returns the float value, or INFINITY if timed out
+//
+float VDUStreamProcessor::readFloat_t(bool is16Bit, bool isFixed, int8_t shift, uint16_t timeout = COMMS_TIMEOUT) {
+	// get the value that we're dealing with
+	uint32_t rawValue = 0;
+	auto bytesToRead = is16Bit ? 2 : 4;
+	// read the value from the stream
+	if (readIntoBuffer((uint8_t *)&rawValue, bytesToRead, timeout) != 0) {
+		return INFINITY;
+	}
+	return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
+}
+
+// Reads a series of float values from the stream
+// Returns true if all values were read,
+// or false if timed out or another issue occurred, such as a non-existant buffer was specified
+// Stream will contain a format byte, followed by float values
+// if useMultiFormat is true, then each float will be preceded by a format byte
+// if useBufferValue is true, then the "value" will be a buffer ID and offset to fetch the value from
+//
+bool VDUStreamProcessor::readFloatArguments(float *values, int count, bool useBufferValue, bool useAdvancedOffsets, bool useMultiFormat) {
+	bool isFixed, is16Bit;
+	int8_t shift;
+	int32_t sourceBufferId = -1;
+	AdvancedOffset offset = {};
+
+	for (int i = 0; i < count; i++) {
+		if (i == 0 || useMultiFormat) {
+			auto format = readByte_t();
+			if (format == -1) {
+				return false;
+			}
+			extractFormatInfo(format, isFixed, is16Bit, shift);
+			if (useBufferValue) {
+				sourceBufferId = readWord_t();
+				if (sourceBufferId == -1) {
+					return false;
+				}
+				offset = getOffsetFromStream(useAdvancedOffsets);
+				if (offset.blockOffset == -1) {
+					return false;
+				}
+			}
+		}
+		values[i] = useBufferValue ? readBufferFloat(sourceBufferId, offset, is16Bit, isFixed, shift, true) : readFloat_t(is16Bit, isFixed, shift);
+		if (values[i] == INFINITY) {
+			return false;
+		}
+	}
+	return true;
+};
+
 
 // Send a packet of data to the MOS
 //

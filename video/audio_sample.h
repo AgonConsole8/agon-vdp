@@ -5,11 +5,12 @@
 #include <unordered_map>
 
 #include "types.h"
+#include "buffers.h"
 #include "audio_channel.h"
 #include "buffer_stream.h"
 
 struct AudioSample {
-	AudioSample(std::vector<std::shared_ptr<BufferStream>> streams, uint8_t format, uint32_t sampleRate = AUDIO_DEFAULT_SAMPLE_RATE, uint16_t frequency = 0) :
+	AudioSample(BufferVector streams, uint8_t format, uint32_t sampleRate = AUDIO_DEFAULT_SAMPLE_RATE, uint16_t frequency = 0) :
 		blocks(streams), format(format), sampleRate(sampleRate), baseFrequency(frequency) {}
 	~AudioSample();
 
@@ -17,7 +18,7 @@ struct AudioSample {
 	void seekTo(uint32_t position, uint32_t & index, uint32_t & blockIndex, int32_t & repeatCount);
 	uint32_t getSize();
 
-	std::vector<std::shared_ptr<BufferStream>> blocks;
+	BufferVector	blocks;
 	uint8_t			format;				// Format of the sample data
 	uint32_t		sampleRate;			// Sample rate of the sample
 	uint16_t		baseFrequency = 0;	// Base frequency of the sample

@@ -75,6 +75,9 @@ int BufferStream::peek() {
 }
 
 size_t BufferStream::readBytes(char * outBuffer, size_t length) {
+	if (bufferPosition >= bufferLength) {
+		return 0;
+	}
 	size_t readAmount = std::min<size_t>(length, available());
 	memcpy(outBuffer, &buffer[bufferPosition], readAmount);
 	bufferPosition += readAmount;

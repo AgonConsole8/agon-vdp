@@ -44,7 +44,9 @@
 #include "buffers.h"
 #include "types.h"
 
-std::unordered_map<uint16_t, std::shared_ptr<fabgl::FontInfo>> fonts;	// Storage for our fonts
+std::unordered_map<uint16_t, std::shared_ptr<fabgl::FontInfo>,
+	std::hash<uint16_t>, std::equal_to<uint16_t>,
+	psram_allocator<std::pair<const uint16_t, std::shared_ptr<fabgl::FontInfo>>>> fonts;	// Storage for our fonts
 
 uint8_t FONT_AGON_DATA[256*8]; 
 

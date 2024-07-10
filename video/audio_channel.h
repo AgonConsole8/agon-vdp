@@ -10,7 +10,7 @@
 #include "types.h"
 #include "envelopes/types.h"
 
-extern fabgl::SoundGenerator *soundGenerator;  // audio handling sub-system
+extern fabgl::SoundGenerator *soundGenerator; 	// audio handling sub-system
 
 enum class AudioState : uint8_t {	// Audio channel state
 	Idle = 0,				// currently idle/silent
@@ -43,11 +43,11 @@ class AudioChannel {
 		uint8_t		seekTo(uint32_t position);
 		void		loop(uint64_t now);
 		uint8_t		channel() { return _channel; }
-		void            goIdle();
+		void		goIdle();
 		std::unique_lock<std::mutex> lock() { return std::unique_lock<std::mutex>(_channelMutex); }
 	private:
 		uint8_t		_seekTo(uint32_t position);
-		void            _goIdle();
+		void		_goIdle();
 		WaveformGenerator *getSampleWaveform(uint16_t sampleId, AudioChannel *channelRef);
 		uint8_t		_getVolume(uint32_t elapsed);
 		uint16_t	_getFrequency(uint32_t elapsed);
@@ -61,14 +61,14 @@ class AudioChannel {
 		uint8_t		_waveformType;
 		AudioState	_state;
 		std::unique_ptr<WaveformGenerator>	_waveform;
-		std::mutex                              _channelMutex;
+		std::mutex							_channelMutex;
 		std::unique_ptr<VolumeEnvelope>		_volumeEnvelope;
 		std::unique_ptr<FrequencyEnvelope>	_frequencyEnvelope;
 };
 
 #include "audio_sample.h"
 #include "enhanced_samples_generator.h"
-extern std::unordered_map<uint16_t, std::shared_ptr<AudioSample>> samples;	// Storage for the sample data
+extern std::unordered_map<uint16_t, std::shared_ptr<AudioSample>, std::hash<uint16_t>, std::equal_to<uint16_t>, psram_allocator<std::pair<const uint16_t, std::shared_ptr<AudioSample>>>> samples;
 
 AudioChannel::AudioChannel(uint8_t channel) : _waveform(nullptr), _channel(channel), _state(AudioState::Idle), _volume(64), _frequency(750), _duration(-1) {
 	debug_log("AudioChannel: init %d\n\r", channel);
