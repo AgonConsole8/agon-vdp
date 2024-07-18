@@ -239,7 +239,7 @@ class Context {
 		bool usingSystemFont();
 		char getScreenChar(uint8_t x, uint8_t y);
 		char getScreenCharAt(uint16_t px, uint16_t py);
-		void mapCharToBitmap(char c, uint16_t bitmapId);
+		void mapCharToBitmap(uint8_t c, uint16_t bitmapId);
 		void unmapBitmapFromChars(uint16_t bitmapId);
 		void resetCharToBitmap();
 		
