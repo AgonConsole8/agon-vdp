@@ -400,6 +400,8 @@
 //
 void debug_log(const char *format, ...);
 
+void force_debug_log(const char *format, ...);
+
 // Terminal states
 //
 enum class TerminalState {

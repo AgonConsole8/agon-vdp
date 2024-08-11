@@ -247,7 +247,7 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			// force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
-			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
+			force_debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
 			if (buffers[bufferId].empty()) {
 				return;
 			}
@@ -255,12 +255,12 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			if (matrixSize.value != 0) {
 				float transform[matrixSize.size()] = {0.0f};
 				if (getMatrixFromBuffer(bufferId, transform, matrixSize)) {
-					debug_log("buffer contains a %d x %d matrix with contents:\n\r", matrixSize.rows, matrixSize.columns);
+					force_debug_log("buffer contains a %d x %d matrix with contents:\n\r", matrixSize.rows, matrixSize.columns);
 					for (int i = 0; i < matrixSize.rows; i++) {
 						for (int j = 0; j < matrixSize.columns; j++) {
-							debug_log(" %f", transform[i * matrixSize.columns + j]);
+							force_debug_log(" %f", transform[i * matrixSize.columns + j]);
 						}
-						debug_log("\n\r");
+						force_debug_log("\n\r");
 					}
 					return;
 				}
@@ -270,9 +270,9 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			auto bufferLength = buffer->size();
 			for (auto i = 0; i < bufferLength; i++) {
 				auto data = buffer->getBuffer()[i];
-				debug_log("%02X ", data);
+				force_debug_log("%02X ", data);
 			}
-			debug_log("\n\r");
+			force_debug_log("\n\r");
 		}	break;
 		default: {
 			debug_log("vdu_sys_buffered: unknown command %d, buffer %d\n\r", command, bufferId);
