@@ -223,19 +223,23 @@ void Context::plotSector() {
 void Context::plotCopyMove(uint8_t mode) {
 	uint16_t width = abs(p3.X - p2.X);
 	uint16_t height = abs(p3.Y - p2.Y);
-	uint16_t sourceX = p3.X < p2.X ? p3.X : p2.X;
-	uint16_t sourceY = p3.Y < p2.Y ? p3.Y : p2.Y;
-	uint16_t destX = p1.X;
-	uint16_t destY = p1.Y - height;
+	int16_t sourceX = p3.X < p2.X ? p3.X : p2.X;
+	int16_t sourceY = p3.Y < p2.Y ? p3.Y : p2.Y;
+	int16_t destX = p1.X;
+	int16_t destY = p1.Y - height;
 
 	debug_log("plotCopyMove: mode %d, (%d,%d) -> (%d,%d), width: %d, height: %d\n\r", mode, sourceX, sourceY, destX, destY, width, height);
-	canvas->copyRect(sourceX, sourceY, destX, destY, width + 1, height + 1);
+
+	// Source needs to sit within screen bounds so therefore needs to be truncated accordingly
+	// (coordinates already adjusted for origin)
+	Rect sourceRect = Rect(sourceX, sourceY, sourceX + width, sourceY + height);
+	Rect screenSrc = sourceRect.intersection(Rect(0, 0, canvasW - 1, canvasH - 1));
+	canvas->copyRect(screenSrc.X1, screenSrc.Y1, destX, destY, screenSrc.width(), screenSrc.height());
 	if (mode == 1 || mode == 5) {
 		// move rectangle needs to clear source rectangle
 		// being careful not to clear the destination rectangle
 		canvas->setBrushColor(gbg);
 		canvas->setPaintOptions(getPaintOptions(fabgl::PaintMode::Set, gpobg));
-		Rect sourceRect = Rect(sourceX, sourceY, sourceX + width, sourceY + height);
 		debug_log("plotCopyMove: source rectangle (%d,%d) -> (%d,%d)\n\r", sourceRect.X1, sourceRect.Y1, sourceRect.X2, sourceRect.Y2);
 		Rect destRect = Rect(destX, destY, destX + width, destY + height);
 		debug_log("plotCopyMove: destination rectangle (%d,%d) -> (%d,%d)\n\r", destRect.X1, destRect.Y1, destRect.X2, destRect.Y2);
