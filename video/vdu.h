@@ -216,7 +216,7 @@ void VDUStreamProcessor::vdu_print(char c, bool usePeek) {
 			} else {
 				break;
 			}
-			if (printerOn) {
+			if (printerOn || consoleMode) {
 				DBGSerial.write(next);
 			}
 		}
