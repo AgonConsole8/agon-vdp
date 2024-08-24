@@ -824,19 +824,9 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 			auto transformBufferIter = buffers.find(bitmapTransform);
 			if (transformBufferIter != buffers.end()) {
 				auto &transformBuffer = transformBufferIter->second;
-				int const matrixSize = sizeof(float) * 9;
-				if (transformBuffer.size() == 1) {
-					// make sure we have an inverse matrix cached
-					if (transformBuffer[0]->size() < matrixSize) {
-						debug_log("drawBitmap: transform buffer %d has %d elements\n\r", bitmapTransform, transformBuffer[0]->size());
-						return;
-					}
-					// create an inverse matrix, and push that to the buffer
-					auto transform = (float *)transformBuffer[0]->getBuffer();
-					auto matrix = dspm::Mat(transform, 3, 3).inverse();
-					auto bufferStream = make_shared_psram<BufferStream>(matrixSize);
-					bufferStream->writeBuffer((uint8_t *)matrix.data, matrixSize);
-					transformBuffer.push_back(bufferStream);
+				if (!checkTransformBuffer(transformBuffer)) {
+					debug_log("drawBitmap: transform buffer %d is invalid\n\r", bitmapTransform);
+					return;
 				}
 				// NB: if we're drawing via PLOT and are using OS coords, then we _should_ be using bottom left of bitmap as our "origin" for transforms
 				// however we're not doing that here - the origin for transforms is top left of the bitmap
