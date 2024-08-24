@@ -116,6 +116,7 @@ int8_t setLogicalPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b) 
 	debug_log("vdu_palette: %d,%d,%d,%d,%d\n\r", l, p, r, g, b);
 	if (getVGAColourDepth() < 64) {		// If it is a paletted video mode
 		setPaletteItem(l, col);
+		updateRGB2PaletteLUT();
 	} else {
 		// adjust our palette array for new colour
 		// palette is an index into the colourLookup table, and our index is in 00RRGGBB format
