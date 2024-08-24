@@ -12,14 +12,17 @@
 #include "agon.h"
 #include "agon_ps2.h"
 #include "agon_screen.h"
+#include "types.h"
 
-std::unordered_map<uint16_t, std::shared_ptr<Bitmap>> bitmaps;	// Storage for our bitmaps
+std::unordered_map<uint16_t, std::shared_ptr<Bitmap>,
+	std::hash<uint16_t>, std::equal_to<uint16_t>,
+	psram_allocator<std::pair<const uint16_t, std::shared_ptr<Bitmap>>>> bitmaps;	// Storage for our bitmaps
 uint8_t			numsprites = 0;					// Number of sprites on stage
 uint8_t			current_sprite = 0;				// Current sprite number
 Sprite			sprites[MAX_SPRITES];			// Sprite object storage
 
 // track which sprites may be using a bitmap
-std::unordered_map<uint16_t, std::vector<uint8_t>> bitmapUsers;
+std::unordered_map<uint16_t, std::vector<uint8_t, psram_allocator<uint8_t>>> bitmapUsers;
 
 std::unordered_map<uint16_t, fabgl::Cursor> cursors;	// Storage for our cursors
 uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor

@@ -8,6 +8,7 @@
 #include <esp_heap_caps.h>
 #include <mat.h>
 #include <dspm_mult.h>
+#include <fabutils.h>
 
 #include "agon.h"
 #include "agon_fonts.h"
@@ -191,10 +192,42 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
 		}	break;
-		case BUFFERED_AFFINE_TRANSFORM: {
-			if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
-				bufferAffineTransform(bufferId);
+		case BUFFERED_AFFINE_TRANSFORM: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+			auto operation = readByte_t(); if (operation == -1) return;
+			bufferAffineTransform(bufferId, operation, false);
+		}	break;
+		case BUFFERED_AFFINE_TRANSFORM_3D: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+			auto operation = readByte_t(); if (operation == -1) return;
+			bufferAffineTransform(bufferId, operation, true);
+		}	break;
+		case BUFFERED_MATRIX: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+			auto operation = readByte_t(); if (operation == -1) return;
+			auto rows = readByte_t(); if (rows == -1) return;
+			auto columns = readByte_t(); if (columns == -1) return;
+			MatrixSize size;
+			size.rows = rows;
+			size.columns = columns;
+			bufferMatrixManipulate(bufferId, operation, size);
+		}	break;
+		case BUFFERED_TRANSFORM_BITMAP: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+			auto options = readByte_t();
+			auto transformBufferId = readWord_t();
+			auto bitmapId = readWord_t();
+			if (options == -1 || transformBufferId == -1 || bitmapId == -1) {
+				return;
 			}
+			bufferTransformBitmap(bufferId, options, transformBufferId, bitmapId);
+		}	break;
+		case BUFFERED_TRANSFORM_DATA: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+			// VDU 23, 0, &A0, bufferId; &29, options, format, transformBufferId; sourceBufferId; : Apply transform matrix to data in a buffer
+			auto options = readByte_t();
+			auto format = readByte_t();
+			auto transformBufferId = readWord_t();
+			auto sourceBufferId = readWord_t();
+			if (options == -1 || format == -1 || transformBufferId == -1 || sourceBufferId == -1) {
+				return;
+			}
+			bufferTransformData(bufferId, options, format, transformBufferId, sourceBufferId);
 		}	break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
@@ -214,18 +247,32 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			// force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
-			debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
+			force_debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
 			if (buffers[bufferId].empty()) {
 				return;
+			}
+			auto matrixSize = getMatrixSize(bufferId);
+			if (matrixSize.value != 0) {
+				float transform[matrixSize.size()] = {0.0f};
+				if (getMatrixFromBuffer(bufferId, transform, matrixSize)) {
+					force_debug_log("buffer contains a %d x %d matrix with contents:\n\r", matrixSize.rows, matrixSize.columns);
+					for (int i = 0; i < matrixSize.rows; i++) {
+						for (int j = 0; j < matrixSize.columns; j++) {
+							force_debug_log(" %f", transform[i * matrixSize.columns + j]);
+						}
+						force_debug_log("\n\r");
+					}
+					return;
+				}
 			}
 			// output contents of buffer stream 0
 			auto buffer = buffers[bufferId][0];
 			auto bufferLength = buffer->size();
 			for (auto i = 0; i < bufferLength; i++) {
 				auto data = buffer->getBuffer()[i];
-				debug_log("%02X ", data);
+				force_debug_log("%02X ", data);
 			}
-			debug_log("\n\r");
+			force_debug_log("\n\r");
 		}	break;
 		default: {
 			debug_log("vdu_sys_buffered: unknown command %d, buffer %d\n\r", command, bufferId);
@@ -330,6 +377,7 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 	debug_log("bufferClear: buffer %d\n\r", bufferId);
 	if (bufferId == 65535) {
 		buffers.clear();
+		matrixMetadata.clear();
 		resetBitmaps();
 		// TODO reset current bitmaps in all processors
 		context->setCurrentBitmap(BUFFERED_BITMAP_BASEID);
@@ -344,6 +392,7 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 		return;
 	}
 	buffers.erase(bufferIter);
+	matrixMetadata.erase(bufferId);
 	bufferRemoveUsers(bufferId);
 	debug_log("bufferClear: cleared buffer %d\n\r", bufferId);
 }
@@ -400,7 +449,7 @@ void VDUStreamProcessor::setOutputStream(uint16_t bufferId) {
 }
 
 // Utility call to read offset from stream, supporting advanced offsets
-VDUStreamProcessor::AdvancedOffset VDUStreamProcessor::getOffsetFromStream(bool isAdvanced) {
+AdvancedOffset VDUStreamProcessor::getOffsetFromStream(bool isAdvanced) {
 	AdvancedOffset offset = {};
 	if (isAdvanced) {
 		offset.blockOffset = read24_t();
@@ -439,50 +488,6 @@ std::vector<uint16_t> VDUStreamProcessor::getBufferIdsFromStream() {
 	}
 
 	return bufferIds;
-}
-
-// Get the longest contiguous span at the given buffer offset. Updates the offset to the correct block index.
-tcb::span<uint8_t> VDUStreamProcessor::getBufferSpan(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset) {
-	while (offset.blockIndex < buffer.size()) {
-		// check for available bytes in the current block
-		auto &block = buffer[offset.blockIndex];
-		if (offset.blockOffset < block->size()) {
-			return { block->getBuffer() + offset.blockOffset, block->size() - offset.blockOffset };
-		}
-		// if offset exceeds the block size, loop to find the correct block
-		offset.blockOffset -= block->size();
-		offset.blockIndex++;
-	}
-	// offset not found in buffer
-	return {};
-}
-
-// Utility call to read a byte from a buffer at the given offset
-int16_t VDUStreamProcessor::getBufferByte(const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
-	auto bufferSpan = getBufferSpan(buffer, offset);
-	if (bufferSpan.empty()) {
-		// offset not found in buffer
-		return -1;
-	}
-	auto value = bufferSpan.front();
-	if (iterate) {
-		offset.blockOffset++;
-	}
-	return value;
-}
-
-// Utility call to set a byte in a buffer at the given offset
-bool VDUStreamProcessor::setBufferByte(uint8_t value, const std::vector<std::shared_ptr<BufferStream>> &buffer, AdvancedOffset &offset, bool iterate) {
-	auto bufferSpan = getBufferSpan(buffer, offset);
-	if (bufferSpan.empty()) {
-		// offset not found in buffer
-		return false;
-	}
-	bufferSpan.front() = value;
-	if (iterate) {
-		offset.blockOffset++;
-	}
-	return true;
 }
 
 // Utility classes for specializing buffer adjust operations
@@ -827,7 +832,7 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 	const bool hasOperand = op > ADJUST_NEG;
 
 	auto offset = getOffsetFromStream(useAdvancedOffsets);
-	const std::vector<std::shared_ptr<BufferStream>> * operandBuffer = nullptr;
+	const BufferVector * operandBuffer = nullptr;
 	auto operandBufferId = 0;
 	AdvancedOffset operandOffset = {};
 	auto count = 1;
@@ -1035,7 +1040,7 @@ bool VDUStreamProcessor::bufferConditional() {
 	bool hasOperand = op > COND_NOT_EXISTS;
 
 	auto offset = getOffsetFromStream(useAdvancedOffsets);
-	const std::vector<std::shared_ptr<BufferStream>> * operandBuffer = nullptr;
+	const BufferVector * operandBuffer = nullptr;
 	auto operandBufferId = 0;
 	AdvancedOffset operandOffset = {};
 
@@ -1291,7 +1296,7 @@ void VDUStreamProcessor::bufferSplitByInto(uint16_t bufferId, uint16_t width, ui
 		clearTargets(newBufferIds);
 	}
 
-	std::vector<std::vector<std::shared_ptr<BufferStream>>> chunks;
+	std::vector<BufferVector> chunks;
 	chunks.resize(chunkCount);
 	{
 		// split to get raw chunks
@@ -1341,7 +1346,7 @@ void VDUStreamProcessor::bufferSpreadInto(uint16_t bufferId, tcb::span<uint16_t>
 	}
 	auto &buffer = bufferIter->second;
 	// swap the source buffer contents into a local vector so it can be iterated safely even if it's a target
-	std::vector<std::shared_ptr<BufferStream>> localBuffer;
+	BufferVector localBuffer;
 	localBuffer.swap(buffer);
 	if (!iterate) {
 		clearTargets(newBufferIds);
@@ -1560,325 +1565,746 @@ void VDUStreamProcessor::bufferCopyAndConsolidate(uint16_t bufferId, tcb::span<c
 	debug_log("bufferCopyAndConsolidate: copied %d bytes into buffer %d\n\r", length, bufferId);
 }
 
-// VDU 23, 0, &A0, bufferId; &20, operation, <args> : Affine transform creation/combination
-// Create or combine an affine transformaiton matrix
+// VDU 23, 0, &A0, bufferId; &20, operation, <args> : Affine transform creation/combination (2D)
+// VDU 23, 0, &A0, bufferId; &21, operation, <args> : Affine transform creation/combination (3D)
+// Create or combine an affine transformation matrix
 //
-void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId) {
-	const auto command = readByte_t();
+void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t command, bool is3D) {
 	const auto op = command & AFFINE_OP_MASK;
 	const bool useAdvancedOffsets = command & AFFINE_OP_ADVANCED_OFFSETS;
 	const bool useBufferValue = command & AFFINE_OP_BUFFER_VALUE;
 	const bool useMultiFormat = command & AFFINE_OP_MULTI_FORMAT;
 
-	// transform is a 3x3 matrix of float values
-	float transform[9] = {0.0f};
-	transform[0] = 1.0f;
-	transform[4] = 1.0f;
-	transform[8] = 1.0f;
-	auto matrixSize = 9 * sizeof(float);
-
-	// get a MultiBufferStream object for a buffer
-	// NB this will rewind all the streams in the buffer
-	auto getMultiBufferStream = [this](uint16_t bufferId) -> std::unique_ptr<MultiBufferStream> {
-		auto bufferIter = buffers.find(bufferId);
-		if (bufferIter == buffers.end()) {
-			debug_log("bufferAffineTransform: buffer %d not found\n\r", bufferId);
-			return nullptr;
-		}
-		auto buffer = bufferIter->second;
-		return std::unique_ptr<MultiBufferStream>(new MultiBufferStream(buffer));
-	};
-
-	auto getFormatInfo = [this, useAdvancedOffsets, useBufferValue](bool &isFixed, bool &is16Bit, int8_t &shift, int16_t &sourceBufferId, AdvancedOffset &offset) -> bool {
-		auto format = readByte_t();
-		if (format == -1) {
-			return false;
-		}
-		isFixed = format & AFFINE_FORMAT_FIXED;
-		is16Bit = format & AFFINE_FORMAT_16BIT;
-		shift = format & AFFINE_FORMAT_SHIFT_MASK;
-		// ensure our size value obeys negation
-		if (is16Bit && (shift & AFFINE_FORMAT_SHIFT_TOPBIT)) {
-			// top bit was set, so it's a negative - so we need to set the top bits of the size
-			shift = shift | AFFINE_FORMAT_FLAGS;
-		}
-		if (useBufferValue) {
-			sourceBufferId = readWord_t();
-			if (sourceBufferId == -1) {
-				return false;
-			}
-			offset = getOffsetFromStream(useAdvancedOffsets);
-			return offset.blockOffset != -1;
-		}
-		return true;
-	};
-
-	auto convertValueToFloat = [](uint32_t rawValue, bool is16Bit, bool isFixed, int8_t shift) -> float {
-		if (isFixed) {
-			// fixed point value
-			// we will scale our rawValue by a factor to create our float
-			// this version assumes base value is -1 to +1, multiplied by 2^shift
-			// so binary point starts at bit 31 and is moved right by shift
-			// auto scale = (1u << shift) / (float)(1u << 31);
-			// if (is16Bit) {
-			// 	// ensure 16-bit values are 32-bit values with their buttom 16 bits empty
-			// 	rawValue <<= 16;
-			// }
-			// in this version the binary point starts after bit 0 and is moved left by shift
-			// which is arguably a bit more intuitive in use, and matches the xtensa fixed point instruction support
-			// we need to use our shift value to determine how far to scale
-			auto scale = shift < 0 ? 1 << -shift : 1.0f / (1 << shift);
-			if (is16Bit) {
-				return (float)(int16_t)rawValue * scale;
-			}
-			debug_log("bufferAffineTransform: rawValue %d, shift %d, scale %f\n\r", rawValue, shift, scale);
-			return (float)(int32_t)rawValue * scale;
-		} else {
-			// floating point value - shift ignored
-			// if we're reading a 16-bit value, we need to convert to 32-bit float
-			if (is16Bit) {
-				return float16ToFloat32(rawValue);
-			}
-			// take our raw value and interpret its bits as a float
-			return *(float*)&rawValue;
-		}
-	};
-
-	auto readValueFromBuffer = [getMultiBufferStream, convertValueToFloat](uint32_t sourceBufferId, AdvancedOffset &offset, bool is16Bit, bool isFixed, int8_t shift) -> float {
-		// get the value that we're dealing with
-		uint32_t rawValue = 0;
-
-		std::unique_ptr<MultiBufferStream> buff = getMultiBufferStream(sourceBufferId);
-		if (!buff) {
-			return INFINITY;
-		}
-		buff->seekTo(offset.blockOffset, offset.blockIndex);
-
-		auto bytesToRead = is16Bit ? 2 : 4;
-		auto read = buff->readBytes((uint8_t *)&rawValue, bytesToRead);
-		if (read != bytesToRead) {
-			debug_log("bufferAffineTransform: failed to read %d bytes from buffer %d\n\r", bytesToRead, sourceBufferId);
-			return INFINITY;
-		}
-		// update our offset so repeated reads don't just re-read the same value
-		buff->tellBuffer(offset.blockOffset, offset.blockIndex);
-		return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
-	};
-
-	auto readValueFromStream = [this, convertValueToFloat](bool is16Bit, bool isFixed, int8_t shift) -> float {
-		// get the value that we're dealing with
-		uint32_t rawValue = 0;
-		auto bytesToRead = is16Bit ? 2 : 4;
-		// read the value from the stream
-		if (readIntoBuffer((uint8_t *)&rawValue, bytesToRead) != 0) {
-			debug_log("bufferAffineTransform: failed to read %d bytes from stream\n\r", bytesToRead);
-			return INFINITY;
-		}
-		return convertValueToFloat(rawValue, is16Bit, isFixed, shift);
-	};
-
-	auto readFloatArgument = [getFormatInfo, readValueFromBuffer, readValueFromStream, useBufferValue]() -> float {
-		bool isFixed, is16Bit;
-		int8_t shift;
-		int16_t sourceBufferId = -1;
-		AdvancedOffset offset = {};
-		if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
-			return INFINITY;
-		}
-		if (useBufferValue) {
-			return readValueFromBuffer(sourceBufferId, offset, is16Bit, isFixed, shift);
-		}
-		return readValueFromStream(is16Bit, isFixed, shift);
-	};
-
-	auto readMultipleArgs = [this, getFormatInfo, readValueFromBuffer, readValueFromStream, useBufferValue, useMultiFormat](float *values, int count) -> bool {
-		bool isFixed, is16Bit;
-		int8_t shift;
-		int16_t sourceBufferId = -1;
-		AdvancedOffset offset = {};
-
-		for (int i = 0; i < count; i++) {
-			if (i == 0 || useMultiFormat) {
-				if (!getFormatInfo(isFixed, is16Bit, shift, sourceBufferId, offset)) {
-					return false;
-				}
-			}
-			values[i] = useBufferValue ? readValueFromBuffer(sourceBufferId, offset, is16Bit, isFixed, shift) : readValueFromStream(is16Bit, isFixed, shift);
-			if (values[i] == INFINITY) {
-				return false;
-			}
-		}
-		return true;
-	};
-
-	auto readMatrixFromBuffer = [getMultiBufferStream, matrixSize](uint16_t sourceBufferId, void *matrix) -> bool {
-		auto buff = getMultiBufferStream(sourceBufferId);
-		if (!buff) {
-			return false;
-		}
-		if (buff->size() < matrixSize) {
-			debug_log("bufferAffineTransform: buffer %d too small for matrix\n\r", sourceBufferId);
-			return false;
-		}
-		auto read = buff->readBytes((uint8_t *)matrix, matrixSize);
-		if (read != matrixSize) {
-			debug_log("bufferAffineTransform: failed to read 9 floats from buffer %d\n\r", sourceBufferId);
-			return false;
-		}
-		return true;
-	};
-
+	// transform is a 3x3 or 4x4 identity matrix of float values
+	auto dimensions = is3D ? 3 : 2;
+	MatrixSize size;
+	size.rows = dimensions + 1;
+	size.columns = size.rows;
+	float transform[size.size()] = {0.0f};
+	for (int i = 0; i < size.rows; i++) {
+		transform[i * size.rows + i] = 1.0f;
+	}
 	bool replace = false;
+
 	switch (op) {
 		case AFFINE_IDENTITY: {
 			// create an identity matrix
 			replace = true;
 		}	break;
 		case AFFINE_INVERT: {
-			// this will only work if we have a 3x3 matrix...
-			// first of all, get our existing matrix
-			if (!readMatrixFromBuffer(bufferId, &transform)) {
+			// this will only work if we already have a transform matrix...
+			if (!getMatrixFromBuffer(bufferId, transform, size, false)) {
+				debug_log("bufferAffineTransform: failed to read matrix from buffer %d to invert\n\r", bufferId);
 				return;
 			}
-			auto matrix = dspm::Mat(transform, 3, 3).inverse();
+			auto matrix = dspm::Mat(transform, size.rows, size.columns).inverse();
 			// copy data from matrix back to our working transform matrix
-			memcpy(transform, matrix.data, matrixSize);
+			memcpy(transform, matrix.data, size.sizeBytes());
 			replace = true;
 		}	break;
 		case AFFINE_ROTATE:
-		case AFFINE_ROTATE_RAD:
-		{
-			// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
-			float angle = readFloatArgument();
-			if (angle == INFINITY) {
-				return;
+		case AFFINE_ROTATE_RAD: {
+			bool conversion = op == AFFINE_ROTATE ? DEG_TO_RAD : 1.0f;
+			if (!is3D) {
+				// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
+				float angle;
+				if (!readFloatArguments(&angle, 1, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
+					return;
+				}
+				angle = angle * conversion;
+				const auto cosAngle = cosf(angle);
+				const auto sinAngle = sinf(angle);
+				transform[0] = cosAngle;
+				transform[1] = sinAngle;
+				transform[3] = -sinAngle;
+				transform[4] = cosAngle;
+			} else {
+				float angles[3] = {0.0f, 0.0f, 0.0f};
+				if (!readFloatArguments(angles, 3, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
+					return;
+				}
+				// rotate around X, Y, Z axes
+				const auto cosX = cosf(angles[0] * conversion);
+				const auto sinX = sinf(angles[0] * conversion);
+				const auto cosY = cosf(angles[1] * conversion);
+				const auto sinY = sinf(angles[1] * conversion);
+				const auto cosZ = cosf(angles[2] * conversion);
+				const auto sinZ = sinf(angles[2] * conversion);
+				transform[0] = cosY * cosZ;
+				transform[1] = cosY * sinZ;
+				transform[2] = -sinY;
+				transform[4] = sinX * sinY * cosZ - cosX * sinZ;
+				transform[5] = sinX * sinY * sinZ + cosX * cosZ;
+				transform[6] = sinX * cosY;
+				transform[8] = cosX * sinY * cosZ + sinX * sinZ;
+				transform[9] = cosX * sinY * sinZ - sinX * cosZ;
+				transform[10] = cosX * cosY;
 			}
-			if (op == AFFINE_ROTATE) angle = DEG_TO_RAD * angle;
-			const auto cosAngle = cosf(angle);
-			const auto sinAngle = sinf(angle);
-			transform[0] = cosAngle;
-			transform[1] = sinAngle;
-			transform[3] = -sinAngle;
-			transform[4] = cosAngle;
-			transform[8] = 1.0f;
 		}	break;
 		case AFFINE_MULTIPLY: {
-			// multiply values in a matrix by (single) argument value
-			// fetch matrix buffer, then multiply all values except last row by value
-			float scalar = readFloatArgument();
-			if (scalar == INFINITY) {
+			// scalar multiply of values in an existing matrix by (single) argument value
+			float scalar;
+			if (!readFloatArguments(&scalar, 1, useBufferValue, useAdvancedOffsets, useMultiFormat)
+				|| !getMatrixFromBuffer(bufferId, transform, size, false)) {
+				debug_log("bufferAffineTransform: failed to read scalar, or matrix from buffer %d to multiply\n\r", bufferId);
 				return;
 			}
-			if (!readMatrixFromBuffer(bufferId, &transform)) {
-				return;
-			}
-			// scale transform matrix by scalar, skipping last value (as that needs to remain a 1)
-			for (int i = 0; i < 7; i++) {
+			// scale transform matrix by scalar, skipping last row
+			for (int i = 0; i < (size.size() - size.columns); i++) {
 				transform[i] *= scalar;
 			}
 			replace = true;
 		}	break;
 		case AFFINE_SCALE: {
-			// scale by a given factor
-			// get an array of 2 float values
-			float scales[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(scales, 2)) {
+			// scale by a given factor in each dimension
+			float scales[dimensions] = {0.0f};
+			if (!readFloatArguments(scales, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
-			transform[0] = scales[0];
-			transform[4] = scales[1];
-			transform[8] = 1.0f;
+			for (int i = 0; i < dimensions; i++) {
+				transform[i * size.columns + i] = scales[i];
+			}
 		}	break;
 		case AFFINE_TRANSLATE: {
-			// translate by a given amount of pixels
-			float translateXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(translateXY, 2)) {
+			// translate by a given amount
+			float translateXY[dimensions] = {0.0f};
+			if (!readFloatArguments(translateXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
-			transform[2] = translateXY[0];
-			transform[5] = translateXY[1];
-			transform[8] = 1.0f;
+			for (int i = 0; i < dimensions; i++) {
+				transform[i * size.columns + dimensions] = translateXY[i];
+			}
 		}	break;
 		case AFFINE_TRANSLATE_OS_COORDS: {
-			// translate by a given amount of pixels
-			float translateXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(translateXY, 2)) {
+			// translate by a given amount of pixels where x and y match current coordinate system scaling
+			float translateXY[dimensions] = {0.0f};
+			if (!readFloatArguments(translateXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
 			auto scaled = context->scale(translateXY[0], translateXY[1]);
-			transform[2] = scaled.X;
-			transform[5] = scaled.Y;
-			transform[8] = 1.0f;
+			transform[dimensions] = scaled.X;
+			transform[size.columns + dimensions] = scaled.Y;
+			if (is3D) {		// Z translate is not scaled in 3D
+				transform[size.columns * dimensions - 1] = translateXY[2];
+			}
 		}	break;
 		case AFFINE_SHEAR: {
 			// shear by a given amount
-			float shearXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(shearXY, 2)) {
+			float shearXY[dimensions] = {0.0f};
+			if (!readFloatArguments(shearXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
-			transform[1] = shearXY[0];
-			transform[3] = shearXY[1];
-			transform[8] = 1.0f;
-		}	break;
-		case AFFINE_SKEW: {
-			// skew by a given amount (angle)
-			float skewXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(skewXY, 2)) {
-				return;
+			for (int i = 0; i < dimensions; i++) {
+				transform[i * size.columns + (i + 1)] = shearXY[i];
 			}
-			transform[1] = tanf(DEG_TO_RAD * skewXY[0]);
-			transform[3] = tanf(DEG_TO_RAD * skewXY[1]);
-			transform[8] = 1.0f;
 		}	break;
+		case AFFINE_SKEW:
 		case AFFINE_SKEW_RAD: {
 			// skew by a given amount (angle)
-			float skewXY[2] = {0.0f, 0.0f};
-			if (!readMultipleArgs(skewXY, 2)) {
+			bool conversion = op == AFFINE_SKEW ? DEG_TO_RAD : 1.0f;
+			float skewXY[dimensions] = {0.0f};
+			if (!readFloatArguments(skewXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
-			transform[1] = tanf(skewXY[0]);
-			transform[3] = tanf(skewXY[1]);
-			transform[8] = 1.0f;
+			for (int i = 0; i < dimensions; i++) {
+				transform[i * size.columns + (i + 1)] = tanf(conversion * skewXY[i]);
+			}
 		}	break;
 		case AFFINE_TRANSFORM: {
 			// we'll either be creating a new matrix, or combining with an existing one
-			if (!readMultipleArgs(transform, 6)) {
+			// omit reading the last row, as these are affine transforms so don't need setting
+			if (!readFloatArguments(transform, size.size() - size.columns, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
-			transform[8] = 1.0f;
+		}	break;
+		case AFFINE_TRANSLATE_BITMAP: {
+			// translates x and y by amounts proportional to width and height of bitmap
+			// first argument is a 16-bit bitmap ID
+			auto bitmapId = readWord_t();
+			if (bitmapId == -1) {
+				return;
+			}
+			float translateXY[2] = {0.0f, 0.0f};
+			if (!readFloatArguments(translateXY, 2, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
+				return;
+			}
+			auto bitmap = getBitmap(bitmapId);
+			if (!bitmap) {
+				debug_log("bufferAffineTransform: bitmap %d not found\n\r", bitmapId);
+				return;
+			}
+			transform[dimensions] = translateXY[0] * bitmap->width;
+			transform[dimensions + size.columns] = translateXY[1] * bitmap->height;
 		}	break;
 		default:
 			debug_log("bufferAffineTransform: unknown operation %d\n\r", op);
 			return;
 	}
 
-	auto bufferStream = make_shared_psram<BufferStream>(matrixSize);
-	if (!bufferStream || !bufferStream->getBuffer()) {
-		// buffer couldn't be created
-		debug_log("bufferAffineTransform: failed to create buffer %d\n\r", bufferId);
-		return;
-	}
-
 	if (!replace) {
-		// we are combining, if we have an existing matrix
-		float existing[9] = {0.0f};
-		if (readMatrixFromBuffer(bufferId, &existing)) {
+		// we are combining - for now, only if the existing matrix is the same size
+		// TODO consider handling different size matrices - could combine at larger size, and then truncate
+		float existing[size.size()] = {0.0f};
+		if (getMatrixFromBuffer(bufferId, existing, size, false)) {
 			// combine the two matrices together
-			float newTransform[9] = {0.0f};
-			dspm_mult_f32(transform, existing, newTransform, 3, 3, 3);
+			float newTransform[size.size()] = {0.0f};
+			dspm_mult_f32(transform, existing, newTransform, size.rows, size.columns, size.columns);
 			// copy data from matrix back to our working transform matrix
-			memcpy(transform, newTransform, matrixSize);
+			memcpy(transform, newTransform, size.sizeBytes());
 		}
 	}
 
-	bufferStream->writeBuffer((uint8_t *)transform, matrixSize);
+	auto bufferStream = make_shared_psram<BufferStream>(size.sizeBytes());
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		debug_log("bufferAffineTransform: failed to create buffer %d\n\r", bufferId);
+		return;
+	}
+	bufferStream->writeBuffer((uint8_t *)transform, size.sizeBytes());
 	bufferClear(bufferId);
 	buffers[bufferId].push_back(std::move(bufferStream));
+	matrixMetadata[bufferId] = size;
 	debug_log("bufferAffineTransform: created new matrix buffer %d\n\r", bufferId);
+}
 
-	debug_log(" %f %f %f\n\r", transform[0], transform[1], transform[2]);
-	debug_log(" %f %f %f\n\r", transform[3], transform[4], transform[5]);
-	debug_log(" %f %f %f\n\r", transform[6], transform[7], transform[8]);
+// VDU 23, 0, &A0, bufferId; &22, operation, rows, columns, <args> : Generic matrix creation/manipulation
+// Create or manipulate a matrix of float values
+// These operations will always replace the target buffer, so long as they succeed
+//
+void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t command, MatrixSize size) {
+	const auto op = command & MATRIX_OP_MASK;
+	const bool useAdvancedOffsets = command & MATRIX_OP_ADVANCED_OFFSETS;
+	const bool useBufferValue = command & MATRIX_OP_BUFFER_VALUE;
+
+	float matrix[size.size()] = {0.0f};
+	
+	switch (op) {
+		case MATRIX_SET: {
+			if (!readFloatArguments(matrix, size.size(), useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+		}	break;
+		case MATRIX_SET_VALUE: {
+			// sets a single value at a given row and column within the source matrix
+			auto sourceId = readWord_t();
+			if (sourceId == -1) {
+				return;
+			}
+			auto row = readByte_t();
+			auto column = readByte_t();
+			if (row < 0 || column < 0 || row >= size.rows || column >= size.columns) {
+				return;
+			}
+			// read source matrix into matrix, enforcing size match
+			if (!getMatrixFromBuffer(sourceId, matrix, size, false)) {
+				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
+				return;
+			}
+			// read value to set
+			if (!readFloatArguments(&matrix[row * size.columns + column], 1, useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+		}	break;
+		case MATRIX_FILL: {
+			float value;
+			if (!readFloatArguments(&value, 1, useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+			// set all values in matrix to the given value
+			for (int i = 0; i < size.size(); i++) {
+				matrix[i] = value;
+			}
+		}	break;
+		case MATRIX_DIAGONAL: {
+			// diagonal matrix with given values
+			auto argCount = fabgl::imin(size.rows, size.columns);
+			float args[argCount] = {0.0f};
+			if (!readFloatArguments(args, argCount, useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+			for (int i = 0; i < argCount; i++) {
+				matrix[i * size.columns + i] = args[i];
+			}
+		}	break;
+		case MATRIX_ADD: {
+			// simple add of two matrixes
+			auto sourceId1 = readWord_t(); if (sourceId1 == -1) return;
+			auto sourceId2 = readWord_t(); if (sourceId2 == -1) return;
+			// Get the matrixes, for our target size, padding or truncating as necessary
+			float source[size.size()] = {0.0f};
+			if (!getMatrixFromBuffer(sourceId1, matrix, size) || !getMatrixFromBuffer(sourceId2, source, size)) {
+				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d or %d\n\r", sourceId1, sourceId2);
+				return;
+			}
+			// add values in source to matrix
+			for (int i = 0; i < size.size(); i++) {
+				matrix[i] += source[i];
+			}
+		}	break;
+		case MATRIX_SUBTRACT: {
+			// simple subtract of two matrixes
+			auto sourceId1 = readWord_t(); if (sourceId1 == -1) return;
+			auto sourceId2 = readWord_t(); if (sourceId2 == -1) return;
+			// Get the matrixes, for our target size, padding or truncating as necessary
+			float source[size.size()] = {0.0f};
+			if (!getMatrixFromBuffer(sourceId1, matrix, size) || !getMatrixFromBuffer(sourceId2, source, size)) {
+				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d or %d\n\r", sourceId1, sourceId2);
+				return;
+			}
+			// subtract values in source2 from matrix
+			for (int i = 0; i < size.size(); i++) {
+				matrix[i] -= source[i];
+			}
+		}	break;
+		case MATRIX_MULTIPLY: {
+			// multiply two matrixes
+			// matrixes of arbitrary dimensions can be multiplied by making them square and padding with zeros
+			// where the square size is the maximum of the two source size dimensions and target dimensions
+			auto sourceId1 = readWord_t(); if (sourceId1 == -1) return;
+			auto sourceId2 = readWord_t(); if (sourceId2 == -1) return;
+			auto sourceSize1 = getMatrixSize(sourceId1);
+			auto sourceSize2 = getMatrixSize(sourceId2);
+			if (sourceSize1.value == 0 || sourceSize2.value == 0) {
+				debug_log("bufferMatrixManipulate: source matrix %d or %d not found\n\r", sourceId1, sourceId2);
+				return;
+			}
+			uint8_t dimensions = std::max({ (uint8_t)size.rows, (uint8_t)size.columns, (uint8_t)sourceSize1.rows, (uint8_t)sourceSize1.columns, (uint8_t)sourceSize2.rows, (uint8_t)sourceSize2.columns });
+			MatrixSize resultSize;
+			resultSize.rows = dimensions;
+			resultSize.columns = dimensions;
+			float source1[resultSize.size()] = {0.0f};
+			float source2[resultSize.size()] = {0.0f};
+			if (!getMatrixFromBuffer(sourceId1, source1, resultSize) || !getMatrixFromBuffer(sourceId2, source2, resultSize)) {
+				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d or %d\n\r", sourceId1, sourceId2);
+				return;
+			}
+			// multiply values in source1 and source2
+			float result[resultSize.size()] = {0.0f};
+			dspm_mult_f32(source1, source2, result, resultSize.rows, resultSize.columns, resultSize.columns);
+			for (int row = 0; row < size.rows; row++) {
+				for (int column = 0; column < size.columns; column++) {
+					matrix[row * size.columns + column] = result[row * resultSize.columns + column];
+				}
+			}
+		}	break;
+		case MATRIX_SCALAR_MULTIPLY: {
+			// multiply all values in a source matrix by a scalar
+			auto sourceId = readWord_t(); if (sourceId == -1) return;
+			float scalar;
+			if (!readFloatArguments(&scalar, 1, useBufferValue, useAdvancedOffsets, false)) {
+				return;
+			}
+			if (!getMatrixFromBuffer(sourceId, matrix, size)) {
+				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
+				return;
+			}
+			// multiply all values by scalar
+			for (int i = 0; i < size.size(); i++) {
+				matrix[i] *= scalar;
+			}
+		}	break;
+		case MATRIX_SUBMATRIX: {
+			// extract a submatrix from a source matrix at given row and column
+			// target matrix will be filled from top-left, truncating or padding as necessary
+			auto sourceId = readWord_t(); if (sourceId == -1) return;
+			auto row = readByte_t(); if (row == -1) return;
+			auto column = readByte_t(); if (column == -1) return;
+			auto sourceSize = getMatrixSize(sourceId);
+			if (sourceSize.value == 0) {
+				debug_log("bufferMatrixManipulate: source matrix %d not found\n\r", sourceId);
+				return;
+			}
+			float source[sourceSize.size()] = {0.0f};
+			if (!getMatrixFromBuffer(sourceId, source, sourceSize)) {
+				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
+				return;
+			}
+			for (int i = 0; i < size.rows; i++) {
+				for (int j = 0; j < size.columns; j++) {
+					if (i + row < sourceSize.rows && j + column < sourceSize.columns) {
+						matrix[i * size.columns + j] = source[(i + row) * sourceSize.columns + (j + column)];
+					}
+				}
+			}
+		}	break;
+		case MATRIX_INSERT_ROW:
+		case MATRIX_INSERT_COLUMN:
+		case MATRIX_DELETE_ROW:
+		case MATRIX_DELETE_COLUMN: {
+			bool rowOp = op == MATRIX_INSERT_ROW || op == MATRIX_DELETE_ROW;
+			bool insertOp = op == MATRIX_INSERT_ROW || op == MATRIX_INSERT_COLUMN;
+			auto sourceId = readWord_t(); if (sourceId == -1) return;
+			auto index = readByte_t(); if (index == -1) return;
+			auto sourceSize = getMatrixSize(sourceId);
+			if (sourceSize.value == 0) {
+				debug_log("bufferMatrixManipulate: source matrix %d not found\n\r", sourceId);
+				return;
+			}
+			// read source matrix
+			float source[sourceSize.size()] = {0.0f};
+			if (!getMatrixFromBuffer(sourceId, source, sourceSize)) {
+				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
+				return;
+			}
+			// iterate over target matrix, copying from source matrix, skipping as necessary
+			for (int i = 0; i < size.rows; i++) {
+				for (int j = 0; j < size.columns; j++) {
+					if (insertOp && (rowOp && i == index || !rowOp && j == index)) {
+						// skip target at row/column we're inserting
+						continue;
+					}
+					int sourceRow = i;
+					int sourceColumn = j;
+					// adjust our source row/column if we're past the index
+					if (rowOp && i >= index) {
+						sourceRow += insertOp ? -1 : 1;
+					}
+					if (!rowOp && j >= index) {
+						sourceColumn += insertOp ? -1 : 1;
+					}
+					if (sourceRow < 0 || sourceRow >= sourceSize.rows || sourceColumn < 0 || sourceColumn >= sourceSize.columns) {
+						// out of bounds, so skip
+						continue;
+					}
+					matrix[i * size.columns + j] = source[sourceRow * sourceSize.columns + sourceColumn];
+				}
+			}
+		}	break;
+	}
+
+	auto bufferStream = make_shared_psram<BufferStream>(size.sizeBytes());
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		debug_log("bufferMatrixManipulate: failed to create buffer %d\n\r", bufferId);
+		return;
+	}
+	bufferStream->writeBuffer((uint8_t *)matrix, size.sizeBytes());
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(std::move(bufferStream));
+	matrixMetadata[bufferId] = size;
+	debug_log("bufferMatrixManipulate: created new matrix buffer %d\n\r", bufferId);
+}
+
+
+// VDU 23, 0, &A0, bufferId; &28, options, transformBufferId; bitmapId; : Apply 2d affine transformation to bitmap
+// Apply an affine transformation to a bitmap, creating a new RGBA2222 format bitmap
+// Replaces the target buffer with the new bitmap, and creates a corresponding bitmap
+//
+void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t bitmapId) {
+	// resize flag indicates that new bitmap should get a new size
+	bool shouldResize = options & TRANSFORM_BITMAP_RESIZE;
+	bool explicitSize = options & TRANSFORM_BITMAP_EXPLICIT_SIZE;
+	bool autoTranslate = options & TRANSFORM_BITMAP_TRANSLATE;
+	if (explicitSize && !shouldResize) {
+		debug_log("bufferTransformBitmap: warning - explicit size without resize flag\n\r");
+		// we'll let this pass for now, but it may be an error
+	}
+
+	int xOffset = 0;
+	int yOffset = 0;
+	int width = 0;
+	int height = 0;
+	if (explicitSize) {
+		width = readWord_t();
+		height = readWord_t();
+	}
+	if (width == -1 || height == -1) {
+		debug_log("bufferTransformBitmap: failed to read explicit size\n\r");
+		return;
+	}
+
+	auto bitmap = getBitmap(bitmapId);
+	if (!bitmap) {
+		debug_log("bufferTransformBitmap: bitmap %d not found\n\r", bitmapId);
+		return;
+	}
+	auto transformBufferIter = buffers.find(transformBufferId);
+	if (transformBufferIter == buffers.end()) {
+		debug_log("bufferTransformBitmap: buffer %d not found\n\r", transformBufferId);
+		return;
+	}
+	auto &transformBuffer = transformBufferIter->second;
+	if (!checkTransformBuffer(transformBuffer)) {
+		debug_log("bufferTransformBitmap: buffer %d not a 2d transform matrix\n\r", transformBufferId);
+		return;
+	}
+
+	auto srcWidth = bitmap->width;
+	float srcWidthF = (float)srcWidth;
+	auto srcHeight = bitmap->height;
+	float srcHeightF = (float)srcHeight;
+	auto transform = (float *)transformBuffer[0]->getBuffer();
+	auto inverse = (float *)transformBuffer[1]->getBuffer();
+
+	if (!explicitSize) {
+		width = srcWidth;
+		height = srcHeight;
+	}
+	if (shouldResize || autoTranslate) {
+		int minX = INT_MAX;
+		int minY = INT_MAX;
+		int maxX = INT_MIN;
+		int maxY = INT_MIN;
+		float pos[3] = { 0.0f, 0.0f, 1.0f };
+		float transformed[3];
+		dspm_mult_3x3x1_f32(transform, pos, transformed);
+		minX = fabgl::imin(minX, (int)transformed[0]);
+		minY = fabgl::imin(minY, (int)transformed[1]);
+		maxX = fabgl::imax(maxX, (int)transformed[0]);
+		maxY = fabgl::imax(maxY, (int)transformed[1]);
+
+		pos[0] = srcWidthF;
+		dspm_mult_3x3x1_f32(transform, pos, transformed);
+		minX = fabgl::imin(minX, (int)transformed[0]);
+		minY = fabgl::imin(minY, (int)transformed[1]);
+		maxX = fabgl::imax(maxX, (int)transformed[0]);
+		maxY = fabgl::imax(maxY, (int)transformed[1]);
+
+		pos[1] = srcHeightF;
+		dspm_mult_3x3x1_f32(transform, pos, transformed);
+		minX = fabgl::imin(minX, (int)transformed[0]);
+		minY = fabgl::imin(minY, (int)transformed[1]);
+		maxX = fabgl::imax(maxX, (int)transformed[0]);
+		maxY = fabgl::imax(maxY, (int)transformed[1]);
+
+		pos[0] = 0.0f;
+		dspm_mult_3x3x1_f32(transform, pos, transformed);
+		minX = fabgl::imin(minX, (int)transformed[0]);
+		minY = fabgl::imin(minY, (int)transformed[1]);
+		maxX = fabgl::imax(maxX, (int)transformed[0]);
+		maxY = fabgl::imax(maxY, (int)transformed[1]);
+
+		debug_log("bufferTransformBitmap: minX %d, minY %d, maxX %d, maxY %d\n\r", minX, minY, maxX, maxY);
+
+		Rect transformedBox = Rect(minX, minY, maxX, maxY);
+		debug_log("bufferTransformBitmap: transformed box %d, %d\n\r", transformedBox.width(), transformedBox.height());
+
+		if (shouldResize && !explicitSize) {
+			width = (maxX - (autoTranslate ? minX : 0)) + 1;
+			height = (maxY - (autoTranslate ? minY : 0)) + 1;
+		}
+		if (autoTranslate) {
+			xOffset = minX;
+			yOffset = minY;
+		}
+	}
+
+	// create a destination buffer using our calculated width and height
+	auto bufferStream = make_shared_psram<BufferStream>(width * height);
+	if (!bufferStream || !bufferStream->getBuffer()) {
+		debug_log("bufferTransformBitmap: failed to create buffer %d\n\r", bufferId);
+		return;
+	}
+
+	// iterate over our destination buffer, and apply the transformation to each pixel
+	auto destination = (RGBA2222 *)bufferStream->getBuffer();
+	float pos[3] = {0.0f, 0.0f, 1.0f};
+	float srcPos[3] = {0.0f, 0.0f, 1.0f};
+
+	debug_log("bufferTransformBitmap: width %d, height %d, xOffset %d, yOffset %d\n\r", width, height, xOffset, yOffset);
+
+    for (int y = 0; y < height; y++) {
+    	for (int x = 0; x < width; x++) {
+			// calculate the source pixel
+			// NB we will need to adjust x,y here if we are auto-translating
+			pos[0] = (float)x + xOffset;
+			pos[1] = (float)y + yOffset;
+			dspm_mult_3x3x1_f32(inverse, pos, srcPos);
+			auto srcPixel = RGBA2222(0,0,0,0);
+			if (srcPos[0] >= 0.0f && srcPos[0] < srcWidthF && srcPos[1] >= 0.0f && srcPos[1] < srcHeightF) {
+				srcPixel = bitmap->getPixel2222((int)srcPos[0], (int)srcPos[1]);
+			}
+			destination[(int)y * width + (int)x] = srcPixel;
+		}
+    }
+
+	// save new bitmap data to target buffer
+	bufferClear(bufferId);
+	buffers[bufferId].push_back(bufferStream);
+
+	// create a new bitmap object
+	createBitmapFromBuffer(bufferId, 1, width, height);
+}
+
+// VDU 23, 0, &A0, bufferId; &29, options, format, transformBufferId; sourceBufferId; <optional-args> : Apply transform matrix to data in a buffer
+// Apply a transform matrix to data in a buffer, creating a new buffer
+// Replaces the target buffer with the new buffer
+// Will accept options to control the transformation
+//
+void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId) {
+	bool hasSize = options & TRANSFORM_DATA_HAS_SIZE;
+	bool hasOffset = options & TRANSFORM_DATA_HAS_OFFSET;
+	bool hasStride = options & TRANSFORM_DATA_HAS_STRIDE;
+	bool hasLimit = options & TRANSFORM_DATA_HAS_LIMIT;
+	bool advancedOffsets = options & TRANSFORM_DATA_ADVANCED;
+	bool useBufferArgs = options & TRANSFORM_DATA_BUFFER_ARGS;
+	bool perBlock = options & TRANSFORM_DATA_PER_BLOCK;
+
+	// Default data size is derived from the transform matrix size (rows-1)
+	// If "has size" flag is set, but a zero size is read, then the number of data elements will be matrix row count
+	// A set of data elements to be transformed must to be contiguous, and cannot overlap block boundaries
+	// Stride will default to the data size if not set (or explicitly set to 0) (in bytes)
+
+	AdvancedOffset offsetInfo = {};
+	uint32_t stride = 0;
+	uint32_t limit = 0;
+	uint32_t dataSize = 0;
+
+	// Utility lambda to get an 8 or 16-bit argument, possibly from a buffer+offset
+	auto getArg = [this](uint32_t &value, bool useBuffer, bool useAdvancedOffsets, bool is16Bit = true) -> bool {
+		if (useBuffer) {
+			auto bufferId = readWord_t();
+			if (bufferId == -1) {
+				return false;
+			}
+			auto offset = getOffsetFromStream(useAdvancedOffsets);
+			if (!readBufferBytes(bufferId, offset, &value, is16Bit ? 2 : 1)) {
+				return false;
+			}
+		} else {
+			value = is16Bit ? readWord_t() : readByte_t();
+			if (value == -1) {
+				return false;
+			}
+		}
+		return true;
+	};
+
+	if (hasSize && !getArg(dataSize, useBufferArgs, advancedOffsets, false)) {
+		return;
+	}
+
+	if (hasOffset) {
+		if (useBufferArgs) {
+			auto argBuffer = readWord_t();
+			if (argBuffer == -1) {
+				return;
+			}
+			auto argOffset = getOffsetFromStream(advancedOffsets);
+			if (advancedOffsets) {
+				if (!readBufferBytes(argBuffer, argOffset, &(offsetInfo.blockOffset), 3, true)) {	// 3 bytes for 24-bit value
+					return;
+				}
+				if (offsetInfo.blockOffset & 0x00800000) {	// we have a block index
+					if (!readBufferBytes(argBuffer, argOffset, &(offsetInfo.blockIndex), 2)) {
+						return;
+					}
+					offsetInfo.blockOffset &= 0x007FFFFF;
+				}
+			} else {
+				if (!readBufferBytes(argBuffer, argOffset, &(offsetInfo.blockOffset), 2)) {	// non-advanced offset, so just read 2 bytes
+					return;
+				}
+			}
+		} else {
+			offsetInfo = getOffsetFromStream(advancedOffsets);
+			if (offsetInfo.blockOffset == -1) {
+				return;
+			}
+		}
+	}
+
+	if (hasStride && !getArg(stride, useBufferArgs, advancedOffsets)) {
+		return;
+	}
+	if (hasLimit && !getArg(limit, useBufferArgs, advancedOffsets)) {
+		return;
+	}
+	if (limit == 0) {	// limit of 0 means transform all the data
+		limit = 0xFFFFFFFF;
+	}
+
+	auto sourceBufferIter = buffers.find(sourceBufferId);
+	if (sourceBufferIter == buffers.end()) {
+		debug_log("bufferTransformData: buffer %d not found\n\r", sourceBufferId);
+		return;
+	}
+
+	auto transformSize = getMatrixSize(transformBufferId);
+	if (transformSize.value == 0) {
+		debug_log("bufferTransformData: matrix %d not found\n\r", transformBufferId);
+		return;
+	}
+	// How many source values are we reading at a time for this matrix size?
+	if (dataSize == 0) {
+		// no explicit data size set, so we'll use 1 row less than the matrix size
+		dataSize = transformSize.rows - (hasSize ? 0 : 1);
+	}
+	if (dataSize > transformSize.rows) {
+		debug_log("bufferTransformData: data size %d exceeds matrix rows %d\n\r", dataSize, transformSize.rows);
+		return;
+	}
+	// as we have metadata, buffer _should_ exist, but we'll check anyway
+	auto transformBufferIter = buffers.find(transformBufferId);
+	if (transformBufferIter == buffers.end()) {
+		debug_log("bufferTransformBitmap: buffer %d not found\n\r", transformBufferId);
+		return;
+	}
+	auto &transformBuffer = transformBufferIter->second;
+	if (transformBuffer.size() == 0 || transformBuffer[0]->size() != transformSize.sizeBytes()) {
+		debug_log("bufferTransformData: matrix %d not found\n\r", transformBufferId);
+		return;
+	}
+	auto transform = (float *)transformBuffer[0]->getBuffer();
+
+	bool isFixed, is16Bit;
+	int8_t shift;
+	extractFormatInfo(format, isFixed, is16Bit, shift);
+	auto bytesPerValue = is16Bit ? 2 : 4;
+	if (stride == 0) {
+		stride = bytesPerValue * dataSize;
+	}
+
+	// Make 1-dimensional arrays for our source and transformed data
+	float srcData[transformSize.rows];
+	std::fill_n(srcData, transformSize.rows, 1.0f);
+	float transformed[transformSize.rows];
+
+	// our destination buffer will be a copy of the source, with the data transformed
+	BufferVector streams;
+	auto workingOffset = offsetInfo;
+	auto workingLimit = limit;
+	for (const auto &block : sourceBufferIter->second) {
+		// push a copy of the source block into our new vector
+		auto bufferStream = make_shared_psram<BufferStream>(block->size());
+		if (!bufferStream || !bufferStream->getBuffer()) {
+			debug_log("bufferTransformData: failed to create buffer\n\r");
+			return;
+		}
+		bufferStream->writeBuffer(block->getBuffer(), block->size());
+		streams.push_back(bufferStream);
+
+		if (perBlock && workingLimit != limit) {
+			workingLimit = limit;
+			// per-block, and we've adjusted at least one value, so reset blockOffset
+			workingOffset.blockOffset = offsetInfo.blockOffset;
+			// getBufferSpan below in the while condition should be incrementing our blockIndex
+		}
+
+		// now transform data in the buffer, according to the rules we have
+		uint32_t sourceData = 0;
+		while (!getBufferSpan(streams, workingOffset, bytesPerValue * dataSize).empty() && workingLimit) {
+			workingLimit--;
+			// read the source data - we will always have enough data to read
+			auto sourceOffset = workingOffset;
+			for (int i = 0; i < dataSize; i++) {
+				auto span = getBufferSpan(streams, sourceOffset, bytesPerValue);
+				sourceOffset.blockOffset += bytesPerValue;
+				sourceData = 0;
+				memcpy(&sourceData, span.data(), bytesPerValue);
+				srcData[i] = convertValueToFloat(sourceData, is16Bit, isFixed, shift);
+			}
+			// apply the transform and write back to the buffer
+			dspm_mult_f32(transform, srcData, transformed, transformSize.rows, transformSize.columns, 1);
+			for (int i = 0; i < dataSize; i++) {
+				auto value = convertFloatToValue(transformed[i], is16Bit, isFixed, shift);
+				bufferStream->writeBuffer((uint8_t *)&value, bytesPerValue, workingOffset.blockOffset + (i * bytesPerValue));
+			}
+			workingOffset.blockOffset += stride;
+		}
+	}
+	// replace buffer with new one
+	bufferRemoveUsers(bufferId);
+	buffers[bufferId].assign(std::make_move_iterator(streams.begin()), std::make_move_iterator(streams.end()));
+	debug_log("bufferTransformData: copied %d streams into buffer %d (%d)\n\r", streams.size(), bufferId, buffers[bufferId].size());
 }
 
 
@@ -2175,18 +2601,17 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 		while (bufferLength--) {
 			auto value = *p_source++;
 			for (uint8_t i = 0; i < 8; i++) {
-				debug_log("pixel bit is %d ", ((value >> 7 - i) & 1));
 				pixel = (pixel << 1) | ((value >> (7 - i)) & 1);
 				bit++;
 				if (bit == pixelSize) {
 					bit = 0;
 					*p_data++ = mapValues[pixel];
-					debug_log(" %02hX %02hX (%02hX) %d\n\r", pixel, mapValues[pixel], value, i);
+					// debug_log("pixel map: %02hX %02hX (%02hX) %d\n\r", pixel, mapValues[pixel], value, i);
 					pixel = 0;
 					if (aligned) {
 						if (++pixelCount == width) {
 							// byte align
-							debug_log("aligned... skipping to next byte at byte bit %d\n\r", i);
+							// debug_log("aligned... skipping to next byte at byte bit %d\n\r", i);
 							pixelCount = 0;
 							// jump to next byte
 							break;
