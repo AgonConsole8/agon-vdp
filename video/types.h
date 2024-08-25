@@ -115,6 +115,12 @@ public:
 	}
 };
 
+template <typename T, typename U>
+bool operator==(const psram_allocator<T>&, const psram_allocator<U>&) { return true; }
+
+template <typename T, typename U>
+bool operator!=(const psram_allocator<T>&a, const psram_allocator<U>&b) { return !(a == b); }
+
 // Typically we do not need a deleter because the regular one can handle PSRAM deallocations just fine,
 // but for completeness, here it is.
 
