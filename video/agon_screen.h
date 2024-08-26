@@ -114,19 +114,15 @@ int8_t setLogicalPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b) 
 	}
 
 	debug_log("vdu_palette: %d,%d,%d,%d,%d\n\r", l, p, r, g, b);
+	uint8_t index = (col.R >> 6) << 4 | (col.G >> 6) << 2 | (col.B >> 6);
+	// update palette entry
+	palette[l] = index;
 	if (getVGAColourDepth() < 64) {		// If it is a paletted video mode
+		// change underlying output video palette
 		setPaletteItem(l, col);
 		updateRGB2PaletteLUT();
-	} else {
-		// adjust our palette array for new colour
-		// palette is an index into the colourLookup table, and our index is in 00RRGGBB format
-		uint8_t index = (col.R >> 6) << 4 | (col.G >> 6) << 2 | (col.B >> 6);
-		auto lookedup = colourLookup[index];
-		debug_log("vdu_palette: col.R %02X, col.G %02X, col.B %02X, index %d (%02X), lookup %02X, %02X, %02X\n\r", col.R, col.G, col.B, index, index, lookedup.R, lookedup.G, lookedup.B);
-		palette[l] = index;
-		return index;
 	}
-	return -1;
+	return index;
 }
 
 // Reset the palette and set the foreground and background drawing colours
