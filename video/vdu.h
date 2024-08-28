@@ -255,7 +255,6 @@ void VDUStreamProcessor::vdu_palette() {
 	auto index = setLogicalPalette(l, p, r, g, b);
 
 	if (index != -1) {
-		// palette item in a 64 colour mode changed, so we may need to update our active colours
 		// TODO iterate over all stored contexts and update the palette
 		context->updateColours(l, index);
 	}
