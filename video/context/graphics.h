@@ -549,8 +549,8 @@ void Context::setGraphicsColour(uint8_t mode, uint8_t colour) {
 // Update selected colours based on palette change in 64 colour modes
 //
 void Context::updateColours(uint8_t l, uint8_t index) {
+	plottingText = false;
 	auto lookedup = colourLookup[index];
-	palette[l] = index;
 	if (l == tfgc) {
 		tfg = lookedup;
 	}
