@@ -18,6 +18,7 @@
 #include "vdu_sprites.h"
 #include "updater.h"
 #include "vdu_stream_processor.h"
+#include "vdu_layers.h"
 
 extern void startTerminal();					// Start the terminal
 extern void setConsoleMode(bool mode);			// Set console mode
@@ -307,6 +308,9 @@ void VDUStreamProcessor::vdu_sys_video() {
 			if (b >= 0) {
 				setLegacyModes((bool) b);
 			}
+		}	break;
+		case VDP_LAYERS: {				// VDU 23, 0, &C2, n
+			vdu_sys_layers();
 		}	break;
 		case VDP_SWITCHBUFFER: {		// VDU 23, 0, &C3
 			switchBuffer();

@@ -140,6 +140,71 @@ class VDUStreamProcessor {
 		void receiveFirmware();
 		void switchFirmware();
 
+				// Begin: Tile Engine
+
+		void vdu_sys_layers();
+		void vdu_sys_layers_tilebank_init(uint8_t tileBankNum, uint8_t tileBankBitDepth);
+		void vdu_sys_layers_tilebank_load(uint8_t tileBankNum, uint8_t tileId);
+		void vdu_sys_layers_tilebank_draw(uint8_t tileBankNum, uint8_t tileId, uint8_t palette, uint8_t x, uint8_t y, uint8_t xOffset, uint8_t yOffset, uint8_t tileAttribute);
+		void vdu_sys_layers_tilebank_free(uint8_t tileBankNum);
+		void vdu_sys_layers_tilemap_init(uint8_t tileLayerNum, uint8_t tileMapSize);
+		void vdu_sys_layers_tilemap_set(uint8_t tileLayerNum, uint8_t x, uint8_t y, uint8_t tileId, uint8_t tileAttribute);
+		void vdu_sys_layers_tilemap_free(uint8_t tileMapNum);
+		void vdu_sys_layers_tilelayer_init(uint8_t tileLayerNum, uint8_t tileLayerSize, uint8_t tileSize);
+		void vdu_sys_layers_tilelayer_set_scroll(uint8_t tileLayerNum, uint8_t x, uint8_t y, uint8_t xOffset, uint8_t yOffset);
+		void vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum);
+		void writeTileToBuffer(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth);
+		void writeTileToBufferFlipX(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth);
+		void writeTileToBufferFlipY(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth);
+		void writeTileToBufferFlipXY(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth);
+
+		// Tile Bank variables
+
+		void * tileBank0Data = NULL;
+		uint8_t * tileBank0Ptr;
+
+		Bitmap currentTile; 
+		uint8_t currentTileDataBuffer[64];
+
+		// Tile Map variables
+
+		struct Tile {
+			uint8_t	id;
+			uint8_t attribute;
+		};
+
+		struct Tile** tileMap0 = NULL;
+
+		struct TileMap {
+			uint8_t height;
+			uint8_t width;
+		};
+
+		TileMap tileMap0Properties;
+
+		// Tile Layer variables
+
+		Bitmap currentRow;
+		uint8_t currentRowDataBuffer[5184];		// Buffer big enough for 64 byte tiles * 81 columns (the largest supported size +1)
+
+		struct TileLayer {
+			uint8_t height;
+			uint8_t width;
+			uint8_t sourceXPos;
+			uint8_t sourceYPos;
+			uint8_t xOffset;
+			uint8_t yOffset;
+			uint8_t attribute;
+		};
+
+		TileLayer tileLayer0;
+		TileLayer tileLayer1;
+		TileLayer tileLayer2;
+
+		uint8_t tileLayer0init = 0;		
+
+		// End: Tile Engine
+
 	public:
 		uint16_t id = 65535;
 
