@@ -52,7 +52,11 @@
 #define	DEBUG			1						// Serial Debug Mode: 1 = enable
 #define SERIALBAUDRATE	115200
 
+#ifdef USERSPACE
 extern uint32_t startup_screen_mode; /* in rust_glue.cpp */
+#else /* !USERSPACE */
+#define startup_screen_mode 0
+#endif /* !USERSPACE */
 
 HardwareSerial	DBGSerial(0);
 
@@ -117,11 +121,15 @@ void loop() {
 }
 
 void processLoop(void * parameter) {
+#ifdef USERSPACE
 	uint32_t count = 0;
+#endif /* USERSPACE */
 
 	while (true) {
+#ifdef USERSPACE
  		if ((count & 0x7f) == 0) delay(1 /* -TM- ms */);
  		count++;
+#endif /* USERSPACE */
 
 		#ifdef VDP_USE_WDT
 			esp_task_wdt_reset();
