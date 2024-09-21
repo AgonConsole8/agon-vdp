@@ -335,6 +335,15 @@ bool processTerminal() {
 				if (strcmp("S!", seq) == 0) {
 					suspendTerminal();
 				}
+				if (seq[0] == 'F') {
+					uint32_t fontnum = textToInt32(seq + 1);
+					if (fontnum >= 0) {
+						auto font = fonts[fontnum];  // get shared_ptr to font -- was fonts[bufferID]
+						if (font != nullptr) {  // check it's defined
+						Terminal->loadFont(font.get());
+						}
+					}
+				}
 			};
 			debug_log("Terminal enabled\n\r");
 			terminalState = TerminalState::Enabled;
