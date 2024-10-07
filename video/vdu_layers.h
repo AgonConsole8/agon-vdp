@@ -33,6 +33,9 @@
 #define VDP_LAYER_TILELAYER_DRAW			0x1E		// VDU 23,0,194,30
 #define VDP_LAYER_TILELAYER_FREE			0x1F		// VDU 23,0,194,31
 
+// Begin: Function Prototypes for internal Tile Engine use
+void debug_log_mem(void);
+// End: Function Prototypes for internal Tile Engine use
 
 void VDUStreamProcessor::vdu_sys_layers(void) {
 
@@ -212,13 +215,16 @@ void VDUStreamProcessor::vdu_sys_layers_tilebank_init(uint8_t tileBankNum, uint8
 	// Create a buffer of width, height and colour depth for 256 tiles
 	int tileBankBufferSize = tileBankTileWidth * tileBankTileHeight * 256;
 
+	debug_log("In vdu_sys_layers_tilebank_init: Before memory allocation\n\r");
+	debug_log_mem();
+
 	switch (tileBankNum) {		// Which tile bank is being initiated?
 
 		case 0: {				// Tile Bank 0
 			
 			// Check if already exists
 			
-			if (tileBank0Data !=NULL) {
+			if (tileBank0Data != NULL) {
 
 				// If already exists, then free and reallocate
 				vdu_sys_layers_tilebank_free(tileBankNum);
@@ -239,7 +245,8 @@ void VDUStreamProcessor::vdu_sys_layers_tilebank_init(uint8_t tileBankNum, uint8
 					*(tileBank0Ptr + i) = 0; 
 			}
 			else {
-				discardBytes(tileBankBufferSize);
+				// Something went wrong. Calll the free function to clear up the memory
+				vdu_sys_layers_tilebank_free(tileBankNum);
 			}
 		} break;
 
@@ -248,6 +255,9 @@ void VDUStreamProcessor::vdu_sys_layers_tilebank_init(uint8_t tileBankNum, uint8
 			return;
 		}
 	}
+
+	debug_log("In vdu_sys_layers_tilebank_init: After memory allocation\n\r");
+	debug_log_mem();
 }
 
 void VDUStreamProcessor::vdu_sys_layers_tilebank_load(uint8_t tileBankNum, uint8_t tileId) {
@@ -327,6 +337,9 @@ void VDUStreamProcessor::vdu_sys_layers_tilebank_draw(uint8_t tileBankNum, uint8
 
 void VDUStreamProcessor::vdu_sys_layers_tilebank_free(uint8_t tileBankNum) {
 
+	debug_log("In vdu_sys_layers_tilebank_free: Before memory free call\n\r");
+	debug_log_mem();
+
 	switch (tileBankNum) {
 		case 0: {
 			if (tileBank0Data != NULL) {
@@ -340,9 +353,15 @@ void VDUStreamProcessor::vdu_sys_layers_tilebank_free(uint8_t tileBankNum) {
 			debug_log("vdu_sys_layers_tilebank_free: Invalid tileBankNum %d specified.\r\n",tileBankNum);
 		}
 	}
+
+	debug_log("In vdu_sys_layers_tilebank_free: After memory free call\r\n");
+	debug_log_mem();
 }
 
 void VDUStreamProcessor::vdu_sys_layers_tilemap_init(uint8_t tileLayerNum, uint8_t tileMapSize) {
+
+	debug_log("In vdu_sys_layers_tilemap_init: Before memory allocation\n\r");
+	debug_log_mem();
 
 	// Check if tileMap0 already exists and free if it is.
 
@@ -352,7 +371,7 @@ void VDUStreamProcessor::vdu_sys_layers_tilemap_init(uint8_t tileLayerNum, uint8
 			
 			// Check if already exists
 	
-			if (tileMap0 !=NULL) {
+			if (tileMap0 != NULL) {
 				// If already exists, then free and reinitialise
 
 				vdu_sys_layers_tilemap_free(tileLayerNum); 
@@ -445,6 +464,8 @@ void VDUStreamProcessor::vdu_sys_layers_tilemap_init(uint8_t tileLayerNum, uint8
 
 	int tileMapBufferSize = tileMapWidth * sizeof(struct Tile*);
 
+	bool tileMapMemoryAllocation = false;			// Flag to check memory allocation status. Default to false (i.e., not allocated).
+
 	// Initial release to only support a single tile layer
 	if (tileLayerNum != 0) {
 		debug_log("vdu_sys_layers_tilemap_init: Invalid tileLayerNum %d specified.\r\n",tileLayerNum);
@@ -455,18 +476,47 @@ void VDUStreamProcessor::vdu_sys_layers_tilemap_init(uint8_t tileLayerNum, uint8
 
 		case 0: {		// If tile map number is 0
 						
-			// Allocate memory for each column in the tile map
+			// Allocate memory wide enough for each column in the tile map
 			tileMap0 = (struct Tile**)heap_caps_malloc(tileMapBufferSize,MALLOC_CAP_SPIRAM);
 
-			// Allocate memory for each row in the tile map
-			for (auto i=0; i<tileMapWidth; i++) {
-				tileMap0[i] = (struct Tile*)heap_caps_malloc(tileMapHeight * sizeof(struct Tile),MALLOC_CAP_SPIRAM);
-			}
-						
-			// Only continue if the init was successful
-			
+			// If memory allocation for the width of the tilemap was a success, then allocate memory for each column in the tilemap
+
 			if (tileMap0 != NULL) {
 
+				// If tileMap0 is not null, then the memory has been successfully allocated
+
+				tileMapMemoryAllocation = true;
+
+				// As memory allocation was successful for the width of the tilemap, now allocate a column for each row
+
+				for (auto i=0; i<tileMapWidth; i++) {
+					tileMap0[i] = (struct Tile*)heap_caps_malloc(tileMapHeight * sizeof(struct Tile),MALLOC_CAP_SPIRAM);
+
+					// Check that the memory allocation for the row is successful
+					if (tileMap0[i] == NULL) {
+						debug_log("vdu_sys_layers_tilemap_init: Failed to allocate memory for tileMap0[%d].\r\n",tileMap0[i]);
+						tileMapMemoryAllocation = false;
+					}
+				}
+			} else {
+				debug_log("vdu_sys_layers_tilemap_init: Failed to allocate memory for tileMap0.\r\n");
+				
+				tileMapMemoryAllocation = false;
+				
+			}
+
+			// Check that memory allocation was successful. If not, then clean up. If successful, then set contents to 0.
+
+			if (tileMapMemoryAllocation == false) {
+
+				// Tidy up by calling free...
+
+				vdu_sys_layers_tilemap_free(tileLayerNum);
+
+			} else {
+
+				// Only continue if the init was successful...
+			
 				// Set every byte in the tile map to 0
 
 				for (auto i=0; i<tileMapWidth; i++) {
@@ -475,13 +525,14 @@ void VDUStreamProcessor::vdu_sys_layers_tilemap_init(uint8_t tileLayerNum, uint8
 						tileMap0[i][j].attribute = 0 ;
 					}
 				}
+
 			}
-			else {
-				debug_log("vdu_sys_layers_tilemap_init: Error when attempting to allocate memory for tilemap.\r\n");
-				discardBytes(tileMapBufferSize);
-			}
+
 		} break;
 	}
+
+	debug_log("In vdu_sys_layers_tilemap_init: After memory allocation\n\r");
+	debug_log_mem();
 }
 
 void VDUStreamProcessor::vdu_sys_layers_tilemap_set(uint8_t tileLayerNum, uint8_t xPos, uint8_t yPos, uint8_t tileId, uint8_t tileAttribute) {
@@ -508,6 +559,9 @@ void VDUStreamProcessor::vdu_sys_layers_tilemap_set(uint8_t tileLayerNum, uint8_
 
 void VDUStreamProcessor::vdu_sys_layers_tilemap_free(uint8_t tileLayerNum) {
 
+	debug_log("In vdu_sys_layers_tilemap_free: Before memory free call.\r\n");
+	debug_log_mem();
+
 	switch (tileLayerNum) {
 		case 0: {
 
@@ -518,19 +572,28 @@ void VDUStreamProcessor::vdu_sys_layers_tilemap_free(uint8_t tileLayerNum) {
 				debug_log("vdu_sys_layers_tilemap_free: Freeing tileMap0.\r\n");
 
 				for (auto i=0; i<tileMapWidth; i++) {
-					heap_caps_free(tileMap0[i]);
+
+					// For each column in the tilemap, free the memory if allocated
+					if (tileMap0[i] != NULL) {
+						heap_caps_free(tileMap0[i]);
+					}
 				}
 				heap_caps_free(tileMap0);
 
 				tileMap0 = NULL;
+
+			} else {
+				debug_log("vdu_sys_layers_tilemap_free: Tile Map %d memory not allocated.\r\n", tileLayerNum);
 			}
 		} break;
 
 		default: {
 			debug_log("vdu_sys_layers_tilemap_free: Invalid tileLayerNum %d specified.\r\n",tileLayerNum);
-			return;
 		}
-	}		
+	}	
+
+	debug_log("In vdu_sys_layers_tilemap_free: After memory free call.\r\n");
+	debug_log_mem();	
 }
 
 void VDUStreamProcessor::vdu_sys_layers_tilelayer_init(uint8_t tileLayerNum, uint8_t tileLayerSize, uint8_t tileSize) {
@@ -1143,6 +1206,15 @@ void VDUStreamProcessor::writeTileToBufferFlipXY(uint8_t tileId, uint8_t tileCou
 		}
 
 	}
+}
+
+void debug_log_mem(void) {
+	debug_log("  free internal (MALLOC_CAP_INTERNAL): %d\n\r  free 8bit (MALLOC_CAP_8BIT): %d\n\r  free 32bit (MALLOC_CAP_32BIT): %d\n\r  PSRAM (MALLOC_CAP_SPIRAM): %d\n\r",
+		heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+		heap_caps_get_free_size(MALLOC_CAP_8BIT),
+		heap_caps_get_free_size(MALLOC_CAP_32BIT),
+		heap_caps_get_free_size(MALLOC_CAP_SPIRAM)
+	);
 }
 
 #endif // AGON_LAYERS_H
