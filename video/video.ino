@@ -49,7 +49,14 @@
 #include <WiFi.h>
 #include <fabgl.h>
 
-#define	DEBUG			1						// Serial Debug Mode: 1 = enable
+// Serial Debug Mode: 1 = enable
+// Always enabled on the emulator, to support --verbose mode
+#ifdef USERSPACE
+# define	DEBUG			1
+#else /* !USERSPACE */
+# define	DEBUG			0
+#endif /* USERSPACE */
+
 #define SERIALBAUDRATE	115200
 
 #ifdef USERSPACE
