@@ -28,10 +28,13 @@
 #define VDP_LAYER_TILELAYER_INIT			0x18		// VDU 23,0,194,24
 #define VDP_LAYER_TILELAYER_SET_PROPERTY	0x19		// VDU 23,0,194,25
 #define VDP_LAYER_TILELAYER_SET_SCROLL		0x1A		// VDU 23,0,194,26
-#define VDP_LAYER_TILELAYER_SET_TABLE		0x1B		// VDU 23,0,194,27	[Future]
-#define VDP_LAYER_TILELAYER_SET_DRAW_PARAM	0x1D		// VDU 23,0,194,29 	[Future]
-#define VDP_LAYER_TILELAYER_DRAW			0x1E		// VDU 23,0,194,30
-#define VDP_LAYER_TILELAYER_FREE			0x1F		// VDU 23,0,194,31
+// #define VDP_LAYER_TILELAYER_SET_TABLE		0x1B		// VDU 23,0,194,27	[Future]
+// #define VDP_LAYER_TILELAYER_SET_DRAW_PARAM	0x1D		// VDU 23,0,194,29 	[Future]
+
+#define VDP_LAYER_TILELAYER_UPDATE_LAYERBUFFER	0x1C		// VDU 23,0,194,28 	[Future]
+#define VDP_LAYER_TILELAYER_DRAW_LAYERBUFFER	0x1D		// VDU 23,0,194,29 	[Future]
+#define VDP_LAYER_TILELAYER_DRAW				0x1E		// VDU 23,0,194,30
+#define VDP_LAYER_TILELAYER_FREE				0x1F		// VDU 23,0,194,31
 
 // Begin: Function Prototypes for internal Tile Engine use
 void debug_log_mem(void);
@@ -181,7 +184,30 @@ void VDUStreamProcessor::vdu_sys_layers(void) {
 
 		} break;
 
-		case VDP_LAYER_TILELAYER_SET_TABLE: {
+		//case VDP_LAYER_TILELAYER_SET_TABLE: {
+		//
+		//} break;
+
+		case VDP_LAYER_TILELAYER_UPDATE_LAYERBUFFER: {
+
+			// VDU 23,0,194,28,<tileLayerNum>
+			// Parameters are currently undefined but would facilitate drawing priority
+
+			uint8_t tileLayerNum = readByte_t();
+
+			vdu_sys_layers_tilelayer_update_layerbuffer(tileLayerNum);
+
+		} break;
+
+
+		case VDP_LAYER_TILELAYER_DRAW_LAYERBUFFER: {
+
+			// VDU 23,0,194,29,<tileLayerNum>
+			// Parameters are currently undefined but would facilitate drawing priority
+
+			uint8_t tileLayerNum = readByte_t();
+
+			vdu_sys_layers_tilelayer_draw_layerbuffer(tileLayerNum);
 
 		} break;
 
@@ -197,8 +223,11 @@ void VDUStreamProcessor::vdu_sys_layers(void) {
 		} break;
 
 		case VDP_LAYER_TILELAYER_FREE: {
-			// Not required? We don't dynamically allocate memory in VDP_LAYER_TILELAYER_INIT
-			// so there is nothing to free?
+		
+			uint8_t tileLayerNum = readByte_t();
+
+			vdu_sys_layers_tilelayer_free(tileLayerNum);
+
 		} break;
 	}
 }
@@ -598,6 +627,9 @@ void VDUStreamProcessor::vdu_sys_layers_tilemap_free(uint8_t tileLayerNum) {
 
 void VDUStreamProcessor::vdu_sys_layers_tilelayer_init(uint8_t tileLayerNum, uint8_t tileLayerSize, uint8_t tileSize) {
 	
+	debug_log("In vdu_sys_layers_tilelayer_init: Before memory allocation\n\r");
+	debug_log_mem();
+
 	uint8_t tileLayerHeight;
 	uint8_t tileLayerWidth;
 
@@ -637,22 +669,6 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_init(uint8_t tileLayerNum, uin
 		}
 	}
 
-	int rowBufferWidth = tileLayerWidth * 8;						// Number of bytes (pixels) wide
-
-	int rowBufferHeight = 8;										// Number of scanlines in the buffer
-
-	int rowDataBufferSize = rowBufferWidth * rowBufferHeight;		// Size of the buffer in bytes
-
-	// Create the row bitmap
-
-	currentRow = Bitmap(rowBufferWidth, rowBufferHeight, currentRowDataBuffer, PixelFormat::RGBA2222);
-
-	// Zero out the active parts of the buffer
-
-	for (auto i=0; i<rowDataBufferSize; i++) {
-		currentRowDataBuffer[i] = 0;
-	}
-
 	switch (tileLayerNum) {
 
 		case 0: {		// Tile Layer 0
@@ -665,6 +681,49 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_init(uint8_t tileLayerNum, uin
 			tileLayer0.yOffset = 0;
 			tileLayer0.attribute = 0;
 
+			if (tileLayer0Buffer != NULL) {
+
+				// If already exists, then free and reallocate
+				vdu_sys_layers_tilelayer_free(tileLayerNum);
+			}
+
+			int tileLayer0BufferSize = ((tileLayerHeight + 1) * 8) * ((tileLayerWidth + 1) * 8);
+			// int tileLayer0BufferSize = ((tileLayerHeight) * 8) * ((tileLayerWidth) * 8);
+
+			debug_log("In vdu_sys_layers_tilelayer_init: tileLayerHeight: %d tileLayerWidth: %d\r\n", tileLayerHeight, tileLayerWidth);
+			debug_log("In vdu_sys_layers_tilelayer_init: tileLayer0BufferSize: %dbytes (%dK)\r\n", tileLayer0BufferSize, tileLayer0BufferSize / 1024);
+
+			tileLayer0Buffer = heap_caps_malloc(tileLayer0BufferSize,MALLOC_CAP_SPIRAM);
+
+
+			// Log the allocated memory
+
+
+			if (tileLayer0Buffer != nullptr) {
+				size_t actualSize = heap_caps_get_allocated_size(tileLayer0Buffer);
+				debug_log("Allocated size: %zu bytes\r\n", actualSize);
+			} else {
+				debug_log("Memory allocation failed\r\n");
+			}
+
+			debug_log("In vdu_sys_layers_tilelayer_init: tileLayer0Buffer starting address: %d\r\n", &tileLayer0Buffer);
+
+			if (tileLayer0Buffer != NULL) {
+
+				// Cast the void pointer to an integer
+				tileLayer0Ptr = (uint8_t *)tileLayer0Buffer;
+
+				// Set every byte in the tile bank to the background colour of the layer (default 0 = transparent)
+				for (auto i=0; i <tileLayer0BufferSize; i++)
+					tileLayer0Ptr[i] = tileLayer0.backgroundColour; 
+
+				tileLayer0Bitmap = Bitmap(tileLayerWidth * 8, tileLayerHeight * 8, tileLayer0Buffer, PixelFormat::RGBA2222);
+			}
+			else {
+				// Something went wrong. Calll the free function to clear up the memory
+				vdu_sys_layers_tilelayer_free(tileLayerNum);
+			}
+
 			tileLayer0init = 1;		// Set as initialised
 
 		} break;
@@ -675,6 +734,9 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_init(uint8_t tileLayerNum, uin
 		}
 
 	}
+
+	debug_log("In vdu_sys_layers_tilelayer_init: After memory allocation\n\r");
+	debug_log_mem();
 }
 
 void VDUStreamProcessor::vdu_sys_layers_tilelayer_set_scroll(uint8_t tileLayerNum, uint8_t xPos, uint8_t yPos, uint8_t xOffset, uint8_t yOffset) {
@@ -717,17 +779,13 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_set_scroll(uint8_t tileLayerNu
 	}
 }
 
-void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum) {
-
-	// Timing debug statements
-
-	// auto startTime = xTaskGetTickCountFromISR();
-  	// auto endTime = xTaskGetTickCountFromISR();
-	// auto sumTime = xTaskGetTickCountFromISR();
-	// sumTime = 0;
+void VDUStreamProcessor::vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t tileLayerNum) {
 
 	int xPix = 0;		// X position in pixels is now always 0 as the offset is written directly to the tileRowBuffer
-	int yPix = 0;
+	int yPix = 0;		// Y position in pixels is also always 0 as the displayed bitmap is the entire layer size.
+
+	uint8_t xPos;
+	uint8_t yPos;
 
 	uint8_t tileId;
 	uint8_t tileAttribute;
@@ -760,24 +818,24 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum) {
 					tileMapWidth = tileMap0Properties.width;
 					tileMapHeight = tileMap0Properties.height;
 				} else {
-					debug_log("vdu_sys_layers_tilelayer_draw: tileMap0 is not initialised.\r\n");
+					debug_log("vdu_sys_layers_tilelayer_renderlayer: tileMap0 is not initialised.\r\n");
 					return;
 				}
 			} else {
-				debug_log ("vdu_sys_layers_tilelayer_draw: tileLayer0 is not initialised.\r\n");
+				debug_log ("vdu_sys_layers_tilelayer_renderlayer: tileLayer0 is not initialised.\r\n");
 				return;
 			}
 		} break;
 
 		default: {
-			debug_log("Invalid tileLayerNum: %d\r\n",tileLayerNum);
+			debug_log("vdu_sys_layers_tilelayer_renderlayer: Invalid tileLayerNum: %d\r\n",tileLayerNum);
 			return;
 		}
 	}
 
-	int rowBufferWidth = tileLayerWidth * 8;
-	int rowBufferHeight = 8;
-	int rowDataBufferSize = rowBufferWidth * rowBufferHeight;
+	int layerBufferWidth = tileLayerWidth * 8;
+	int layerBufferHeight = tileLayerHeight * 8;
+	int layerDataBufferSize = layerBufferWidth * layerBufferHeight;
 
 	// Perform validation checks
 
@@ -786,21 +844,25 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum) {
 
 	// Do not continue if tileBank is not initialised.
 	if (tileBank0Data == NULL) { 
-		debug_log("vdu_sys_layers_tilelayer_draw: tileBank0Data is not initialised.\r\n");
+		debug_log("vdu_sys_layers_tilelayer_renderlayer: tileBank0Data is not initialised.\r\n");
 		return;
+	}
+
+	// Clear Row Buffer - move this up...
+	
+		for (auto i=0; i<layerDataBufferSize; i++) {
+			tileLayer0Ptr[i] = 0;				// Setting to 0 is transparent. Future: Layer BG Colour setting.
 	}
 
 	// Process rows for each frame
 
-	for (auto y=0; y<=tileLayerHeight; y++) {				
+	for (auto y=0; y<=tileLayerHeight; y++) {	// This may be causing the crash if the layer buffer needs to be one row bigger than the layer...?
 
-		// Clear Row Buffer
-
-		for (auto i=0; i<rowDataBufferSize; i++) {
-			currentRowDataBuffer[i] = 0;
-		}
+	// for (auto y=0; y<tileLayerHeight; y++) {				
 
 		// Process tile map for current row
+
+		yPos = y;
 
 		for (auto x=0; x<=tileLayerWidth; x++) {
 																
@@ -810,7 +872,9 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum) {
 
 			tileAttribute = tileMap0[sourceXPos][sourceYPos].attribute;
 
-			tileRowOffset = x;	
+			// tileRowOffset = x;
+
+			xPos = x;	
 
 			if (tileId == 0) {		// Tile 0 is special...
 
@@ -830,16 +894,16 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum) {
 
 				switch (tileFlip) {
 					case 0x00:		// Normal drawing
-						writeTileToBuffer(tileId, tileRowOffset, xOffset, currentRowDataBuffer, tileLayerWidth);
+						writeTileToLayerBuffer(tileId, xPos, xOffset, yPos, yOffset, tileLayer0Ptr, tileLayerHeight, tileLayerWidth);
 						break;
 					case 0x01:		// Flip X
-						writeTileToBufferFlipX(tileId, tileRowOffset, xOffset, currentRowDataBuffer, tileLayerWidth);
+						writeTileToLayerBufferFlipX(tileId, xPos, xOffset, yPos, yOffset, tileLayer0Ptr, tileLayerHeight, tileLayerWidth);
 						break;
 					case 0x02:		// Flip Y
-						writeTileToBufferFlipY(tileId, tileRowOffset, xOffset, currentRowDataBuffer, tileLayerWidth);
+						writeTileToLayerBufferFlipY(tileId, xPos, xOffset, yPos, yOffset, tileLayer0Ptr, tileLayerHeight, tileLayerWidth);
 						break;
 					case 0x03:		// Flip X and Y
-						writeTileToBufferFlipXY(tileId, tileRowOffset, xOffset, currentRowDataBuffer, tileLayerWidth);
+						writeTileToLayerBufferFlipXY(tileId, xPos, xOffset, yPos, yOffset, tileLayer0Ptr, tileLayerHeight, tileLayerWidth);
 						break;
 					default:
 						debug_log("Invalid tileAttribute value: %d\r\n",tileFlip);
@@ -858,32 +922,914 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum) {
 		sourceXPos = tileLayer0.sourceXPos;
 		
 		// Set Y position to display on screen
-		yPix = (y * 8) - tileLayer0.yOffset;		// Y position in pixels 
+		// yPix = (y * 8) - tileLayer0.yOffset;		// Y position in pixels 		// Commented out as layer buffer will use the whole screen and needs to be positioned at 0
 	
-		// Draw Row
-
-		// startTime = xTaskGetTickCountFromISR();
-
-		currentRow = Bitmap(rowBufferWidth, rowBufferHeight, currentRowDataBuffer, PixelFormat::RGBA2222);
-
-		canvas->drawBitmap(xPix,yPix,&currentRow);		
-
-		waitPlotCompletion();
-
-		// endTime = xTaskGetTickCountFromISR();
-		// auto elapsedTime = endTime - startTime;
-		// sumTime = sumTime + elapsedTime;
-
 		sourceYPos++;
 		if (sourceYPos == tileMapHeight) {
 			sourceYPos = 0; 
 		}
 	}
 
+}
+
+
+void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw_layerbuffer(uint8_t tileLayerNum) {
+
+	// Timing debug statements
+
+	// auto startTime = xTaskGetTickCountFromISR();
+  	// auto endTime = xTaskGetTickCountFromISR();
+	// auto sumTime = xTaskGetTickCountFromISR();
+	// sumTime = 0;
+
+	int xPix = 0;		// X position in pixels is now always 0 as the offset is written directly to the tileRowBuffer
+	int yPix = 0;
+
+	uint8_t xPos;
+	uint8_t yPos;
+
+	uint8_t tileId;
+	uint8_t tileAttribute;
+	uint8_t tileLayerHeight;
+	uint8_t tileLayerWidth;
+	uint8_t sourceXPos;
+	uint8_t sourceYPos;
+	uint8_t xOffset;
+	uint8_t yOffset;
+	uint8_t tileMapWidth;
+	uint8_t tileMapHeight;
+	uint8_t tileRowOffset = 0;
+
+	switch (tileLayerNum) {
+
+		case 0: {
+
+			if (tileLayer0init != 0) {
+				if (tileMap0 != NULL) {
+
+					tileLayerHeight = tileLayer0.height;
+					tileLayerWidth = tileLayer0.width;
+
+					sourceXPos = tileLayer0.sourceXPos;
+					sourceYPos = tileLayer0.sourceYPos;
+
+					xOffset = tileLayer0.xOffset;
+					yOffset = tileLayer0.yOffset;
+
+					tileMapWidth = tileMap0Properties.width;
+					tileMapHeight = tileMap0Properties.height;
+				} else {
+					debug_log("vdu_sys_layers_tilelayer_renderlayer: tileMap0 is not initialised.\r\n");
+					return;
+				}
+			} else {
+				debug_log ("vdu_sys_layers_tilelayer_renderlayer: tileLayer0 is not initialised.\r\n");
+				return;
+			}
+		} break;
+
+		default: {
+			debug_log("vdu_sys_layers_tilelayer_renderlayer: Invalid tileLayerNum: %d\r\n",tileLayerNum);
+			return;
+		}
+	}
+
+	int layerBufferWidth = tileLayerWidth * 8;
+	int layerBufferHeight = tileLayerHeight * 8;
+	int layerDataBufferSize = layerBufferWidth * layerBufferHeight;
+
+	// Perform validation checks
+
+	if (sourceXPos >= tileMapWidth) { sourceXPos = 0; }
+	if (sourceYPos >= tileMapHeight) { sourceYPos = 0; }
+
+	// Do not continue if tileBank is not initialised.
+	if (tileBank0Data == NULL) { 
+		debug_log("vdu_sys_layers_tilelayer_renderlayer: tileBank0Data is not initialised.\r\n");
+		return;
+	}
+
+	// startTime = xTaskGetTickCountFromISR();
+
+	tileLayer0Bitmap = Bitmap(layerBufferWidth, layerBufferHeight, tileLayer0Ptr, PixelFormat::RGBA2222);
+
+	canvas->drawBitmap(xPix,yPix,&tileLayer0Bitmap);		
+
+	waitPlotCompletion();
+
+	// endTime = xTaskGetTickCountFromISR();
+	// auto elapsedTime = endTime - startTime;
+	// sumTime = sumTime + elapsedTime;
+
 	// debug_log("vdu_sys_layers_tilelayer_draw: Sum time is %d\r\n",sumTime);
 }
 
+
+void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum) {
+
+	// auto startTime = xTaskGetTickCountFromISR();
+  	// auto endTime = xTaskGetTickCountFromISR();
+	// unsigned int elapsedTime;
+
+	// startTime = xTaskGetTickCountFromISR();
+
+	vdu_sys_layers_tilelayer_update_layerbuffer(tileLayerNum);
+
+	// endTime = xTaskGetTickCountFromISR();
+	// elapsedTime = endTime - startTime;
+	// debug_log("In vdu_sys_layers_tilelayer_draw: Tick rate: %dHz\r\n", configTICK_RATE_HZ);
+	// debug_log("In vdu_sys_layers_tilelayer_draw: vdu_sys_layers_tilelayer_update_layerbuffer() execution time: %d\r\n",elapsedTime);
+
+	// startTime = xTaskGetTickCountFromISR();
+
+	vdu_sys_layers_tilelayer_draw_layerbuffer(tileLayerNum);
+
+	// endTime = xTaskGetTickCountFromISR();
+	// elapsedTime = endTime - startTime;
+	// debug_log("In vdu_sys_layers_tilelayer_draw: vdu_sys_layers_tilelayer_draw_layerbuffer() execution time: %d\r\n",elapsedTime);
+
+
+}
+
+void VDUStreamProcessor::vdu_sys_layers_tilelayer_free(uint8_t tileLayerNum) {
+
+	debug_log("In vdu_sys_layers_tilelayer_free: Before memory free call\n\r");
+	debug_log_mem();
+
+	switch (tileLayerNum) {
+		case 0: {
+			if (tileLayer0Buffer != NULL) {
+				debug_log("vdu_sys_layers_tilelayer_free: Freeing tileLayer0Buffer.\r\n");
+				heap_caps_free(tileLayer0Buffer);
+				tileLayer0Buffer = NULL;
+			}
+		} break;
+		
+		default: {
+			debug_log("vdu_sys_layers_tilelayer_free: Invalid tileLayerNum %d specified.\r\n",tileLayerNum);
+		}
+	}
+
+	debug_log("In vdu_sys_layers_tilelayer_free: After memory free call\r\n");
+	debug_log_mem();
+}
+
 // Tile drawing functions
+
+void VDUStreamProcessor::writeTileToLayerBuffer(uint8_t tileId, uint8_t xPos, uint8_t xOffset, uint8_t yPos, uint8_t yOffset, uint8_t * tileBuffer, uint8_t tileLayerHeight, uint8_t tileLayerWidth) {
+
+/*
+		The drawing loop reads from the source in a direction depending on the flip parameters:
+		- For normal drawing, read from top row to bottom row, left to right.
+		- For flip X drawing, read from top row to bottom row, right to left.
+		- For flip Y drawing, read from bottom row to top row, left to right.
+		- For flip X+Y drawing, read from bottom row to top row, right to left.
+		
+		Writes to the layer buffer are in a linear fashion: top row to bottom row, left to right.
+
+		The drawing loops for rows and columns (as defined by variables x and y) are intended to be
+		the counters for reading the *source* data. While there may be some cases where this can also
+		apply to the destination data, a separate set of variables are used to ensure clarity.
+	*/
+
+	int sourceTile = (tileId * 64);																	// The starting position in the tile bank for a given tileId;
+	int sourcePixel = 0;
+	int tileLayerPixelWidth = tileLayerWidth * 8;													// The width of the tile layer in pixels
+	int destLineStart = (yPos * tileLayerPixelWidth * 8 ) - (tileLayerPixelWidth * yOffset);		// The line where drawing the tile should be drawn
+	int destLineStartXOffset = (xPos * 8) - xOffset;												// The number of pixels along the line where the tile should be drawn
+	int destLineStartYOffset = 0;																	// The line in the tile (0-7) where the tile should be drawn
+	int destPixel;
+	int destPixelCount;
+	int destPixelStart;
+
+	/* 
+	Set the start and end variables used in the source reading loop depending on whether it is the first, middle or last column:
+	- For the first column (0), then potentially only read the last "n" pixels in the tile row.
+	- For columns in the middle (1 through to tileLayerWidth -1), then read all eight pixels in the tile row.
+	- For the last column (tileLayerWidth), then potentially only read the first "n" pixels. 
+	*/
+
+	if (yPos > 0 && yPos < tileLayerHeight) {
+
+		if (xPos > 0 && xPos < tileLayerWidth) {		// Process the most common use-case (middle tiles) first
+
+			for (auto y=0; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}  			
+		} else if (xPos == 0) {							// Process the first column
+
+			destLineStartXOffset = 0;
+
+			for (auto y=0; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=xOffset; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			} 
+		} else if (xPos == tileLayerWidth) {			// Process the last column
+		
+			for (auto y=0; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<xOffset; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}
+		}
+
+	} else if (yPos == 0) {
+
+		// Do the top row
+
+		if (xPos > 0 && xPos < tileLayerWidth) {		// Process the most common use-case (middle tiles) first
+
+			for (auto y=yOffset; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}
+
+		} else if (xPos == 0) {							// Process the first column
+
+	 		destLineStartXOffset = 0;
+
+ 			for (auto y=yOffset; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=xOffset; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			} 
+		} else if (xPos == tileLayerWidth) {			// Process the last column
+		
+ 			for (auto y=yOffset; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<xOffset; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}  
+		}
+
+
+	} else if (yPos == tileLayerHeight) {
+
+		// Do the bottom row
+
+		if (xPos > 0 && xPos < tileLayerWidth) {		// Process the most common use-case (middle tiles) first
+
+		 	for (auto y=0; y<=yOffset; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			} 
+
+			// debug_log("Bottom Row Middle: destPixel address: %d\r\n", &tileBuffer[destPixel]);
+
+		} else if (xPos == 0) {							// Process the first column
+
+			destLineStartXOffset = 0;
+
+			for (auto y=0; y<=yOffset; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=xOffset; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			} 
+
+			// debug_log("Bottom Row Column 0: destPixel address: %d\r\n", &tileBuffer[destPixel]);
+
+		} else if (xPos == tileLayerWidth) {			// Process the last column
+	
+			for (auto y=0; y<=yOffset; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<xOffset; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}
+
+			// The output will be random if y and x never match and the loops never execute.
+			// debug_log("Bottom Row End: destPixel address: %d\r\n", &tileBuffer[destPixel]);
+		} 
+	}
+}
+
+void VDUStreamProcessor::writeTileToLayerBufferFlipX(uint8_t tileId, uint8_t xPos, uint8_t xOffset, uint8_t yPos, uint8_t yOffset, uint8_t * tileBuffer, uint8_t tileLayerHeight, uint8_t tileLayerWidth) {
+
+	int sourceTile = (tileId * 64);
+	int sourcePixel = 0;
+	int tileLayerPixelWidth = tileLayerWidth * 8;
+	int destLineStart = (yPos * tileLayerPixelWidth * 8 ) - (tileLayerPixelWidth * yOffset);
+	int destLineStartXOffset = (xPos * 8) - xOffset;
+	int destLineStartYOffset = 0;	
+	int destPixel;
+	int destPixelCount;
+	int destPixelStart;
+
+	if (yPos > 0 && yPos < tileLayerHeight) {
+
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+			for (auto y=0; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}  
+		} else if (xPos == 0) {
+
+			destLineStartXOffset = 0;
+
+			for (auto y=0; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=(7-xOffset); x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			} 
+		} else if (xPos == tileLayerWidth) {
+
+			for (auto y=0; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>(7-xOffset); x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			} 
+		}
+	
+	}  else if (yPos == 0) {
+
+		// Do the top row
+
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+		for (auto y=yOffset; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}
+			
+		} else if (xPos == 0) {
+
+ 			destLineStartXOffset = 0;
+
+			for (auto y=xOffset; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=(7-xOffset); x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}
+
+		} else if (xPos == tileLayerWidth) {
+
+ 			for (auto y=xOffset; y<8; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>(7-xOffset); x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}  
+		}
+
+	} else if (yPos == tileLayerHeight) {
+
+		// Do the bottom row
+		
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+			for (auto y=0; y<=yOffset; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			}  
+		} else if (xPos == 0) {
+
+			destLineStartXOffset = 0;
+
+			for (auto y=0; y<=yOffset; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=(7-xOffset); x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			} 
+		} else if (xPos == tileLayerWidth) {
+
+			for (auto y=0; y<=yOffset; y++) {
+
+				destLineStartYOffset = tileLayerPixelWidth * y;
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>(7-xOffset); x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+			} 
+		} 
+	}	
+}
+
+void VDUStreamProcessor::writeTileToLayerBufferFlipY(uint8_t tileId, uint8_t xPos, uint8_t xOffset, uint8_t yPos, uint8_t yOffset, uint8_t * tileBuffer, uint8_t tileLayerHeight, uint8_t tileLayerWidth) {
+ 
+	int sourceTile = (tileId * 64);
+	int sourcePixel = 0;
+	int tileLayerPixelWidth = tileLayerWidth * 8;
+	int destLineStart = (yPos * tileLayerPixelWidth * 8 ) - (tileLayerPixelWidth * yOffset);
+	int destLineStartXOffset = (xPos * 8) - xOffset;
+	int destLineStartYOffset = 0;								// Start writing from the top line
+	int destPixel;
+	int destPixelCount;
+	int destPixelStart;
+	
+	if (yPos > 0 && yPos < tileLayerHeight) {
+
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+			for (auto y=7; y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}	
+
+		} else if (xPos == 0) {
+
+			destLineStartXOffset = 0;							// Need to override destStartLineXOffset to start at column 0 with no xOffset
+					
+			for (auto y=7; y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;														// Need to track destination pixel counter as x starts with an offset
+
+				for (auto x=xOffset; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;		// Update destLineStartYOffset to the next line.
+			}
+
+		} else if (xPos == tileLayerWidth) {
+
+			for (auto y=7; y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;	
+
+				for (auto x=0; x<xOffset; x++) {
+					sourcePixel = sourceTile + (y * 8) + destPixelCount;
+					destPixel = destPixelStart + x;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}
+		}	
+
+	} else if (yPos == 0) {
+
+	 	// Do the top row
+
+		destLineStart = 0;		// We are only reading a smaller number of lines, so start from 0, not a negative start y position.
+
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+			for (auto y=(7-yOffset); y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}	 
+
+		} else if (xPos == 0) {
+
+ 			destLineStartXOffset = 0;							// Need to override destStartLineXOffset to start at column 0 with no xOffset
+					
+			for (auto y=(7-yOffset); y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;														// Need to track destination pixel counter as x starts with an offset
+
+				for (auto x=xOffset; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;		// Update destLineStartYOffset to the next line.
+			}
+
+		} else if (xPos == tileLayerWidth) {
+
+ 			for (auto y=(7-yOffset); y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;	
+
+				for (auto x=0; x<xOffset; x++) {
+					sourcePixel = sourceTile + (y * 8) + destPixelCount;
+					destPixel = destPixelStart + x;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}  
+		}
+				
+	} else if (yPos == tileLayerHeight) {
+
+		// Do the bottom row
+
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+			for (auto y=7; y>=(7-yOffset); y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=0; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}	
+
+		} else if (xPos == 0) {
+
+			destLineStartXOffset = 0;							// Need to override destStartLineXOffset to start at column 0 with no xOffset
+					
+			for (auto y=7; y>=(7-yOffset); y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;														// Need to track destination pixel counter as x starts with an offset
+
+				for (auto x=xOffset; x<8; x++) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;		// Update destLineStartYOffset to the next line.
+			}
+
+		} else if (xPos == tileLayerWidth) {
+
+			for (auto y=7; y>=(7-yOffset); y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;	
+
+				for (auto x=0; x<xOffset; x++) {
+					sourcePixel = sourceTile + (y * 8) + destPixelCount;
+					destPixel = destPixelStart + x;
+					tileBuffer[destPixel]=tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}
+		} 	
+	}
+}
+
+void VDUStreamProcessor::writeTileToLayerBufferFlipXY(uint8_t tileId, uint8_t xPos, uint8_t xOffset, uint8_t yPos, uint8_t yOffset, uint8_t * tileBuffer, uint8_t tileLayerHeight, uint8_t tileLayerWidth) {
+ 
+	int sourceTile = (tileId * 64);	
+	int sourcePixel = 0;
+	int tileLayerPixelWidth = tileLayerWidth * 8;
+	int destLineStart = (yPos * tileLayerPixelWidth * 8 ) - (tileLayerPixelWidth * yOffset);
+	int destLineStartXOffset = (xPos * 8) - xOffset;
+	int destLineStartYOffset = 0;
+	int destPixel;
+	int destPixelCount = 0;
+	int destPixelStart;
+
+	if (yPos > 0 && yPos < tileLayerHeight) {
+
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+			for (auto y=7; y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}  
+
+		} else if (xPos == 0) {
+
+			destLineStartXOffset = 0;
+
+			for (auto y=7; y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=(7-xOffset); x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			} 
+
+		} else if (xPos == tileLayerWidth) {
+
+			for (auto y=7; y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>(7-xOffset); x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}
+		}
+
+	} else if (yPos == 0) {
+
+		// Do the top row
+
+		destLineStart = 0;
+
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+ 			for (auto y=(7-yOffset); y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}  
+
+		} else if (xPos == 0) {
+
+		 	destLineStartXOffset = 0;
+
+			for (auto y=(7-yOffset); y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=(7-xOffset); x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}
+
+		} else if (xPos == tileLayerWidth) {
+
+			for (auto y=(7-yOffset); y>=0; y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>(7-xOffset); x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}
+		}
+
+	} else if (yPos == tileLayerHeight) {
+
+		// Do the bottom row
+
+		if (xPos > 0 && xPos < tileLayerWidth) {
+
+			for (auto y=7; y>=(7-yOffset); y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			}  
+
+		} else if (xPos == 0) {
+
+			destLineStartXOffset = 0;
+
+			for (auto y=7; y>=(7-yOffset); y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=(7-xOffset); x>=0; x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			} 
+
+		} else if (xPos == tileLayerWidth) {
+
+			for (auto y=7; y>=(7-yOffset); y--) {
+
+				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
+				destPixelCount = 0;
+
+				for (auto x=7; x>(7-xOffset); x--) {
+					sourcePixel = sourceTile + (y * 8) + x;
+					destPixel = destPixelStart + destPixelCount;
+					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
+					destPixelCount++;
+				}
+
+				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
+			} 
+		}
+
+	}
+}
+
+
 
 void VDUStreamProcessor::writeTileToBuffer(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth) {
 
@@ -1076,7 +2022,6 @@ void VDUStreamProcessor::writeTileToBufferFlipY(uint8_t tileId, uint8_t tileCoun
 			destRowCount++;
 			destPixel = destPixel + xOffset;
 		}
-
 	}
 
 	// General drawing code for all columns except the first and last columns
@@ -1099,7 +2044,6 @@ void VDUStreamProcessor::writeTileToBufferFlipY(uint8_t tileId, uint8_t tileCoun
 
 			destRowCount++;
 		}	
-
 	}
 
 	// Handle the final column on screen which may only be partially drawn depending on the xOffset value
@@ -1204,7 +2148,6 @@ void VDUStreamProcessor::writeTileToBufferFlipXY(uint8_t tileId, uint8_t tileCou
 			destRowCount++;
 			destPixel = destPixel + xOffset;
 		}
-
 	}
 }
 
