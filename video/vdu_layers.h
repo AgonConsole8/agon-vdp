@@ -357,7 +357,7 @@ void VDUStreamProcessor::vdu_sys_layers_tilebank_draw(uint8_t tileBankNum, uint8
 
 		canvas->drawBitmap(xPix,yPix,&currentTile);
 
-		waitPlotCompletion();
+		waitPlotCompletion();		// If this is not set then tiles do not display correctly if called rapidly.
 
 	} else {
 		debug_log("vdu_sys_layers_tilebank_draw: tileBank0Data not initialised.\r\n");
@@ -856,9 +856,7 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t til
 
 	// Process rows for each frame
 
-	for (auto y=0; y<=tileLayerHeight; y++) {	// This may be causing the crash if the layer buffer needs to be one row bigger than the layer...?
-
-	// for (auto y=0; y<tileLayerHeight; y++) {				
+	for (auto y=0; y<=tileLayerHeight; y++) {
 
 		// Process tile map for current row
 
@@ -867,12 +865,8 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t til
 		for (auto x=0; x<=tileLayerWidth; x++) {
 																
 			// read the Tile Map
-
 			tileId = tileMap0[sourceXPos][sourceYPos].id;
-
 			tileAttribute = tileMap0[sourceXPos][sourceYPos].attribute;
-
-			// tileRowOffset = x;
 
 			xPos = x;	
 
@@ -911,7 +905,6 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t til
 			}
 
 			// If we're at the edge of the tile map, reset to the beginning.
-
 			sourceXPos++;
 			if (sourceXPos == tileMapWidth) { 
 				sourceXPos = 0; 
@@ -920,45 +913,22 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t til
 
 		// At the end of the row, reset sourceXPos back (else it will keep incrementing)
 		sourceXPos = tileLayer0.sourceXPos;
-		
-		// Set Y position to display on screen
-		// yPix = (y * 8) - tileLayer0.yOffset;		// Y position in pixels 		// Commented out as layer buffer will use the whole screen and needs to be positioned at 0
 	
 		sourceYPos++;
 		if (sourceYPos == tileMapHeight) {
 			sourceYPos = 0; 
 		}
 	}
-
 }
 
 
 void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw_layerbuffer(uint8_t tileLayerNum) {
 
-	// Timing debug statements
-
-	// auto startTime = xTaskGetTickCountFromISR();
-  	// auto endTime = xTaskGetTickCountFromISR();
-	// auto sumTime = xTaskGetTickCountFromISR();
-	// sumTime = 0;
-
 	int xPix = 0;		// X position in pixels is now always 0 as the offset is written directly to the tileRowBuffer
 	int yPix = 0;
 
-	uint8_t xPos;
-	uint8_t yPos;
-
-	uint8_t tileId;
-	uint8_t tileAttribute;
 	uint8_t tileLayerHeight;
 	uint8_t tileLayerWidth;
-	uint8_t sourceXPos;
-	uint8_t sourceYPos;
-	uint8_t xOffset;
-	uint8_t yOffset;
-	uint8_t tileMapWidth;
-	uint8_t tileMapHeight;
-	uint8_t tileRowOffset = 0;
 
 	switch (tileLayerNum) {
 
@@ -970,14 +940,6 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw_layerbuffer(uint8_t tileL
 					tileLayerHeight = tileLayer0.height;
 					tileLayerWidth = tileLayer0.width;
 
-					sourceXPos = tileLayer0.sourceXPos;
-					sourceYPos = tileLayer0.sourceYPos;
-
-					xOffset = tileLayer0.xOffset;
-					yOffset = tileLayer0.yOffset;
-
-					tileMapWidth = tileMap0Properties.width;
-					tileMapHeight = tileMap0Properties.height;
 				} else {
 					debug_log("vdu_sys_layers_tilelayer_renderlayer: tileMap0 is not initialised.\r\n");
 					return;
@@ -996,12 +958,6 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw_layerbuffer(uint8_t tileL
 
 	int layerBufferWidth = tileLayerWidth * 8;
 	int layerBufferHeight = tileLayerHeight * 8;
-	int layerDataBufferSize = layerBufferWidth * layerBufferHeight;
-
-	// Perform validation checks
-
-	if (sourceXPos >= tileMapWidth) { sourceXPos = 0; }
-	if (sourceYPos >= tileMapHeight) { sourceYPos = 0; }
 
 	// Do not continue if tileBank is not initialised.
 	if (tileBank0Data == NULL) { 
@@ -1009,19 +965,12 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_draw_layerbuffer(uint8_t tileL
 		return;
 	}
 
-	// startTime = xTaskGetTickCountFromISR();
-
 	tileLayer0Bitmap = Bitmap(layerBufferWidth, layerBufferHeight, tileLayer0Ptr, PixelFormat::RGBA2222);
 
 	canvas->drawBitmap(xPix,yPix,&tileLayer0Bitmap);		
 
-	waitPlotCompletion();
+	// waitPlotCompletion();			// If enabled, then the code waits for VSYNC before continuing and is slower.
 
-	// endTime = xTaskGetTickCountFromISR();
-	// auto elapsedTime = endTime - startTime;
-	// sumTime = sumTime + elapsedTime;
-
-	// debug_log("vdu_sys_layers_tilelayer_draw: Sum time is %d\r\n",sumTime);
 }
 
 
@@ -1118,7 +1067,7 @@ void VDUStreamProcessor::writeTileToLayerBuffer(uint8_t tileId, uint8_t xPos, ui
 				destLineStartYOffset = tileLayerPixelWidth * y;
 				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
 				destPixelCount = 0;
-
+				
 				for (auto x=0; x<8; x++) {
 					sourcePixel = sourceTile + (y * 8) + x;
 					destPixel = destPixelStart + destPixelCount;
@@ -1196,7 +1145,7 @@ void VDUStreamProcessor::writeTileToLayerBuffer(uint8_t tileId, uint8_t xPos, ui
 					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
 					destPixelCount++;
 				}
-			} 
+			}
 		} else if (xPos == tileLayerWidth) {			// Process the last column
 		
  			for (auto y=yOffset; y<8; y++) {
@@ -1211,7 +1160,7 @@ void VDUStreamProcessor::writeTileToLayerBuffer(uint8_t tileId, uint8_t xPos, ui
 					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
 					destPixelCount++;
 				}
-			}  
+			} 
 		}
 
 
@@ -1233,7 +1182,7 @@ void VDUStreamProcessor::writeTileToLayerBuffer(uint8_t tileId, uint8_t xPos, ui
 					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
 					destPixelCount++;
 				}
-			} 
+			}
 
 			// debug_log("Bottom Row Middle: destPixel address: %d\r\n", &tileBuffer[destPixel]);
 
@@ -1253,7 +1202,7 @@ void VDUStreamProcessor::writeTileToLayerBuffer(uint8_t tileId, uint8_t xPos, ui
 					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
 					destPixelCount++;
 				}
-			} 
+			}
 
 			// debug_log("Bottom Row Column 0: destPixel address: %d\r\n", &tileBuffer[destPixel]);
 
@@ -1339,7 +1288,7 @@ void VDUStreamProcessor::writeTileToLayerBufferFlipX(uint8_t tileId, uint8_t xPo
 					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
 					destPixelCount++;
 				}
-			} 
+			}
 		}
 	
 	}  else if (yPos == 0) {
@@ -1348,7 +1297,7 @@ void VDUStreamProcessor::writeTileToLayerBufferFlipX(uint8_t tileId, uint8_t xPo
 
 		if (xPos > 0 && xPos < tileLayerWidth) {
 
-		for (auto y=yOffset; y<8; y++) {
+			for (auto y=yOffset; y<8; y++) {
 
 				destLineStartYOffset = tileLayerPixelWidth * y;
 				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
@@ -1394,7 +1343,7 @@ void VDUStreamProcessor::writeTileToLayerBufferFlipX(uint8_t tileId, uint8_t xPo
 					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
 					destPixelCount++;
 				}
-			}  
+			}
 		}
 
 	} else if (yPos == tileLayerHeight) {
@@ -1432,7 +1381,7 @@ void VDUStreamProcessor::writeTileToLayerBufferFlipX(uint8_t tileId, uint8_t xPo
 					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
 					destPixelCount++;
 				}
-			} 
+			}
 		} else if (xPos == tileLayerWidth) {
 
 			for (auto y=0; y<=yOffset; y++) {
@@ -1447,7 +1396,7 @@ void VDUStreamProcessor::writeTileToLayerBufferFlipX(uint8_t tileId, uint8_t xPo
 					tileBuffer[destPixel] = tileBank0Ptr[sourcePixel];
 					destPixelCount++;
 				}
-			} 
+			}
 		} 
 	}	
 }
@@ -1729,7 +1678,7 @@ void VDUStreamProcessor::writeTileToLayerBufferFlipXY(uint8_t tileId, uint8_t xP
 				}
 
 				destLineStartYOffset = destLineStartYOffset + tileLayerPixelWidth;
-			}  
+			} 
 
 		} else if (xPos == 0) {
 
