@@ -50,7 +50,7 @@
 #include <WiFi.h>
 #include <fabgl.h>
 
-#define	DEBUG			1						// Serial Debug Mode: 1 = enable
+#define	DEBUG			0						// Serial Debug Mode: 1 = enable
 #define SERIALBAUDRATE	115200
 
 HardwareSerial	DBGSerial(0);

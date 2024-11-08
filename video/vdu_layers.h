@@ -191,7 +191,6 @@ void VDUStreamProcessor::vdu_sys_layers(void) {
 		case VDP_LAYER_TILELAYER_UPDATE_LAYERBUFFER: {
 
 			// VDU 23,0,194,28,<tileLayerNum>
-			// Parameters are currently undefined but would facilitate drawing priority
 
 			uint8_t tileLayerNum = readByte_t();
 
@@ -203,7 +202,6 @@ void VDUStreamProcessor::vdu_sys_layers(void) {
 		case VDP_LAYER_TILELAYER_DRAW_LAYERBUFFER: {
 
 			// VDU 23,0,194,29,<tileLayerNum>
-			// Parameters are currently undefined but would facilitate drawing priority
 
 			uint8_t tileLayerNum = readByte_t();
 
@@ -214,7 +212,6 @@ void VDUStreamProcessor::vdu_sys_layers(void) {
 		case VDP_LAYER_TILELAYER_DRAW: {
 
 			// VDU 23,0,194,30,<tileLayerNum>
-			// Parameters are currently undefined but would facilitate drawing priority
 
 			uint8_t tileLayerNum = readByte_t();
 
@@ -781,12 +778,8 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_set_scroll(uint8_t tileLayerNu
 
 void VDUStreamProcessor::vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t tileLayerNum) {
 
-	int xPix = 0;		// X position in pixels is now always 0 as the offset is written directly to the tileRowBuffer
-	int yPix = 0;		// Y position in pixels is also always 0 as the displayed bitmap is the entire layer size.
-
 	uint8_t xPos;
 	uint8_t yPos;
-
 	uint8_t tileId;
 	uint8_t tileAttribute;
 	uint8_t tileLayerHeight;
@@ -797,7 +790,6 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t til
 	uint8_t yOffset;
 	uint8_t tileMapWidth;
 	uint8_t tileMapHeight;
-	uint8_t tileRowOffset = 0;
 
 	switch (tileLayerNum) {
 
@@ -880,6 +872,7 @@ void VDUStreamProcessor::vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t til
 
 					} break;
 				}
+
 			} else {				// Tile is normal and should be processed accordingly
 
 				// Check attribute to get tile draw direction and call appropriate draw function
@@ -1067,7 +1060,7 @@ void VDUStreamProcessor::writeTileToLayerBuffer(uint8_t tileId, uint8_t xPos, ui
 				destLineStartYOffset = tileLayerPixelWidth * y;
 				destPixelStart = destLineStart + destLineStartYOffset + destLineStartXOffset;
 				destPixelCount = 0;
-				
+
 				for (auto x=0; x<8; x++) {
 					sourcePixel = sourceTile + (y * 8) + x;
 					destPixel = destPixelStart + destPixelCount;
