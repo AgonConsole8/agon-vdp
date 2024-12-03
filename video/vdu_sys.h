@@ -350,6 +350,13 @@ void VDUStreamProcessor::sendGeneralPoll() {
 		debug_log("sendGeneralPoll: Timeout\n\r");
 		return;
 	}
+	if (b == 2) {
+		// Full duplex mode requested
+		setVDPProtocolDuplex(true);
+		// NB if an application is running on a MOS that _isn't_ set up for full duplex
+		// and happens to send a GP with a value 2 this will break comms with MOS
+		debug_log("Full duplex mode requested\n\r");
+	}
 	uint8_t packet[] = {
 		(uint8_t) (b & 0xFF),
 	};
