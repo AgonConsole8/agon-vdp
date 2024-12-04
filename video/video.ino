@@ -71,7 +71,7 @@ bool			controlKeys = true;				// Control keys enabled
 #include "vdu_stream_processor.h"
 #include "hexload.h"
 
-std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for CP/M mode
+std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for Terminal emulation mode (for CP/M, etc)
 VDUStreamProcessor *	processor;				// VDU Stream Processor
 
 #include "zdi.h"								// ZDI debugging console
@@ -143,7 +143,7 @@ void do_keyboard() {
 	uint8_t modifiers;
 	uint8_t vk;
 	uint8_t down;
-	if (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
+	while (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
 		// Handle some control keys
 		//
 		if (controlKeys && down) {
@@ -313,7 +313,7 @@ bool processTerminal() {
 		case TerminalState::Enabling: {
 			// Turn on the terminal
 			Terminal = std::unique_ptr<fabgl::Terminal>(new fabgl::Terminal());
-			Terminal->begin(_VGAController.get());	
+			Terminal->begin(_VGAController.get());
 			Terminal->connectSerialPort(VDPSerial);
 			Terminal->enableCursor(true);
 			// onVirtualKey is triggered whenever a key is pressed or released

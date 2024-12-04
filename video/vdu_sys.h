@@ -261,7 +261,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 			// Inject an updated virtual key event for a key, forcing a new keycode packet to be sent
 			// NB must use a virtual key here, as we can't convert a keycode to a virtual key
 			auto keyboard = getKeyboard();
-			keyboard->injectVirtualKey((VirtualKey) key, keyboard->isVKDown((VirtualKey) key), true);
+			keyboard->injectVirtualKey((VirtualKey) key, keyboard->isVKDown((VirtualKey) key), false);
 		}	break;
 		case VDP_BUFFER_PRINT: {		// VDU 23, 0, &9B
 			auto bufferId = readWord_t();
