@@ -77,8 +77,8 @@
 #define VDP_CONTEXT				0xC8	// Context management commands
 #define VDP_FLUSH_DRAWING_QUEUE	0xCA	// Flush the drawing queue
 #define VDP_PATTERN_LENGTH		0xF2	// Set pattern length (*FX 163,242,n)
-#define VDP_TESTFLAG_SET		0xF8	// Set a test flag
-#define VDP_TESTFLAG_CLEAR		0xF9	// Clear a test flag
+#define VDP_FEATUREFLAG_SET		0xF8	// Set a test flag
+#define VDP_FEATUREFLAG_CLEAR		0xF9	// Clear a test flag
 #define VDP_CONSOLEMODE			0xFE	// Switch console mode on and off
 #define VDP_TERMINALMODE		0xFF	// Switch to terminal mode
 
@@ -390,8 +390,10 @@
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
 #define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples
 
-// Test flags
-#define TEST_FLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
+// Test/Feature flags
+#define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
+
+#define FEATUREFLAG_FULL_DUPLEX	0x0101	// Full duplex UART comms flag
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024
