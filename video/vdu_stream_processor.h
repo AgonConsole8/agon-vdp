@@ -21,6 +21,8 @@ std::unordered_map<uint16_t, ContextVectorPtr,
 	std::hash<uint16_t>, std::equal_to<uint16_t>,
 	psram_allocator<std::pair<const uint16_t, ContextVectorPtr>>> contextStacks;
 
+extern uint16_t getFeatureFlag(uint16_t flag);
+
 class VDUStreamProcessor {
 	private:
 		std::shared_ptr<Stream> inputStream;
@@ -32,6 +34,10 @@ class VDUStreamProcessor {
 		ContextVectorPtr contextStack;			// Current active context stack
 
 		bool commandsEnabled = true;
+		bool echoEnabled = false;
+		bool echoBuffering = false;
+
+		std::vector<uint8_t> echoBuffer;
 
 		int16_t readByte_t(uint16_t timeout);
 		int32_t readWord_t(uint16_t timeout);
@@ -42,6 +48,11 @@ class VDUStreamProcessor {
 		int16_t peekByte_t(uint16_t timeout);
 		float readFloat_t(bool is16Bit, bool isFixed, int8_t shift, uint16_t timeout);
 		bool readFloatArguments(float *values, int count, bool useBufferValue, bool useAdvancedOffsets, bool useMultiFormat);
+
+		inline void pushEcho(uint8_t c);
+		void pushEcho(uint8_t * chars, uint32_t length);
+		inline void clearEcho();
+		void flushEcho();
 
 		void vdu_print(char c, bool usePeek);
 		void vdu_colour();
@@ -241,7 +252,9 @@ class VDUStreamProcessor {
 			return inputStream->available() > 0;
 		}
 		inline uint8_t readByte() {
-			return inputStream->read();
+			auto read = inputStream->read();
+			pushEcho(read);
+			return read;
 		}
 		inline void writeByte(uint8_t b) {
 			if (outputStream) {
@@ -269,6 +282,15 @@ class VDUStreamProcessor {
 		void wait_eZ80();
 		void sendModeInformation();
 
+		void setEcho(bool enabled) {
+			flushEcho();
+			echoEnabled = enabled;
+			if (!enabled) {
+				// Send an echo end packet
+				send_packet(PACKET_ECHO_END, 0, nullptr);
+			}
+		}
+
 		std::shared_ptr<Context> getContext() {
 			return context;
 		}
@@ -284,6 +306,7 @@ class VDUStreamProcessor {
 int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto read = inputStream->read();
 	if (read != -1) {
+		pushEcho(read);
 		return read;
 	}
 
@@ -292,11 +315,8 @@ int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) 
 
 	do {
 		read = inputStream->read();
-		if (read != -1) {
-			return read;
-		}
-	} while (xTaskGetTickCountFromISR() - start < timeCheck);
-
+	} while (read == -1 && (xTaskGetTickCountFromISR() - start < timeCheck));
+	pushEcho(read);
 	return read;
 }
 
@@ -362,6 +382,7 @@ uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length, u
 				return remaining;
 			}
 		}
+		pushEcho(buffer, read);
 		buffer += read;
 		remaining -= read;
 	}
@@ -508,6 +529,7 @@ void VDUStreamProcessor::sendMouseData(MouseDelta * delta = nullptr) {
 //
 void VDUStreamProcessor::processAllAvailable() {
 	while (byteAvailable()) {
+		flushEcho();
 		vdu(readByte());
 	}
 }
@@ -516,8 +538,61 @@ void VDUStreamProcessor::processAllAvailable() {
 //
 void VDUStreamProcessor::processNext() {
 	if (byteAvailable()) {
+		flushEcho();
 		vdu(readByte());
 	}
+}
+
+inline void VDUStreamProcessor::pushEcho(uint8_t c) {
+	if (echoBuffering) {
+		echoBuffer.push_back(c);
+	}
+}
+
+void VDUStreamProcessor::pushEcho(uint8_t * chars, uint32_t length) {
+	if (echoBuffering) {
+		for (uint32_t i = 0; i < length; i++) {
+			echoBuffer.push_back(chars[i]);
+		}
+	}
+}
+
+inline void VDUStreamProcessor::clearEcho() {
+	echoBuffering = false;
+	echoBuffer.clear();
+}
+
+void VDUStreamProcessor::flushEcho() {
+	echoBuffering = echoEnabled;
+
+	if (!echoEnabled || echoBuffer.empty()) {
+		return;
+	}
+
+	uint32_t bufferSize = getFeatureFlag(FEATUREFLAG_MOS_VDPP_BUFFERSIZE) || 16;
+
+	// Iterate over the echoBuffer, sending packets of max bufferSize bytes
+	uint32_t remaining = echoBuffer.size();
+	uint32_t offset = 0;
+	while (remaining > 0) {
+		uint32_t packetSize = remaining > bufferSize ? bufferSize : remaining;
+		uint8_t packet[bufferSize];
+		for (uint32_t i = 0; i < packetSize; i++) {
+			packet[i] = echoBuffer[offset + i];
+		}
+		send_packet(PACKET_ECHO, packetSize, packet);
+		offset += packetSize;
+		remaining -= packetSize;
+	}
+
+	// send echo buffer as hex to debug log
+	debug_log("Echo: ");
+	for (auto c : echoBuffer) {
+		debug_log("%02X ", c);
+	}
+	debug_log("\n\r");
+	
+	echoBuffer.clear();
 }
 
 #include "vdu.h"
