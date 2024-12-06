@@ -201,7 +201,7 @@ void VDUStreamProcessor::vdu_print(char c, bool usePeek) {
 			}
 			auto next = inputStream->peek();
 			if (next == 27) {
-				inputStream->read();
+				readByte();		// discard byte we have peeked
 				if (consoleMode) {
 					DBGSerial.write(next);
 				}
@@ -212,7 +212,7 @@ void VDUStreamProcessor::vdu_print(char c, bool usePeek) {
 				s += (char)next;
 			} else if ((next >= 0x20 && next <= 0x7E) || (next >= 0x80 && next <= 0xFF)) {
 				s += (char)next;
-				inputStream->read();
+				readByte();		// discard byte we have peeked
 			} else {
 				break;
 			}

@@ -95,6 +95,8 @@
 #define PACKET_RTC				0x07	// RTC
 #define PACKET_KEYSTATE			0x08	// Keyboard repeat rate and LED status
 #define PACKET_MOUSE			0x09	// Mouse data
+#define PACKET_ECHO				0x0A	// Echo
+#define PACKET_ECHO_END			0x0B	// Echo end
 
 #define AUDIO_CHANNELS			3		// Default number of audio channels
 #define AUDIO_DEFAULT_SAMPLE_RATE	16384	// Default sample rate
@@ -394,6 +396,9 @@
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
 
 #define FEATUREFLAG_FULL_DUPLEX	0x0101	// Full duplex UART comms flag
+#define FEATUREFLAG_MOS_VDPP_BUFFERSIZE	0x0201	// Buffer size on MOS for VDP protocol packets
+#define FEATUREFLAG_ECHO		0x0210	// Echo back received data, for redirect/spool
+// #define FEATUREFLAG_ECHO_SETTINGS	0x0211	// Settings for what will be echo'd
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024
