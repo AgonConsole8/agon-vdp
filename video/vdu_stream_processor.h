@@ -207,7 +207,14 @@ class VDUStreamProcessor {
 			echoEnabled = enabled;
 			if (!enabled) {
 				// Send an echo end packet
-				send_packet(PACKET_ECHO_END, 0, nullptr);
+				auto handle = getFeatureFlag(FEATUREFLAG_ECHO);
+				if (handle == 0) {
+					return;
+				}
+				uint8_t packet[] = {
+					static_cast<uint8_t>(handle & 0xFF),
+				};
+				send_packet(PACKET_ECHO_END, sizeof packet, packet);
 			}
 		}
 
@@ -489,7 +496,11 @@ void VDUStreamProcessor::flushEcho() {
 		return;
 	}
 
-	uint32_t bufferSize = getFeatureFlag(FEATUREFLAG_MOS_VDPP_BUFFERSIZE) || 16;
+	uint32_t bufferSize = getFeatureFlag(FEATUREFLAG_MOS_VDPP_BUFFERSIZE);
+	if (bufferSize == 0) {
+		bufferSize = 16;
+	}
+	debug_log("Echo buffer size: %d\n\r", bufferSize);
 
 	// Iterate over the echoBuffer, sending packets of max bufferSize bytes
 	uint32_t remaining = echoBuffer.size();
@@ -501,16 +512,17 @@ void VDUStreamProcessor::flushEcho() {
 			packet[i] = echoBuffer[offset + i];
 		}
 		send_packet(PACKET_ECHO, packetSize, packet);
+		debug_log("Echo %.*s\n\r", packetSize, packet);
 		offset += packetSize;
 		remaining -= packetSize;
 	}
 
-	// send echo buffer as hex to debug log
-	debug_log("Echo: ");
-	for (auto c : echoBuffer) {
-		debug_log("%02X ", c);
-	}
-	debug_log("\n\r");
+	// // send echo buffer as hex to debug log
+	// debug_log("Echo: ");
+	// for (auto c : echoBuffer) {
+	// 	debug_log("%02X ", c);
+	// }
+	// debug_log("\n\r");
 	
 	echoBuffer.clear();
 }
