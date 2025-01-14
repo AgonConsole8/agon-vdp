@@ -273,7 +273,7 @@ uint8_t AudioChannel::setVolume(uint8_t volume) {
 				break;
 			case AudioState::PlayLoop:
 				// we are looping, so an envelope may be active
-				if (volume == 0 && this->_waveformType != AUDIO_WAVE_SAMPLE) {
+				if (volume == 0) {
 					// silence whilst looping always stops playback - curtail duration
 					this->_duration = millis() - this->_startTime;
 					// if there's a volume envelope, just allow release to happen, otherwise...
