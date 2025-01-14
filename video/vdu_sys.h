@@ -255,6 +255,14 @@ void VDUStreamProcessor::vdu_sys_video() {
 				controlKeys = (bool) b;
 			}
 		}	break;
+		case VDP_CHECKKEY: {
+			auto key = readByte_t();	// VDU 23, 0, &99, virtualkey
+			if (key == -1) return;
+			// Inject an updated virtual key event for a key, forcing a new keycode packet to be sent
+			// NB must use a virtual key here, as we can't convert a keycode to a virtual key
+			auto keyboard = getKeyboard();
+			keyboard->injectVirtualKey((VirtualKey) key, keyboard->isVKDown((VirtualKey) key), false);
+		}	break;
 		case VDP_BUFFER_PRINT: {		// VDU 23, 0, &9B
 			auto bufferId = readWord_t();
 			if (bufferId == -1) return;
