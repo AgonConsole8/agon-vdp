@@ -18,7 +18,7 @@
 #include "mem_helpers.h"
 #include "multi_buffer_stream.h"
 #include "sprites.h"
-#include "test_flags.h"
+#include "feature_flags.h"
 #include "types.h"
 #include "vdu_stream_processor.h"
 
@@ -192,15 +192,15 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
 		}	break;
-		case BUFFERED_AFFINE_TRANSFORM: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_AFFINE_TRANSFORM: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			auto operation = readByte_t(); if (operation == -1) return;
 			bufferAffineTransform(bufferId, operation, false);
 		}	break;
-		case BUFFERED_AFFINE_TRANSFORM_3D: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_AFFINE_TRANSFORM_3D: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			auto operation = readByte_t(); if (operation == -1) return;
 			bufferAffineTransform(bufferId, operation, true);
 		}	break;
-		case BUFFERED_MATRIX: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_MATRIX: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			auto operation = readByte_t(); if (operation == -1) return;
 			auto rows = readByte_t(); if (rows == -1) return;
 			auto columns = readByte_t(); if (columns == -1) return;
@@ -209,7 +209,7 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			size.columns = columns;
 			bufferMatrixManipulate(bufferId, operation, size);
 		}	break;
-		case BUFFERED_TRANSFORM_BITMAP: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_TRANSFORM_BITMAP: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			auto options = readByte_t();
 			auto transformBufferId = readWord_t();
 			auto bitmapId = readWord_t();
@@ -218,7 +218,7 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferTransformBitmap(bufferId, options, transformBufferId, bitmapId);
 		}	break;
-		case BUFFERED_TRANSFORM_DATA: if (isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_TRANSFORM_DATA: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			// VDU 23, 0, &A0, bufferId; &29, options, format, transformBufferId; sourceBufferId; : Apply transform matrix to data in a buffer
 			auto options = readByte_t();
 			auto format = readByte_t();

@@ -10,7 +10,7 @@
 #include "agon.h"
 #include "agon_ps2.h"
 #include "agon_screen.h"
-#include "test_flags.h"
+#include "feature_flags.h"
 #include "vdu_audio.h"
 #include "vdu_buffered.h"
 #include "vdu_context.h"
@@ -238,7 +238,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 			vdu_sys_font();				// Font management
 		}	break;
 		case VDP_AFFINE_TRANSFORM: {	// VDU 23, 0, &96, flags, bufferId;
-			if (!isTestFlagSet(TEST_FLAG_AFFINE_TRANSFORM)) {
+			if (!isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
 				return;
 			}
 			auto flags = readByte_t();	// Set affine transform flags
@@ -323,14 +323,14 @@ void VDUStreamProcessor::vdu_sys_video() {
 				context->setDottedLinePatternLength(b);
 			}
 		}	break;
-		case VDP_TESTFLAG_SET: {		// VDU 23, 0, &F8, flag; value;
-			auto flag = readWord_t();	// Set a test flag
+		case VDP_FEATUREFLAG_SET: {		// VDU 23, 0, &F8, flag; value;
+			auto flag = readWord_t();	// Set a test/feature flag
 			auto value = readWord_t();
-			setTestFlag(flag, value);
+			setFeatureFlag(flag, value);
 		}	break;
-		case VDP_TESTFLAG_CLEAR: {		// VDU 23, 0, &F9, flag
-			auto flag = readWord_t();	// Clear a test flag
-			clearTestFlag(flag);
+		case VDP_FEATUREFLAG_CLEAR: {	// VDU 23, 0, &F9, flag
+			auto flag = readWord_t();	// Clear a test/feature flag
+			clearFeatureFlag(flag);
 		}	break;
 		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
 			auto b = readByte_t();
