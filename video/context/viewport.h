@@ -51,6 +51,7 @@ void Context::viewportReset() {
 	graphicsViewport = Rect(0, 0, canvasW - 1, canvasH - 1);
 	activeViewport = &textViewport;
 	plottingText = false;
+	setClippingRect(textViewport);
 }
 
 void Context::setActiveViewport(ViewportType type) {
