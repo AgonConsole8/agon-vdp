@@ -173,16 +173,6 @@ void do_keyboard() {
 	}
 }
 
-// Handle the keyboard: CP/M Terminal Mode
-// 
-void do_keyboard_terminal() {
-	uint8_t ascii;
-	if (getKeyboardKey(&ascii)) {
-		// send raw byte straight to z80
-		processor->writeByte(ascii);
-	}
-}
-
 // Handle the mouse
 //
 void do_mouse() {
@@ -306,8 +296,6 @@ bool processTerminal() {
 		} break;
 		case TerminalState::Suspended: {
 			// Terminal temporarily deactivated, so pass on to VDU system
-			// but keep processing keyboard input
-			do_keyboard_terminal();
 			return false;
 		} break;
 		case TerminalState::Enabling: {
@@ -349,7 +337,6 @@ bool processTerminal() {
 			terminalState = TerminalState::Enabled;
 		} break;
 		case TerminalState::Enabled: {
-			do_keyboard_terminal();
 			// Write anything read from z80 to the screen
 			// but do this a byte at a time, as VDU commands after a "suspend" will get lost
 			if (processor->byteAvailable()) {
