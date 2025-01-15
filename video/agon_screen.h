@@ -417,6 +417,7 @@ void switchBuffer() {
 	if (isDoubleBuffered()) {
 		canvas->swapBuffers();
 	} else {
+		canvas->noOp();
 		waitPlotCompletion(true);
 	}
 }
