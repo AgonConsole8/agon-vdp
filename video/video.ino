@@ -45,13 +45,27 @@
 // 12/09/2023:					+ Refactored
 // 17/09/2023:					+ Added ZDI mode
 
-#include <esp_task_wdt.h>
 #include <HardwareSerial.h>
 #include <WiFi.h>
 #include <fabgl.h>
 
-#define	DEBUG			0						// Serial Debug Mode: 1 = enable
+// Serial Debug Mode: 1 = enable
+// Always enabled on the emulator, to support --verbose mode
+#ifdef USERSPACE
+#undef DEBUG
+# define	DEBUG			1
+#else /* !USERSPACE */
+#undef DEBUG
+# define	DEBUG			0
+#endif /* USERSPACE */
+
 #define SERIALBAUDRATE	115200
+
+#ifdef USERSPACE
+extern uint32_t startup_screen_mode; /* in rust_glue.cpp */
+#else /* !USERSPACE */
+#define startup_screen_mode 0
+#endif /* !USERSPACE */
 
 HardwareSerial	DBGSerial(0);
 
@@ -74,7 +88,9 @@ bool			controlKeys = true;				// Control keys enabled
 std::unique_ptr<fabgl::Terminal>	Terminal;	// Used for Terminal emulation mode (for CP/M, etc)
 VDUStreamProcessor *	processor;				// VDU Stream Processor
 
+#ifndef USERSPACE
 #include "zdi.h"								// ZDI debugging console
+#endif /* !USERSPACE */
 
 TaskHandle_t		Core0Task;					// Core 0 task handle
 
@@ -84,7 +100,7 @@ void setup() {
 		disableCore1WDT(); delay(200);
 	#endif
 	DBGSerial.begin(SERIALBAUDRATE, SERIAL_8N1, 3, 1);
-	changeMode(0);
+	changeMode(startup_screen_mode);
 	copy_font();
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
@@ -114,7 +130,18 @@ void loop() {
 }
 
 void processLoop(void * parameter) {
+#ifdef USERSPACE
+	uint32_t count = 0;
+#endif /* USERSPACE */
+
 	while (true) {
+#ifdef USERSPACE
+ 		if ((count & 0x7f) == 0) {
+			delay(1 /* -TM- ms */);
+		}
+ 		count++;
+#endif /* USERSPACE */
+
 		#ifdef VDP_USE_WDT
 			esp_task_wdt_reset();
 		#endif
@@ -203,6 +230,7 @@ void boot_screen() {
 
 // Debug printf to PC
 //
+#ifndef USERSPACE
 void debug_log(const char *format, ...) {
 	#if DEBUG == 1
 	va_list ap;
@@ -218,6 +246,7 @@ void debug_log(const char *format, ...) {
 	va_end(ap);
 	#endif
 }
+#endif
 
 void force_debug_log(const char *format, ...) {
 	va_list ap;
@@ -326,8 +355,8 @@ bool processTerminal() {
 				if (seq[0] == 'F') {
 					uint32_t fontnum = textToWord(seq + 1);
 					if (fontnum >= 0) {
-						auto font = fonts[fontnum];  // get shared_ptr to font -- was fonts[bufferID]
-						if (font != nullptr && font->chptr == nullptr) {  // check it's defined
+						auto font = fonts[fontnum]; 	// get shared_ptr to font -- was fonts[bufferID]
+						if (font != nullptr && font->chptr == nullptr) {	// check it's defined
 							Terminal->loadFont(font.get());
 						}
 					}

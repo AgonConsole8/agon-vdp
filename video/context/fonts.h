@@ -195,7 +195,7 @@ char Context::getScreenCharAt(uint16_t px, uint16_t py) {
 	return getScreenChar(toScreenCoordinates(px, py));
 }
 
-void Context::mapCharToBitmap(char c, uint16_t bitmapId) {
+void Context::mapCharToBitmap(uint8_t c, uint16_t bitmapId) {
 	auto bitmap = getBitmap(bitmapId);
 	if (bitmap) {
 		charToBitmap[c] = bitmapId;

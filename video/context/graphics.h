@@ -14,6 +14,7 @@
 #include "buffers.h"
 #include "sprites.h"
 #include "types.h"
+#include "mat.h"
 
 // Definitions for the functions we're implementing here
 #include "context.h"

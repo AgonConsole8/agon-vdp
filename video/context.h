@@ -96,7 +96,6 @@ class Context {
 		uint8_t			linePatternLength = 8;			// Dotted line pattern length
 		std::vector<uint16_t>	charToBitmap = std::vector<uint16_t>(256, 65535);	// character to bitmap mapping
 		bool			plottingText = false;			// Are we currently plotting text?
-
 		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
 
 		Point			origin;							// Screen origin
@@ -240,7 +239,7 @@ class Context {
 		bool usingSystemFont();
 		char getScreenChar(uint8_t x, uint8_t y);
 		char getScreenCharAt(uint16_t px, uint16_t py);
-		void mapCharToBitmap(char c, uint16_t bitmapId);
+		void mapCharToBitmap(uint8_t c, uint16_t bitmapId);
 		void unmapBitmapFromChars(uint16_t bitmapId);
 		void resetCharToBitmap();
 		
