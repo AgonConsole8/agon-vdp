@@ -52,8 +52,10 @@
 // Serial Debug Mode: 1 = enable
 // Always enabled on the emulator, to support --verbose mode
 #ifdef USERSPACE
+#undef DEBUG
 # define	DEBUG			1
 #else /* !USERSPACE */
+#undef DEBUG
 # define	DEBUG			0
 #endif /* USERSPACE */
 
