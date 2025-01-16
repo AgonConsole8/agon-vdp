@@ -1581,6 +1581,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 	size.rows = dimensions + 1;
 	size.columns = size.rows;
 	float transform[size.size()];
+	memset(transform, 0, sizeof(transform));
 	for (int i = 0; i < size.rows; i++) {
 		transform[i * size.rows + i] = 1.0f;
 	}
@@ -1658,6 +1659,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		case AFFINE_SCALE: {
 			// scale by a given factor in each dimension
 			float scales[dimensions];
+			memset(scales, 0, sizeof(scales));
 			if (!readFloatArguments(scales, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
@@ -1668,6 +1670,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		case AFFINE_TRANSLATE: {
 			// translate by a given amount
 			float translateXY[dimensions];
+			memset(translateXY, 0, sizeof(translateXY));
 			if (!readFloatArguments(translateXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
@@ -1678,6 +1681,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		case AFFINE_TRANSLATE_OS_COORDS: {
 			// translate by a given amount of pixels where x and y match current coordinate system scaling
 			float translateXY[dimensions];
+			memset(translateXY, 0, sizeof(translateXY));
 			if (!readFloatArguments(translateXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
@@ -1691,6 +1695,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		case AFFINE_SHEAR: {
 			// shear by a given amount
 			float shearXY[dimensions];
+			memset(shearXY, 0, sizeof(shearXY));
 			if (!readFloatArguments(shearXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
@@ -1703,6 +1708,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 			// skew by a given amount (angle)
 			bool conversion = op == AFFINE_SKEW ? DEG_TO_RAD : 1.0f;
 			float skewXY[dimensions];
+			memset(skewXY, 0, sizeof(skewXY));
 			if (!readFloatArguments(skewXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
 				return;
 			}
@@ -1745,6 +1751,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		// we are combining - for now, only if the existing matrix is the same size
 		// TODO consider handling different size matrices - could combine at larger size, and then truncate
 		float existing[size.size()];
+		memset(existing, 0, sizeof(existing));
 		if (getMatrixFromBuffer(bufferId, existing, size, false)) {
 			// combine the two matrices together
 			float newTransform[size.size()];
@@ -1776,6 +1783,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 	const bool useBufferValue = command & MATRIX_OP_BUFFER_VALUE;
 
 	float matrix[size.size()];
+	memset(matrix, 0, sizeof(matrix));
 	
 	switch (op) {
 		case MATRIX_SET: {
@@ -1818,6 +1826,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			// diagonal matrix with given values
 			auto argCount = fabgl::imin(size.rows, size.columns);
 			float args[argCount];
+			memset(args, 0, sizeof(args));
 			if (!readFloatArguments(args, argCount, useBufferValue, useAdvancedOffsets, false)) {
 				return;
 			}
@@ -1831,6 +1840,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			auto sourceId2 = readWord_t(); if (sourceId2 == -1) return;
 			// Get the matrixes, for our target size, padding or truncating as necessary
 			float source[size.size()];
+			memset(source, 0, sizeof(source));
 			if (!getMatrixFromBuffer(sourceId1, matrix, size) || !getMatrixFromBuffer(sourceId2, source, size)) {
 				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d or %d\n\r", sourceId1, sourceId2);
 				return;
@@ -1846,6 +1856,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			auto sourceId2 = readWord_t(); if (sourceId2 == -1) return;
 			// Get the matrixes, for our target size, padding or truncating as necessary
 			float source[size.size()];
+			memset(source, 0, sizeof(source));
 			if (!getMatrixFromBuffer(sourceId1, matrix, size) || !getMatrixFromBuffer(sourceId2, source, size)) {
 				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d or %d\n\r", sourceId1, sourceId2);
 				return;
@@ -1873,12 +1884,15 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			resultSize.columns = dimensions;
 			float source1[resultSize.size()];
 			float source2[resultSize.size()];
+			memset(source1, 0, sizeof(source1));
+			memset(source2, 0, sizeof(source2));
 			if (!getMatrixFromBuffer(sourceId1, source1, resultSize) || !getMatrixFromBuffer(sourceId2, source2, resultSize)) {
 				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d or %d\n\r", sourceId1, sourceId2);
 				return;
 			}
 			// multiply values in source1 and source2
 			float result[resultSize.size()];
+			memset(result, 0, sizeof(result));
 			dspm_mult_f32(source1, source2, result, resultSize.rows, resultSize.columns, resultSize.columns);
 			for (int row = 0; row < size.rows; row++) {
 				for (int column = 0; column < size.columns; column++) {
@@ -1914,6 +1928,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 				return;
 			}
 			float source[sourceSize.size()];
+			memset(source, 0, sizeof(source));
 			if (!getMatrixFromBuffer(sourceId, source, sourceSize)) {
 				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
 				return;
@@ -1941,6 +1956,7 @@ void VDUStreamProcessor::bufferMatrixManipulate(uint16_t bufferId, uint8_t comma
 			}
 			// read source matrix
 			float source[sourceSize.size()];
+			memset(source, 0, sizeof(source));
 			if (!getMatrixFromBuffer(sourceId, source, sourceSize)) {
 				debug_log("bufferMatrixManipulate: failed to read matrix from buffer %d\n\r", sourceId);
 				return;
