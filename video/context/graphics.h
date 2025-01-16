@@ -543,6 +543,7 @@ void Context::setGraphicsColour(uint8_t mode, uint8_t colour) {
 	else {
 		debug_log("vdu_gcol: invalid mode %d\n\r", mode);
 	}
+	plottingText = false;
 }
 
 // Update selected colours based on palette change in 64 colour modes
