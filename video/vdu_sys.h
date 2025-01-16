@@ -390,7 +390,7 @@ void VDUStreamProcessor::sendCursorPosition() {
 //
 void VDUStreamProcessor::sendScreenChar(char c) {
 	uint8_t packet[] = {
-		c,
+		(uint8_t)c,
 	};
 	send_packet(PACKET_SCRCHAR, sizeof packet, packet);
 }

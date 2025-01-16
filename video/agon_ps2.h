@@ -23,11 +23,17 @@ uint32_t		mWheelAcc = MOUSE_DEFAULT_WHEELACC;	// Mouse wheel acceleration
 
 // Forward declarations
 //
-bool resetMousePositioner(uint16_t width, uint16_t height, fabgl::VGABaseController * display);
+#ifdef USERSPACE
+bool zdi_mode () { return false; }
+void zdi_enter () {}
+void zdi_process_cmd (uint8_t key) {}
+#else
+bool zdi_mode ();
+void zdi_enter ();
+void zdi_process_cmd (uint8_t key);
+#endif
 
-extern bool zdi_mode();
-extern void zdi_enter();
-extern void zdi_process_cmd(uint8_t key);
+bool resetMousePositioner(uint16_t width, uint16_t height, fabgl::VGABaseController * display);
 extern bool consoleMode;
 extern HardwareSerial DBGSerial;
 

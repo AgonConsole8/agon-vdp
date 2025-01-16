@@ -2,14 +2,18 @@
 #define HEXLOAD_H
 
 #include <stdbool.h>
+#ifndef USERSPACE
 #include "CRC16.h"
 #include "CRC32.h"
+#endif /* !USERSPACE */
 
 extern void printFmt(const char *format, ...);
 extern HardwareSerial DBGSerial;
 
+#ifndef USERSPACE
 CRC16 linecrc16(0x8005, 0x0, 0x0, false, false);
 CRC32 crc32,crc32tmp;
+#endif /* !USERSPACE */
 bool aborted;
 
 #define DEF_LOAD_ADDRESS			0x040000
@@ -57,6 +61,7 @@ void consumeHexMarker(void) {
 
 // Receive a single iHex Nibble from the external Debug serial interface
 uint8_t getIHexNibble(bool addcrc) {
+#ifndef USERSPACE
 	uint8_t nibble, input;
 	input = toupper(serialRx_t());
 	if(addcrc) linecrc16.add(input);
@@ -64,6 +69,7 @@ uint8_t getIHexNibble(bool addcrc) {
 	else nibble = input - 'A' + 10;
 	// illegal characters will be dealt with by checksum later
 	return nibble;
+#endif /* !USERSPACE */
 }
 
 // Receive a byte from the external Debug serial interface as two iHex nibbles
@@ -106,6 +112,10 @@ void serialTx(uint32_t crc) {
 }
 
 void VDUStreamProcessor::vdu_sys_hexload(void) {
+#ifdef USERSPACE
+	// no hexload for emulators :)
+	return;
+#else /* !USERSPACE */
 	uint32_t 	segment_address;
 	uint32_t 	crc32target;
 	uint8_t 	u,h,l,tmp;
@@ -290,6 +300,7 @@ void VDUStreamProcessor::vdu_sys_hexload(void) {
 	}
 	if(rom_area) printFmt("\r\nHEX data overlapping ROM area, transfer unsuccessful\r\nERROR\r\n");
 	printFmt("VDP done\r\n");   
+#endif /* !USERSPACE */
 }
 
 #endif // HEXLOAD_H
