@@ -136,7 +136,9 @@ void processLoop(void * parameter) {
 
 	while (true) {
 #ifdef USERSPACE
- 		if ((count & 0x7f) == 0) delay(1 /* -TM- ms */);
+ 		if ((count & 0x7f) == 0) {
+			delay(1 /* -TM- ms */);
+		}
  		count++;
 #endif /* USERSPACE */
 
@@ -353,8 +355,8 @@ bool processTerminal() {
 				if (seq[0] == 'F') {
 					uint32_t fontnum = textToWord(seq + 1);
 					if (fontnum >= 0) {
-						auto font = fonts[fontnum];  // get shared_ptr to font -- was fonts[bufferID]
-						if (font != nullptr && font->chptr == nullptr) {  // check it's defined
+						auto font = fonts[fontnum]; 	// get shared_ptr to font -- was fonts[bufferID]
+						if (font != nullptr && font->chptr == nullptr) {	// check it's defined
 							Terminal->loadFont(font.get());
 						}
 					}

@@ -2117,8 +2117,8 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 
 	debug_log("bufferTransformBitmap: width %d, height %d, xOffset %d, yOffset %d\n\r", width, height, xOffset, yOffset);
 
-    for (int y = 0; y < height; y++) {
-    	for (int x = 0; x < width; x++) {
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
 			// calculate the source pixel
 			// NB we will need to adjust x,y here if we are auto-translating
 			pos[0] = (float)x + xOffset;
@@ -2130,7 +2130,7 @@ void VDUStreamProcessor::bufferTransformBitmap(uint16_t bufferId, uint8_t option
 			}
 			destination[(int)y * width + (int)x] = srcPixel;
 		}
-    }
+	}
 
 	// save new bitmap data to target buffer
 	bufferClear(bufferId);
