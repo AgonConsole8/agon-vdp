@@ -140,6 +140,86 @@ class VDUStreamProcessor {
 		void receiveFirmware();
 		void switchFirmware();
 
+				// Begin: Tile Engine
+
+		void vdu_sys_layers();
+		void vdu_sys_layers_tilebank_init(uint8_t tileBankNum, uint8_t tileBankBitDepth);
+		void vdu_sys_layers_tilebank_load(uint8_t tileBankNum, uint8_t tileId);
+		void vdu_sys_layers_tilebank_draw(uint8_t tileBankNum, uint8_t tileId, uint8_t palette, uint8_t x, uint8_t y, uint8_t xOffset, uint8_t yOffset, uint8_t tileAttribute);
+		void vdu_sys_layers_tilebank_free(uint8_t tileBankNum);
+		void vdu_sys_layers_tilemap_init(uint8_t tileLayerNum, uint8_t tileMapSize);
+		void vdu_sys_layers_tilemap_set(uint8_t tileLayerNum, uint8_t x, uint8_t y, uint8_t tileId, uint8_t tileAttribute);
+		void vdu_sys_layers_tilemap_free(uint8_t tileMapNum);
+		void vdu_sys_layers_tilelayer_init(uint8_t tileLayerNum, uint8_t tileLayerSize, uint8_t tileSize);
+		void vdu_sys_layers_tilelayer_set_scroll(uint8_t tileLayerNum, uint8_t x, uint8_t y, uint8_t xOffset, uint8_t yOffset);
+		void vdu_sys_layers_tilelayer_update_layerbuffer(uint8_t tileLayerNum);
+		void vdu_sys_layers_tilelayer_draw_layerbuffer(uint8_t tileLayerNum);
+		void vdu_sys_layers_tilelayer_draw(uint8_t tileLayerNum);
+		void vdu_sys_layers_tilelayer_free(uint8_t tileLayerNum);
+		void writeTileToBuffer(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth);
+		void writeTileToBufferFlipX(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth);
+		void writeTileToBufferFlipY(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth);
+		void writeTileToBufferFlipXY(uint8_t tileId, uint8_t tileCount, uint8_t xOffset, uint8_t tileBuffer[], uint8_t tileLayerWidth);
+
+		void writeTileToLayerBuffer(uint8_t tileId, uint8_t xPos, uint8_t xOffset, uint8_t yPos, uint8_t yOffset, uint8_t * tileBuffer,  uint8_t tileLayerHeight, uint8_t tileLayerWidth);
+		void writeTileToLayerBufferFlipX(uint8_t tileId, uint8_t xPos, uint8_t xOffset, uint8_t yPos, uint8_t yOffset, uint8_t * tileBuffer, uint8_t tileLayerHeight, uint8_t tileLayerWidth);
+		void writeTileToLayerBufferFlipY(uint8_t tileId, uint8_t xPos, uint8_t xOffset, uint8_t yPos, uint8_t yOffset, uint8_t * tileBuffer, uint8_t tileLayerHeight, uint8_t tileLayerWidth);
+		void writeTileToLayerBufferFlipXY(uint8_t tileId, uint8_t xPos, uint8_t xOffset, uint8_t yPos, uint8_t yOffset, uint8_t * tileBuffer, uint8_t tileLayerHeight, uint8_t tileLayerWidth);
+
+		// Tile Bank variables
+
+		void * tileBank0Data = NULL;
+		uint8_t * tileBank0Ptr;
+
+		Bitmap currentTile; 
+		uint8_t currentTileDataBuffer[64];
+
+		// Tile Map variables
+
+		struct Tile {
+			uint8_t	id;
+			uint8_t attribute;
+		};
+
+		struct Tile** tileMap0 = NULL;
+
+		struct TileMap {
+			uint8_t height;
+			uint8_t width;
+		};
+
+		TileMap tileMap0Properties;
+
+		// Tile Layer variables
+
+		Bitmap currentRow;
+		uint8_t currentRowDataBuffer[5184];		// Buffer big enough for 64 byte tiles * 81 columns (the largest supported size +1)
+
+		Bitmap tileLayer0Bitmap;					// Bitmap that points to the Layer 0 buffer
+
+		void * tileLayer0Buffer = NULL;				// The offscreen buffer for Layer 0
+
+		uint8_t * tileLayer0Ptr;					// A pointer to he tileLayer0Buffer
+
+		struct TileLayer {
+			uint8_t height;
+			uint8_t width;
+			uint8_t sourceXPos;
+			uint8_t sourceYPos;
+			uint8_t xOffset;
+			uint8_t yOffset;
+			uint8_t attribute;
+			uint8_t backgroundColour = 0;			// Default the background colour of the layer to 0 (transparent)
+		};
+
+		TileLayer tileLayer0;
+		TileLayer tileLayer1;
+		TileLayer tileLayer2;
+
+		uint8_t tileLayer0init = 0;		
+
+		// End: Tile Engine
+
 	public:
 		uint16_t id = 65535;
 
