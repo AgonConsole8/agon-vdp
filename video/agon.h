@@ -74,12 +74,13 @@
 #define VDP_UPDATER				0xA1	// Update VDP
 #define VDP_LOGICALCOORDS		0xC0	// Switch BBC Micro style logical coords on and off
 #define VDP_LEGACYMODES			0xC1	// Switch VDP 1.03 compatible modes on and off
+#define VDP_LAYERS				0xC2	// Tile engine layer management commands (experimental)
 #define VDP_SWITCHBUFFER		0xC3	// Double buffering control
 #define VDP_CONTEXT				0xC8	// Context management commands
 #define VDP_FLUSH_DRAWING_QUEUE	0xCA	// Flush the drawing queue
 #define VDP_PATTERN_LENGTH		0xF2	// Set pattern length (*FX 163,242,n)
 #define VDP_FEATUREFLAG_SET		0xF8	// Set a test flag
-#define VDP_FEATUREFLAG_CLEAR		0xF9	// Clear a test flag
+#define VDP_FEATUREFLAG_CLEAR	0xF9	// Clear a test flag
 #define VDP_CONSOLEMODE			0xFE	// Switch console mode on and off
 #define VDP_TERMINALMODE		0xFF	// Switch to terminal mode
 
@@ -395,6 +396,7 @@
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
 
 #define FEATUREFLAG_FULL_DUPLEX	0x0101	// Full duplex UART comms flag
+#define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024

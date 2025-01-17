@@ -318,6 +318,9 @@ void VDUStreamProcessor::vdu_sys_video() {
 			}
 		}	break;
 		case VDP_LAYERS: {				// VDU 23, 0, &C2, n
+			if (!isFeatureFlagSet(FEATUREFLAG_TILE_ENGINE)) {
+				return;
+			}
 			vdu_sys_layers();
 		}	break;
 		case VDP_SWITCHBUFFER: {		// VDU 23, 0, &C3
