@@ -10,7 +10,8 @@
 // #include "vdu_layers.h"
 // in vdu_sys.h and is called by VDUStreamProcessor::vdu_sys_video()
 
-#define VDP_LAYERS							0xC2		// VDU 23,0,194
+#include "vdu_stream_processor.h"
+
 #define VDP_LAYER_TILEBANK_INIT				0x00		// VDU 23,0,194,0
 #define VDP_LAYER_TILEBANK_LOAD				0x01		// VDU 23,0,194,1
 #define VDP_LAYER_TILEBANK_LOAD_BUFFER		0x02		// VDU 23,0,194,2	[Future]
