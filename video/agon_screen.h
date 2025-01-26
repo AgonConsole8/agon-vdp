@@ -58,6 +58,54 @@ void updateRGB2PaletteLUT() {
 	}
 }
 
+// Create a palette
+//
+void createPalette(uint16_t paletteId) {
+	// Use instance, as call not present on VGABaseController, only on VGAPaletteController derived classes
+	switch (_VGAColourDepth) {
+		case 2: fabgl::VGA2Controller::instance()->createPalette(paletteId); break;
+		case 4: fabgl::VGA4Controller::instance()->createPalette(paletteId); break;
+		case 8: fabgl::VGA8Controller::instance()->createPalette(paletteId); break;
+		case 16: fabgl::VGA16Controller::instance()->createPalette(paletteId); break;
+	}
+}
+
+// Delete a palette
+//
+void deletePalette(uint16_t paletteId) {
+	// Use instance, as call not present on VGABaseController, only on VGAPaletteController derived classes
+	switch (_VGAColourDepth) {
+		case 2: fabgl::VGA2Controller::instance()->deletePalette(paletteId); break;
+		case 4: fabgl::VGA4Controller::instance()->deletePalette(paletteId); break;
+		case 8: fabgl::VGA8Controller::instance()->deletePalette(paletteId); break;
+		case 16: fabgl::VGA16Controller::instance()->deletePalette(paletteId); break;
+	}
+}
+
+// Set item in palette
+//
+void setItemInPalette(uint16_t paletteId, uint8_t index, RGB888 colour) {
+	// Use instance, as call not present on VGABaseController, only on VGAPaletteController derived classes
+	switch (_VGAColourDepth) {
+		case 2: fabgl::VGA2Controller::instance()->setItemInPalette(paletteId, index, colour); break;
+		case 4: fabgl::VGA4Controller::instance()->setItemInPalette(paletteId, index, colour); break;
+		case 8: fabgl::VGA8Controller::instance()->setItemInPalette(paletteId, index, colour); break;
+		case 16: fabgl::VGA16Controller::instance()->setItemInPalette(paletteId, index, colour); break;
+	}
+}
+
+// Update signal list
+//
+void updateSignalList(uint16_t * signalList, uint16_t count) {
+	// Use instance, as call not present on VGABaseController, only on VGA16Controller
+	switch (_VGAColourDepth) {
+		case 2: fabgl::VGA2Controller::instance()->updateSignalList(signalList, count); break;
+		case 4: fabgl::VGA4Controller::instance()->updateSignalList(signalList, count); break;
+		case 8: fabgl::VGA8Controller::instance()->updateSignalList(signalList, count); break;
+		case 16: fabgl::VGA16Controller::instance()->updateSignalList(signalList, count); break;
+	}
+}
+
 // Get current colour depth
 //
 inline uint8_t getVGAColourDepth() {
