@@ -69,6 +69,7 @@ class VDUStreamProcessor {
 		void sendKeyboardState();
 		void vdu_sys_keystate();
 		void vdu_sys_mouse();
+		void vdu_sys_copper();
 		void vdu_sys_scroll();
 		void vdu_sys_cursorBehaviour();
 		void vdu_sys_udg(char c);

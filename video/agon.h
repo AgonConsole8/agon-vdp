@@ -76,6 +76,7 @@
 #define VDP_LEGACYMODES			0xC1	// Switch VDP 1.03 compatible modes on and off
 #define VDP_LAYERS				0xC2	// Tile engine layer management commands (experimental)
 #define VDP_SWITCHBUFFER		0xC3	// Double buffering control
+#define VDP_COPPER				0xC4	// "Copper" style commands
 #define VDP_CONTEXT				0xC8	// Context management commands
 #define VDP_FLUSH_DRAWING_QUEUE	0xCA	// Flush the drawing queue
 #define VDP_PATTERN_LENGTH		0xF2	// Set pattern length (*FX 163,242,n)
@@ -392,11 +393,19 @@
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
 #define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples
 
+// Copper commands
+#define COPPER_CREATE_PALETTE		0		// Create a palette
+#define COPPER_DELETE_PALLETE		1		// Delete a palette
+#define COPPER_SET_PALETTE_COLOUR	2		// Set a palette item (colour)
+#define COPPER_UPDATE_SIGNALLIST	3		// Update the signal list
+#define COPPER_RESET_SIGNALLIST		4		// Reset the signal list
+
 // Test/Feature flags
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
 
 #define FEATUREFLAG_FULL_DUPLEX	0x0101	// Full duplex UART comms flag
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
+#define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024

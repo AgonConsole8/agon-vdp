@@ -326,6 +326,12 @@ void VDUStreamProcessor::vdu_sys_video() {
 		case VDP_SWITCHBUFFER: {		// VDU 23, 0, &C3
 			switchBuffer();
 		}	break;
+		case VDP_COPPER: {				// VDU 23, 0, &C4, command, [<args>]
+			if (!isFeatureFlagSet(FEATUREFLAG_COPPER)) {
+				return;
+			}
+			vdu_sys_copper();
+		}	break;
 		case VDP_CONTEXT: {				// VDU 23, 0, &C8, command, [<args>]
 			vdu_sys_context();			// Context management
 		}	break;
@@ -669,6 +675,60 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 				sendMouseData();
 				debug_log("vdu_sys_mouse: set wheel acceleration %d\n\r", wheelAcc);
 				return;
+			}
+		}	break;
+	}
+}
+
+// VDU 23, 0, &C4, command, [<args>]: Handle copper requests
+void VDUStreamProcessor::vdu_sys_copper() {
+	auto command = readByte_t(); if (command == -1) return;
+
+	switch (command) {
+		case COPPER_CREATE_PALETTE: {
+			auto paletteId = readWord_t(); if (paletteId == -1) return;
+
+			if (fabgl::VGA16Controller::instance()) {
+				fabgl::VGA16Controller::instance()->createPalette(paletteId);
+			}
+		}	break;
+		case COPPER_DELETE_PALLETE: {
+			auto paletteId = readWord_t(); if (paletteId == -1) return;
+
+			if (fabgl::VGA16Controller::instance()) {
+				fabgl::VGA16Controller::instance()->deletePalette(paletteId);
+			}
+		}	break;
+		case COPPER_SET_PALETTE_COLOUR: {
+			auto paletteId = readWord_t(); if (paletteId == -1) return;
+			auto index = readByte_t(); if (index == -1) return;
+			auto r = readByte_t(); if (r == -1) return;
+			auto g = readByte_t(); if (g == -1) return;
+			auto b = readByte_t(); if (b == -1) return;
+
+			if (fabgl::VGA16Controller::instance()) {
+				fabgl::VGA16Controller::instance()->setItemInPalette(paletteId, index, RGB888(r, g, b));
+			}
+		}	break;
+		case COPPER_UPDATE_SIGNALLIST: {
+			auto bufferId = readWord_t(); if (bufferId == -1) return;
+
+			auto bufferIter = buffers.find(bufferId);
+			if (bufferIter == buffers.end()) {
+				debug_log("vdu_sys_copper: buffer %d not found\n\r", bufferId);
+				return;
+			}
+
+			// only use first block in buffer
+			auto buffer = bufferIter->second[0];
+			if (fabgl::VGA16Controller::instance()) {
+				fabgl::VGA16Controller::instance()->updateSignalList((uint16_t *)buffer->getBuffer(), buffer->size() / 4);
+			}
+		}	break;
+		case COPPER_RESET_SIGNALLIST: {
+			if (fabgl::VGA16Controller::instance()) {
+				uint16_t signalList[2] = { 0, 0 };
+				fabgl::VGA16Controller::instance()->updateSignalList(signalList, 1);
 			}
 		}	break;
 	}
