@@ -135,13 +135,15 @@ class VDUStreamProcessor {
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
+		void bufferAddVSYNCCallback(uint16_t bufferId);
+		void bufferRemoveVSYNCCallback(uint16_t bufferId);
 
 		void vdu_sys_updater();
 		void unlock();
 		void receiveFirmware();
 		void switchFirmware();
 
-				// Begin: Tile Engine
+		// Begin: Tile Engine
 
 		void vdu_sys_layers();
 		void vdu_sys_layers_tilebank_init(uint8_t tileBankNum, uint8_t tileBankBitDepth);
@@ -276,6 +278,8 @@ class VDUStreamProcessor {
 		bool contextExists(uint8_t id) {
 			return contextStacks.find(id) != contextStacks.end();
 		}
+
+		void bufferCallVSYNCCallbacks();
 };
 
 // Read an unsigned byte from the serial port, with a timeout

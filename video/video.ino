@@ -148,6 +148,12 @@ void processLoop(void * parameter) {
 		if (processTerminal()) {
 			continue;
 		}
+
+		if (_VGAController->frameCounter != 0) {
+			_VGAController->frameCounter = 0;
+			processor->bufferCallVSYNCCallbacks();
+		}
+
 		processor->doCursorFlash();
 
 		do_keyboard();

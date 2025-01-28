@@ -274,6 +274,10 @@
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
+#define BUFFERED_ADD_VSYNC_CALLBACK		0x50	// Add a VSync callback
+#define BUFFERED_REMOVE_VSYNC_CALLBACK	0x51	// Remove a VSync callback
+// #define BUFFERED_ADD_TIMER_CALLBACK		0x52	// Add a timer callback
+// #define BUFFERED_REMOVE_TIMER_CALLBACK	0x53	// Remove a timer callback
 
 #define BUFFERED_DEBUG_INFO				0x80	// Get debug info about a buffer
 

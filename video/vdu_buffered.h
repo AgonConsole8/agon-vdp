@@ -245,6 +245,12 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			if (sourceBufferId == -1) return;
 			bufferExpandBitmap(bufferId, options, sourceBufferId);
 		}	break;
+		case BUFFERED_ADD_VSYNC_CALLBACK: {
+			bufferAddVSYNCCallback(bufferId);
+		}	break;
+		case BUFFERED_REMOVE_VSYNC_CALLBACK: {
+			bufferRemoveVSYNCCallback(bufferId);
+		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			// force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
 			force_debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
@@ -339,6 +345,7 @@ void VDUStreamProcessor::bufferCall(uint16_t callBufferId, AdvancedOffset offset
 	auto bufferIter = buffers.find(bufferId);
 	if (bufferIter == buffers.end()) {
 		debug_log("bufferCall: buffer %d not found\n\r", bufferId);
+		bufferRemoveVSYNCCallback(bufferId);
 		return;
 	}
 	auto &streams = bufferIter->second;
@@ -1144,6 +1151,7 @@ void VDUStreamProcessor::bufferJump(uint16_t bufferId, AdvancedOffset offset) {
 	auto bufferIter = buffers.find(bufferId);
 	if (bufferIter == buffers.end()) {
 		debug_log("bufferJump: buffer %d not found\n\r", bufferId);
+		bufferRemoveVSYNCCallback(bufferId);
 		return;
 	}
 	// replace our input stream with a new one
@@ -2646,5 +2654,24 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 	}
 	debug_log("bufferExpandBitmap: expanded %d bytes into buffer %d\n\r", outputSize, bufferId);
 }
+
+void VDUStreamProcessor::bufferAddVSYNCCallback(uint16_t bufferId) {
+	vsyncBuffers.insert(bufferId);
+}
+
+void VDUStreamProcessor::bufferRemoveVSYNCCallback(uint16_t bufferId) {
+	if (bufferId == 65535) {
+		vsyncBuffers.clear();
+		return;
+	}
+	vsyncBuffers.erase(bufferId);
+}
+
+void VDUStreamProcessor::bufferCallVSYNCCallbacks() {
+	for (const auto & bufferId : vsyncBuffers) {
+		bufferCall(bufferId, {});
+	}
+}
+
 
 #endif // VDU_BUFFERED_H
