@@ -245,11 +245,13 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			if (sourceBufferId == -1) return;
 			bufferExpandBitmap(bufferId, options, sourceBufferId);
 		}	break;
-		case BUFFERED_ADD_VSYNC_CALLBACK: {
-			bufferAddVSYNCCallback(bufferId);
+		case BUFFERED_ADD_CALLBACK: {
+			auto type = readWord_t(); if (type == -1) return;
+			bufferAddCallback(bufferId, type);
 		}	break;
-		case BUFFERED_REMOVE_VSYNC_CALLBACK: {
-			bufferRemoveVSYNCCallback(bufferId);
+		case BUFFERED_REMOVE_CALLBACK: {
+			auto type = readWord_t(); if (type == -1) return;
+			bufferRemoveCallback(bufferId, type);
 		}	break;
 		case BUFFERED_DEBUG_INFO: {
 			// force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
@@ -345,7 +347,7 @@ void VDUStreamProcessor::bufferCall(uint16_t callBufferId, AdvancedOffset offset
 	auto bufferIter = buffers.find(bufferId);
 	if (bufferIter == buffers.end()) {
 		debug_log("bufferCall: buffer %d not found\n\r", bufferId);
-		bufferRemoveVSYNCCallback(bufferId);
+		bufferRemoveCallback(bufferId, 65535);
 		return;
 	}
 	auto &streams = bufferIter->second;
@@ -1151,7 +1153,7 @@ void VDUStreamProcessor::bufferJump(uint16_t bufferId, AdvancedOffset offset) {
 	auto bufferIter = buffers.find(bufferId);
 	if (bufferIter == buffers.end()) {
 		debug_log("bufferJump: buffer %d not found\n\r", bufferId);
-		bufferRemoveVSYNCCallback(bufferId);
+		bufferRemoveCallback(bufferId, 65535);
 		return;
 	}
 	// replace our input stream with a new one
@@ -2655,20 +2657,26 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 	debug_log("bufferExpandBitmap: expanded %d bytes into buffer %d\n\r", outputSize, bufferId);
 }
 
-void VDUStreamProcessor::bufferAddVSYNCCallback(uint16_t bufferId) {
-	vsyncBuffers.insert(bufferId);
+void VDUStreamProcessor::bufferAddCallback(uint16_t bufferId, uint16_t type) {
+	callbackBuffers[type].insert(bufferId);
 }
 
-void VDUStreamProcessor::bufferRemoveVSYNCCallback(uint16_t bufferId) {
-	if (bufferId == 65535) {
-		vsyncBuffers.clear();
+void VDUStreamProcessor::bufferRemoveCallback(uint16_t bufferId, uint16_t type) {
+	if (type == 65535) {
+		for (auto & cb : callbackBuffers) {
+			bufferRemoveCallback(bufferId, cb.first);
+		}
 		return;
 	}
-	vsyncBuffers.erase(bufferId);
+	if (bufferId == 65535) {
+		callbackBuffers.erase(type);
+		return;
+	}
+	callbackBuffers[type].erase(bufferId);
 }
 
-void VDUStreamProcessor::bufferCallVSYNCCallbacks() {
-	for (const auto & bufferId : vsyncBuffers) {
+void VDUStreamProcessor::bufferCallCallbacks(uint16_t type) {
+	for (const auto & bufferId : callbackBuffers[type]) {
 		bufferCall(bufferId, {});
 	}
 }

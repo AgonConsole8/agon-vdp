@@ -151,7 +151,7 @@ void processLoop(void * parameter) {
 
 		if (_VGAController->frameCounter != 0) {
 			_VGAController->frameCounter = 0;
-			processor->bufferCallVSYNCCallbacks();
+			processor->bufferCallCallbacks(CALLBACK_VSYNC);
 		}
 
 		processor->doCursorFlash();
@@ -383,13 +383,7 @@ bool processTerminal() {
 			Terminal = nullptr;
 			auto context = processor->getContext();
 			// reset our screen mode
-			if (changeMode(videoMode) != 0) {
-				debug_log("processTerminal: Error %d changing back to mode %d\n\r", videoMode);
-				videoMode = 1;
-				changeMode(1);
-			}
-			context->reset();
-			processor->sendModeInformation();
+			processor->vdu_mode(videoMode);
 			debug_log("Terminal disabled\n\r");
 			terminalState = TerminalState::Disabled;
 		} break;

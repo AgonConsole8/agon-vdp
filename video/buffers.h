@@ -14,7 +14,7 @@
 
 using BufferVector = std::vector<std::shared_ptr<BufferStream>, psram_allocator<std::shared_ptr<BufferStream>>>;
 std::unordered_map<uint16_t, BufferVector, std::hash<uint16_t>, std::equal_to<uint16_t>, psram_allocator<std::pair<const uint16_t, BufferVector>>> buffers;
-std::unordered_set<uint16_t> vsyncBuffers;
+std::unordered_map<uint16_t, std::unordered_set<uint16_t>> callbackBuffers;
 
 struct AdvancedOffset {
 	uint32_t blockOffset = 0;

@@ -47,7 +47,6 @@ class VDUStreamProcessor {
 		void vdu_colour();
 		void vdu_gcol();
 		void vdu_palette();
-		void vdu_mode();
 		void vdu_graphicsViewport();
 		void vdu_plot();
 		void vdu_resetViewports();
@@ -135,8 +134,8 @@ class VDUStreamProcessor {
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
-		void bufferAddVSYNCCallback(uint16_t bufferId);
-		void bufferRemoveVSYNCCallback(uint16_t bufferId);
+		void bufferAddCallback(uint16_t bufferId, uint16_t type);
+		void bufferRemoveCallback(uint16_t bufferId, uint16_t type);
 
 		void vdu_sys_updater();
 		void unlock();
@@ -279,7 +278,9 @@ class VDUStreamProcessor {
 			return contextStacks.find(id) != contextStacks.end();
 		}
 
-		void bufferCallVSYNCCallbacks();
+		void vdu_mode(uint8_t mode);
+
+		void bufferCallCallbacks(uint16_t type);
 };
 
 // Read an unsigned byte from the serial port, with a timeout

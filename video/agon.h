@@ -274,8 +274,8 @@
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
-#define BUFFERED_ADD_VSYNC_CALLBACK		0x50	// Add a VSync callback
-#define BUFFERED_REMOVE_VSYNC_CALLBACK	0x51	// Remove a VSync callback
+#define BUFFERED_ADD_CALLBACK			0x50	// Add a callback
+#define BUFFERED_REMOVE_CALLBACK		0x51	// Remove a callback
 // #define BUFFERED_ADD_TIMER_CALLBACK		0x52	// Add a timer callback
 // #define BUFFERED_REMOVE_TIMER_CALLBACK	0x53	// Remove a timer callback
 
@@ -403,6 +403,11 @@
 #define COPPER_SET_PALETTE_COLOUR	2		// Set a palette item (colour)
 #define COPPER_UPDATE_SIGNALLIST	3		// Update the signal list
 #define COPPER_RESET_SIGNALLIST		4		// Reset the signal list
+
+// Callback types
+#define CALLBACK_VSYNC				0		// VSync callback
+#define CALLBACK_MODE_CHANGE		1		// Mode callback
+// Future callback types may include timer, audio playback complete, etc.
 
 // Test/Feature flags
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
