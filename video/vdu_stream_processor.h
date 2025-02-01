@@ -30,6 +30,7 @@ class VDUStreamProcessor {
 		// Graphics context storage and management
 		std::shared_ptr<Context> context;		// Current active context
 		ContextVectorPtr contextStack;			// Current active context stack
+		uint8_t contextId = 0;					// Current active context ID
 
 		bool commandsEnabled = true;
 
@@ -223,18 +224,20 @@ class VDUStreamProcessor {
 	public:
 		uint16_t id = 65535;
 
-		VDUStreamProcessor(std::shared_ptr<Context> _context, std::shared_ptr<Stream> input, std::shared_ptr<Stream> output, uint16_t bufferId) :
-			context(_context), inputStream(std::move(input)), outputStream(std::move(output)), originalOutputStream(outputStream), id(bufferId) {
-				// NB this will become obsolete when merging in the buffered command optimisations
-				context = make_shared_psram<Context>(*_context);
-				contextStack = make_shared_psram<ContextVector>();
-				contextStack->push_back(context);
-			}
 		VDUStreamProcessor(Stream *input) :
 			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {
-				context = make_shared_psram<Context>();
-				contextStack = make_shared_psram<ContextVector>();
-				contextStack->push_back(context);
+				contextId = 0;
+				// Get the default context stack, if it exists
+				// (NB this will only be possible when we support multiple stream processors)
+				if (contextExists(0)) {
+					contextStack = contextStacks[0];
+					context = contextStack->back();
+				} else {
+					context = make_shared_psram<Context>();
+					contextStack = make_shared_psram<ContextVector>();
+					contextStacks[0] = contextStack;
+					contextStack->push_back(context);
+				}
 			}
 
 		inline bool byteAvailable() {
