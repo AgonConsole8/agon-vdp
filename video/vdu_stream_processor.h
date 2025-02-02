@@ -33,9 +33,6 @@ class VDUStreamProcessor {
 
 		bool commandsEnabled = true;
 
-		int16_t readByte_t(uint16_t timeout);
-		int32_t readWord_t(uint16_t timeout);
-		int32_t read24_t(uint16_t timeout);
 		uint8_t readByte_b();
 		uint32_t readIntoBuffer(uint8_t * buffer, uint32_t length, uint16_t timeout);
 		uint32_t discardBytes(uint32_t length, uint16_t timeout);
@@ -134,6 +131,7 @@ class VDUStreamProcessor {
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
+		void bufferUsePingo3D(uint16_t bufferId);
 
 		void vdu_sys_updater();
 		void unlock();
@@ -236,6 +234,10 @@ class VDUStreamProcessor {
 				contextStack = make_shared_psram<ContextVector>();
 				contextStack->push_back(context);
 			}
+
+		int16_t readByte_t(uint16_t timeout);
+		int32_t readWord_t(uint16_t timeout);
+		int32_t read24_t(uint16_t timeout);
 
 		inline bool byteAvailable() {
 			return inputStream->available() > 0;

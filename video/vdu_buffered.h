@@ -21,6 +21,7 @@
 #include "feature_flags.h"
 #include "types.h"
 #include "vdu_stream_processor.h"
+#include "pingo_3d.h"
 
 // VDU 23, 0, &A0, bufferId; command: Buffered command support
 //
@@ -245,6 +246,9 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			if (sourceBufferId == -1) return;
 			bufferExpandBitmap(bufferId, options, sourceBufferId);
 		}	break;
+        case BUFFERED_PINGO_3D: {
+			bufferUsePingo3D(bufferId);
+        }   break;
 		case BUFFERED_DEBUG_INFO: {
 			// force_debug_log("vdu_sys_buffered: debug info stack highwater %d\n\r",uxTaskGetStackHighWaterMark(nullptr));
 			force_debug_log("vdu_sys_buffered: buffer %d, %d streams stored\n\r", bufferId, buffers[bufferId].size());
@@ -2645,6 +2649,102 @@ void VDUStreamProcessor::bufferExpandBitmap(uint16_t bufferId, uint8_t options, 
 		free(mapValues);
 	}
 	debug_log("bufferExpandBitmap: expanded %d bytes into buffer %d\n\r", outputSize, bufferId);
+}
+
+// VDU 23, 0, &A0, bufferId; &49, subcommand - Configure/render using Pingo 3D
+//
+// VDU 23, 0, &A0, sid; &49, 0, w; h; :  Create Control Structure
+// VDU 23, 0, &A0, sid; &49, 1, mid; n; x0; y0; z0; ... :  Define Mesh Vertices
+// VDU 23, 0, &A0, sid; &49, 2, mid; n; i0; ... :  Set Mesh Vertex Indexes
+// VDU 23, 0, &A0, sid; &49, 3, mid; n; u0; v0; ... :  Define Mesh Texture Coordinates
+// VDU 23, 0, &A0, sid; &49, 4, mid; n; i0; ... :  Set Texture Coordinate Indexes
+// VDU 23, 0, &A0, sid; &49, 5, oid; mid; bmid; :  Create Object
+// VDU 23, 0, &A0, sid; &49, 40, oid; n; u0; v0; ... :  Define Object Texture Coordinates
+// VDU 23, 0, &A0, sid; &49, 6, oid; scalex; :  Set Object X Scale Factor
+// VDU 23, 0, &A0, sid; &49, 7, oid; scaley; :  Set Object Y Scale Factor
+// VDU 23, 0, &A0, sid; &49, 8, oid; scalez; :  Set Object Z Scale Factor
+// VDU 23, 0, &A0, sid; &49, 9, oid; scalex; scaley; scalez :  Set Object XYZ Scale Factors
+// VDU 23, 0, &A0, sid; &49, 10, oid; anglex; :  Set Object X Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 11, oid; angley; :  Set Object Y Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 12, oid; anglez; :  Set Object Z Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 13, oid; anglex; angley; anglez; :  Set Object XYZ Rotation Angles
+// VDU 23, 0, &A0, sid; &49, 14, oid; distx; :  Set Object X Translation Distance
+// VDU 23, 0, &A0, sid; &49, 15, oid; disty; :  Set Object Y Translation Distance
+// VDU 23, 0, &A0, sid; &49, 16, oid; distz; :  Set Object Z Translation Distance
+// VDU 23, 0, &A0, sid; &49, 17, oid; distx; disty; distz :  Set Object XYZ Translation Distances
+// VDU 23, 0, &A0, sid; &49, 18, anglex;</b> :  Set Camera X Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 19, angley;</b> :  Set Camera Y Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 20, anglez;</b> :  Set Camera Z Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 21, anglex; angley; anglez;</b> :  Set Camera XYZ Rotation Angles
+// VDU 23, 0, &A0, sid; &49, 22, distx;</b> :  Set Camera X Translation Distance
+// VDU 23, 0, &A0, sid; &49, 23, disty;</b> :  Set Camera Y Translation Distance
+// VDU 23, 0, &A0, sid; &49, 24, distz;</b> :  Set Camera Z Translation Distance
+// VDU 23, 0, &A0, sid; &49, 25, distx; disty; distz;</b> :  Set Camera XYZ Translation Distances
+// VDU 23, 0, &A0, sid; &49, 26, scalex;</b> :  Set Scene X Scale Factor
+// VDU 23, 0, &A0, sid; &49, 27, scaley;</b> :  Set Scene Y Scale Factor
+// VDU 23, 0, &A0, sid; &49, 28, scalez;</b> :  Set Scene Z Scale Factor
+// VDU 23, 0, &A0, sid; &49, 29, scalex; scaley; scalez;</b> :  Set Scene XYZ Scale Factors
+// VDU 23, 0, &A0, sid; &49, 30, anglex;</b> :  Set Scene X Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 31, angley;</b> :  Set Scene Y Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 32, anglez;</b> :  Set Scene Z Rotation Angle
+// VDU 23, 0, &A0, sid; &49, 33, anglex; angley; anglez;</b> :  Set Scene XYZ Rotation Angles
+// VDU 23, 0, &A0, sid; &49, 34, distx;</b> :  Set Scene X Translation Distance
+// VDU 23, 0, &A0, sid; &49, 35, disty;</b> :  Set Scene Y Translation Distance
+// VDU 23, 0, &A0, sid; &49, 36, distz;</b> :  Set Scene Z Translation Distance
+// VDU 23, 0, &A0, sid; &49, 37, distx; disty; distz;</b> :  Set Scene XYZ Translation Distances
+// VDU 23, 0, &A0, sid; &49, 38, bmid; :  Render To Bitmap
+// VDU 23, 0, &A0, sid; &49, 39 :  Delete Control Structure (not implemented yet)
+//
+void VDUStreamProcessor::bufferUsePingo3D(uint16_t bufferId) {
+    auto subcmd = readByte_t();
+    if (subcmd == 0) {
+		// Create the buffer if necessary
+		// Initialize the control structure
+		auto w = readWord_t();
+		if (w > 0) {
+			auto h = readWord_t();
+			if (h > 0) {
+				auto buffer = bufferCreate(bufferId, sizeof(Pingo3dControl));
+				if (buffer) {
+					auto ctrl = (Pingo3dControl*) buffer->getBuffer();
+					ctrl->initialize(*this, (uint16_t)w, (uint16_t)h);
+				}
+			} else {
+				debug_log("bufferUsePingo3D: buffer %d missing height\n\r", bufferId);
+			}
+		} else {
+			debug_log("bufferUsePingo3D: buffer %d missing width\n\r", bufferId);
+		}
+	} else if (subcmd == 39) {
+		// Deinitialize the control structure
+		// Delete the buffer
+		auto bufferIter = buffers.find(bufferId);
+		if (bufferIter != buffers.end()) {
+			auto &buffer = bufferIter->second;
+			auto ctrl = (Pingo3dControl*) buffer.begin()->get()->getBuffer();
+			if (ctrl->validate()) {
+				ctrl->deinitialize(*this);
+				buffers.erase(bufferIter);
+			} else {
+				debug_log("bufferUsePingo3D: buffer %d is invalid\n\r", bufferId);
+			}
+		} else {
+			debug_log("bufferUsePingo3D: buffer %d not found\n\r", bufferId);
+		}            
+    } else {
+        auto bufferIter = buffers.find(bufferId);
+        if (bufferIter != buffers.end()) {
+			auto &buffer = bufferIter->second;
+			auto ctrl = (Pingo3dControl*) buffer.begin()->get()->getBuffer();
+            if (ctrl->validate()) {
+                ctrl->handle_subcommand(*this, subcmd);
+            } else {
+           		debug_log("bufferUsePingo3D: buffer %d is invalid\n\r", bufferId);
+            }
+        } else {
+    		debug_log("bufferUsePingo3D: buffer %d not found\n\r", bufferId);
+        }
+    }
 }
 
 #endif // VDU_BUFFERED_H
