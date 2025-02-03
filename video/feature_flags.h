@@ -48,16 +48,23 @@ void clearFeatureFlag(uint16_t flag) {
 	}
 }
 
-inline bool isFeatureFlagSet(uint16_t flag) {
+bool isFeatureFlagSet(uint16_t flag) {
+	if (flag >= FEATUREFLAG_VDU_VARIABLES_START && flag <= FEATUREFLAG_VDU_VARIABLES_END) {
+		return processor->getContext()->readVariable(flag & 0xFF, nullptr);
+	}
 	auto flagIter = featureFlags.find(flag);
 	return flagIter != featureFlags.end();
 }
 
-inline uint16_t getFeatureFlag(uint16_t flag) {
+uint16_t getFeatureFlag(uint16_t flag) {
+	if (flag >= FEATUREFLAG_VDU_VARIABLES_START && flag <= FEATUREFLAG_VDU_VARIABLES_END) {
+		uint16_t value = 0;
+		processor->getContext()->readVariable(flag & 0xFF, &value);
+		return value;
+	}
 	auto flagIter = featureFlags.find(flag);
 	if (flagIter != featureFlags.end()) {
 		return featureFlags[flag];
-		// return flagIter->second;
 	}
 	return 0;
 }

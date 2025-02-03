@@ -185,6 +185,8 @@ class Context {
 		// Copy constructor
 		Context(const Context &c);
 
+		bool readVariable(uint8_t var, uint16_t * value);
+
 		// Cursor management functions
 		void hideCursor();
 		void showCursor();
@@ -363,6 +365,258 @@ class Context {
 	} else {
 		activeViewport = &textViewport;
 	}
+}
+
+bool Context::readVariable(uint8_t var, uint16_t * value) {
+	switch (var) {
+		// Mode variables
+		// 0 is "mode flags" - omitting for now
+		case 1:		// Text columns - 1
+			if (value) {
+				*value = getNormalisedViewportCharWidth() - 1;
+			}
+			break;
+		case 2:		// Text rows - 1
+			if (value) {
+				*value = getNormalisedViewportCharHeight() - 1;
+			}
+			break;
+		case 3:		// Max logical colour
+			if (value) {
+				*value = getVGAColourDepth() - 1;
+			}
+			break;
+		// Variables 4 and 5 are X and Y Eigen factor - omitting for now
+		// Omitting variables 6-10 as they aren't really relevant without direct screen memory access
+		case 11:	// Screen width in pixels - 1
+			if (value) {
+				*value = canvasW - 1;
+			}
+			break;
+		case 12:	// Screen height in pixels - 1
+			if (value) {
+				*value = canvasH - 1;
+			}
+			break;
+		case 13:	// Number of screen banks
+			if (value) {
+				*value =  isDoubleBuffered() ? 2 : 1;
+			}
+			break;
+
+		// Variables 14-127 are undefined
+
+		// VDU Variables
+
+		// - text and graphics windows
+		case 0x80:	// Graphics window, LH column, pixel coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Graphics)->X1;
+			}
+			break;
+		case 0x81:	// Graphics window, Bottom row, pixel coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Graphics)->Y2;
+			}
+			break;
+		case 0x82:	// Graphics window, RH column, pixel coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Graphics)->X2;
+			}
+			break;
+		case 0x83:	// Graphics window, Top row, pixel coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Graphics)->Y1;
+			}
+			break;
+		// TODO verify that Acorn is actually character coordinates
+		// TODO add parallel set of variables for screen coordinates
+		case 0x84:	// Text window, LH column, character coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Text)->X1 / getFont()->width;
+			}
+			break;
+		case 0x85:	// Text window, Bottom row, character coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Text)->Y2 / getFont()->height;
+			}
+			break;
+		case 0x86:	// Text window, RH column, character coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Text)->X2 / getFont()->width;
+			}
+			break;
+		case 0x87:	// Text window, Top row, character coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Text)->Y1 / getFont()->height;
+			}
+			break;
+
+		// Graphics origin
+		// TODO to match Acorn's implementation these should be OS coordinates
+		// we may wish to add a parallel set of variables for screen coordinates
+		case 0x88:	// Graphics origin, X
+			if (value) {
+				*value = origin.X;
+			}
+			break;
+		case 0x89:	// Graphics origin, Y
+			if (value) {
+				*value = origin.Y;
+			}
+			break;
+
+		// Graphics cursor data
+		case 0x8A:	// Graphics cursor, X, OS coordinates
+			if (value) {
+				*value = up1.X;
+			}
+			break;
+		case 0x8B:	// Graphics cursor, Y, OS coordinates
+			if (value) {
+				*value = up1.Y;
+			}
+			break;
+		case 0x8C:	// Oldest Graphics cursor, X, screen coordinates
+			if (value) {
+				*value = p3.X;
+			}
+			break;
+		case 0x8D:	// Oldest Graphics cursor, Y, screen coordinates
+			if (value) {
+				*value = p3.Y;
+			}
+			break;
+		case 0x8E:	// Previous Graphics cursor, X, screen coordinates
+			if (value) {
+				*value = p2.X;
+			}
+			break;
+		case 0x8F:	// Previous Graphics cursor, Y, screen coordinates
+			if (value) {
+				*value = p2.Y;
+			}
+			break;
+		case 0x90:	// Graphics cursor, X, screen coordinates
+		case 0x92:	// New point, X, screen coordinates
+			if (value) {
+				*value = p1.X;
+			}
+			break;
+		case 0x91:	// Graphics cursor, Y, screen coordinates
+		case 0x93:	// New point, X, screen coordinates
+			if (value) {
+				*value = p1.Y;
+			}
+			break;
+		// Acorn has variables 0x92 and 0x93 as "new point"
+		// but it is not clear how they would differ from the current graphics cursor
+		// so we are treating them as the same
+
+		// Variables 0x94-0x96 are not relevant on Agon, as there is no direct screen memory access
+
+		// GCOL actions and selected colours
+		case 0x97:	// GCOL action for foreground colour
+			if (value) {
+				*value = (uint8_t)gpofg.mode;
+			}
+			break;
+		case 0x98:	// GCOL action for background colour
+			if (value) {
+				*value = (uint8_t)gpobg.mode;
+			}
+			break;
+		case 0x99:	// Graphics foreground (logical) colour
+			if (value) {
+				*value = gfgc;
+			}
+			break;
+		case 0x9A:	// Graphics background (logical) colour
+			if (value) {
+				*value = gbgc;
+			}
+			break;
+		case 0x9B:	// Text foreground (logical) colour
+			if (value) {
+				*value = tfgc;
+			}
+			break;
+		case 0x9C:	// Text background (logical) colour
+			if (value) {
+				*value = tbgc;
+			}
+			break;
+		// Variables &9D-&A0 are not relevant on Agon, as they are "tint" values which we can't support
+
+		case 0xA1:	// Max mode number (not double-buffered)
+			// NB this is hard-coded
+			if (value) {
+				*value = 23;
+			}
+			break;
+
+		// Font size info
+		// NB Agon currently doesn't support changing font spacing
+		case 0xA2:	// X font size, graphics cursor
+			if (value) {
+				*value = graphicsFont ? graphicsFont->width : 8;
+			}
+			break;
+		case 0xA3:	// Y font size, graphics cursor
+			if (value) {
+				*value = graphicsFont ? graphicsFont->height : 8;
+			}
+			break;
+		case 0xA4:	// X font spacing, graphics cursor
+			if (value) {
+				*value = graphicsFont ? graphicsFont->width : 8;
+			}
+			break;
+		case 0xA5:	// Y font spacing, graphics cursor
+			if (value) {
+				*value = graphicsFont ? graphicsFont->height : 8;
+			}
+			break;
+		// &A6 omitted as it is not relevant on Agon ("address of horizontal line-draw routine")
+		case 0xA7:	// X font size, text cursor
+			if (value) {
+				*value = textFont ? textFont->width : 8;
+			}
+			break;
+		case 0xA8:	// Y font size, text cursor
+			if (value) {
+				*value = textFont ? textFont->height : 8;
+			}
+			break;
+		case 0xA9:	// X font spacing, text cursor
+			if (value) {
+				*value = textFont ? textFont->width : 8;
+			}
+			break;
+		case 0xAA:	// Y font spacing, text cursor
+			if (value) {
+				*value = textFont ? textFont->height : 8;
+			}
+			break;
+		// NB we have more font info available so may add more variables to expose some of it
+		// also note that if/when we support variable width fonts, the width here will be zero
+
+		// RISC OS also defines a few other variables beyond these which are not relevant on Agon
+		// there are variables for "width/height of text window in chars" numbered &100 and &101,
+		// but those will not fit into our 8-bit block without renumbering
+		// and their values can be derived from existing viewport variables
+
+		// we have other areas of context state that could be exposed as variables
+		// such as cursor size info, cursor drawing status, line thickness, line pattern, etc.
+		// plus we wish to expose the current context ID
+		// Exposing the context ID needs the "default context" changes to be merged
+
+		default:
+			debug_log("readVariable: variable %d not found\n\r", var);
+			return false;
+	}
+	
+	return true;
 }
 
 

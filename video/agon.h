@@ -424,9 +424,11 @@
 #define TESTFLAG_HW_SPRITES			2	// Hardware sprites test flag
 
 #define FEATUREFLAG_FULL_DUPLEX	0x0101	// Full duplex UART comms flag
-#define FEATUREFLAG_MOS_VDPP_BUFFERSIZE	0x0201	// Buffer size on MOS for VDP protocol packets
-#define FEATUREFLAG_ECHO		0x0210	// Echo back received data, for redirect/spool
-// #define FEATUREFLAG_ECHO_SETTINGS	0x0211	// Settings for what will be echo'd
+#define FEATUREFLAG_MOS_VDPP_BUFFERSIZE	0x0102	// Buffer size on MOS for VDP protocol packets
+#define FEATUREFLAG_ECHO		0x0110	// Echo back received data, for redirect/spool
+// #define FEATUREFLAG_ECHO_SETTINGS	0x0111	// Settings for what will be echo'd
+#define FEATUREFLAG_VDU_VARIABLES_START	0x0200	// VDU variables start at 0x0200
+#define FEATUREFLAG_VDU_VARIABLES_END	0x02FF	// VDU variables end
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 #define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
 #define FEATURE_FLAG_AUTO_HW_SPRITES	0x0400	// Auto hardware sprites flag
