@@ -60,9 +60,7 @@ void Context::setActiveViewport(ViewportType type) {
 }
 
 // Set graphics viewport
-bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-	auto p1 = toScreenCoordinates(x1, y1);
-	auto p2 = toScreenCoordinates(x2, y2);
+bool Context::setGraphicsViewport(Point p1, Point p2) {
 	plottingText = false;
 
 	if (p1.X >= 0 && p2.X < canvasW && p1.Y >= 0 && p2.Y < canvasH && p2.X >= p1.X && p2.Y >= p1.Y) {
@@ -70,6 +68,10 @@ bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_
 		return true;
 	}
 	return false;
+}
+
+bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
+	return setGraphicsViewport(Point(x1, y1), Point(x2, y2));
 }
 
 bool Context::setGraphicsViewport() {

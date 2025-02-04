@@ -223,6 +223,7 @@ class Context {
 		// Viewport management functions
 		void viewportReset();
 		void setActiveViewport(ViewportType type);
+		bool setGraphicsViewport(Point p1, Point p2);
 		bool setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 		bool setGraphicsViewport();
 		bool setTextViewport(uint8_t cx1, uint8_t cy1, uint8_t cx2, uint8_t cy2);
@@ -646,6 +647,64 @@ void Context::setVariable(uint8_t var, uint16_t value) {
 		// - text and graphics windows 0x80-0x87
 		// Currently read-only, as changing them here could break things
 		// since we need to ensure that x,y pairs are correctly ordered
+
+		// - text and graphics windows
+		case 0x80: {	// Graphics window, LH column, pixel coordinates
+			uint16_t y1, x2, y2;
+			readVariable(0x81, &y1);
+			readVariable(0x82, &x2);
+			readVariable(0x83, &y2);
+			setGraphicsViewport(Point(value, y1), Point(x2, y2));
+		}	break;
+		case 0x81: {	// Graphics window, Bottom row, pixel coordinates
+			uint16_t x1, x2, y2;
+			readVariable(0x80, &x1);
+			readVariable(0x82, &x2);
+			readVariable(0x83, &y2);
+			setGraphicsViewport(Point(x1, value), Point(x2, y2));
+		}	break;
+		case 0x82: {	// Graphics window, RH column, pixel coordinates
+			uint16_t x1, y1, y2;
+			readVariable(0x80, &x1);
+			readVariable(0x81, &y1);
+			readVariable(0x83, &y2);
+			setGraphicsViewport(Point(x1, y1), Point(value, y2));
+		}	break;
+		case 0x83: {	// Graphics window, Top row, pixel coordinates
+			uint16_t x1, y1, x2;
+			readVariable(0x80, &x1);
+			readVariable(0x81, &y1);
+			readVariable(0x82, &x2);
+			setGraphicsViewport(Point(x1, y1), Point(x2, value));
+		}	break;
+		case 0x84: {	// Text window, LH column, character coordinates
+			uint16_t y1, x2, y2;
+			readVariable(0x85, &y1);
+			readVariable(0x86, &x2);
+			readVariable(0x87, &y2);
+			setTextViewport(value, y2, x2, y1);
+		}	break;
+		case 0x85: {	// Text window, Bottom row, character coordinates
+			uint16_t x1, y2, x2;
+			readVariable(0x84, &x1);
+			readVariable(0x86, &x2);
+			readVariable(0x87, &y2);
+			setTextViewport(x1, y2, x2, value);
+		}	break;
+		case 0x86: {	// Text window, RH column, character coordinates
+			uint16_t x1, y1, y2;
+			readVariable(0x84, &x1);
+			readVariable(0x85, &y1);
+			readVariable(0x87, &y2);
+			setTextViewport(x1, y2, value, y1);
+		}	break;
+		case 0x87: {	// Text window, Top row, character coordinates
+			uint16_t x1, y1, x2;
+			readVariable(0x84, &x1);
+			readVariable(0x85, &y1);
+			readVariable(0x86, &x2);
+			setTextViewport(x1, value, x2, y1);
+		}	break;
 
 		// Graphics origin (0x88-0x89)
 		case 0x88:	// Graphics origin, X, OS coordinates
