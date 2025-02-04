@@ -128,11 +128,13 @@ void Context::setOrigin(int x, int y) {
 	up1.X = up1.X - delta.X;
 	up1.Y = up1.Y - delta.Y;
 
+	uOrigin = Point(x, y);
 	origin = newOrigin;
 }
 
 void Context::setOrigin() {
 	origin = p1;
+	uOrigin = up1;
 	up1 = Point(0, 0);
 	debug_log("setOrigin: %d,%d\n\r", origin.X, origin.Y);
 }
@@ -144,6 +146,7 @@ void Context::shiftOrigin() {
 	graphicsViewport = graphicsViewport.translate(originDelta).intersection(defaultViewport);
 
 	origin = p1;
+	uOrigin = up1;
 	up1 = Point(0, 0);
 
 	textCursor = textCursor.add(originDelta);
@@ -159,9 +162,11 @@ void Context::setLogicalCoords(bool b) {
 		if (b) {
 			// point was in screen coordinates, change to logical
 			up1 = Point(up1.X * logicalScaleX, LOGICAL_SCRH - (up1.Y * logicalScaleY));
+			uOrigin = Point(origin.X * logicalScaleX, LOGICAL_SCRH - (origin.Y * logicalScaleY));
 		} else {
 			// point was in logical coordinates, change to screen coordinates
 			up1 = Point(up1.X / logicalScaleX, canvasH - (up1.Y / logicalScaleY));
+			uOrigin = origin;
 		}
 	}
 }

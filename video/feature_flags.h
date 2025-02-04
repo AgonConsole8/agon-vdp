@@ -12,6 +12,10 @@ std::unordered_map<uint16_t, uint16_t> featureFlags;	// Feature/Test flags
 extern VDUStreamProcessor *processor;
 
 void setFeatureFlag(uint16_t flag, uint16_t value) {
+	if (flag >= FEATUREFLAG_VDU_VARIABLES_START && flag <= FEATUREFLAG_VDU_VARIABLES_END) {
+		processor->getContext()->setVariable(flag & 0xFF, value);
+		return;
+	}
 	switch (flag) {
 		case FEATUREFLAG_FULL_DUPLEX:
 			setVDPProtocolDuplex(value != 0);

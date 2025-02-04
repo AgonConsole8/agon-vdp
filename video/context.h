@@ -99,6 +99,7 @@ class Context {
 		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
 
 		Point			origin;							// Screen origin
+		Point			uOrigin;						// Screen origin, un-scaled
 		Point			p1, p2, p3;						// Coordinate store for plot (p1 = the graphics cursor)
 		Point			rp1;							// Relative coordinates store for plot
 		Point			up1;							// Unscaled coordinates store for plot
@@ -186,6 +187,7 @@ class Context {
 		Context(const Context &c);
 
 		bool readVariable(uint8_t var, uint16_t * value);
+		void setVariable(uint8_t var, uint16_t value);
 
 		// Cursor management functions
 		void hideCursor();
@@ -338,6 +340,7 @@ class Context {
 	// Graphics positioning data
 	logicalCoords = c.logicalCoords;
 	origin = c.origin;
+	uOrigin = c.uOrigin;
 	p1 = c.p1;
 	p2 = c.p2;
 	p3 = c.p3;
@@ -371,14 +374,14 @@ bool Context::readVariable(uint8_t var, uint16_t * value) {
 	switch (var) {
 		// Mode variables
 		// 0 is "mode flags" - omitting for now
-		case 1:		// Text columns - 1
+		case 1:		// Text columns - 1 (characters)
 			if (value) {
-				*value = getNormalisedViewportCharWidth() - 1;
+				*value = (canvasW / getFont()->width) - 1;
 			}
 			break;
 		case 2:		// Text rows - 1
 			if (value) {
-				*value = getNormalisedViewportCharHeight() - 1;
+				*value = (canvasH / getFont()->height) - 1;
 			}
 			break;
 		case 3:		// Max logical colour
@@ -404,7 +407,7 @@ bool Context::readVariable(uint8_t var, uint16_t * value) {
 			}
 			break;
 
-		// Variables 14-127 are undefined
+		// Variables 14-127 are currently undefined
 
 		// VDU Variables
 
@@ -429,8 +432,6 @@ bool Context::readVariable(uint8_t var, uint16_t * value) {
 				*value = getViewport(ViewportType::Graphics)->Y1;
 			}
 			break;
-		// TODO verify that Acorn is actually character coordinates
-		// TODO add parallel set of variables for screen coordinates
 		case 0x84:	// Text window, LH column, character coordinates
 			if (value) {
 				*value = getViewport(ViewportType::Text)->X1 / getFont()->width;
@@ -453,16 +454,16 @@ bool Context::readVariable(uint8_t var, uint16_t * value) {
 			break;
 
 		// Graphics origin
-		// TODO to match Acorn's implementation these should be OS coordinates
+		// NB these are OS coordinates, as per Acorn's implementation
 		// we may wish to add a parallel set of variables for screen coordinates
-		case 0x88:	// Graphics origin, X
+		case 0x88:	// Graphics origin, X, OS coordinates
 			if (value) {
-				*value = origin.X;
+				*value = uOrigin.X;
 			}
 			break;
-		case 0x89:	// Graphics origin, Y
+		case 0x89:	// Graphics origin, Y, OS coordinates
 			if (value) {
-				*value = origin.Y;
+				*value = uOrigin.Y;
 			}
 			break;
 
@@ -606,6 +607,20 @@ bool Context::readVariable(uint8_t var, uint16_t * value) {
 		// but those will not fit into our 8-bit block without renumbering
 		// and their values can be derived from existing viewport variables
 
+		case 0xC1:		// width of text window in chars (renumbered from &100)
+			if (value) {
+				// We will assume that 
+				*value = getNormalisedViewportCharWidth();
+			}
+			break;
+		case 0xC2:		// height of text window in chars (renumbered from &101)
+			if (value) {
+				// Acorn seems to reduce this value by 1 on RISC OS
+				*value = getNormalisedViewportCharHeight() - 1;
+			}
+			break;
+
+
 		// we have other areas of context state that could be exposed as variables
 		// such as cursor size info, cursor drawing status, line thickness, line pattern, etc.
 		// plus we wish to expose the current context ID
@@ -617,6 +632,86 @@ bool Context::readVariable(uint8_t var, uint16_t * value) {
 	}
 	
 	return true;
+}
+
+void Context::setVariable(uint8_t var, uint16_t value) {
+	switch (var) {
+		// Mode variables (0-13)
+		// All mode variables are read-only
+
+		// Variables 14-127 are currently undefined
+
+		// VDU Variables
+
+		// - text and graphics windows 0x80-0x87
+		// Currently read-only, as changing them here could break things
+		// since we need to ensure that x,y pairs are correctly ordered
+
+		// Graphics origin (0x88-0x89)
+		case 0x88:	// Graphics origin, X, OS coordinates
+			setOrigin(value, uOrigin.Y);
+			break;
+		case 0x89:	// Graphics origin, Y, OS coordinates
+			setOrigin(uOrigin.X, value);
+			break;
+
+		// Graphics cursor data
+		case 0x8A:	// Graphics cursor, X, OS coordinates
+			p1.X = value;
+			break;
+		case 0x8B:	// Graphics cursor, Y, OS coordinates
+			p1.Y = value;
+			break;
+		case 0x8C:	// Oldest Graphics cursor, X, screen coordinates
+			p3.X = value;
+			break;
+		case 0x8D:	// Oldest Graphics cursor, Y, screen coordinates
+			p3.Y = value;
+			break;
+		case 0x8E:	// Previous Graphics cursor, X, screen coordinates
+			p2.X = value;
+			break;
+		case 0x8F:	// Previous Graphics cursor, Y, screen coordinates
+			p2.Y = value;
+			break;
+		case 0x90:	// Graphics cursor, X, screen coordinates
+		case 0x92:	// New point, X, screen coordinates
+			p1.X = value;
+			break;
+		case 0x91:	// Graphics cursor, Y, screen coordinates
+		case 0x93:	// New point, X, screen coordinates
+			p1.Y = value;
+			break;
+
+		// Variables 0x94-0x96 are not relevant on Agon, as there is no direct screen memory access
+
+		// GCOL actions and selected colours
+		case 0x97:	// GCOL action for foreground colour
+			if (value <= 7) {
+				gpofg = getPaintOptions((fabgl::PaintMode)value, gpofg);
+			}
+			break;
+		case 0x98:	// GCOL action for background colour
+			if (value <= 7) {
+				gpobg = getPaintOptions((fabgl::PaintMode)value, gpobg);
+			}
+			break;
+		case 0x99:	// Graphics foreground (logical) colour
+			setGraphicsColour((uint8_t)gpofg.mode, value & 63);
+			break;
+		case 0x9A:	// Graphics background (logical) colour
+			setGraphicsColour((uint8_t)gpobg.mode, (value & 63) + 128);
+			break;
+		case 0x9B:	// Text foreground (logical) colour
+			setTextColour(value & 63);
+			break;
+		case 0x9C:	// Text background (logical) colour
+			setTextColour((value & 63) + 128);
+			break;
+		// Variables &9D-&A0 are not relevant on Agon, as they are "tint" values which we can't support
+
+		// Max mode number (0xA1) and font info (0xA2-0xAA) are read-only
+	}
 }
 
 
