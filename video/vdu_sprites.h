@@ -165,6 +165,16 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 			setSpritePaintMode(b);
 		}	break;
 
+		case 19: {	// Set sprite as hardware
+			setSpriteHardware();
+			debug_log("vdu_sys_sprites: sprite %d is hardware\n\r", getCurrentSprite());
+		}	break;
+
+		case 20: {	// Set sprite as software
+			setSpriteSoftware();
+			debug_log("vdu_sys_sprites: sprite %d is software\n\r", getCurrentSprite());
+		}	break;
+
 		// Extended bitmap commands
 		case 0x20: {	// Select bitmap, 16-bit buffer ID
 			auto b = readWord_t(); if (b == -1) return;
