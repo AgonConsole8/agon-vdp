@@ -271,7 +271,7 @@ inline void Context::setActiveCursor(CursorType type) {
 	}
 }
 
-inline void Context::setCursorBehaviour(uint8_t setting, uint8_t mask = 0xFF) {
+inline void Context::setCursorBehaviour(uint8_t setting, uint8_t mask = 0) {
 	cursorBehaviour.value = (cursorBehaviour.value & mask) ^ setting;
 }
 

@@ -372,6 +372,12 @@ class Context {
 }
 
 bool Context::readVariable(uint16_t var, uint16_t * value) {
+	if (var >= FEATUREFLAG_VDU_VAR_PALETTE && var <= FEATUREFLAG_VDU_VAR_PALETTE_END) {
+		if (value) {
+			*value = palette[(var - FEATUREFLAG_VDU_VAR_PALETTE) & (getVGAColourDepth() - 1)];
+		}
+		return true;
+	}
 	switch (var) {
 		// Mode variables
 		// 0 is "mode flags" - omitting for now
@@ -409,6 +415,69 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 			break;
 
 		// Variables 14-127 are currently undefined
+		// so _some_ will be used for Agon-specific variables
+
+		case 0x17:	// 23 - Line thickness
+			if (value) {
+				*value = lineThickness;
+			}
+			break;
+		
+		// Text cursor absolute position
+		// NB this does not take into account cursor behaviour
+		case 0x18:	// Text cursor, absolute X position (chars)
+			if (value) {
+				*value = textCursor.X / getFont()->width;
+			}
+			break;
+		case 0x19:	// Text cursor, absolute Y position (chars)
+			if (value) {
+				*value = textCursor.Y / getFont()->height;
+			}
+			break;
+		
+		case 0x55:	// Current screen mode number
+			if (value) {
+				*value = videoMode;
+			}
+			break;
+
+		case 0x66:	// Cursor behaviour
+			if (value) {
+				*value = cursorBehaviour.value;
+			}
+			break;
+		case 0x67:	// Cursor enabled
+			if (value) {
+				*value = cursorEnabled ? 1 : 0;
+			}
+			break;
+		case 0x68:	// Cursor hstart
+			if (value) {
+				*value = cursorHStart;
+			}
+			break;
+		case 0x69:	// Cursor hend
+			if (value) {
+				*value = cursorHEnd;
+			}
+			break;
+		case 0x6A:	// Cursor vstart
+			if (value) {
+				*value = cursorVStart;
+			}
+			break;
+		case 0x6B:	// Cursor vend
+			if (value) {
+				*value = cursorVEnd;
+			}
+			break;
+
+		case 0x70:	// Active cursor type (read only)
+			if (value) {
+				*value = (activeCursor == &textCursor) ? 0 : 1;
+			}
+			break;
 
 		// VDU Variables
 
@@ -603,8 +672,36 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 		// NB we have more font info available so may add more variables to expose some of it
 		// also note that if/when we support variable width fonts, the width here will be zero
 
-		// RISC OS also defines a few other variables beyond these which are not relevant on Agon
+		// RISC OS also defines variables &AB, &AC, &AE-B1 and &C0 which are not relevant on Agon
 
+		// Line pattern info
+		case 0xF2:	// Line pattern length
+			if (value) {
+				*value = linePatternLength;
+			}
+			break;
+		case 0xF3:	// Line pattern, bytes 0-1
+			if (value) {
+				*value = reinterpret_cast<uint16_t *>(linePattern.pattern)[0];
+			}
+			break;
+		case 0xF4:	// Line pattern, bytes 2-3
+			if (value) {
+				*value = reinterpret_cast<uint16_t *>(linePattern.pattern)[1];
+			}
+			break;
+		case 0xF5:	// Line pattern, bytes 4-5
+			if (value) {
+				*value = reinterpret_cast<uint16_t *>(linePattern.pattern)[2];
+			}
+			break;
+		case 0xF6:	// Line pattern, bytes 6-7
+			if (value) {
+				*value = reinterpret_cast<uint16_t *>(linePattern.pattern)[3];
+			}
+			break;
+
+		// Text window size, as per RISC OS
 		case 0x100:		// width of text window in chars
 			if (value) {
 				// We will assume that 
@@ -618,11 +715,37 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 			}
 			break;
 
-
 		// we have other areas of context state that could be exposed as variables
 		// such as cursor size info, cursor drawing status, line thickness, line pattern, etc.
 		// plus we wish to expose the current context ID
 		// Exposing the context ID needs the "default context" changes to be merged
+
+		// Text cursor, character position, as per TAB within text window
+		case 0x118:		// X position of text cursor within text window
+			if (value) {
+				uint8_t x, y;
+				getCursorTextPosition(&x, &y);
+				*value = x;
+			}
+			break;
+		case 0x119:		// Y position of text cursor within text window
+			if (value) {
+				uint8_t x, y;
+				getCursorTextPosition(&x, &y);
+				*value = y;
+			}
+			break;
+		// Text cursor position, in screen coordinates
+		case 0x11A:		// X position of text cursor in screen coordinates
+			if (value) {
+				*value = textCursor.X;
+			}
+			break;
+		case 0x11B:		// Y position of text cursor in screen coordinates
+			if (value) {
+				*value = textCursor.Y;
+			}
+			break;
 
 		default:
 			debug_log("readVariable: variable %d not found\n\r", var);
@@ -633,11 +756,62 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 }
 
 void Context::setVariable(uint16_t var, uint16_t value) {
+	if (var >= FEATUREFLAG_VDU_VAR_PALETTE && var <= FEATUREFLAG_VDU_VAR_PALETTE_END) {
+		if (value >= 64) {
+			return;
+		}
+		setLogicalPalette(var - FEATUREFLAG_VDU_VAR_PALETTE, value, 0, 0, 0);
+		return;
+	}
 	switch (var) {
 		// Mode variables (0-13)
 		// All mode variables are read-only
 
-		// Variables 14-127 are currently undefined
+		// Variables 14-127 are currently undefined, but we will use some for agon-specific variables
+		case 0x17:	// 23 - line thickness
+			setLineThickness(value);
+			break;
+
+		// BBC Micro had a few text cursor things which seem to be the following
+		// It's not clear _exactly_ how these work, and whether they obey cursor behaviour
+		// On the Agon, we will present a simplistic absolute cursor position
+		// and provide a parallel set of variables for cursor position within the text window
+		//    &18       Current absolute text X position (=POS+vduvar &08)
+		//    &19       Current absolute text Y position (=VPOS+vduvar &0B)
+		//    &64       Text input absolute X position (for copy-source cursor - N/A on Agon)
+		//    &65       Text input absolute Y position
+
+		case 0x18:	// Text cursor, absolute X (chars)
+			textCursor.X = value * getFont()->width;
+			ensureCursorInViewport(textViewport);
+			break;
+		case 0x19:	// Text cursor, absolute Y (chars)
+			textCursor.Y = value * getFont()->height;
+			ensureCursorInViewport(textViewport);
+			break;
+
+		case 0x66:	// Cursor behaviour
+			setCursorBehaviour(value, 0);
+			break;
+		case 0x67:	// Cursor enabled (boolean)
+			enableCursor(value);
+			break;
+		case 0x68:	// Cursor hstart
+			setCursorHStart(value);
+			break;
+		case 0x69:	// Cursor hend
+			setCursorHEnd(value);
+			break;
+		case 0x6A:	// Cursor vstart
+			setCursorVStart(value & 0x1F);
+			setCursorAppearance((value & 0x60) >> 5);
+			break;
+		case 0x6B:	// Cursor vend
+			setCursorVEnd(value);
+			break;
+		// then we have vertical start row, vertical end row, horizontal start column, horizontal end column
+		// the cursor frequency stuff, and whether the cursor is on or off
+		// plus which is the "active" cursor (text or graphics) for text output
 
 		// VDU Variables
 
@@ -713,10 +887,12 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 
 		// Graphics cursor data
 		case 0x8A:	// Graphics cursor, X, OS coordinates
-			p1.X = value;
+			up1.X = value;
+			p1 = toScreenCoordinates(up1.X, up1.Y);
 			break;
 		case 0x8B:	// Graphics cursor, Y, OS coordinates
-			p1.Y = value;
+			up1.Y = value;
+			p1 = toScreenCoordinates(up1.X, up1.Y);
 			break;
 		case 0x8C:	// Oldest Graphics cursor, X, screen coordinates
 			p3.X = value;
@@ -733,10 +909,12 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 		case 0x90:	// Graphics cursor, X, screen coordinates
 		case 0x92:	// New point, X, screen coordinates
 			p1.X = value;
+			up1.X = toCurrentCoordinates(p1.X, p1.Y).X;
 			break;
 		case 0x91:	// Graphics cursor, Y, screen coordinates
 		case 0x93:	// New point, X, screen coordinates
 			p1.Y = value;
+			up1.Y = toCurrentCoordinates(p1.X, p1.Y).Y;
 			break;
 
 		// Variables 0x94-0x96 are not relevant on Agon, as there is no direct screen memory access
@@ -767,6 +945,48 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 		// Variables &9D-&A0 are not relevant on Agon, as they are "tint" values which we can't support
 
 		// Max mode number (0xA1) and font info (0xA2-0xAA) are read-only
+
+		// Line pattern info
+		case 0xF2:	// Line pattern length
+			setDottedLinePatternLength(value);
+			break;
+		case 0xF3:	// Line pattern, bytes 0-1
+			reinterpret_cast<uint16_t *>(linePattern.pattern)[0] = value;
+			setDottedLinePattern(linePattern.pattern);
+			break;
+		case 0xF4:	// Line pattern, bytes 2-3
+			reinterpret_cast<uint16_t *>(linePattern.pattern)[1] = value;
+			setDottedLinePattern(linePattern.pattern);
+			break;
+		case 0xF5:	// Line pattern, bytes 4-5
+			reinterpret_cast<uint16_t *>(linePattern.pattern)[2] = value;
+			setDottedLinePattern(linePattern.pattern);
+			break;
+		case 0xF6:	// Line pattern, bytes 6-7
+			reinterpret_cast<uint16_t *>(linePattern.pattern)[3] = value;
+			setDottedLinePattern(linePattern.pattern);
+			break;
+		
+		// Text cursor, character position, as per TAB within text window
+		case 0x118:	{	// X position of text cursor within text window
+			uint8_t x, y;
+			getCursorTextPosition(&x, &y);
+			cursorTab(value, y);
+		}	break;
+		case 0x119:	{	// Y position of text cursor within text window
+			uint8_t x, y;
+			getCursorTextPosition(&x, &y);
+			cursorTab(x, value);
+		}	break;
+		// Text cursor position, in screen coordinates
+		case 0x11A:		// X position of text cursor in screen coordinates
+			textCursor.X = value;
+			ensureCursorInViewport(textViewport);
+			break;
+		case 0x11B:		// Y position of text cursor in screen coordinates
+			textCursor.Y = value;
+			ensureCursorInViewport(textViewport);
+			break;
 	}
 }
 
