@@ -186,8 +186,8 @@ class Context {
 		// Copy constructor
 		Context(const Context &c);
 
-		bool readVariable(uint8_t var, uint16_t * value);
-		void setVariable(uint8_t var, uint16_t value);
+		bool readVariable(uint16_t var, uint16_t * value);
+		void setVariable(uint16_t var, uint16_t value);
 
 		// Cursor management functions
 		void hideCursor();
@@ -371,7 +371,7 @@ class Context {
 	}
 }
 
-bool Context::readVariable(uint8_t var, uint16_t * value) {
+bool Context::readVariable(uint16_t var, uint16_t * value) {
 	switch (var) {
 		// Mode variables
 		// 0 is "mode flags" - omitting for now
@@ -604,17 +604,14 @@ bool Context::readVariable(uint8_t var, uint16_t * value) {
 		// also note that if/when we support variable width fonts, the width here will be zero
 
 		// RISC OS also defines a few other variables beyond these which are not relevant on Agon
-		// there are variables for "width/height of text window in chars" numbered &100 and &101,
-		// but those will not fit into our 8-bit block without renumbering
-		// and their values can be derived from existing viewport variables
 
-		case 0xC1:		// width of text window in chars (renumbered from &100)
+		case 0x100:		// width of text window in chars
 			if (value) {
 				// We will assume that 
 				*value = getNormalisedViewportCharWidth();
 			}
 			break;
-		case 0xC2:		// height of text window in chars (renumbered from &101)
+		case 0x101:		// height of text window in chars
 			if (value) {
 				// Acorn seems to reduce this value by 1 on RISC OS
 				*value = getNormalisedViewportCharHeight() - 1;
@@ -635,7 +632,7 @@ bool Context::readVariable(uint8_t var, uint16_t * value) {
 	return true;
 }
 
-void Context::setVariable(uint8_t var, uint16_t value) {
+void Context::setVariable(uint16_t var, uint16_t value) {
 	switch (var) {
 		// Mode variables (0-13)
 		// All mode variables are read-only

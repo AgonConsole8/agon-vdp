@@ -13,7 +13,7 @@ extern VDUStreamProcessor *processor;
 
 void setFeatureFlag(uint16_t flag, uint16_t value) {
 	if (flag >= FEATUREFLAG_VDU_VARIABLES_START && flag <= FEATUREFLAG_VDU_VARIABLES_END) {
-		processor->getContext()->setVariable(flag & 0xFF, value);
+		processor->getContext()->setVariable(flag & FEATUREFLAG_VDU_VARIABLES_MASK, value);
 		return;
 	}
 	switch (flag) {
@@ -54,7 +54,7 @@ void clearFeatureFlag(uint16_t flag) {
 
 bool isFeatureFlagSet(uint16_t flag) {
 	if (flag >= FEATUREFLAG_VDU_VARIABLES_START && flag <= FEATUREFLAG_VDU_VARIABLES_END) {
-		return processor->getContext()->readVariable(flag & 0xFF, nullptr);
+		return processor->getContext()->readVariable(flag & FEATUREFLAG_VDU_VARIABLES_MASK, nullptr);
 	}
 	auto flagIter = featureFlags.find(flag);
 	return flagIter != featureFlags.end();
@@ -63,7 +63,7 @@ bool isFeatureFlagSet(uint16_t flag) {
 uint16_t getFeatureFlag(uint16_t flag) {
 	if (flag >= FEATUREFLAG_VDU_VARIABLES_START && flag <= FEATUREFLAG_VDU_VARIABLES_END) {
 		uint16_t value = 0;
-		processor->getContext()->readVariable(flag & 0xFF, &value);
+		processor->getContext()->readVariable(flag & FEATUREFLAG_VDU_VARIABLES_MASK, &value);
 		return value;
 	}
 	auto flagIter = featureFlags.find(flag);

@@ -432,6 +432,9 @@
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 #define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
 #define FEATURE_FLAG_AUTO_HW_SPRITES	0x0400	// Auto hardware sprites flag
+#define FEATUREFLAG_VDU_VARIABLES_START	0x1000	// VDU variables start at 0x1000
+#define FEATUREFLAG_VDU_VARIABLES_END	0x1FFF	// VDU variables end
+#define FEATUREFLAG_VDU_VARIABLES_MASK	0x0FFF	// VDU variables mask
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024
