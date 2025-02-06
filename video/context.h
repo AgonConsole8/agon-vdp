@@ -378,6 +378,16 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 		}
 		return true;
 	}
+	if (var >= FEATUREFLAG_VDU_VAR_CHARMAPPING && var <= FEATUREFLAG_VDU_VAR_CHARMAPPING_END) {
+		auto c = var - FEATUREFLAG_VDU_VAR_CHARMAPPING;
+		if (charToBitmap[c] != 65535) {
+			if (value) {
+				*value = charToBitmap[c];
+			}
+			return true;
+		}
+		return false;
+	}
 	switch (var) {
 		// Mode variables
 		// 0 is "mode flags" - omitting for now
@@ -472,7 +482,7 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 				*value = cursorVEnd;
 			}
 			break;
-
+		// Space for cursor timing variables etc
 		case 0x70:	// Active cursor type (read only)
 			if (value) {
 				*value = (activeCursor == &textCursor) ? 0 : 1;
@@ -761,6 +771,10 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			return;
 		}
 		setLogicalPalette(var - FEATUREFLAG_VDU_VAR_PALETTE, value, 0, 0, 0);
+		return;
+	}
+	if (var >= FEATUREFLAG_VDU_VAR_CHARMAPPING && var <= FEATUREFLAG_VDU_VAR_CHARMAPPING_END) {
+		mapCharToBitmap(var - FEATUREFLAG_VDU_VAR_CHARMAPPING, value);
 		return;
 	}
 	switch (var) {
