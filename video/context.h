@@ -372,14 +372,14 @@ class Context {
 }
 
 bool Context::readVariable(uint16_t var, uint16_t * value) {
-	if (var >= FEATUREFLAG_VDU_VAR_PALETTE && var <= FEATUREFLAG_VDU_VAR_PALETTE_END) {
+	if (var >= VDU_VAR_PALETTE && var <= VDU_VAR_PALETTE_END) {
 		if (value) {
-			*value = palette[(var - FEATUREFLAG_VDU_VAR_PALETTE) & (getVGAColourDepth() - 1)];
+			*value = palette[(var - VDU_VAR_PALETTE) & (getVGAColourDepth() - 1)];
 		}
 		return true;
 	}
-	if (var >= FEATUREFLAG_VDU_VAR_CHARMAPPING && var <= FEATUREFLAG_VDU_VAR_CHARMAPPING_END) {
-		auto c = var - FEATUREFLAG_VDU_VAR_CHARMAPPING;
+	if (var >= VDU_VAR_CHARMAPPING && var <= VDU_VAR_CHARMAPPING_END) {
+		auto c = var - VDU_VAR_CHARMAPPING;
 		if (charToBitmap[c] != 65535) {
 			if (value) {
 				*value = charToBitmap[c];
@@ -766,15 +766,15 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 }
 
 void Context::setVariable(uint16_t var, uint16_t value) {
-	if (var >= FEATUREFLAG_VDU_VAR_PALETTE && var <= FEATUREFLAG_VDU_VAR_PALETTE_END) {
+	if (var >= VDU_VAR_PALETTE && var <= VDU_VAR_PALETTE_END) {
 		if (value >= 64) {
 			return;
 		}
-		setLogicalPalette(var - FEATUREFLAG_VDU_VAR_PALETTE, value, 0, 0, 0);
+		setLogicalPalette(var - VDU_VAR_PALETTE, value, 0, 0, 0);
 		return;
 	}
-	if (var >= FEATUREFLAG_VDU_VAR_CHARMAPPING && var <= FEATUREFLAG_VDU_VAR_CHARMAPPING_END) {
-		mapCharToBitmap(var - FEATUREFLAG_VDU_VAR_CHARMAPPING, value);
+	if (var >= VDU_VAR_CHARMAPPING && var <= VDU_VAR_CHARMAPPING_END) {
+		mapCharToBitmap(var - VDU_VAR_CHARMAPPING, value);
 		return;
 	}
 	switch (var) {

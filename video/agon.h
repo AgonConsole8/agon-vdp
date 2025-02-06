@@ -435,8 +435,11 @@
 #define FEATUREFLAG_VDU_VARIABLES_START	0x1000	// VDU variables start at 0x1000
 #define FEATUREFLAG_VDU_VARIABLES_END	0x1FFF	// VDU variables end
 #define FEATUREFLAG_VDU_VARIABLES_MASK	0x0FFF	// VDU variables mask
-#define FEATUREFLAG_VDU_VAR_PALETTE		0x1200	// Palette variables start (block of 64)
-#define FEATUREFLAG_VDU_VAR_PALETTE_END	0x123F	// Palette variables end
+
+#define VDU_VAR_PALETTE			0x200	// Palette variables start (block of 64)
+#define VDU_VAR_PALETTE_END		0x23F	// Palette variables end
+#define VDU_VAR_CHARMAPPING		0x300	// Character to bitmap mapping start (block of 256)
+#define VDU_VAR_CHARMAPPING_END	0x3FF	// Character to bitmap mapping end
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024
