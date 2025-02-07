@@ -427,8 +427,22 @@
 #define FEATUREFLAG_MOS_VDPP_BUFFERSIZE	0x0102	// Buffer size on MOS for VDP protocol packets
 #define FEATUREFLAG_ECHO		0x0110	// Echo back received data, for redirect/spool
 // #define FEATUREFLAG_ECHO_SETTINGS	0x0111	// Settings for what will be echo'd
-#define FEATUREFLAG_VDU_VARIABLES_START	0x0200	// VDU variables start at 0x0200
-#define FEATUREFLAG_VDU_VARIABLES_END	0x02FF	// VDU variables end
+#define FEATUREFLAG_SYSTEM_BEGIN	0x0200	// General system settings start at 0x0200
+#define FEATUREFLAG_SYSTEM_END	0x02FF	// General system settings end
+#define FEATUREFLAG_RTC_YEAR	0x0200	// RTC year is 4 digits
+#define FEATUREFLAG_RTC_MONTH	0x0201	// RTC month is 1-12
+#define FEATUREFLAG_RTC_DAY		0x0202	// RTC day is 1-31
+#define FEATUREFLAG_RTC_HOUR	0x0203	// RTC hour is 0-23
+#define FEATUREFLAG_RTC_MINUTE	0x0204	// RTC minute is 0-59
+#define FEATUREFLAG_RTC_SECOND	0x0205	// RTC second is 0-59
+#define FEATUREFLAG_RTC_MILLIS	0x0206	// RTC millisecond is 0-999
+#define FEATUREFLAG_RTC_WEEKDAY	0x0207	// RTC weekday is 0-6
+#define FEATUREFLAG_RTC_YEARDAY	0x0208	// RTC day of year is 0-366
+#define FEATUREFLAG_FREEPSRAM_LOW	0x0210	// Free PSRAM low bytes
+#define FEATUREFLAG_FREEPSRAM_HIGH	0x0211	// Free PSRAM high bytes
+#define FEATUREFLAG_BUFFERS_USED	0x0212	// Number of buffers used
+#define FEATUREFLAG_KEYBOARD_LAYOUT	0x0220	// Keyboard layout
+#define FEATUREFLAG_KEYBOARD_CTRL_KEYS	0x0221	// Control keys on/off
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 #define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
 #define FEATURE_FLAG_AUTO_HW_SPRITES	0x0400	// Auto hardware sprites flag

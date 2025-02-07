@@ -16,6 +16,37 @@ void setFeatureFlag(uint16_t flag, uint16_t value) {
 		processor->getContext()->setVariable(flag & FEATUREFLAG_VDU_VARIABLES_MASK, value);
 		return;
 	}
+	if (flag >= FEATUREFLAG_SYSTEM_BEGIN && flag <= FEATUREFLAG_SYSTEM_END) {
+		switch (flag) {
+			case FEATUREFLAG_RTC_YEAR:
+				rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), rtc.getMonth(), value);
+				break;
+			case FEATUREFLAG_RTC_MONTH:
+				rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), value, rtc.getYear());
+				break;
+			case FEATUREFLAG_RTC_DAY:
+				rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), value, rtc.getMonth(), rtc.getYear());
+				break;
+			case FEATUREFLAG_RTC_HOUR:
+				rtc.setTime(rtc.getSecond(), rtc.getMinute(), value, rtc.getDay(), rtc.getMonth(), rtc.getYear());
+				break;
+			case FEATUREFLAG_RTC_MINUTE:
+				rtc.setTime(rtc.getSecond(), value, rtc.getHour(true), rtc.getDay(), rtc.getMonth(), rtc.getYear());
+				break;
+			case FEATUREFLAG_RTC_SECOND:
+				rtc.setTime(value, rtc.getMinute(), rtc.getHour(true), rtc.getDay(), rtc.getMonth(), rtc.getYear());
+				break;
+
+			case FEATUREFLAG_KEYBOARD_LAYOUT:
+				setKeyboardLayout(value);
+				break;
+			
+			case FEATUREFLAG_KEYBOARD_CTRL_KEYS:
+				controlKeys = value != 0;
+				break;
+		}
+		return;
+	}
 	switch (flag) {
 		case FEATUREFLAG_FULL_DUPLEX:
 			setVDPProtocolDuplex(value != 0);
@@ -56,6 +87,26 @@ bool isFeatureFlagSet(uint16_t flag) {
 	if (flag >= FEATUREFLAG_VDU_VARIABLES_START && flag <= FEATUREFLAG_VDU_VARIABLES_END) {
 		return processor->getContext()->readVariable(flag & FEATUREFLAG_VDU_VARIABLES_MASK, nullptr);
 	}
+	if (flag >= FEATUREFLAG_SYSTEM_BEGIN && flag <= FEATUREFLAG_SYSTEM_END) {
+		switch (flag) {
+			case FEATUREFLAG_RTC_YEAR:
+			case FEATUREFLAG_RTC_MONTH:
+			case FEATUREFLAG_RTC_DAY:
+			case FEATUREFLAG_RTC_HOUR:
+			case FEATUREFLAG_RTC_MINUTE:
+			case FEATUREFLAG_RTC_SECOND:
+			case FEATUREFLAG_RTC_MILLIS:
+			case FEATUREFLAG_RTC_WEEKDAY:
+			case FEATUREFLAG_RTC_YEARDAY:
+			case FEATUREFLAG_FREEPSRAM_LOW:
+			case FEATUREFLAG_FREEPSRAM_HIGH:
+			case FEATUREFLAG_BUFFERS_USED:
+			case FEATUREFLAG_KEYBOARD_LAYOUT:
+			case FEATUREFLAG_KEYBOARD_CTRL_KEYS:
+				return true;
+		}
+		return false;
+	}
 	auto flagIter = featureFlags.find(flag);
 	return flagIter != featureFlags.end();
 }
@@ -69,6 +120,41 @@ uint16_t getFeatureFlag(uint16_t flag) {
 	auto flagIter = featureFlags.find(flag);
 	if (flagIter != featureFlags.end()) {
 		return featureFlags[flag];
+	} else {
+		switch (flag) {
+			case FEATUREFLAG_RTC_YEAR:
+				return rtc.getYear();
+			case FEATUREFLAG_RTC_MONTH:
+				return rtc.getMonth();		// 0 - 11
+			case FEATUREFLAG_RTC_DAY:
+				return rtc.getDay();		// 1 - 31
+			case FEATUREFLAG_RTC_HOUR:
+				return rtc.getHour(true);	// 0 - 23
+			case FEATUREFLAG_RTC_MINUTE:
+				return rtc.getMinute();		// 0 - 59
+			case FEATUREFLAG_RTC_SECOND:
+				return rtc.getSecond();		// 0 - 59
+			case FEATUREFLAG_RTC_MILLIS:
+				return rtc.getMillis();		// 0 - 999
+			case FEATUREFLAG_RTC_WEEKDAY:
+				return rtc.getDayofWeek();	// 0 - 6
+			case FEATUREFLAG_RTC_YEARDAY:
+				return rtc.getDayofYear();	// 0 - 365
+
+			case FEATUREFLAG_FREEPSRAM_LOW:
+				return heap_caps_get_free_size(MALLOC_CAP_SPIRAM) & 0xFFFF;
+			case FEATUREFLAG_FREEPSRAM_HIGH:
+				return heap_caps_get_free_size(MALLOC_CAP_SPIRAM) >> 16;
+
+			case FEATUREFLAG_BUFFERS_USED:
+				return buffers.size();
+
+			case FEATUREFLAG_KEYBOARD_LAYOUT:
+				return kbRegion;
+
+			case FEATUREFLAG_KEYBOARD_CTRL_KEYS:
+				return controlKeys ? 1 : 0;
+		}
 	}
 	return 0;
 }

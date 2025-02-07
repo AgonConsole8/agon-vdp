@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <fabgl.h>
-#include <ESP32Time.h>
 
 #include "agon.h"
 #include "agon_ps2.h"
@@ -25,7 +24,6 @@ extern void setConsoleMode(bool mode);			// Set console mode
 extern bool controlKeys;	
 
 bool			initialised = false;			// Is the system initialised yet?
-ESP32Time		rtc(0);							// The RTC
 
 // Buffer for serialised time
 //
