@@ -828,6 +828,8 @@ void Context::drawBitmap(uint16_t x, uint16_t y, bool compensateHeight, bool for
 				auto &transformBuffer = transformBufferIter->second;
 				if (!checkTransformBuffer(transformBuffer)) {
 					debug_log("drawBitmap: transform buffer %d is invalid\n\r", bitmapTransform);
+					bitmapTransform = 65535;
+					canvas->drawBitmap(x, yPos, bitmap.get());
 					return;
 				}
 				// NB: if we're drawing via PLOT and are using OS coords, then we _should_ be using bottom left of bitmap as our "origin" for transforms

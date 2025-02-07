@@ -13,6 +13,8 @@
 #include "agon.h"
 #include "sprites.h"
 
+extern bool isFeatureFlagSet(uint16_t flag);
+
 // Support structures
 
 typedef union {
@@ -451,6 +453,21 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 				*value = videoMode;
 			}
 			break;
+		case 0x56:	// Legacy modes flag
+			if (value) {
+				*value = legacyModes ? 1 : 0;
+			}
+			break;
+		case 0x57:	// Coordinate system (1 = logical/OS coordinates, 0 = screen)
+			if (value) {
+				*value = logicalCoords ? 1 : 0;
+			}
+			break;
+		case 0x58:	// Paged mode flag
+			if (value) {
+				*value = pagedMode ? 1 : 0;
+			}
+			break;
 
 		case 0x66:	// Cursor behaviour
 			if (value) {
@@ -757,6 +774,111 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 			}
 			break;
 
+		case 0x400:	// Current bitmap ID
+			if (value) {
+				*value = currentBitmap;
+			}
+			break;
+		case 0x401:	// Count of bitmaps used
+			if (value) {
+				*value = bitmaps.size();
+			}
+			break;
+		case 0x402:	// Current bitmap transform ID
+			if (value) {
+				*value = bitmapTransform;
+			}
+			break;
+
+		case 0x410:	// Current sprite ID
+			if (value) {
+				*value = current_sprite;
+			}
+			break;
+		case 0x411:	// Number of sprites in use (not necessarily visible)
+			if (value) {
+				*value = numsprites;
+			}
+			break;
+		// case 0x412:	// Current sprite transform ID - not supported
+
+		case 0x420:	// Mouse cursor ID
+			if (value) {
+				*value = mCursor;
+			}
+			break;
+		case 0x441:	// Mouse cursor enabled
+			if (value) {
+				*value = mouseEnabled ? 1 : 0;
+			}
+			break;
+		case 0x442:	// Mouse cursor X position
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto mStatus = mouse->status();
+					*value = mStatus.X;
+				}
+			}
+			break;
+		case 0x443:	// Mouse cursor Y position
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto mStatus = mouse->status();
+					*value = mStatus.Y;
+				}
+			}
+			break;
+		case 0x444:	// Mouse cursor button status
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto mStatus = mouse->status();
+					*value = mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2;
+				}
+			}
+			break;
+		case 0x445:	// Mouse wheel delta
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto mStatus = mouse->status();
+					*value = mStatus.wheelDelta;
+				}
+			}
+			break;
+		case 0x446:	// Mouse sample rate
+			if (value) {
+				*value = mSampleRate;
+			}
+			break;
+		case 0x447:	// Mouse resolution
+			if (value) {
+				*value = mResolution;
+			}
+			break;
+		case 0x448:	// Mouse scaling
+			if (value) {
+				*value = mScaling;
+			}
+			break;
+		case 0x449:	// Mouse acceleration
+			if (value) {
+				*value = mAcceleration;
+			}
+			break;
+		case 0x44A:	// Mouse wheel acceleration
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto & currentAcceleration = mouse->wheelAcceleration();
+					*value = currentAcceleration;
+				}
+			}
+			break;
+		// 0x44B-0x44E reserved for mouse area
+
 		default:
 			debug_log("readVariable: variable %d not found\n\r", var);
 			return false;
@@ -802,6 +924,16 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 		case 0x19:	// Text cursor, absolute Y (chars)
 			textCursor.Y = value * getFont()->height;
 			ensureCursorInViewport(textViewport);
+			break;
+
+		case 0x56:	// Legacy modes flag
+			setLegacyModes(value);
+			break;
+		case 0x57:	// Coordinate system (1 = logical/OS coordinates, 0 = screen)
+			setLogicalCoords(value);
+			break;
+		case 0x58:	// Paged mode flag
+			setPagedMode(value);
 			break;
 
 		case 0x66:	// Cursor behaviour
@@ -1001,6 +1133,62 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			textCursor.Y = value;
 			ensureCursorInViewport(textViewport);
 			break;
+
+		case 0x400:	// Current bitmap ID
+			setCurrentBitmap(value);
+			break;
+		case 0x402:	// Current bitmap transform ID
+			if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+				bitmapTransform = value;
+			}
+			break;
+
+		case 0x410:	// Current sprite ID
+			setCurrentSprite(value);
+			break;
+
+		case 0x420:	// Mouse cursor ID
+			setMouseCursor(value);
+			break;
+		case 0x421:	// Mouse cursor enabled
+			if (value) {
+				enableMouse();
+			} else {
+				disableMouse();
+			}
+			break;
+		case 0x422:	// Mouse cursor X position (pixel coords)
+			uint16_t mouseY;
+			readVariable(0x423, &mouseY);
+			setMousePos(value, mouseY);
+			setMouseCursorPos(value, mouseY);
+			break;
+		case 0x423:	// Mouse cursor Y position
+			uint16_t mouseX;
+			readVariable(0x422, &mouseX);
+			setMousePos(mouseX, value);
+			setMouseCursorPos(mouseX, value);
+			break;
+		case 0x424:	// Mouse cursor button status
+			break;
+		// case 0x425:	// Mouse wheel delta
+		case 0x426:	// Mouse sample rate
+			setMouseSampleRate(value);
+			break;
+		case 0x427:	// Mouse resolution
+			setMouseResolution(value);
+			break;
+		case 0x428:	// Mouse scaling
+			setMouseScaling(value);
+			break;
+		case 0x429:	// Mouse acceleration
+			setMouseAcceleration(value);
+			break;
+		case 0x42A:	// Mouse wheel acceleration
+			setMouseWheelAcceleration(value);
+			break;
+		// 0x42B-0x42E reserved for mouse area
+
 	}
 }
 
