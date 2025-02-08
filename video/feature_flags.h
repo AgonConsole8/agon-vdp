@@ -20,32 +20,38 @@ void setFeatureFlag(uint16_t flag, uint16_t value) {
 		switch (flag) {
 			case FEATUREFLAG_RTC_YEAR:
 				rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), rtc.getMonth(), value);
-				break;
+				return;
 			case FEATUREFLAG_RTC_MONTH:
 				rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), rtc.getDay(), value, rtc.getYear());
-				break;
+				return;
 			case FEATUREFLAG_RTC_DAY:
 				rtc.setTime(rtc.getSecond(), rtc.getMinute(), rtc.getHour(true), value, rtc.getMonth(), rtc.getYear());
-				break;
+				return;
 			case FEATUREFLAG_RTC_HOUR:
 				rtc.setTime(rtc.getSecond(), rtc.getMinute(), value, rtc.getDay(), rtc.getMonth(), rtc.getYear());
-				break;
+				return;
 			case FEATUREFLAG_RTC_MINUTE:
 				rtc.setTime(rtc.getSecond(), value, rtc.getHour(true), rtc.getDay(), rtc.getMonth(), rtc.getYear());
-				break;
+				return;
 			case FEATUREFLAG_RTC_SECOND:
 				rtc.setTime(value, rtc.getMinute(), rtc.getHour(true), rtc.getDay(), rtc.getMonth(), rtc.getYear());
-				break;
+				return;
+			case FEATUREFLAG_RTC_MILLIS:
+			case FEATUREFLAG_RTC_WEEKDAY:
+			case FEATUREFLAG_RTC_YEARDAY:
+			case FEATUREFLAG_FREEPSRAM_LOW:
+			case FEATUREFLAG_FREEPSRAM_HIGH:
+			case FEATUREFLAG_BUFFERS_USED:
+				return;
 
 			case FEATUREFLAG_KEYBOARD_LAYOUT:
 				setKeyboardLayout(value);
-				break;
+				return;
 			
 			case FEATUREFLAG_KEYBOARD_CTRL_KEYS:
 				controlKeys = value != 0;
-				break;
+				return;
 		}
-		return;
 	}
 	switch (flag) {
 		case FEATUREFLAG_FULL_DUPLEX:
@@ -105,7 +111,6 @@ bool isFeatureFlagSet(uint16_t flag) {
 			case FEATUREFLAG_KEYBOARD_CTRL_KEYS:
 				return true;
 		}
-		return false;
 	}
 	auto flagIter = featureFlags.find(flag);
 	return flagIter != featureFlags.end();
