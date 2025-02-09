@@ -41,7 +41,7 @@ std::unique_ptr<fabgl::VGABaseController> getVGAController(uint8_t colours) {
 		case  4: return std::move(std::unique_ptr<fabgl::VGA4Controller>(new fabgl::VGA4Controller()));
 		case  8: return std::move(std::unique_ptr<fabgl::VGA8Controller>(new fabgl::VGA8Controller()));
 		case 16: return std::move(std::unique_ptr<fabgl::VGA16Controller>(new fabgl::VGA16Controller()));
-		case 64: return std::move(std::unique_ptr<fabgl::VGAController>(new fabgl::VGAController()));
+		case 64: return std::move(std::unique_ptr<fabgl::VGA64Controller>(new fabgl::VGA64Controller()));
 	}
 	return nullptr;
 }
