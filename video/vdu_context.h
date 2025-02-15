@@ -24,12 +24,11 @@ void VDUStreamProcessor::vdu_sys_context() {
 		case CONTEXT_DELETE: {	// VDU 23, 0, &C8, 1, id
 			auto id = readByte_t(); if (id == -1) return;
 			// removes stack with given ID from storage
-			// current stack left intact (but potentially removed from storage)
-			if (contextExists(id)) {
+			if (id != contextId && contextExists(id)) {
 				contextStacks.erase(id);
 				debug_log("vdu_sys_context: delete %d\n\r", id);
 			} else {
-				debug_log("vdu_sys_context: delete %d not found\n\r", id);
+				debug_log("vdu_sys_context: delete %d not found, or is active context\n\r", id);
 			}
 		} break;
 		case CONTEXT_RESET: {	// VDU 23, 0, &C8, 2, flags
@@ -82,6 +81,7 @@ void VDUStreamProcessor::selectContext(uint8_t id) {
 		contextStack = contextStacks[id];
 		context = contextStack->back();
 	}
+	contextId = id;
 }
 
 bool VDUStreamProcessor::resetContext(uint8_t flags) {
