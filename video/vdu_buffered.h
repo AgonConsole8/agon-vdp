@@ -229,6 +229,10 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferTransformData(bufferId, options, format, transformBufferId, sourceBufferId);
 		}	break;
+		case BUFFERED_READ_FLAG: {
+			// VDU 23, 0, &A0, bufferId; &30, flags, offset; flagId; [default[;]]
+			bufferReadFlag(bufferId);
+		}	break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
 			if (sourceBufferId == -1) return;
@@ -1031,53 +1035,69 @@ void VDUStreamProcessor::bufferAdjust(uint16_t adjustBufferId) {
 //
 bool VDUStreamProcessor::bufferConditional() {
 	auto command = readByte_t();
-	auto checkBufferId = resolveBufferId(readWord_t(), id);
+	if (command == -1) {
+		debug_log("bufferConditional: invalid command\n\r");
+		return false;
+	}
 
 	bool useAdvancedOffsets = command & COND_ADVANCED_OFFSETS;
-	bool useBufferValue = command & COND_BUFFER_VALUE;
+	bool useBufferValue = command & COND_BUFFER_VALUE;	// Operand is a buffer value
+	bool useFlagValue = command & COND_FLAG_VALUE;	// source to check is a feature flag
+	bool use16BitValue = command & COND_16BIT;	// source and operand are 16-bit values
+
+	auto checkBufferId = useFlagValue ? readWord_t() : resolveBufferId(readWord_t(), id);
+	
 	uint8_t op = command & COND_OP_MASK;
 	// conditional operators that are greater than NOT_EXISTS require an operand
 	bool hasOperand = op > COND_NOT_EXISTS;
 
-	auto offset = getOffsetFromStream(useAdvancedOffsets);
-	const BufferVector * operandBuffer = nullptr;
+	AdvancedOffset offset = {};
+	if (!useFlagValue) {
+		offset = getOffsetFromStream(useAdvancedOffsets);
+	}
+
 	auto operandBufferId = 0;
 	AdvancedOffset operandOffset = {};
-
 	if (useBufferValue && hasOperand) {
 		operandBufferId = resolveBufferId(readWord_t(), id);
 		operandOffset = getOffsetFromStream(useAdvancedOffsets);
-		if (operandBufferId == -1) {
-			debug_log("bufferConditional: no operand buffer ID\n\r");
-			return false;
-		}
-		auto operandBufferIter = buffers.find(operandBufferId);
-		if (operandBufferIter == buffers.end()) {
-			debug_log("bufferConditional: buffer %d not found\n\r", operandBufferId);
-			return false;
-		}
-		operandBuffer = &operandBufferIter->second;
 	}
 
-	if (command == -1 || checkBufferId == -1 || offset.blockOffset == -1 || operandOffset.blockOffset == -1) {
+	if (checkBufferId == -1 || offset.blockOffset == -1 || operandOffset.blockOffset == -1) {
 		debug_log("bufferConditional: invalid command, checkBufferId, offset or operand value\n\r");
 		return false;
 	}
 
-	auto checkBufferIter = buffers.find(checkBufferId);
-	if (checkBufferIter == buffers.end()) {
-		debug_log("bufferConditional: buffer %d not found\n\r", checkBufferId);
-		return false;
+	int32_t sourceValue = -1;
+	if (useFlagValue) {
+		if (isFeatureFlagSet(checkBufferId)) {
+			sourceValue = getFeatureFlag(checkBufferId);
+			if (!use16BitValue) {
+				sourceValue &= 0xFF;
+			}
+		}
+	} else {
+		readBufferBytes(checkBufferId, offset, &sourceValue, use16BitValue ? 2 : 1);
 	}
-	auto &checkBuffer = checkBufferIter->second;
-	auto sourceValue = getBufferByte(checkBuffer, offset);
-	int16_t operandValue = 0;
+
+	int32_t operandValue = hasOperand ? -1 : 0;
 	if (hasOperand) {
-		operandValue = operandBuffer ? getBufferByte(*operandBuffer, operandOffset) : readByte_t();
+		if (useBufferValue) {
+			readBufferBytes(operandBufferId, operandOffset, &operandValue, use16BitValue ? 2 : 1);
+		} else {
+			operandValue = use16BitValue ? readWord_t() : readByte_t();
+		}
 	}
 
 	debug_log("bufferConditional: command %d, checkBufferId %d, offset %d:%d, operandBufferId %d, operandOffset %d:%d, sourceValue %d, operandValue %d\n\r",
 		command, checkBufferId, (int)offset.blockIndex, offset.blockOffset, operandBufferId, (int)operandOffset.blockIndex, operandOffset.blockOffset, sourceValue, operandValue);
+
+	if (useFlagValue && op <= COND_NOT_EXISTS) {	// Flag existence is a pure check, not check for zero
+		if (op == COND_NOT_EXISTS) {
+			return sourceValue == -1;
+		}
+		return sourceValue != -1;
+	}
 
 	if (sourceValue == -1 || operandValue == -1) {
 		debug_log("bufferConditional: invalid source or operand value\n\r");
@@ -2323,6 +2343,59 @@ void VDUStreamProcessor::bufferTransformData(uint16_t bufferId, uint8_t options,
 	debug_log("bufferTransformData: copied %d streams into buffer %d (%d)\n\r", streams.size(), bufferId, buffers[bufferId].size());
 }
 
+// VDU 23, 0, &A0, bufferId; &30, options, offset; flagId; [default[;]]
+// Copy a flag value into a buffer at a given offset
+//
+void VDUStreamProcessor::bufferReadFlag(uint16_t bufferId) {
+	auto options = readByte_t();
+	if (options == -1) {
+		return;
+	}
+	bool useAdvancedOffsets = options & READ_FLAG_ADVANCED_OFFSETS;
+	bool useDefault = options & READ_FLAG_USE_DEFAULT;
+	bool use16Bit = options & READ_FLAG_16BIT;
+
+	auto offset = getOffsetFromStream(useAdvancedOffsets);
+	if (offset.blockOffset == -1) {
+		return;
+	}
+	auto flagId = readWord_t();
+	if (flagId == -1) {
+		return;
+	}
+
+	uint32_t defaultValue = 0;
+	if (useDefault) {
+		defaultValue = use16Bit ? readWord_t() : readByte_t();
+		if (defaultValue == -1) {
+			return;
+		}
+	}
+
+	// Does our target exist?
+	auto target = getBufferSpan(bufferId, offset, use16Bit ? 2 : 1);
+	if (target.empty()) {
+		debug_log("bufferReadFlag: buffer %d not found or offset %d out of range\n\r", bufferId, offset.blockOffset);
+		return;
+	}
+
+	if (isFeatureFlagSet(flagId)) {
+		// flag exists, so write it to the buffer
+		auto value = getFeatureFlag(flagId);
+		target.front() = value & 0xFF;
+		if (use16Bit) {
+			target[1] = value >> 8;
+		}
+	} else if (useDefault) {
+		// flag doesn't exist, so write the default value to the buffer
+		target.front() = defaultValue & 0xFF;
+		if (use16Bit) {
+			target[1] = defaultValue >> 8;
+		}
+	} else {
+		debug_log("bufferReadFlag: flag %d not found and no default value\n\r", flagId);
+	}
+}
 
 // VDU 23, 0, &A0, bufferId; &40, sourceBufferId; : Compress blocks from a buffer
 // Compress (blocks from) a buffer into a new buffer.

@@ -108,9 +108,11 @@ void VDUStreamProcessor::vdu_sys() {
 				}
 			}	break;
 			case 0x1B: {					// VDU 23, 27
+				clearEcho();				// Don't echo bitmap/sprite commands
 				vdu_sys_sprites();			// Sprite system control
 			}	break;
 			case 0x1C: {					// VDU 23, 28
+				clearEcho();				// Don't echo hexload commands
 				vdu_sys_hexload();
 			}	break;
 		}
@@ -131,6 +133,9 @@ void VDUStreamProcessor::vdu_sys() {
 //
 void VDUStreamProcessor::vdu_sys_video() {
 	auto mode = readByte_t();
+
+	// TODO - consider whether we want to clear echo for _all_ VDU 23 commands
+	clearEcho();
 
 	switch (mode) {
 		case VDP_CURSOR_VSTART: {		// VDU 23, 0, &0A, offset

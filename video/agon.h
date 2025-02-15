@@ -97,6 +97,8 @@
 #define PACKET_RTC				0x07	// RTC
 #define PACKET_KEYSTATE			0x08	// Keyboard repeat rate and LED status
 #define PACKET_MOUSE			0x09	// Mouse data
+#define PACKET_ECHO				0x0A	// Echo
+#define PACKET_ECHO_END			0x0B	// Echo end
 
 #define AUDIO_CHANNELS			3		// Default number of audio channels
 #define AUDIO_DEFAULT_SAMPLE_RATE	16384	// Default sample rate
@@ -270,6 +272,7 @@
 #define BUFFERED_MATRIX					0x22	// Create or combine a matrix buffer of arbitrary dimensions
 #define BUFFERED_TRANSFORM_BITMAP		0x28	// Create a new bitmap from an existing one by applying a 2d transform
 #define BUFFERED_TRANSFORM_DATA			0x29	// Transform data using a given matrix
+#define BUFFERED_READ_FLAG				0x30	// Read flag value into a buffer
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
@@ -308,7 +311,9 @@
 // Conditional operation flags
 #define COND_OP_MASK			0x0F	// conditional operation code mask
 #define COND_ADVANCED_OFFSETS	0x10	// advanced offset values
-#define COND_BUFFER_VALUE		0x20	// value to compare is a buffer-fetched value
+#define COND_BUFFER_VALUE		0x20	// value to compare against is a buffer-fetched value
+#define COND_FLAG_VALUE			0x40	// condition source value is a flag
+#define COND_16BIT				0x80	// values to compare are a 16-bit
 
 // Reverse operation flags
 #define REVERSE_16BIT			0x01	// 16-bit value length
@@ -388,6 +393,11 @@
 #define TRANSFORM_DATA_BUFFER_ARGS	0x20	// Optional argument values are fetched from buffers
 #define TRANSFORM_DATA_PER_BLOCK	0x40	// Transform data per block
 
+// Read flag flags
+#define READ_FLAG_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
+#define READ_FLAG_USE_DEFAULT		0x40	// use default value if flag not set
+#define READ_FLAG_16BIT				0x80	// value to set is 16-bit
+
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
 #define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples
@@ -396,6 +406,9 @@
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
 
 #define FEATUREFLAG_FULL_DUPLEX	0x0101	// Full duplex UART comms flag
+#define FEATUREFLAG_MOS_VDPP_BUFFERSIZE	0x0201	// Buffer size on MOS for VDP protocol packets
+#define FEATUREFLAG_ECHO		0x0210	// Echo back received data, for redirect/spool
+// #define FEATUREFLAG_ECHO_SETTINGS	0x0211	// Settings for what will be echo'd
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
