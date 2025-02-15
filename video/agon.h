@@ -421,6 +421,7 @@
 
 // Test/Feature flags
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
+#define TESTFLAG_HW_SPRITES			2	// Hardware sprites test flag
 
 #define FEATUREFLAG_FULL_DUPLEX	0x0101	// Full duplex UART comms flag
 #define FEATUREFLAG_MOS_VDPP_BUFFERSIZE	0x0201	// Buffer size on MOS for VDP protocol packets
@@ -428,6 +429,7 @@
 // #define FEATUREFLAG_ECHO_SETTINGS	0x0211	// Settings for what will be echo'd
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 #define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
+#define FEATURE_FLAG_AUTO_HW_SPRITES	0x0400	// Auto hardware sprites flag
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024

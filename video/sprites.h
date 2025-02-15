@@ -27,6 +27,7 @@ std::unordered_map<uint16_t, std::vector<uint8_t, psram_allocator<uint8_t>>> bit
 std::unordered_map<uint16_t, fabgl::Cursor> cursors;	// Storage for our cursors
 uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor
 
+extern bool isFeatureFlagSet(uint16_t flag);
 
 std::shared_ptr<Bitmap> getBitmap(uint16_t id) {
 	if (bitmaps.find(id) != bitmaps.end()) {
@@ -108,7 +109,6 @@ inline uint8_t getCurrentSprite() {
 void clearSpriteFrames(uint8_t s = current_sprite) {
 	auto sprite = getSprite(s);
 	sprite->visible = false;
-	sprite->hardware = false;
 	sprite->setFrame(0);
 	sprite->clearBitmaps();
 	// find all bitmaps used by this sprite and remove it from the list
@@ -239,15 +239,14 @@ void hideAllSprites() {
 void resetSprites() {
 	waitPlotCompletion();
 	hideAllSprites();
+	bool autoHardwareSprites = isFeatureFlagSet(TESTFLAG_HW_SPRITES) && isFeatureFlagSet(FEATURE_FLAG_AUTO_HW_SPRITES);
 	for (auto n = 0; n < MAX_SPRITES; n++) {
+		auto sprite = getSprite(n);
+		sprite->hardware = autoHardwareSprites;
 		clearSpriteFrames(n);
 	}
 	activateSprites(0);
 	setCurrentSprite(0);
-	// replace all the sprite objects
-	// for (auto n = 0; n < MAX_SPRITES; n++) {
-	// 	sprites[n] = Sprite();
-	// }
 }
 
 void setSpritePaintMode(uint8_t mode) {

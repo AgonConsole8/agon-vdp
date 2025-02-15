@@ -266,6 +266,7 @@ void VDUStreamProcessor::vdu_palette() {
 void VDUStreamProcessor::vdu_mode(uint8_t mode) {
 	debug_log("vdu_mode: %d\n\r", mode);
 	context->cls();
+	waitPlotCompletion(true);
 	ttxtMode = false;
 	bufferRemoveCallback(65535, CALLBACK_VSYNC);
 	auto errVal = changeMode(mode);
