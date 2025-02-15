@@ -12,6 +12,7 @@
 #include "agon.h"
 #include "agon_ps2.h"
 #include "agon_screen.h"
+#include "feature_flags.h"
 #include "types.h"
 
 std::unordered_map<uint16_t, std::shared_ptr<Bitmap>,
@@ -108,7 +109,6 @@ inline uint8_t getCurrentSprite() {
 void clearSpriteFrames(uint8_t s = current_sprite) {
 	auto sprite = getSprite(s);
 	sprite->visible = false;
-	sprite->hardware = false;
 	sprite->setFrame(0);
 	sprite->clearBitmaps();
 	// find all bitmaps used by this sprite and remove it from the list
@@ -239,7 +239,10 @@ void hideAllSprites() {
 void resetSprites() {
 	waitPlotCompletion();
 	hideAllSprites();
+	bool autoHardwareSprites = isFeatureFlagSet(TESTFLAG_HW_SPRITES) && isFeatureFlagSet(FEATURE_FLAG_AUTO_HW_SPRITES);
 	for (auto n = 0; n < MAX_SPRITES; n++) {
+		auto sprite = getSprite(n);
+		sprite->hardware = autoHardwareSprites;
 		clearSpriteFrames(n);
 	}
 	activateSprites(0);
