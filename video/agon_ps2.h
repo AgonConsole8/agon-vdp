@@ -13,6 +13,7 @@ uint8_t			_keycode = 0;					// Last pressed key code
 uint8_t			_modifiers = 0;					// Last pressed key modifiers
 uint16_t		kbRepeatDelay = 500;			// Keyboard repeat delay ms (250, 500, 750 or 1000)		
 uint16_t		kbRepeatRate = 100;				// Keyboard repeat rate ms (between 33 and 500)
+uint8_t			kbRegion = 0;					// Keyboard region
 
 bool			mouseEnabled = false;			// Mouse enabled
 uint8_t			mSampleRate = MOUSE_DEFAULT_SAMPLERATE;	// Mouse sample rate
@@ -84,8 +85,10 @@ void setKeyboardLayout(uint8_t region) {
 		case 17: kb->setLayout(&fabgl::DvorakLayout); break;
 		default:
 			kb->setLayout(&fabgl::UKLayout);
+			region = 0;
 			break;
 	}
+	kbRegion = region;
 }
 
 // Get keyboard key presses

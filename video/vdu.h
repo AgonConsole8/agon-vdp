@@ -306,7 +306,7 @@ void VDUStreamProcessor::vdu_graphicsViewport() {
 	auto x2 = readWord_t();			// Right
 	auto y1 = readWord_t();			// Top
 
-	if (context->setGraphicsViewport(x1, y1, x2, y2)) {
+	if (context->setGraphicsViewport(context->toScreenCoordinates(x1, y1), context->toScreenCoordinates(x2,y2))) {
 		debug_log("vdu_graphicsViewport: OK %d,%d,%d,%d\n\r", x1, y1, x2, y2);
 	} else {
 		debug_log("vdu_graphicsViewport: Invalid Viewport %d,%d,%d,%d\n\r", x1, y1, x2, y2);

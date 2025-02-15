@@ -144,7 +144,7 @@ int8_t setLogicalPalette(uint8_t l, uint8_t p, uint8_t r, uint8_t g, uint8_t b) 
 	debug_log("vdu_palette: %d,%d,%d,%d,%d\n\r", l, p, r, g, b);
 	uint8_t index = (col.R >> 6) << 4 | (col.G >> 6) << 2 | (col.B >> 6);
 	// update palette entry
-	palette[l] = index;
+	palette[l & (getVGAColourDepth() - 1)] = index;
 	if (getVGAColourDepth() < 64) {		// If it is a paletted video mode
 		// change underlying output video palette
 		setPaletteItem(l, col);

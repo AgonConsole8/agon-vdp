@@ -60,9 +60,7 @@ void Context::setActiveViewport(ViewportType type) {
 }
 
 // Set graphics viewport
-bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-	auto p1 = toScreenCoordinates(x1, y1);
-	auto p2 = toScreenCoordinates(x2, y2);
+bool Context::setGraphicsViewport(Point p1, Point p2) {
 	plottingText = false;
 
 	if (p1.X >= 0 && p2.X < canvasW && p1.Y >= 0 && p2.Y < canvasH && p2.X >= p1.X && p2.Y >= p1.Y) {
@@ -70,6 +68,10 @@ bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_
 		return true;
 	}
 	return false;
+}
+
+bool Context::setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
+	return setGraphicsViewport(Point(x1, y1), Point(x2, y2));
 }
 
 bool Context::setGraphicsViewport() {
@@ -128,11 +130,13 @@ void Context::setOrigin(int x, int y) {
 	up1.X = up1.X - delta.X;
 	up1.Y = up1.Y - delta.Y;
 
+	uOrigin = Point(x, y);
 	origin = newOrigin;
 }
 
 void Context::setOrigin() {
 	origin = p1;
+	uOrigin = up1;
 	up1 = Point(0, 0);
 	debug_log("setOrigin: %d,%d\n\r", origin.X, origin.Y);
 }
@@ -144,6 +148,7 @@ void Context::shiftOrigin() {
 	graphicsViewport = graphicsViewport.translate(originDelta).intersection(defaultViewport);
 
 	origin = p1;
+	uOrigin = up1;
 	up1 = Point(0, 0);
 
 	textCursor = textCursor.add(originDelta);
@@ -159,9 +164,11 @@ void Context::setLogicalCoords(bool b) {
 		if (b) {
 			// point was in screen coordinates, change to logical
 			up1 = Point(up1.X * logicalScaleX, LOGICAL_SCRH - (up1.Y * logicalScaleY));
+			uOrigin = Point(origin.X * logicalScaleX, LOGICAL_SCRH - (origin.Y * logicalScaleY));
 		} else {
 			// point was in logical coordinates, change to screen coordinates
 			up1 = Point(up1.X / logicalScaleX, canvasH - (up1.Y / logicalScaleY));
+			uOrigin = origin;
 		}
 	}
 }

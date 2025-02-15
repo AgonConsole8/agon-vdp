@@ -48,6 +48,7 @@
 #include <HardwareSerial.h>
 #include <WiFi.h>
 #include <fabgl.h>
+#include <ESP32Time.h>
 
 // Serial Debug Mode: 1 = enable
 // Always enabled on the emulator, to support --verbose mode
@@ -76,6 +77,7 @@ bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabl
 bool			printerOn = false;				// Output "printer" to debug serial link
 bool			controlKeys = true;				// Control keys enabled
 uint			lastFrameCounter = 0;			// Last frame counter
+ESP32Time		rtc(0);							// The RTC
 
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support

@@ -13,6 +13,9 @@
 #include "agon.h"
 #include "sprites.h"
 
+extern bool isFeatureFlagSet(uint16_t flag);
+extern uint lastFrameCounter;
+
 // Support structures
 
 typedef union {
@@ -99,6 +102,7 @@ class Context {
 		bool			logicalCoords = true;			// Use BBC BASIC logical coordinates
 
 		Point			origin;							// Screen origin
+		Point			uOrigin;						// Screen origin, un-scaled
 		Point			p1, p2, p3;						// Coordinate store for plot (p1 = the graphics cursor)
 		Point			rp1;							// Relative coordinates store for plot
 		Point			up1;							// Unscaled coordinates store for plot
@@ -185,6 +189,9 @@ class Context {
 		// Copy constructor
 		Context(const Context &c);
 
+		bool readVariable(uint16_t var, uint16_t * value);
+		void setVariable(uint16_t var, uint16_t value);
+
 		// Cursor management functions
 		void hideCursor();
 		void showCursor();
@@ -219,6 +226,7 @@ class Context {
 		// Viewport management functions
 		void viewportReset();
 		void setActiveViewport(ViewportType type);
+		bool setGraphicsViewport(Point p1, Point p2);
 		bool setGraphicsViewport(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 		bool setGraphicsViewport();
 		bool setTextViewport(uint8_t cx1, uint8_t cy1, uint8_t cx2, uint8_t cy2);
@@ -336,6 +344,7 @@ class Context {
 	// Graphics positioning data
 	logicalCoords = c.logicalCoords;
 	origin = c.origin;
+	uOrigin = c.uOrigin;
 	p1 = c.p1;
 	p2 = c.p2;
 	p3 = c.p3;
@@ -362,6 +371,845 @@ class Context {
 		activeViewport = &graphicsViewport;
 	} else {
 		activeViewport = &textViewport;
+	}
+}
+
+bool Context::readVariable(uint16_t var, uint16_t * value) {
+	if (var >= VDU_VAR_PALETTE && var <= VDU_VAR_PALETTE_END) {
+		if (value) {
+			*value = palette[(var - VDU_VAR_PALETTE) & (getVGAColourDepth() - 1)];
+		}
+		return true;
+	}
+	if (var >= VDU_VAR_CHARMAPPING && var <= VDU_VAR_CHARMAPPING_END) {
+		auto c = var - VDU_VAR_CHARMAPPING;
+		if (charToBitmap[c] != 65535) {
+			if (value) {
+				*value = charToBitmap[c];
+			}
+			return true;
+		}
+		return false;
+	}
+	switch (var) {
+		// Mode variables
+		// 0 is "mode flags" - omitting for now
+		case 1:		// Text columns - 1 (characters)
+			if (value) {
+				*value = (canvasW / getFont()->width) - 1;
+			}
+			break;
+		case 2:		// Text rows - 1
+			if (value) {
+				*value = (canvasH / getFont()->height) - 1;
+			}
+			break;
+		case 3:		// Max logical colour
+			if (value) {
+				*value = getVGAColourDepth() - 1;
+			}
+			break;
+		// Variables 4 and 5 are X and Y Eigen factor - omitting for now
+		// Omitting variables 6-10 as they aren't really relevant without direct screen memory access
+		case 11:	// Screen width in pixels - 1
+			if (value) {
+				*value = canvasW - 1;
+			}
+			break;
+		case 12:	// Screen height in pixels - 1
+			if (value) {
+				*value = canvasH - 1;
+			}
+			break;
+		case 13:	// Number of screen banks
+			if (value) {
+				*value =  isDoubleBuffered() ? 2 : 1;
+			}
+			break;
+
+		// Variables 14-127 are currently undefined
+		// so _some_ will be used for Agon-specific variables
+
+		case 0x17:	// 23 - Line thickness
+			if (value) {
+				*value = lineThickness;
+			}
+			break;
+
+		// Text cursor absolute position
+		// NB this does not take into account cursor behaviour
+		case 0x18:	// Text cursor, absolute X position (chars)
+			if (value) {
+				*value = textCursor.X / getFont()->width;
+			}
+			break;
+		case 0x19:	// Text cursor, absolute Y position (chars)
+			if (value) {
+				*value = textCursor.Y / getFont()->height;
+			}
+			break;
+
+		case 0x20:	// Frame counter low
+			if (value) {
+				*value = lastFrameCounter & 0xFFFF;
+			}
+			break;
+		case 0x21:	// Frame counter high
+			if (value) {
+				*value = lastFrameCounter >> 16;
+			}
+			break;
+
+		case 0x55:	// Current screen mode number
+			if (value) {
+				*value = videoMode;
+			}
+			break;
+		case 0x56:	// Legacy modes flag
+			if (value) {
+				*value = legacyModes ? 1 : 0;
+			}
+			break;
+		case 0x57:	// Coordinate system (1 = logical/OS coordinates, 0 = screen)
+			if (value) {
+				*value = logicalCoords ? 1 : 0;
+			}
+			break;
+		case 0x58:	// Paged mode flag
+			if (value) {
+				*value = pagedMode ? 1 : 0;
+			}
+			break;
+
+		case 0x66:	// Cursor behaviour
+			if (value) {
+				*value = cursorBehaviour.value;
+			}
+			break;
+		case 0x67:	// Cursor enabled
+			if (value) {
+				*value = cursorEnabled ? 1 : 0;
+			}
+			break;
+		case 0x68:	// Cursor hstart
+			if (value) {
+				*value = cursorHStart;
+			}
+			break;
+		case 0x69:	// Cursor hend
+			if (value) {
+				*value = cursorHEnd;
+			}
+			break;
+		case 0x6A:	// Cursor vstart
+			if (value) {
+				*value = cursorVStart;
+			}
+			break;
+		case 0x6B:	// Cursor vend
+			if (value) {
+				*value = cursorVEnd;
+			}
+			break;
+		// Space for cursor timing variables etc
+		case 0x70:	// Active cursor type (read only)
+			if (value) {
+				*value = (activeCursor == &textCursor) ? 0 : 1;
+			}
+			break;
+
+		// VDU Variables
+
+		// - text and graphics windows
+		case 0x80:	// Graphics window, LH column, pixel coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Graphics)->X1;
+			}
+			break;
+		case 0x81:	// Graphics window, Bottom row, pixel coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Graphics)->Y2;
+			}
+			break;
+		case 0x82:	// Graphics window, RH column, pixel coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Graphics)->X2;
+			}
+			break;
+		case 0x83:	// Graphics window, Top row, pixel coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Graphics)->Y1;
+			}
+			break;
+		case 0x84:	// Text window, LH column, character coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Text)->X1 / getFont()->width;
+			}
+			break;
+		case 0x85:	// Text window, Bottom row, character coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Text)->Y2 / getFont()->height;
+			}
+			break;
+		case 0x86:	// Text window, RH column, character coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Text)->X2 / getFont()->width;
+			}
+			break;
+		case 0x87:	// Text window, Top row, character coordinates
+			if (value) {
+				*value = getViewport(ViewportType::Text)->Y1 / getFont()->height;
+			}
+			break;
+
+		// Graphics origin
+		// NB these are OS coordinates, as per Acorn's implementation
+		// we may wish to add a parallel set of variables for screen coordinates
+		case 0x88:	// Graphics origin, X, OS coordinates
+			if (value) {
+				*value = uOrigin.X;
+			}
+			break;
+		case 0x89:	// Graphics origin, Y, OS coordinates
+			if (value) {
+				*value = uOrigin.Y;
+			}
+			break;
+
+		// Graphics cursor data
+		case 0x8A:	// Graphics cursor, X, OS coordinates
+			if (value) {
+				*value = up1.X;
+			}
+			break;
+		case 0x8B:	// Graphics cursor, Y, OS coordinates
+			if (value) {
+				*value = up1.Y;
+			}
+			break;
+		case 0x8C:	// Oldest Graphics cursor, X, screen coordinates
+			if (value) {
+				*value = p3.X;
+			}
+			break;
+		case 0x8D:	// Oldest Graphics cursor, Y, screen coordinates
+			if (value) {
+				*value = p3.Y;
+			}
+			break;
+		case 0x8E:	// Previous Graphics cursor, X, screen coordinates
+			if (value) {
+				*value = p2.X;
+			}
+			break;
+		case 0x8F:	// Previous Graphics cursor, Y, screen coordinates
+			if (value) {
+				*value = p2.Y;
+			}
+			break;
+		case 0x90:	// Graphics cursor, X, screen coordinates
+		case 0x92:	// New point, X, screen coordinates
+			if (value) {
+				*value = p1.X;
+			}
+			break;
+		case 0x91:	// Graphics cursor, Y, screen coordinates
+		case 0x93:	// New point, X, screen coordinates
+			if (value) {
+				*value = p1.Y;
+			}
+			break;
+		// Acorn has variables 0x92 and 0x93 as "new point"
+		// but it is not clear how they would differ from the current graphics cursor
+		// so we are treating them as the same
+
+		// Variables 0x94-0x96 are not relevant on Agon, as there is no direct screen memory access
+
+		// GCOL actions and selected colours
+		case 0x97:	// GCOL action for foreground colour
+			if (value) {
+				*value = (uint8_t)gpofg.mode;
+			}
+			break;
+		case 0x98:	// GCOL action for background colour
+			if (value) {
+				*value = (uint8_t)gpobg.mode;
+			}
+			break;
+		case 0x99:	// Graphics foreground (logical) colour
+			if (value) {
+				*value = gfgc;
+			}
+			break;
+		case 0x9A:	// Graphics background (logical) colour
+			if (value) {
+				*value = gbgc;
+			}
+			break;
+		case 0x9B:	// Text foreground (logical) colour
+			if (value) {
+				*value = tfgc;
+			}
+			break;
+		case 0x9C:	// Text background (logical) colour
+			if (value) {
+				*value = tbgc;
+			}
+			break;
+		// Variables &9D-&A0 are not relevant on Agon, as they are "tint" values which we can't support
+
+		case 0xA1:	// Max mode number (not double-buffered)
+			// NB this is hard-coded
+			if (value) {
+				*value = 23;
+			}
+			break;
+
+		// Font size info
+		// NB Agon currently doesn't support changing font spacing
+		case 0xA2:	// X font size, graphics cursor
+			if (value) {
+				*value = graphicsFont ? graphicsFont->width : 8;
+			}
+			break;
+		case 0xA3:	// Y font size, graphics cursor
+			if (value) {
+				*value = graphicsFont ? graphicsFont->height : 8;
+			}
+			break;
+		case 0xA4:	// X font spacing, graphics cursor
+			if (value) {
+				*value = graphicsFont ? graphicsFont->width : 8;
+			}
+			break;
+		case 0xA5:	// Y font spacing, graphics cursor
+			if (value) {
+				*value = graphicsFont ? graphicsFont->height : 8;
+			}
+			break;
+		// &A6 omitted as it is not relevant on Agon ("address of horizontal line-draw routine")
+		case 0xA7:	// X font size, text cursor
+			if (value) {
+				*value = textFont ? textFont->width : 8;
+			}
+			break;
+		case 0xA8:	// Y font size, text cursor
+			if (value) {
+				*value = textFont ? textFont->height : 8;
+			}
+			break;
+		case 0xA9:	// X font spacing, text cursor
+			if (value) {
+				*value = textFont ? textFont->width : 8;
+			}
+			break;
+		case 0xAA:	// Y font spacing, text cursor
+			if (value) {
+				*value = textFont ? textFont->height : 8;
+			}
+			break;
+		// NB we have more font info available so may add more variables to expose some of it
+		// also note that if/when we support variable width fonts, the width here will be zero
+
+		// RISC OS also defines variables &AB, &AC, &AE-B1 and &C0 which are not relevant on Agon
+
+		// Line pattern info
+		case 0xF2:	// Line pattern length
+			if (value) {
+				*value = linePatternLength;
+			}
+			break;
+		case 0xF3:	// Line pattern, bytes 0-1
+			if (value) {
+				*value = reinterpret_cast<uint16_t *>(linePattern.pattern)[0];
+			}
+			break;
+		case 0xF4:	// Line pattern, bytes 2-3
+			if (value) {
+				*value = reinterpret_cast<uint16_t *>(linePattern.pattern)[1];
+			}
+			break;
+		case 0xF5:	// Line pattern, bytes 4-5
+			if (value) {
+				*value = reinterpret_cast<uint16_t *>(linePattern.pattern)[2];
+			}
+			break;
+		case 0xF6:	// Line pattern, bytes 6-7
+			if (value) {
+				*value = reinterpret_cast<uint16_t *>(linePattern.pattern)[3];
+			}
+			break;
+
+		// Text window size, as per RISC OS
+		case 0x100:		// width of text window in chars
+			if (value) {
+				// We will assume that 
+				*value = getNormalisedViewportCharWidth();
+			}
+			break;
+		case 0x101:		// height of text window in chars
+			if (value) {
+				// Acorn seems to reduce this value by 1 on RISC OS
+				*value = getNormalisedViewportCharHeight() - 1;
+			}
+			break;
+
+		// we have other areas of context state that could be exposed as variables
+		// such as cursor size info, cursor drawing status, line thickness, line pattern, etc.
+		// plus we wish to expose the current context ID
+		// Exposing the context ID needs the "default context" changes to be merged
+
+		// Text cursor, character position, as per TAB within text window
+		case 0x118:		// X position of text cursor within text window
+			if (value) {
+				uint8_t x, y;
+				getCursorTextPosition(&x, &y);
+				*value = x;
+			}
+			break;
+		case 0x119:		// Y position of text cursor within text window
+			if (value) {
+				uint8_t x, y;
+				getCursorTextPosition(&x, &y);
+				*value = y;
+			}
+			break;
+		// Text cursor position, in screen coordinates
+		case 0x11A:		// X position of text cursor in screen coordinates
+			if (value) {
+				*value = textCursor.X;
+			}
+			break;
+		case 0x11B:		// Y position of text cursor in screen coordinates
+			if (value) {
+				*value = textCursor.Y;
+			}
+			break;
+
+		case 0x400:	// Current bitmap ID
+			if (value) {
+				*value = currentBitmap;
+			}
+			break;
+		case 0x401:	// Count of bitmaps used
+			if (value) {
+				*value = bitmaps.size();
+			}
+			break;
+		case 0x402:	// Current bitmap transform ID
+			if (value) {
+				*value = bitmapTransform;
+			}
+			break;
+
+		case 0x410:	// Current sprite ID
+			if (value) {
+				*value = current_sprite;
+			}
+			break;
+		case 0x411:	// Number of sprites in use (not necessarily visible)
+			if (value) {
+				*value = numsprites;
+			}
+			break;
+		// case 0x412:	// Current sprite transform ID - not supported
+
+		case 0x420:	// Mouse cursor ID
+			if (value) {
+				*value = mCursor;
+			}
+			break;
+		case 0x441:	// Mouse cursor enabled
+			if (value) {
+				*value = mouseEnabled ? 1 : 0;
+			}
+			break;
+		case 0x442:	// Mouse cursor X position
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto mStatus = mouse->status();
+					*value = mStatus.X;
+				}
+			}
+			break;
+		case 0x443:	// Mouse cursor Y position
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto mStatus = mouse->status();
+					*value = mStatus.Y;
+				}
+			}
+			break;
+		case 0x444:	// Mouse cursor button status
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto mStatus = mouse->status();
+					*value = mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2;
+				}
+			}
+			break;
+		case 0x445:	// Mouse wheel delta
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto mStatus = mouse->status();
+					*value = mStatus.wheelDelta;
+				}
+			}
+			break;
+		case 0x446:	// Mouse sample rate
+			if (value) {
+				*value = mSampleRate;
+			}
+			break;
+		case 0x447:	// Mouse resolution
+			if (value) {
+				*value = mResolution;
+			}
+			break;
+		case 0x448:	// Mouse scaling
+			if (value) {
+				*value = mScaling;
+			}
+			break;
+		case 0x449:	// Mouse acceleration
+			if (value) {
+				*value = mAcceleration;
+			}
+			break;
+		case 0x44A:	// Mouse wheel acceleration
+			if (value) {
+				auto mouse = getMouse();
+				if (mouse) {
+					auto & currentAcceleration = mouse->wheelAcceleration();
+					*value = currentAcceleration;
+				}
+			}
+			break;
+		// 0x44B-0x44E reserved for mouse area
+
+		default:
+			debug_log("readVariable: variable %d not found\n\r", var);
+			return false;
+	}
+	
+	return true;
+}
+
+void Context::setVariable(uint16_t var, uint16_t value) {
+	if (var >= VDU_VAR_PALETTE && var <= VDU_VAR_PALETTE_END) {
+		if (value >= 64) {
+			return;
+		}
+		setLogicalPalette(var - VDU_VAR_PALETTE, value, 0, 0, 0);
+		return;
+	}
+	if (var >= VDU_VAR_CHARMAPPING && var <= VDU_VAR_CHARMAPPING_END) {
+		mapCharToBitmap(var - VDU_VAR_CHARMAPPING, value);
+		return;
+	}
+	switch (var) {
+		// Mode variables (0-13)
+		// All mode variables are read-only
+
+		// Variables 14-127 are currently undefined, but we will use some for agon-specific variables
+		case 0x17:	// 23 - line thickness
+			setLineThickness(value);
+			break;
+
+		// BBC Micro had a few text cursor things which seem to be the following
+		// It's not clear _exactly_ how these work, and whether they obey cursor behaviour
+		// On the Agon, we will present a simplistic absolute cursor position
+		// and provide a parallel set of variables for cursor position within the text window
+		//    &18       Current absolute text X position (=POS+vduvar &08)
+		//    &19       Current absolute text Y position (=VPOS+vduvar &0B)
+		//    &64       Text input absolute X position (for copy-source cursor - N/A on Agon)
+		//    &65       Text input absolute Y position
+
+		case 0x18:	// Text cursor, absolute X (chars)
+			textCursor.X = value * getFont()->width;
+			ensureCursorInViewport(textViewport);
+			break;
+		case 0x19:	// Text cursor, absolute Y (chars)
+			textCursor.Y = value * getFont()->height;
+			ensureCursorInViewport(textViewport);
+			break;
+
+		case 0x20:	// Frame counter low
+			lastFrameCounter = (lastFrameCounter & 0xFFFF0000) | (value & 0xFFFF);
+			_VGAController->frameCounter = lastFrameCounter;
+			break;
+		case 0x21:	// Frame counter high
+			lastFrameCounter = (lastFrameCounter & 0xFFFF) | (value << 16);
+			_VGAController->frameCounter = lastFrameCounter;
+			break;
+
+		case 0x56:	// Legacy modes flag
+			setLegacyModes(value);
+			break;
+		case 0x57:	// Coordinate system (1 = logical/OS coordinates, 0 = screen)
+			setLogicalCoords(value);
+			break;
+		case 0x58:	// Paged mode flag
+			setPagedMode(value);
+			break;
+
+		case 0x66:	// Cursor behaviour
+			setCursorBehaviour(value, 0);
+			break;
+		case 0x67:	// Cursor enabled (boolean)
+			enableCursor(value);
+			break;
+		case 0x68:	// Cursor hstart
+			setCursorHStart(value);
+			break;
+		case 0x69:	// Cursor hend
+			setCursorHEnd(value);
+			break;
+		case 0x6A:	// Cursor vstart
+			setCursorVStart(value & 0x1F);
+			setCursorAppearance((value & 0x60) >> 5);
+			break;
+		case 0x6B:	// Cursor vend
+			setCursorVEnd(value);
+			break;
+		// then we have vertical start row, vertical end row, horizontal start column, horizontal end column
+		// the cursor frequency stuff, and whether the cursor is on or off
+		// plus which is the "active" cursor (text or graphics) for text output
+
+		// VDU Variables
+
+		// - text and graphics windows 0x80-0x87
+		// Currently read-only, as changing them here could break things
+		// since we need to ensure that x,y pairs are correctly ordered
+
+		// - text and graphics windows
+		case 0x80: {	// Graphics window, LH column, pixel coordinates
+			uint16_t y1, x2, y2;
+			readVariable(0x81, &y1);
+			readVariable(0x82, &x2);
+			readVariable(0x83, &y2);
+			setGraphicsViewport(Point(value, y1), Point(x2, y2));
+		}	break;
+		case 0x81: {	// Graphics window, Bottom row, pixel coordinates
+			uint16_t x1, x2, y2;
+			readVariable(0x80, &x1);
+			readVariable(0x82, &x2);
+			readVariable(0x83, &y2);
+			setGraphicsViewport(Point(x1, value), Point(x2, y2));
+		}	break;
+		case 0x82: {	// Graphics window, RH column, pixel coordinates
+			uint16_t x1, y1, y2;
+			readVariable(0x80, &x1);
+			readVariable(0x81, &y1);
+			readVariable(0x83, &y2);
+			setGraphicsViewport(Point(x1, y1), Point(value, y2));
+		}	break;
+		case 0x83: {	// Graphics window, Top row, pixel coordinates
+			uint16_t x1, y1, x2;
+			readVariable(0x80, &x1);
+			readVariable(0x81, &y1);
+			readVariable(0x82, &x2);
+			setGraphicsViewport(Point(x1, y1), Point(x2, value));
+		}	break;
+		case 0x84: {	// Text window, LH column, character coordinates
+			uint16_t y1, x2, y2;
+			readVariable(0x85, &y1);
+			readVariable(0x86, &x2);
+			readVariable(0x87, &y2);
+			setTextViewport(value, y2, x2, y1);
+		}	break;
+		case 0x85: {	// Text window, Bottom row, character coordinates
+			uint16_t x1, y2, x2;
+			readVariable(0x84, &x1);
+			readVariable(0x86, &x2);
+			readVariable(0x87, &y2);
+			setTextViewport(x1, y2, x2, value);
+		}	break;
+		case 0x86: {	// Text window, RH column, character coordinates
+			uint16_t x1, y1, y2;
+			readVariable(0x84, &x1);
+			readVariable(0x85, &y1);
+			readVariable(0x87, &y2);
+			setTextViewport(x1, y2, value, y1);
+		}	break;
+		case 0x87: {	// Text window, Top row, character coordinates
+			uint16_t x1, y1, x2;
+			readVariable(0x84, &x1);
+			readVariable(0x85, &y1);
+			readVariable(0x86, &x2);
+			setTextViewport(x1, value, x2, y1);
+		}	break;
+
+		// Graphics origin (0x88-0x89)
+		case 0x88:	// Graphics origin, X, OS coordinates
+			setOrigin(value, uOrigin.Y);
+			break;
+		case 0x89:	// Graphics origin, Y, OS coordinates
+			setOrigin(uOrigin.X, value);
+			break;
+
+		// Graphics cursor data
+		case 0x8A:	// Graphics cursor, X, OS coordinates
+			up1.X = value;
+			p1 = toScreenCoordinates(up1.X, up1.Y);
+			break;
+		case 0x8B:	// Graphics cursor, Y, OS coordinates
+			up1.Y = value;
+			p1 = toScreenCoordinates(up1.X, up1.Y);
+			break;
+		case 0x8C:	// Oldest Graphics cursor, X, screen coordinates
+			p3.X = value;
+			break;
+		case 0x8D:	// Oldest Graphics cursor, Y, screen coordinates
+			p3.Y = value;
+			break;
+		case 0x8E:	// Previous Graphics cursor, X, screen coordinates
+			p2.X = value;
+			break;
+		case 0x8F:	// Previous Graphics cursor, Y, screen coordinates
+			p2.Y = value;
+			break;
+		case 0x90:	// Graphics cursor, X, screen coordinates
+		case 0x92:	// New point, X, screen coordinates
+			p1.X = value;
+			up1.X = toCurrentCoordinates(p1.X, p1.Y).X;
+			break;
+		case 0x91:	// Graphics cursor, Y, screen coordinates
+		case 0x93:	// New point, X, screen coordinates
+			p1.Y = value;
+			up1.Y = toCurrentCoordinates(p1.X, p1.Y).Y;
+			break;
+
+		// Variables 0x94-0x96 are not relevant on Agon, as there is no direct screen memory access
+
+		// GCOL actions and selected colours
+		case 0x97:	// GCOL action for foreground colour
+			if (value <= 7) {
+				gpofg = getPaintOptions((fabgl::PaintMode)value, gpofg);
+			}
+			break;
+		case 0x98:	// GCOL action for background colour
+			if (value <= 7) {
+				gpobg = getPaintOptions((fabgl::PaintMode)value, gpobg);
+			}
+			break;
+		case 0x99:	// Graphics foreground (logical) colour
+			setGraphicsColour((uint8_t)gpofg.mode, value & 63);
+			break;
+		case 0x9A:	// Graphics background (logical) colour
+			setGraphicsColour((uint8_t)gpobg.mode, (value & 63) + 128);
+			break;
+		case 0x9B:	// Text foreground (logical) colour
+			setTextColour(value & 63);
+			break;
+		case 0x9C:	// Text background (logical) colour
+			setTextColour((value & 63) + 128);
+			break;
+		// Variables &9D-&A0 are not relevant on Agon, as they are "tint" values which we can't support
+
+		// Max mode number (0xA1) and font info (0xA2-0xAA) are read-only
+
+		// Line pattern info
+		case 0xF2:	// Line pattern length
+			setDottedLinePatternLength(value);
+			break;
+		case 0xF3:	// Line pattern, bytes 0-1
+			reinterpret_cast<uint16_t *>(linePattern.pattern)[0] = value;
+			setDottedLinePattern(linePattern.pattern);
+			break;
+		case 0xF4:	// Line pattern, bytes 2-3
+			reinterpret_cast<uint16_t *>(linePattern.pattern)[1] = value;
+			setDottedLinePattern(linePattern.pattern);
+			break;
+		case 0xF5:	// Line pattern, bytes 4-5
+			reinterpret_cast<uint16_t *>(linePattern.pattern)[2] = value;
+			setDottedLinePattern(linePattern.pattern);
+			break;
+		case 0xF6:	// Line pattern, bytes 6-7
+			reinterpret_cast<uint16_t *>(linePattern.pattern)[3] = value;
+			setDottedLinePattern(linePattern.pattern);
+			break;
+		
+		// Text cursor, character position, as per TAB within text window
+		case 0x118:	{	// X position of text cursor within text window
+			uint8_t x, y;
+			getCursorTextPosition(&x, &y);
+			cursorTab(value, y);
+		}	break;
+		case 0x119:	{	// Y position of text cursor within text window
+			uint8_t x, y;
+			getCursorTextPosition(&x, &y);
+			cursorTab(x, value);
+		}	break;
+		// Text cursor position, in screen coordinates
+		case 0x11A:		// X position of text cursor in screen coordinates
+			textCursor.X = value;
+			ensureCursorInViewport(textViewport);
+			break;
+		case 0x11B:		// Y position of text cursor in screen coordinates
+			textCursor.Y = value;
+			ensureCursorInViewport(textViewport);
+			break;
+
+		case 0x400:	// Current bitmap ID
+			setCurrentBitmap(value);
+			break;
+		case 0x402:	// Current bitmap transform ID
+			if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+				bitmapTransform = value;
+			}
+			break;
+
+		case 0x410:	// Current sprite ID
+			setCurrentSprite(value);
+			break;
+
+		case 0x420:	// Mouse cursor ID
+			setMouseCursor(value);
+			break;
+		case 0x421:	// Mouse cursor enabled
+			if (value) {
+				enableMouse();
+			} else {
+				disableMouse();
+			}
+			break;
+		case 0x422:	// Mouse cursor X position (pixel coords)
+			uint16_t mouseY;
+			readVariable(0x423, &mouseY);
+			setMousePos(value, mouseY);
+			setMouseCursorPos(value, mouseY);
+			break;
+		case 0x423:	// Mouse cursor Y position
+			uint16_t mouseX;
+			readVariable(0x422, &mouseX);
+			setMousePos(mouseX, value);
+			setMouseCursorPos(mouseX, value);
+			break;
+		case 0x424:	// Mouse cursor button status
+			break;
+		// case 0x425:	// Mouse wheel delta
+		case 0x426:	// Mouse sample rate
+			setMouseSampleRate(value);
+			break;
+		case 0x427:	// Mouse resolution
+			setMouseResolution(value);
+			break;
+		case 0x428:	// Mouse scaling
+			setMouseScaling(value);
+			break;
+		case 0x429:	// Mouse acceleration
+			setMouseAcceleration(value);
+			break;
+		case 0x42A:	// Mouse wheel acceleration
+			setMouseWheelAcceleration(value);
+			break;
+		// 0x42B-0x42E reserved for mouse area
+
 	}
 }
 
