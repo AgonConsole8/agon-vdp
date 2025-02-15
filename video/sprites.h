@@ -12,7 +12,6 @@
 #include "agon.h"
 #include "agon_ps2.h"
 #include "agon_screen.h"
-#include "feature_flags.h"
 #include "types.h"
 
 std::unordered_map<uint16_t, std::shared_ptr<Bitmap>,
@@ -28,6 +27,7 @@ std::unordered_map<uint16_t, std::vector<uint8_t, psram_allocator<uint8_t>>> bit
 std::unordered_map<uint16_t, fabgl::Cursor> cursors;	// Storage for our cursors
 uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor
 
+extern bool isFeatureFlagSet(uint16_t flag);
 
 std::shared_ptr<Bitmap> getBitmap(uint16_t id) {
 	if (bitmaps.find(id) != bitmaps.end()) {
@@ -247,10 +247,6 @@ void resetSprites() {
 	}
 	activateSprites(0);
 	setCurrentSprite(0);
-	// replace all the sprite objects
-	// for (auto n = 0; n < MAX_SPRITES; n++) {
-	// 	sprites[n] = Sprite();
-	// }
 }
 
 void setSpritePaintMode(uint8_t mode) {
