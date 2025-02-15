@@ -137,9 +137,10 @@ void VDUStreamProcessor::vdu(uint8_t c, bool usePeek) {
 		case 0x15:
 			commandsEnabled = false;
 			break;
-		case 0x16:	// Mode
-			vdu_mode();
-			break;
+		case 0x16: { // Mode
+			auto b = readByte_t();	if (b == -1) return;
+			vdu_mode(b);
+		}	break;
 		case 0x17:	// VDU 23
 			vdu_sys();
 			break;
@@ -262,38 +263,37 @@ void VDUStreamProcessor::vdu_palette() {
 
 // VDU 22 Handle MODE
 //
-void VDUStreamProcessor::vdu_mode() {
-	auto mode = readByte_t();
+void VDUStreamProcessor::vdu_mode(uint8_t mode) {
 	debug_log("vdu_mode: %d\n\r", mode);
-	if (mode >= 0) {
-		context->cls();
-		ttxtMode = false;
-		auto errVal = changeMode(mode);
+	context->cls();
+	ttxtMode = false;
+	bufferRemoveCallback(65535, CALLBACK_VSYNC);
+	auto errVal = changeMode(mode);
+	if (errVal != 0) {
+		debug_log("vdu_mode: Error %d changing to mode %d\n\r", errVal, mode);
+		errVal = changeMode(videoMode);
 		if (errVal != 0) {
-			debug_log("vdu_mode: Error %d changing to mode %d\n\r", errVal, mode);
-			errVal = changeMode(videoMode);
-			if (errVal != 0) {
-				debug_log("vdu_mode: Error %d changing back to mode %d\n\r", errVal, videoMode);
-				videoMode = 1;
-				changeMode(1);
-			}
-		}
-		// reset our context, and clear the context stack
-		resetAllContexts();
-		// TODO when we support multiple processors, we will need to reset contexts on all processors
-		if (isDoubleBuffered()) {
-			switchBuffer();
-			context->cls();
-		}
-		// reset mouse
-		setMouseCursor();
-		resetMousePositioner(canvasW, canvasH, _VGAController.get());
-		// update MOS with new info
-		sendModeInformation();
-		if (mouseEnabled) {
-			sendMouseData();
+			debug_log("vdu_mode: Error %d changing back to mode %d\n\r", errVal, videoMode);
+			videoMode = 1;
+			changeMode(1);
 		}
 	}
+	// reset our context, and clear the context stack
+	resetAllContexts();
+	// TODO when we support multiple processors, we will need to reset contexts on all processors
+	if (isDoubleBuffered()) {
+		switchBuffer();
+		context->cls();
+	}
+	// reset mouse
+	setMouseCursor();
+	resetMousePositioner(canvasW, canvasH, _VGAController.get());
+	// update MOS with new info
+	sendModeInformation();
+	if (mouseEnabled) {
+		sendMouseData();
+	}
+	bufferCallCallbacks(CALLBACK_MODE_CHANGE);
 }
 
 // VDU 24 Graphics viewport

@@ -76,6 +76,7 @@
 #define VDP_LEGACYMODES			0xC1	// Switch VDP 1.03 compatible modes on and off
 #define VDP_LAYERS				0xC2	// Tile engine layer management commands (experimental)
 #define VDP_SWITCHBUFFER		0xC3	// Double buffering control
+#define VDP_COPPER				0xC4	// "Copper" style commands
 #define VDP_CONTEXT				0xC8	// Context management commands
 #define VDP_FLUSH_DRAWING_QUEUE	0xCA	// Flush the drawing queue
 #define VDP_PATTERN_LENGTH		0xF2	// Set pattern length (*FX 163,242,n)
@@ -276,6 +277,10 @@
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
+#define BUFFERED_ADD_CALLBACK			0x50	// Add a callback
+#define BUFFERED_REMOVE_CALLBACK		0x51	// Remove a callback
+// #define BUFFERED_ADD_TIMER_CALLBACK		0x52	// Add a timer callback
+// #define BUFFERED_REMOVE_TIMER_CALLBACK	0x53	// Remove a timer callback
 
 #define BUFFERED_DEBUG_INFO				0x80	// Get debug info about a buffer
 
@@ -402,6 +407,18 @@
 #define BUFFERED_BITMAP_BASEID	0xFA00	// Base ID for buffered bitmaps
 #define BUFFERED_SAMPLE_BASEID	0xFB00	// Base ID for buffered samples
 
+// Copper commands
+#define COPPER_CREATE_PALETTE		0		// Create a palette
+#define COPPER_DELETE_PALLETE		1		// Delete a palette
+#define COPPER_SET_PALETTE_COLOUR	2		// Set a palette item (colour)
+#define COPPER_UPDATE_SIGNALLIST	3		// Update the signal list
+#define COPPER_RESET_SIGNALLIST		4		// Reset the signal list
+
+// Callback types
+#define CALLBACK_VSYNC				0		// VSync callback
+#define CALLBACK_MODE_CHANGE		1		// Mode callback
+// Future callback types may include timer, audio playback complete, etc.
+
 // Test/Feature flags
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
 
@@ -410,6 +427,7 @@
 #define FEATUREFLAG_ECHO		0x0210	// Echo back received data, for redirect/spool
 // #define FEATUREFLAG_ECHO_SETTINGS	0x0211	// Settings for what will be echo'd
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
+#define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
 
 #define LOGICAL_SCRW			1280	// As per the BBC Micro standard
 #define LOGICAL_SCRH			1024

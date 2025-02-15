@@ -49,12 +49,45 @@ std::unique_ptr<fabgl::VGABaseController> getVGAController(uint8_t colours) {
 // Update the internal FabGL LUT
 //
 void updateRGB2PaletteLUT() {
-	// Use instance, as call not present on VGABaseController
-	switch (_VGAColourDepth) {
-		case 2: fabgl::VGA2Controller::instance()->updateRGB2PaletteLUT(); break;
-		case 4: fabgl::VGA4Controller::instance()->updateRGB2PaletteLUT(); break;
-		case 8: fabgl::VGA8Controller::instance()->updateRGB2PaletteLUT(); break;
-		case 16: fabgl::VGA16Controller::instance()->updateRGB2PaletteLUT(); break;
+	if (_VGAColourDepth <= 16) {
+		fabgl::VGAPalettedController * controller = (fabgl::VGAPalettedController *)(_VGAController.get());
+		controller->updateRGB2PaletteLUT();
+	}
+}
+
+// Create a palette
+//
+void createPalette(uint16_t paletteId) {
+	if (_VGAColourDepth <= 16) {
+		fabgl::VGAPalettedController * controller = (fabgl::VGAPalettedController *)(_VGAController.get());
+		controller->createPalette(paletteId);
+	}
+}
+
+// Delete a palette
+//
+void deletePalette(uint16_t paletteId) {
+	if (_VGAColourDepth <= 16) {
+		fabgl::VGAPalettedController * controller = (fabgl::VGAPalettedController *)(_VGAController.get());
+		controller->deletePalette(paletteId);
+	}
+}
+
+// Set item in palette
+//
+void setItemInPalette(uint16_t paletteId, uint8_t index, RGB888 colour) {
+	if (_VGAColourDepth <= 16) {
+		fabgl::VGAPalettedController * controller = (fabgl::VGAPalettedController *)(_VGAController.get());
+		controller->setItemInPalette(paletteId, index, colour);
+	}
+}
+
+// Update signal list
+//
+void updateSignalList(uint16_t * signalList, uint16_t count) {
+	if (_VGAColourDepth <= 16) {
+		fabgl::VGAPalettedController * controller = (fabgl::VGAPalettedController *)(_VGAController.get());
+		controller->updateSignalList(signalList, count);
 	}
 }
 
@@ -71,14 +104,9 @@ inline uint8_t getVGAColourDepth() {
 // 
 void setPaletteItem(uint8_t l, RGB888 c) {
 	auto depth = getVGAColourDepth();
-	if (l < depth) {
-		// Use instance, as call not present on VGABaseController
-		switch (depth) {
-			case 2: fabgl::VGA2Controller::instance()->setPaletteItem(l, c); break;
-			case 4: fabgl::VGA4Controller::instance()->setPaletteItem(l, c); break;
-			case 8: fabgl::VGA8Controller::instance()->setPaletteItem(l, c); break;
-			case 16: fabgl::VGA16Controller::instance()->setPaletteItem(l, c); break;
-		}
+	if (l < depth && depth <= 16) {
+		fabgl::VGAPalettedController * controller = (fabgl::VGAPalettedController *)(_VGAController.get());
+		controller->setPaletteItem(l, c);
 	}
 }
 

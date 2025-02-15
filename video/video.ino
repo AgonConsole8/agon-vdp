@@ -75,6 +75,7 @@ TerminalState	terminalState = TerminalState::Disabled;		// Terminal state (for C
 bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabled)
 bool			printerOn = false;				// Output "printer" to debug serial link
 bool			controlKeys = true;				// Control keys enabled
+uint			lastFrameCounter = 0;			// Last frame counter
 
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support
@@ -148,6 +149,12 @@ void processLoop(void * parameter) {
 		if (processTerminal()) {
 			continue;
 		}
+
+		if (_VGAController->frameCounter != lastFrameCounter) {
+			lastFrameCounter = _VGAController->frameCounter;
+			processor->bufferCallCallbacks(CALLBACK_VSYNC);
+		}
+
 		processor->doCursorFlash();
 
 		do_keyboard();
@@ -377,13 +384,7 @@ bool processTerminal() {
 			Terminal = nullptr;
 			auto context = processor->getContext();
 			// reset our screen mode
-			if (changeMode(videoMode) != 0) {
-				debug_log("processTerminal: Error %d changing back to mode %d\n\r", videoMode);
-				videoMode = 1;
-				changeMode(1);
-			}
-			context->reset();
-			processor->sendModeInformation();
+			processor->vdu_mode(videoMode);
 			debug_log("Terminal disabled\n\r");
 			terminalState = TerminalState::Disabled;
 		} break;
