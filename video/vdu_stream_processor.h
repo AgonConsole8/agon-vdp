@@ -32,7 +32,6 @@ class VDUStreamProcessor {
 		// Graphics context storage and management
 		std::shared_ptr<Context> context;		// Current active context
 		ContextVectorPtr contextStack;			// Current active context stack
-		uint8_t contextId = 0;					// Current active context ID
 
 		bool commandsEnabled = true;
 		bool echoEnabled = false;
@@ -99,7 +98,6 @@ class VDUStreamProcessor {
 		void vdu_sys_font();
 
 		void vdu_sys_context();
-		void selectContext(uint8_t contextId);
 		bool resetContext(uint8_t flags);
 		void saveContext();
 		void restoreContext();
@@ -237,6 +235,7 @@ class VDUStreamProcessor {
 
 	public:
 		uint16_t id = 65535;
+		uint8_t contextId = 0;					// Current active context ID
 
 		VDUStreamProcessor(Stream *input) :
 			inputStream(std::shared_ptr<Stream>(input)), outputStream(inputStream), originalOutputStream(inputStream) {
@@ -310,6 +309,7 @@ class VDUStreamProcessor {
 		bool contextExists(uint8_t id) {
 			return contextStacks.find(id) != contextStacks.end();
 		}
+		void selectContext(uint8_t contextId);
 
 		void vdu_mode(uint8_t mode);
 

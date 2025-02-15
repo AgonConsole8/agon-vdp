@@ -14,6 +14,7 @@
 #include "sprites.h"
 
 extern bool isFeatureFlagSet(uint16_t flag);
+extern uint lastFrameCounter;
 
 // Support structures
 
@@ -434,7 +435,7 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 				*value = lineThickness;
 			}
 			break;
-		
+
 		// Text cursor absolute position
 		// NB this does not take into account cursor behaviour
 		case 0x18:	// Text cursor, absolute X position (chars)
@@ -447,7 +448,18 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 				*value = textCursor.Y / getFont()->height;
 			}
 			break;
-		
+
+		case 0x20:	// Frame counter low
+			if (value) {
+				*value = lastFrameCounter & 0xFFFF;
+			}
+			break;
+		case 0x21:	// Frame counter high
+			if (value) {
+				*value = lastFrameCounter >> 16;
+			}
+			break;
+
 		case 0x55:	// Current screen mode number
 			if (value) {
 				*value = videoMode;
@@ -924,6 +936,15 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 		case 0x19:	// Text cursor, absolute Y (chars)
 			textCursor.Y = value * getFont()->height;
 			ensureCursorInViewport(textViewport);
+			break;
+
+		case 0x20:	// Frame counter low
+			lastFrameCounter = (lastFrameCounter & 0xFFFF0000) | (value & 0xFFFF);
+			_VGAController->frameCounter = lastFrameCounter;
+			break;
+		case 0x21:	// Frame counter high
+			lastFrameCounter = (lastFrameCounter & 0xFFFF) | (value << 16);
+			_VGAController->frameCounter = lastFrameCounter;
 			break;
 
 		case 0x56:	// Legacy modes flag

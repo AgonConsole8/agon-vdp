@@ -443,6 +443,7 @@
 #define FEATUREFLAG_BUFFERS_USED	0x0212	// Number of buffers used
 #define FEATUREFLAG_KEYBOARD_LAYOUT	0x0220	// Keyboard layout
 #define FEATUREFLAG_KEYBOARD_CTRL_KEYS	0x0221	// Control keys on/off
+#define FEATUREFLAG_CONTEXT_ID	0x0230	// Current active context ID
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 #define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
 #define FEATURE_FLAG_AUTO_HW_SPRITES	0x0400	// Auto hardware sprites flag

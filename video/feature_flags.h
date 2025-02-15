@@ -51,6 +51,11 @@ void setFeatureFlag(uint16_t flag, uint16_t value) {
 			case FEATUREFLAG_KEYBOARD_CTRL_KEYS:
 				controlKeys = value != 0;
 				return;
+			
+			case FEATUREFLAG_CONTEXT_ID:
+				processor->selectContext(value);
+				processor->sendModeInformation();
+				return;
 		}
 	}
 	switch (flag) {
@@ -109,6 +114,7 @@ bool isFeatureFlagSet(uint16_t flag) {
 			case FEATUREFLAG_BUFFERS_USED:
 			case FEATUREFLAG_KEYBOARD_LAYOUT:
 			case FEATUREFLAG_KEYBOARD_CTRL_KEYS:
+			case FEATUREFLAG_CONTEXT_ID:
 				return true;
 		}
 	}
@@ -159,6 +165,9 @@ uint16_t getFeatureFlag(uint16_t flag) {
 
 			case FEATUREFLAG_KEYBOARD_CTRL_KEYS:
 				return controlKeys ? 1 : 0;
+			
+			case FEATUREFLAG_CONTEXT_ID:
+				return processor->contextId;
 		}
 	}
 	return 0;
