@@ -108,6 +108,7 @@ inline uint8_t getCurrentSprite() {
 void clearSpriteFrames(uint8_t s = current_sprite) {
 	auto sprite = getSprite(s);
 	sprite->visible = false;
+	sprite->hardware = false;
 	sprite->setFrame(0);
 	sprite->clearBitmaps();
 	// find all bitmaps used by this sprite and remove it from the list
@@ -197,6 +198,16 @@ void showSprite() {
 void hideSprite(uint8_t s = current_sprite) {
 	auto sprite = getSprite(s);
 	sprite->visible = 0;
+}
+
+void setSpriteHardware() {
+	auto sprite = getSprite();
+	sprite->hardware = 1;
+}
+
+void setSpriteSoftware() {
+	auto sprite = getSprite();
+	sprite->hardware = 0;
 }
 
 void moveSprite(int x, int y) {
