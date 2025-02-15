@@ -75,6 +75,7 @@ TerminalState	terminalState = TerminalState::Disabled;		// Terminal state (for C
 bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabled)
 bool			printerOn = false;				// Output "printer" to debug serial link
 bool			controlKeys = true;				// Control keys enabled
+uint			lastFrameCounter = 0;			// Last frame counter
 
 #include "version.h"							// Version information
 #include "agon_ps2.h"							// Keyboard support
@@ -149,8 +150,8 @@ void processLoop(void * parameter) {
 			continue;
 		}
 
-		if (_VGAController->frameCounter != 0) {
-			_VGAController->frameCounter = 0;
+		if (_VGAController->frameCounter != lastFrameCounter) {
+			lastFrameCounter = _VGAController->frameCounter;
 			processor->bufferCallCallbacks(CALLBACK_VSYNC);
 		}
 
