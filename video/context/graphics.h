@@ -877,6 +877,7 @@ void Context::setAffineTransform(uint8_t flags, uint16_t bufferId) {
 // Clear the screen
 //
 void Context::cls() {
+	hideCursor();
 	if (hasActiveSprites()) {
 		activateSprites(0);
 	}
@@ -890,6 +891,7 @@ void Context::cls() {
 	}
 	cursorHome();
 	setPagedMode(pagedMode);
+	showCursor();
 }
 
 // Clear the graphics area
