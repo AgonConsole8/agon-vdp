@@ -147,8 +147,15 @@ void addSpriteFrame(uint16_t bitmapId) {
 		debug_log("addSpriteFrame: bitmap %d not found\n\r", bitmapId);
 		return;
 	}
+	if (bitmap->format == PixelFormat::Native || bitmap->format == PixelFormat::Undefined) {
+		debug_log("addSpriteFrame: bitmap %d is in native or unknown format and cannot be used as a sprite frame\n\r", bitmapId);
+		return;
+	}
 	bitmapUsers[bitmapId].push_back(current_sprite);
 	sprite->addBitmap(bitmap.get());
+	if (bitmap->format == PixelFormat::Mask) {
+		sprite->hardware = 0;
+	}
 }
 
 void activateSprites(uint8_t n) {
@@ -242,7 +249,7 @@ void resetSprites() {
 	bool autoHardwareSprites = isFeatureFlagSet(TESTFLAG_HW_SPRITES) && isFeatureFlagSet(FEATURE_FLAG_AUTO_HW_SPRITES);
 	for (auto n = 0; n < MAX_SPRITES; n++) {
 		auto sprite = getSprite(n);
-		sprite->hardware = autoHardwareSprites;
+		sprite->hardware = autoHardwareSprites ? 1 : 0;
 		clearSpriteFrames(n);
 	}
 	activateSprites(0);
@@ -253,6 +260,9 @@ void setSpritePaintMode(uint8_t mode) {
 	auto sprite = getSprite();
 	if (mode <= 7) {
 		sprite->paintOptions.mode = static_cast<fabgl::PaintMode>(mode);
+		if (mode > 0) {
+			sprite->hardware = 0;
+		}
 	}
 }
 
