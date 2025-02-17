@@ -814,7 +814,7 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 			break;
 		// case 0x412:	// Current sprite transform ID - not supported
 
-		case 0x420:	// Mouse cursor ID
+		case 0x440:	// Mouse cursor ID
 			if (value) {
 				*value = mCursor;
 			}
@@ -971,10 +971,12 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			break;
 		case 0x6A:	// Cursor vstart
 			setCursorVStart(value & 0x1F);
-			setCursorAppearance((value & 0x60) >> 5);
 			break;
 		case 0x6B:	// Cursor vend
 			setCursorVEnd(value);
+			break;
+		case 0x6C:	// Cursor appearance
+			setCursorAppearance(value & 0x03);
 			break;
 		// then we have vertical start row, vertical end row, horizontal start column, horizontal end column
 		// the cursor frequency stuff, and whether the cursor is on or off
@@ -1168,47 +1170,47 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			setCurrentSprite(value);
 			break;
 
-		case 0x420:	// Mouse cursor ID
+		case 0x440:	// Mouse cursor ID
 			setMouseCursor(value);
 			break;
-		case 0x421:	// Mouse cursor enabled
+		case 0x441:	// Mouse cursor enabled
 			if (value) {
 				enableMouse();
 			} else {
 				disableMouse();
 			}
 			break;
-		case 0x422:	// Mouse cursor X position (pixel coords)
+		case 0x442:	// Mouse cursor X position (pixel coords)
 			uint16_t mouseY;
 			readVariable(0x423, &mouseY);
 			setMousePos(value, mouseY);
 			setMouseCursorPos(value, mouseY);
 			break;
-		case 0x423:	// Mouse cursor Y position
+		case 0x443:	// Mouse cursor Y position
 			uint16_t mouseX;
 			readVariable(0x422, &mouseX);
 			setMousePos(mouseX, value);
 			setMouseCursorPos(mouseX, value);
 			break;
-		case 0x424:	// Mouse cursor button status
+		case 0x444:	// Mouse cursor button status
 			break;
-		// case 0x425:	// Mouse wheel delta
-		case 0x426:	// Mouse sample rate
+		// case 0x445:	// Mouse wheel delta
+		case 0x446:	// Mouse sample rate
 			setMouseSampleRate(value);
 			break;
-		case 0x427:	// Mouse resolution
+		case 0x447:	// Mouse resolution
 			setMouseResolution(value);
 			break;
-		case 0x428:	// Mouse scaling
+		case 0x448:	// Mouse scaling
 			setMouseScaling(value);
 			break;
-		case 0x429:	// Mouse acceleration
+		case 0x449:	// Mouse acceleration
 			setMouseAcceleration(value);
 			break;
-		case 0x42A:	// Mouse wheel acceleration
+		case 0x44A:	// Mouse wheel acceleration
 			setMouseWheelAcceleration(value);
 			break;
-		// 0x42B-0x42E reserved for mouse area
+		// 0x44B-0x44E reserved for mouse area
 
 	}
 }
