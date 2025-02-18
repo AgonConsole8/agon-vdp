@@ -158,6 +158,50 @@ void addSpriteFrame(uint16_t bitmapId) {
 	}
 }
 
+void replaceSpriteFrame(uint16_t bitmapId) {
+	auto sprite = getSprite();
+	auto bitmap = getBitmap(bitmapId);
+	if (!bitmap) {
+		debug_log("replaceSpriteFrame: bitmap %d not found\n\r", bitmapId);
+		return;
+	}
+	if (bitmap->format == PixelFormat::Native || bitmap->format == PixelFormat::Undefined) {
+		debug_log("replaceSpriteFrame: bitmap %d is in native or unknown format and cannot be used as a sprite frame\n\r", bitmapId);
+		return;
+	}
+
+	// remove one instance of current_sprite from the bitmapUsers list for the shown frame
+	// first step is to work out the bitmap ID of the current frame
+	auto frameBitmap = sprite->frames[sprite->currentFrame];
+	auto oldBitmapId = -1;
+	for (auto bitmap : bitmaps) {
+		if (bitmap.second.get() == frameBitmap) {
+			oldBitmapId = bitmap.first;
+			break;
+		}
+	}
+
+	// if we found the old bitmap, remove one entry of the sprite from the bitmapUsers list
+	if (oldBitmapId != -1) {
+		auto users = bitmapUsers[oldBitmapId];
+		for (auto user : users) {
+			// remove only one copy of current_sprite from the users list, if it exists
+			auto it = std::find(users.begin(), users.end(), current_sprite);
+			if (it != users.end()) {
+				users.erase(it);
+				break;
+			}
+		}
+	}
+
+	sprite->frames[sprite->currentFrame] = bitmap.get();
+	bitmapUsers[bitmapId].push_back(current_sprite);
+
+	if (bitmap->format == PixelFormat::Mask) {
+		sprite->hardware = 0;
+	}
+}
+
 void activateSprites(uint8_t n) {
 	/*
 	* Sprites 0-(numsprites-1) will be activated on-screen
