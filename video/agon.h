@@ -230,6 +230,7 @@
 #define CONTEXT_SAVE_AND_SELECT			5		// Save and get a copy of topmost context from numbered stack
 #define CONTEXT_RESTORE_ALL				6		// Clear stack and restore to first context in stack
 #define CONTEXT_CLEAR_STACK				7		// Clear stack, keeping current context
+#define CONTEXT_DEBUG					0x80	// Get debug info about a context
 
 #define CONTEXT_RESET_GPAINT			0x01	// graphics painting options
 #define CONTEXT_RESET_GPOS				0x02	// graphics positioning incl graphics viewport
