@@ -11,6 +11,7 @@
 #include "envelopes/types.h"
 
 extern fabgl::SoundGenerator *soundGenerator; 	// audio handling sub-system
+extern std::mutex soundGeneratorMutex;			// mutex for sound generator
 
 enum class AudioState : uint8_t {	// Audio channel state
 	Idle = 0,				// currently idle/silent
@@ -286,9 +287,16 @@ uint8_t AudioChannel::setVolume(uint8_t volume) {
 				}
 				break;
 			case AudioState::Pending:
+				// Set level so next loop will pick up the new volume
+				this->_volume = volume;
+				break;
 			case AudioState::Release:
 				// Set level so next loop will pick up the new volume
 				this->_volume = volume;
+				if (!this->_volumeEnvelope) {
+					// No volume envelope, so set volume immediately
+					this->_waveform->setVolume(volume);
+				}
 				break;
 			default:
 				// All other states we'll set volume immediately
@@ -313,10 +321,14 @@ uint8_t AudioChannel::setFrequency(uint16_t frequency) {
 	if (this->_waveform) {
 		switch (this->_state) {
 			case AudioState::Pending:
-			case AudioState::PlayLoop:
-			case AudioState::Release:
 				// Do nothing as next loop will pick up the new frequency
 				break;
+			case AudioState::Release:
+			case AudioState::PlayLoop:
+				// we are looping - only change frequency if we don't have a frequency envelope
+				if (!this->_frequencyEnvelope) {
+					this->_waveform->setFrequency(frequency);
+				}
 			default:
 				this->_waveform->setFrequency(frequency);
 		}
@@ -392,7 +404,7 @@ uint8_t AudioChannel::setDutyCycle(uint8_t dutyCycle) {
 }
 
 uint8_t AudioChannel::setParameter(uint8_t parameter, uint16_t value) {
-	auto lock = std::unique_lock<std::mutex>(_channelMutex);
+	// Don't lock the mutex here - the functions it calls must lock it
 	if (this->_waveform) {
 		bool use16Bit = parameter & AUDIO_PARAM_16BIT;
 		auto param = parameter & AUDIO_PARAM_MASK;
