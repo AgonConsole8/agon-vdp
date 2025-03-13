@@ -361,25 +361,25 @@ int8_t changeMode(uint8_t mode) {
 			errVal = changeResolution(2, VGA_512x384_60Hz);
 			break;
 		case 24:
-			errVal = changeResolution(16, VGA_640x512_60Hz);
+			errVal = changeResolution(16, QSVGA_640x512_60Hz);
 			break;
 		case 25:
-			errVal = changeResolution(4, VGA_640x512_60Hz);
+			errVal = changeResolution(4, QSVGA_640x512_60Hz);
 			break;
 		case 26:
-			errVal = changeResolution(2, VGA_640x512_60Hz);
+			errVal = changeResolution(2, QSVGA_640x512_60Hz);
 			break;
 		case 27:
-			errVal = changeResolution(64, VGA_640x256_60Hz);
+			errVal = changeResolution(64, QSVGA_640x256_60Hz);
 			break;
 		case 28:
-			errVal = changeResolution(16, VGA_640x256_60Hz);
+			errVal = changeResolution(16, QSVGA_640x256_60Hz);
 			break;
 		case 29:
-			errVal = changeResolution(4, VGA_640x256_60Hz);
+			errVal = changeResolution(4, QSVGA_640x256_60Hz);
 			break;
 		case 30:
-			errVal = changeResolution(2, VGA_640x256_60Hz);
+			errVal = changeResolution(2, QSVGA_640x256_60Hz);
 			break;
 		case 129:
 			errVal = changeResolution(4, VGA_640x480_60Hz, true);
@@ -436,19 +436,19 @@ int8_t changeMode(uint8_t mode) {
 			errVal = changeResolution(2, VGA_512x384_60Hz, true);
 			break;
 		case 153:
-			errVal = changeResolution(4, VGA_640x512_60Hz, true);
+			errVal = changeResolution(4, QSVGA_640x512_60Hz, true);
 			break;
 		case 154:
-			errVal = changeResolution(2, VGA_640x512_60Hz, true);
+			errVal = changeResolution(2, QSVGA_640x512_60Hz, true);
 			break;
 		case 156:
-			errVal = changeResolution(16, VGA_640x256_60Hz, true);
+			errVal = changeResolution(16, QSVGA_640x256_60Hz, true);
 			break;
 		case 157:
-			errVal = changeResolution(4, VGA_640x256_60Hz, true);
+			errVal = changeResolution(4, QSVGA_640x256_60Hz, true);
 			break;
 		case 158:
-			errVal = changeResolution(2, VGA_640x256_60Hz, true);
+			errVal = changeResolution(2, QSVGA_640x256_60Hz, true);
 			break;
 
 
