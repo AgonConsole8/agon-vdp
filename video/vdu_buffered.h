@@ -1635,7 +1635,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		}	break;
 		case AFFINE_ROTATE:
 		case AFFINE_ROTATE_RAD: {
-			bool conversion = op == AFFINE_ROTATE ? DEG_TO_RAD : 1.0f;
+			float conversion = op == AFFINE_ROTATE ? DEG_TO_RAD : 1.0f;
 			if (!is3D) {
 				// rotate anticlockwise (given inverted Y axis) by a given angle in degrees
 				float angle;
@@ -1736,7 +1736,7 @@ void VDUStreamProcessor::bufferAffineTransform(uint16_t bufferId, uint8_t comman
 		case AFFINE_SKEW:
 		case AFFINE_SKEW_RAD: {
 			// skew by a given amount (angle)
-			bool conversion = op == AFFINE_SKEW ? DEG_TO_RAD : 1.0f;
+			float conversion = op == AFFINE_SKEW ? DEG_TO_RAD : 1.0f;
 			float skewXY[dimensions];
 			memset(skewXY, 0, sizeof(skewXY));
 			if (!readFloatArguments(skewXY, dimensions, useBufferValue, useAdvancedOffsets, useMultiFormat)) {
