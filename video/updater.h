@@ -64,6 +64,7 @@ void VDUStreamProcessor::receiveFirmware() {
 	uint32_t remaining_bytes = update_size;
 	uint8_t code = 0;
 	const size_t buffer_size = 1024;
+	uint8_t buffer[buffer_size];
 
 	while(remaining_bytes > 0) {
 
@@ -73,8 +74,6 @@ void VDUStreamProcessor::receiveFirmware() {
 		{
 			bytes_to_read = remaining_bytes;
 		}
-
-		uint8_t buffer[buffer_size];
 
 		bytes_remain = readIntoBuffer(buffer, bytes_to_read);
 		if(bytes_remain) {
@@ -108,7 +107,7 @@ void VDUStreamProcessor::receiveFirmware() {
 		printFmt("Checksum not received!\n\r");
 		return;
 	}
-	printFmt("checksum_complement: 0x%x\n\r", checksum_complement);
+	printFmt("checksum_complement: 0x%02x\n\r", checksum_complement);
 	if(uint8_t(code + (uint8_t)checksum_complement)) {
 		printFmt("checksum error!\n\r");
 		return;
@@ -117,7 +116,7 @@ void VDUStreamProcessor::receiveFirmware() {
 
 	err = esp_ota_set_boot_partition(update_partition);
 	if (err != ESP_OK) {
-		printFmt("esp_ota_set_boot_partition failed! err=0x%x\n\r", err);
+		printFmt("esp_ota_set_boot_partition failed! err=0x%02x\n\r", err);
 		return;
 	}
 
