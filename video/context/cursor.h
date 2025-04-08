@@ -10,6 +10,8 @@
 // Definitions for the functions we're implementing here
 #include "context.h"
 
+extern bool			pagedModePause;			// Paged mode pause
+extern uint			waitForFrames;			// Wait for frames (countdown)
 
 // Private cursor management functions
 //
@@ -247,6 +249,7 @@ void Context::doCursorFlash() {
 		if (cursorEnabled) {
 			drawCursor(textCursor);
 		}
+		resetPagedModeCount();
 	}
 }
 
@@ -322,7 +325,7 @@ void Context::setCursorHEnd(uint8_t end) {
 
 void Context::setPagedMode(bool mode) {
 	pagedMode = mode;
-	pagedModeCount = 0;
+	resetPagedModeCount();
 }
 
 // Reset basic cursor control
@@ -389,28 +392,17 @@ void Context::cursorDown(bool moveOnly) {
 	// handle paging if we need to
 	//
 	if (textCursorActive() && pagedMode) {
-		pagedModeCount++;
-		if (pagedModeCount >= (
-				cursorBehaviour.flipXY ? (activeViewport->width()) / font->width
-					: (activeViewport->height()) / font->height
-			)
-		) {
-			pagedModeCount = 0;
-			uint8_t ascii;
-			uint8_t vk;
-			uint8_t down;
-			if (!wait_shiftkey(&ascii, &vk, &down)) {
-				// ESC pressed
-				uint8_t packet[] = {
-					ascii,
-					0,
-					vk,
-					down,
-				};
-				// TODO replace this, somehow
-				send_packet(PACKET_KEYCODE, sizeof packet, packet);
-			}
+		pagedModeCount--;
+		if (pagedModeCount <= 0) {
+			pagedModePause = true;
+			resetPagedModeCount();
+			return;
 		}
+	}
+	if (ctrlKeyPressed()) {
+		// TODO consider making this a VDP Variable
+		waitForFrames = 3;
+		return;
 	}
 	//
 	// Check if scroll required
@@ -536,6 +528,15 @@ void Context::getCursorTextPosition(uint8_t * x, uint8_t * y) {
 	Point p = getNormalisedCursorPosition();
 	*x = p.X / font->width;
 	*y = p.Y / font->height;
+}
+
+void Context::resetPagedModeCount() {
+	// set count of rows to print when in paged mode
+	uint8_t x, y;
+	auto pageRows = getNormalisedViewportCharHeight();
+	getCursorTextPosition(&x, &y);
+	// TODO consider making the context size (6 rows) a VDP variable
+	pagedModeCount = max(pageRows - y, pageRows - 6);
 }
 
 #endif	// CONTEXT_CURSOR_H

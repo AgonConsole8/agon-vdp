@@ -129,7 +129,6 @@ class Context {
 		void cursorEndCol();
 		void cursorEndCol(Point * cursor, Rect * viewport);
 
-		bool cursorScrollOrWrap();
 		void cursorAutoNewline();
 		void ensureCursorInViewport(Rect viewport);
 
@@ -222,6 +221,8 @@ class Context {
 		void cursorTab(uint8_t x, uint8_t y);
 		void cursorRelativeMove(int8_t x, int8_t y);
 		void getCursorTextPosition(uint8_t * x, uint8_t * y);
+		bool cursorScrollOrWrap();
+		void resetPagedModeCount();
 
 		// Viewport management functions
 		void viewportReset();

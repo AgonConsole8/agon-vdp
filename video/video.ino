@@ -76,7 +76,9 @@ TerminalState	terminalState = TerminalState::Disabled;		// Terminal state (for C
 bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabled)
 bool			printerOn = false;				// Output "printer" to debug serial link
 bool			controlKeys = true;				// Control keys enabled
+bool			pagedModePause = false;			// Paged mode pause
 uint			lastFrameCounter = 0;			// Last frame counter
+uint			waitForFrames = 0;				// Wait for frames (countdown)
 ESP32Time		rtc(0);							// The RTC
 
 #include "version.h"							// Version information
@@ -155,14 +157,25 @@ void processLoop(void * parameter) {
 		if (_VGAController->frameCounter != lastFrameCounter) {
 			lastFrameCounter = _VGAController->frameCounter;
 			processor->bufferCallCallbacks(CALLBACK_VSYNC);
+			if (waitForFrames > 0) {
+				if (--waitForFrames == 0) {
+					processor->getContext()->cursorScrollOrWrap();
+				}
+			}
 		}
-
-		processor->doCursorFlash();
-
+		
 		do_keyboard();
 		do_mouse();
 
-		if (processor->byteAvailable()) {
+		processor->doCursorFlash();
+
+		if (pagedModePause && shiftKeyPressed()) {
+			// Shift key pressed, so resume from paged mode pause
+			pagedModePause = false;
+			processor->getContext()->cursorScrollOrWrap();
+		}
+
+		if (!pagedModePause && (waitForFrames == 0) && processor->byteAvailable()) {
 			processor->hideCursor();
 			processor->processNext();
 			if (!processor->byteAvailable()) {
