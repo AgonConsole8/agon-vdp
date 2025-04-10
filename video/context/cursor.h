@@ -10,9 +10,6 @@
 // Definitions for the functions we're implementing here
 #include "context.h"
 
-extern bool			pagedModePause;			// Paged mode pause
-extern uint			waitForFrames;			// Wait for frames (countdown)
-
 // Private cursor management functions
 //
 
@@ -394,14 +391,17 @@ void Context::cursorDown(bool moveOnly) {
 	if (textCursorActive() && pagedMode) {
 		pagedModeCount--;
 		if (pagedModeCount <= 0) {
-			pagedModePause = true;
-			resetPagedModeCount();
+			setProcessorState(VDUProcessorState::PagedModePaused);
 			return;
 		}
 	}
 	if (ctrlKeyPressed()) {
-		// TODO consider making this a VDP Variable
-		waitForFrames = 3;
+		if (shiftKeyPressed()) {
+			setProcessorState(VDUProcessorState::CtrlShiftPaused);
+		} else {
+			// TODO make frame countdown values (3 and current) VDP variables
+			setWaitForFrames(3);
+		}
 		return;
 	}
 	//

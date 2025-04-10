@@ -76,9 +76,6 @@ TerminalState	terminalState = TerminalState::Disabled;		// Terminal state (for C
 bool			consoleMode = false;			// Serial console mode (0 = off, 1 = console enabled)
 bool			printerOn = false;				// Output "printer" to debug serial link
 bool			controlKeys = true;				// Control keys enabled
-bool			pagedModePause = false;			// Paged mode pause
-uint			lastFrameCounter = 0;			// Last frame counter
-uint			waitForFrames = 0;				// Wait for frames (countdown)
 ESP32Time		rtc(0);							// The RTC
 
 #include "version.h"							// Version information
@@ -109,12 +106,6 @@ void setup() {
 	copy_font();
 	setupVDPProtocol();
 	processor = new VDUStreamProcessor(&VDPSerial);
-	initAudio();
-	boot_screen();
-	processor->wait_eZ80();
-	setupKeyboardAndMouse();
-	processor->sendModeInformation();
-	debug_log("Setup ran on core %d, busy core is %d\n\r", xPortGetCoreID(), CoreUsage::busiestCore());
 	xTaskCreatePinnedToCore(
 		processLoop,
 		"processLoop",
@@ -124,6 +115,9 @@ void setup() {
 		&Core0Task,
 		0			// Core 0
 	);
+	initAudio();
+	boot_screen();
+	debug_log("Setup ran on core %d, busy core is %d\n\r", xPortGetCoreID(), CoreUsage::busiestCore());
 }
 
 // The main loop
@@ -138,6 +132,9 @@ void processLoop(void * parameter) {
 #ifdef USERSPACE
 	uint32_t count = 0;
 #endif /* USERSPACE */
+
+	setupKeyboardAndMouse();
+	processor->wait_eZ80();
 
 	while (true) {
 #ifdef USERSPACE
@@ -154,85 +151,7 @@ void processLoop(void * parameter) {
 			continue;
 		}
 
-		if (_VGAController->frameCounter != lastFrameCounter) {
-			lastFrameCounter = _VGAController->frameCounter;
-			processor->bufferCallCallbacks(CALLBACK_VSYNC);
-			if (waitForFrames > 0) {
-				if (--waitForFrames == 0) {
-					processor->getContext()->cursorScrollOrWrap();
-				}
-			}
-		}
-		
-		do_keyboard();
-		do_mouse();
-
-		processor->doCursorFlash();
-
-		if (pagedModePause && shiftKeyPressed()) {
-			// Shift key pressed, so resume from paged mode pause
-			pagedModePause = false;
-			processor->getContext()->cursorScrollOrWrap();
-		}
-
-		if (!pagedModePause && (waitForFrames == 0) && processor->byteAvailable()) {
-			processor->hideCursor();
-			processor->processNext();
-			if (!processor->byteAvailable()) {
-				processor->showCursor();
-			}
-		}
-	}
-}
-
-// Handle the keyboard: BBC VDU Mode
-//
-void do_keyboard() {
-	uint8_t keycode;
-	uint8_t modifiers;
-	uint8_t vk;
-	uint8_t down;
-	while (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
-		// Handle some control keys
-		//
-		if (controlKeys && down) {
-			switch (keycode) {
-				case 2:		// printer on
-				case 3:		// printer off
-				case 6:		// VDU commands enable
-				case 7:		// Bell
-				case 12:	// CLS
-				case 14 ... 15:	// paged mode on/off
-					processor->vdu(keycode, false);
-					break;
-				case 16:
-					// control-P toggles "printer" on R.T.Russell's BASIC
-					printerOn = !printerOn;
-			}
-		}
-		// Create and send the packet back to MOS
-		//
-		uint8_t packet[] = {
-			keycode,
-			modifiers,
-			vk,
-			down,
-		};
-		processor->send_packet(PACKET_KEYCODE, sizeof packet, packet);
-	}
-}
-
-// Handle the mouse
-//
-void do_mouse() {
-	// get mouse delta, if the mouse is active
-	MouseDelta delta;
-	if (mouseMoved(&delta)) {
-		auto mouse = getMouse();
-		auto mStatus = mouse->status();
-		// update mouse cursor position if it's active
-		setMouseCursorPos(mStatus.X, mStatus.Y);
-		processor->sendMouseData(&delta);
+		processor->processNext();
 	}
 }
 

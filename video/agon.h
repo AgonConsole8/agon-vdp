@@ -478,6 +478,15 @@ enum class TerminalState {
 	Resuming
 };
 
+// VDU command processor states
+//
+enum class VDUProcessorState {
+	Active,					// Available to process commands
+	WaitingForFrames,		// Waiting for a number of frames to be processed
+	PagedModePaused,		// Paused in paged mode
+	CtrlShiftPaused			// Paused in Ctrl+Shift mode
+};
+
 // Additional modelines
 //
 #ifndef VGA_640x240_60Hz

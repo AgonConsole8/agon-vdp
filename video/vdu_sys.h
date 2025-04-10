@@ -57,6 +57,7 @@ void VDUStreamProcessor::wait_eZ80() {
 			}
 		}
 	}
+	sendModeInformation();
 	debug_log("wait_eZ80: End\n\r");
 }
 

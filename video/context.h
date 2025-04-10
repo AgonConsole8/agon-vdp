@@ -57,6 +57,11 @@ class Context {
 		std::shared_ptr<BufferStream>		textFontData;
 		std::shared_ptr<BufferStream>		graphicsFontData;
 
+		// VDU command processor state info
+		VDUProcessorState		processorState = VDUProcessorState::Active;	// Current VDU command processor state
+		uint8_t			waitForFrames = 0;				// Count of frames for WaitForFrames state
+		uint			lastFrameCounter = 0;			// Last frame counter for VSYNC callbacks
+		
 		// Cursor management data
 		bool			cursorEnabled = true;			// Cursor visibility
 		bool			cursorFlashing = true;			// Cursor is flashing
@@ -191,6 +196,11 @@ class Context {
 		bool readVariable(uint16_t var, uint16_t * value);
 		void setVariable(uint16_t var, uint16_t value);
 
+		inline VDUProcessorState getProcessorState();
+		void setProcessorState(VDUProcessorState state);
+		void setWaitForFrames(uint8_t frames);
+		bool checkForVSYNC();
+
 		// Cursor management functions
 		void hideCursor();
 		void showCursor();
@@ -298,7 +308,8 @@ class Context {
 
 
  Context::Context(const Context &c) {
-	// Copy all the data
+	// Copy almost all the data
+	// VDU command processor state is explicitly not copied, so will get defaults
 
 	// Font tracking
 	font = c.font;
@@ -1216,6 +1227,55 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 	}
 }
 
+inline VDUProcessorState Context::getProcessorState() {
+	return processorState;
+}
+
+void Context::setProcessorState(VDUProcessorState state) {
+	switch (processorState) {
+		case VDUProcessorState::Active:
+			processorState = state;
+			switch (state) {
+				case VDUProcessorState::CtrlShiftPaused:
+				case VDUProcessorState::PagedModePaused:
+					resetPagedModeCount();
+					break;
+			}
+			break;
+		case VDUProcessorState::WaitingForFrames:
+		case VDUProcessorState::PagedModePaused:
+		case VDUProcessorState::CtrlShiftPaused:
+			if (state != processorState) {
+				cursorScrollOrWrap();
+				processorState = state;
+			}
+			break;
+	}
+}
+
+void Context::setWaitForFrames(uint8_t frames) {
+	if (frames == 0) {
+		// Waiting for frames is disabled
+		setProcessorState(VDUProcessorState::Active);
+		return;
+	}
+	waitForFrames = frames;
+	setProcessorState(VDUProcessorState::WaitingForFrames);
+}
+
+bool Context::checkForVSYNC() {
+	if (_VGAController->frameCounter != lastFrameCounter) {
+		lastFrameCounter = _VGAController->frameCounter;
+		if (processorState == VDUProcessorState::WaitingForFrames) {
+			waitForFrames--;
+			if (waitForFrames == 0) {
+				setProcessorState(VDUProcessorState::Active);
+			}
+		}
+		return true;
+	}
+	return false;
+}
 
 #include "context/cursor.h"
 #include "context/fonts.h"
