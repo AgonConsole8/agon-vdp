@@ -65,6 +65,7 @@
 #define VDP_AFFINE_TRANSFORM	0x96	// Set affine transform
 #define VDP_CONTROLKEYS			0x98	// Control keys on/off
 #define VDP_CHECKKEY			0x99	// Request updated keyboard data for a key
+#define VDP_TEMP_PAGED_MODE		0x9A	// Emable temporary paged mode
 #define VDP_BUFFER_PRINT		0x9B	// Print a buffer of characters literally with no command interpretation
 #define VDP_TEXT_VIEWPORT		0x9C	// Set text viewport using current graphics coordinates
 #define VDP_GRAPHICS_VIEWPORT	0x9D	// Set graphics viewport using current graphics coordinates
@@ -485,6 +486,15 @@ enum class VDUProcessorState {
 	WaitingForFrames,		// Waiting for a number of frames to be processed
 	PagedModePaused,		// Paused in paged mode
 	CtrlShiftPaused			// Paused in Ctrl+Shift mode
+};
+
+// Paged mode states
+//
+enum class PagedMode : uint8_t {
+	Disabled = 0,
+	Enabled = 1,
+	TempEnabled_Disabled = 2,
+	TempEnabled_Enabled = 3,
 };
 
 // Additional modelines

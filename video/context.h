@@ -14,7 +14,7 @@
 #include "sprites.h"
 
 extern bool isFeatureFlagSet(uint16_t flag);
-extern uint lastFrameCounter;
+uint		lastFrameCounter = 0;			// Last frame counter for VSYNC callbacks
 
 // Support structures
 
@@ -60,7 +60,6 @@ class Context {
 		// VDU command processor state info
 		VDUProcessorState		processorState = VDUProcessorState::Active;	// Current VDU command processor state
 		uint8_t			waitForFrames = 0;				// Count of frames for WaitForFrames state
-		uint			lastFrameCounter = 0;			// Last frame counter for VSYNC callbacks
 		
 		// Cursor management data
 		bool			cursorEnabled = true;			// Cursor visibility
@@ -80,8 +79,8 @@ class Context {
 		uint8_t			cursorHEnd;						// Cursor horizontal end
 
 		// Paged mode tracking
-		bool 			pagedMode = false;				// Is output paged or not? Set by VDU 14 and 15
-		uint8_t			pagedModeCount = 0;				// Scroll counter for paged mode
+		PagedMode 		pagedMode = PagedMode::Disabled;	// Is output paged or not? Set by VDU 14 and 15
+		uint8_t			pagedModeCount = 0;				// Remaining rows in paged mode
 
 		// Viewport management data
 		Rect *			activeViewport;					// Pointer to the active text viewport (textViewport or graphicsViewport)
@@ -214,7 +213,9 @@ class Context {
 		void setCursorVEnd(uint8_t end);
 		void setCursorHStart(uint8_t start);
 		void setCursorHEnd(uint8_t end);
-		void setPagedMode(bool mode);
+		void setPagedMode(PagedMode mode);
+		void setTempPagedMode();
+		void clearTempPagedMode();
 		void resetTextCursor();
 
 		void cursorUp();
@@ -233,6 +234,7 @@ class Context {
 		void getCursorTextPosition(uint8_t * x, uint8_t * y);
 		bool cursorScrollOrWrap();
 		void resetPagedModeCount();
+		uint8_t getCharsRemainingInLine();
 
 		// Viewport management functions
 		void viewportReset();
@@ -333,7 +335,7 @@ class Context {
 	cursorTemporarilyHidden = c.cursorTemporarilyHidden;
 	cursorTime = c.cursorTime;
 
-	pagedMode = c.pagedMode;
+	pagedMode = (PagedMode)((uint8_t)c.pagedMode & 1);
 	pagedModeCount = c.pagedModeCount;
 
 	// Viewport management data
@@ -489,7 +491,7 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 			break;
 		case 0x58:	// Paged mode flag
 			if (value) {
-				*value = pagedMode ? 1 : 0;
+				*value = (uint16_t)pagedMode;
 			}
 			break;
 
@@ -966,7 +968,7 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			setLogicalCoords(value);
 			break;
 		case 0x58:	// Paged mode flag
-			setPagedMode(value);
+			setPagedMode((PagedMode)value);
 			break;
 
 		case 0x66:	// Cursor behaviour

@@ -268,6 +268,10 @@ void VDUStreamProcessor::vdu_sys_video() {
 			auto keyboard = getKeyboard();
 			keyboard->injectVirtualKey((VirtualKey) key, keyboard->isVKDown((VirtualKey) key), false);
 		}	break;
+		case VDP_TEMP_PAGED_MODE: {		// VDU 23, 0, &9A
+			// Set temporary paged mode
+			context->setTempPagedMode();
+		}	break;
 		case VDP_BUFFER_PRINT: {		// VDU 23, 0, &9B
 			auto bufferId = readWord_t();
 			if (bufferId == -1) return;

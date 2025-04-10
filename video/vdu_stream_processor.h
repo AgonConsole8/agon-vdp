@@ -559,6 +559,9 @@ void VDUStreamProcessor::processAllAvailable() {
 void VDUStreamProcessor::processNext() {
 	if (getContext()->checkForVSYNC()) {
 		bufferCallCallbacks(CALLBACK_VSYNC);
+		if (!byteAvailable()) {
+			getContext()->clearTempPagedMode();
+		}
 	}
 
 	handleKeyboardAndMouse();

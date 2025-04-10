@@ -320,9 +320,35 @@ void Context::setCursorHEnd(uint8_t end) {
 	cursorHEnd = end;
 }
 
-void Context::setPagedMode(bool mode) {
+void Context::setPagedMode(PagedMode mode) {
+	if (mode > PagedMode::TempEnabled_Enabled) {
+		// Unknown mode
+		return;
+	}
 	pagedMode = mode;
 	resetPagedModeCount();
+}
+
+void Context::setTempPagedMode() {
+	switch (pagedMode) {
+		case PagedMode::Disabled:
+			pagedMode = PagedMode::TempEnabled_Disabled;
+			break;
+		case PagedMode::Enabled:
+			pagedMode = PagedMode::TempEnabled_Enabled;
+			break;
+	}
+}
+
+void Context::clearTempPagedMode() {
+	switch (pagedMode) {
+		case PagedMode::TempEnabled_Disabled:
+			pagedMode = PagedMode::Disabled;
+			break;
+		case PagedMode::TempEnabled_Enabled:
+			pagedMode = PagedMode::Enabled;
+			break;
+	}
 }
 
 // Reset basic cursor control
@@ -345,7 +371,7 @@ void Context::resetTextCursor() {
 
 	// cursor behaviour however is _not_ reset here
 	cursorHome();
-	setPagedMode(false);
+	setPagedMode(PagedMode::Disabled);
 }
 
 
@@ -388,7 +414,7 @@ void Context::cursorDown(bool moveOnly) {
 	//
 	// handle paging if we need to
 	//
-	if (textCursorActive() && pagedMode) {
+	if (textCursorActive() && (pagedMode != PagedMode::Disabled)) {
 		pagedModeCount--;
 		if (pagedModeCount <= 0) {
 			setProcessorState(VDUProcessorState::PagedModePaused);
@@ -537,6 +563,13 @@ void Context::resetPagedModeCount() {
 	getCursorTextPosition(&x, &y);
 	// TODO consider making the context size (6 rows) a VDP variable
 	pagedModeCount = max(pageRows - y, pageRows - 6);
+}
+
+uint8_t Context::getCharsRemainingInLine() {
+	uint8_t x, y;
+	auto columns = getNormalisedViewportCharWidth();
+	getCursorTextPosition(&x, &y);
+	return columns - x;
 }
 
 #endif	// CONTEXT_CURSOR_H
