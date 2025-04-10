@@ -14,6 +14,7 @@ uint8_t			_modifiers = 0;					// Last pressed key modifiers
 uint16_t		kbRepeatDelay = 500;			// Keyboard repeat delay ms (250, 500, 750 or 1000)		
 uint16_t		kbRepeatRate = 100;				// Keyboard repeat rate ms (between 33 and 500)
 uint8_t			kbRegion = 0;					// Keyboard region
+bool			kbEnabled = false;				// Keyboard enabled
 
 bool			mouseEnabled = false;			// Mouse enabled
 uint8_t			mSampleRate = MOUSE_DEFAULT_SAMPLERATE;	// Mouse sample rate
@@ -58,6 +59,7 @@ void setupKeyboardAndMouse() {
 	kb->setLayout(&fabgl::UKLayout);
 	kb->setCodePage(fabgl::CodePages::get(1252));
 	kb->setTypematicRateAndDelay(kbRepeatRate, kbRepeatDelay);
+	kbEnabled = true;
 	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 }
 
@@ -212,6 +214,21 @@ bool wait_shiftkey(uint8_t *ascii, uint8_t* vk, uint8_t* down) {
 	} while (!item.SHIFT);
 
 	return true;
+}
+
+bool shiftKeyPressed() {
+	auto kb = getKeyboard();
+	fabgl::VirtualKeyItem item;
+	return kb->isVKDown(fabgl::VK_LSHIFT) || kb->isVKDown(fabgl::VK_RSHIFT);
+}
+
+bool ctrlKeyPressed() {
+	if (!kbEnabled) {
+		return false;
+	}
+	auto kb = getKeyboard();
+	fabgl::VirtualKeyItem item;
+	return kb->isVKDown(fabgl::VK_LCTRL) || kb->isVKDown(fabgl::VK_RCTRL);
 }
 
 void getKeyboardState(uint16_t *repeatDelay, uint16_t *repeatRate, uint8_t *ledState) {
