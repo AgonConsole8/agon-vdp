@@ -4,8 +4,6 @@
 #include <fabgl.h>
 
 #include "agon_ps2.h"
-// TODO remove this, somehow
-#include "vdp_protocol.h"
 
 // Definitions for the functions we're implementing here
 #include "context.h"
@@ -424,11 +422,11 @@ void Context::cursorDown(bool moveOnly) {
 	if (ctrlKeyPressed()) {
 		if (shiftKeyPressed()) {
 			setProcessorState(VDUProcessorState::CtrlShiftPaused);
-		} else {
-			// TODO make frame countdown values (3 and current) VDP variables
-			setWaitForFrames(3);
+			return;
+		} else if (cursorCtrlPauseFrames > 0) {
+			setWaitForFrames(cursorCtrlPauseFrames);
+			return;
 		}
-		return;
 	}
 	//
 	// Check if scroll required
@@ -561,8 +559,7 @@ void Context::resetPagedModeCount() {
 	uint8_t x, y;
 	auto pageRows = getNormalisedViewportCharHeight();
 	getCursorTextPosition(&x, &y);
-	// TODO consider making the context size (6 rows) a VDP variable
-	pagedModeCount = max(pageRows - y, pageRows - 6);
+	pagedModeCount = max(pageRows - y, pageRows - pagedModeContext);
 }
 
 uint8_t Context::getCharsRemainingInLine() {

@@ -71,6 +71,7 @@ class Context {
 		bool			cursorShowing = false;			// Cursor is currently showing on screen
 		bool			cursorTemporarilyHidden = false;	// Cursor is temporarily hidden for command processing
 		TickType_t		cursorTime;						// Time of last cursor flash event
+		uint8_t			cursorCtrlPauseFrames = 3;		// Number of frames to pause on newline when ctrl held
 
 		// Cursor rendering
 		uint8_t			cursorVStart;					// Cursor vertical start offset
@@ -81,6 +82,7 @@ class Context {
 		// Paged mode tracking
 		PagedMode 		pagedMode = PagedMode::Disabled;	// Is output paged or not? Set by VDU 14 and 15
 		uint8_t			pagedModeCount = 0;				// Remaining rows in paged mode
+		uint8_t			pagedModeContext = 6;			// Number of context rows when paged mode enabled
 
 		// Viewport management data
 		Rect *			activeViewport;					// Pointer to the active text viewport (textViewport or graphicsViewport)
@@ -334,9 +336,11 @@ class Context {
 	cursorShowing = c.cursorShowing;
 	cursorTemporarilyHidden = c.cursorTemporarilyHidden;
 	cursorTime = c.cursorTime;
+	cursorCtrlPauseFrames = c.cursorCtrlPauseFrames;
 
 	pagedMode = (PagedMode)((uint8_t)c.pagedMode & 1);
 	pagedModeCount = c.pagedModeCount;
+	pagedModeContext = c.pagedModeContext;
 
 	// Viewport management data
 	defaultViewport = c.defaultViewport;
@@ -473,6 +477,16 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 				*value = lastFrameCounter >> 16;
 			}
 			break;
+		case 0x22:	// Number of frames to pause on newline when ctrl held
+			if (value) {
+				*value = cursorCtrlPauseFrames;
+			}
+			break;
+		case 0x23:	// Number of frames currently being waited for
+			if (value) {
+				*value = waitForFrames;
+			}
+			break;
 
 		case 0x55:	// Current screen mode number
 			if (value) {
@@ -492,6 +506,11 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 		case 0x58:	// Paged mode flag
 			if (value) {
 				*value = (uint16_t)pagedMode;
+			}
+			break;
+		case 0x59:	// Paged mode context amount
+			if (value) {
+				*value = pagedModeContext;
 			}
 			break;
 
@@ -960,6 +979,12 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			lastFrameCounter = (lastFrameCounter & 0xFFFF) | (value << 16);
 			_VGAController->frameCounter = lastFrameCounter;
 			break;
+		case 0x22:	// Number of frames to pause on newline when ctrl held
+			cursorCtrlPauseFrames = value;
+			break;
+		case 0x23:	// Number of frames currently being waited for
+			setWaitForFrames(value);
+			break;
 
 		case 0x56:	// Legacy modes flag
 			setLegacyModes(value);
@@ -969,6 +994,9 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			break;
 		case 0x58:	// Paged mode flag
 			setPagedMode((PagedMode)value);
+			break;
+		case 0x59:	// Paged mode context amount
+			pagedModeContext = value;
 			break;
 
 		case 0x66:	// Cursor behaviour
