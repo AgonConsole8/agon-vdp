@@ -162,6 +162,9 @@ void boot_screen() {
 	#if VERSION_CANDIDATE > 0
 		printFmt(" %s%d", VERSION_TYPE, VERSION_CANDIDATE);
 	#endif
+	#ifdef VERSION_SUBTITLE
+		printFmt(" %s", VERSION_SUBTITLE);
+	#endif
 	// Show build if defined (intended to be auto-generated string from build script from git commit hash)
 	#ifdef VERSION_BUILD
 		printFmt(" Build %s", VERSION_BUILD);
