@@ -1,14 +1,14 @@
 # agon-vdp
 
-Part of the official firmware for the [Agon Console8](https://www.heber.co.uk/agon-console8)
+Part of the official Agon Platform organisation firmware for all Agon computers.
 
-This firmware is intended for use on all Agon Light hardware.  It is primarily developed and tested on the Agon Console8, but is also tested on the Olimex Agon Light 2 and is fully compatible with all Agon Light compatible computers.
+This firmware is intended for use on any Agon Light compatible computer.
 
-This version of agon-vdp may differ from the [Quark firmware](https://github.com/breakintoprogram/agon-vdp) and contain some extensions.  Software written for the Quark firmware should be fully compatible with this version.
+The Agon Platform firmware is a fork from the original [official Quark firmware](https://github.com/breakintoprogram/agon-vdp) for the Agon Light.  It contains many extensions and bug fixes.  Software written to run on Quark firmware should be fully compatible with Agon Platform releases.
 
 ### What is the Agon
 
-Agon is a modern, fully open-source, 8-bit microcomputer and microcontroller in one small, low-cost board. As a computer, it is a standalone device that requires no host PC: it puts out its own video (VGA), audio (2 identical mono channels), accepts a PS/2 keyboard and has its own mass-storage in the form of a µSD card.  The Agon Console8 adds to this a second PS/2 port for attaching a keyboard, and two Atari-style joystick ports.
+Agon is a modern, fully open-source, 8-bit microcomputer and microcontroller in one small, low-cost board. As a computer, it is a standalone device that requires no host PC: it puts out its own video (VGA), audio (2 identical mono channels), accepts a PS/2 keyboard and has its own mass-storage in the form of a µSD card.  The [Agon Console8](https://www.heber.co.uk/agon-console8) adds to this a second PS/2 port for attaching a keyboard, and two Atari-style joystick ports.
 
 https://www.thebyteattic.com/p/agon.html
 
@@ -26,7 +26,7 @@ The VDP also handles the interfaces to the PS/2 keyboard and mouse, and the audi
 
 ### Documentation
 
-The AGON documentation can now be found on the [Community Documentation](https://agonconsole8.github.io/agon-docs/) site.  This site provides extensive documentation about the Agon platform firmware, covering both Quark and Console8 firmware releases.
+The AGON documentation can now be found on the [Community Documentation](https://agonplatform.github.io/agon-docs/) site.  This site provides extensive documentation about the Agon platform firmware, covering all Quark, Agon Console8, and Agon Platform firmware releases.
 
 ### Building
 
