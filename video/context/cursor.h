@@ -4,12 +4,9 @@
 #include <fabgl.h>
 
 #include "agon_ps2.h"
-// TODO remove this, somehow
-#include "vdp_protocol.h"
 
 // Definitions for the functions we're implementing here
 #include "context.h"
-
 
 // Private cursor management functions
 //
@@ -247,6 +244,7 @@ void Context::doCursorFlash() {
 		if (cursorEnabled) {
 			drawCursor(textCursor);
 		}
+		resetPagedModeCount();
 	}
 }
 
@@ -320,9 +318,35 @@ void Context::setCursorHEnd(uint8_t end) {
 	cursorHEnd = end;
 }
 
-void Context::setPagedMode(bool mode) {
+void Context::setPagedMode(PagedMode mode) {
+	if (mode > PagedMode::TempEnabled_Enabled) {
+		// Unknown mode
+		return;
+	}
 	pagedMode = mode;
-	pagedModeCount = 0;
+	resetPagedModeCount();
+}
+
+void Context::setTempPagedMode() {
+	switch (pagedMode) {
+		case PagedMode::Disabled:
+			pagedMode = PagedMode::TempEnabled_Disabled;
+			break;
+		case PagedMode::Enabled:
+			pagedMode = PagedMode::TempEnabled_Enabled;
+			break;
+	}
+}
+
+void Context::clearTempPagedMode() {
+	switch (pagedMode) {
+		case PagedMode::TempEnabled_Disabled:
+			pagedMode = PagedMode::Disabled;
+			break;
+		case PagedMode::TempEnabled_Enabled:
+			pagedMode = PagedMode::Enabled;
+			break;
+	}
 }
 
 // Reset basic cursor control
@@ -345,7 +369,7 @@ void Context::resetTextCursor() {
 
 	// cursor behaviour however is _not_ reset here
 	cursorHome();
-	setPagedMode(false);
+	setPagedMode(PagedMode::Disabled);
 }
 
 
@@ -388,28 +412,20 @@ void Context::cursorDown(bool moveOnly) {
 	//
 	// handle paging if we need to
 	//
-	if (textCursorActive() && pagedMode) {
-		pagedModeCount++;
-		if (pagedModeCount >= (
-				cursorBehaviour.flipXY ? (activeViewport->width()) / font->width
-					: (activeViewport->height()) / font->height
-			)
-		) {
-			pagedModeCount = 0;
-			uint8_t ascii;
-			uint8_t vk;
-			uint8_t down;
-			if (!wait_shiftkey(&ascii, &vk, &down)) {
-				// ESC pressed
-				uint8_t packet[] = {
-					ascii,
-					0,
-					vk,
-					down,
-				};
-				// TODO replace this, somehow
-				send_packet(PACKET_KEYCODE, sizeof packet, packet);
-			}
+	if (textCursorActive() && (pagedMode != PagedMode::Disabled)) {
+		pagedModeCount--;
+		if (pagedModeCount <= 0) {
+			setProcessorState(VDUProcessorState::PagedModePaused);
+			return;
+		}
+	}
+	if (ctrlKeyPressed()) {
+		if (shiftKeyPressed()) {
+			setProcessorState(VDUProcessorState::CtrlShiftPaused);
+			return;
+		} else if (cursorCtrlPauseFrames > 0) {
+			setWaitForFrames(cursorCtrlPauseFrames);
+			return;
 		}
 	}
 	//
@@ -536,6 +552,21 @@ void Context::getCursorTextPosition(uint8_t * x, uint8_t * y) {
 	Point p = getNormalisedCursorPosition();
 	*x = p.X / font->width;
 	*y = p.Y / font->height;
+}
+
+void Context::resetPagedModeCount() {
+	// set count of rows to print when in paged mode
+	uint8_t x, y;
+	auto pageRows = getNormalisedViewportCharHeight();
+	getCursorTextPosition(&x, &y);
+	pagedModeCount = max(pageRows - y, pageRows - pagedModeContext);
+}
+
+uint8_t Context::getCharsRemainingInLine() {
+	uint8_t x, y;
+	auto columns = getNormalisedViewportCharWidth();
+	getCursorTextPosition(&x, &y);
+	return columns - x;
 }
 
 #endif	// CONTEXT_CURSOR_H

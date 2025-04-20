@@ -111,10 +111,10 @@ void VDUStreamProcessor::vdu(uint8_t c, bool usePeek) {
 			context->cursorCR();
 			break;
 		case 0x0E:	// Paged mode ON
-			context->setPagedMode(true);
+			context->setPagedMode(PagedMode::Enabled);
 			break;
 		case 0x0F:	// Paged mode OFF
-			context->setPagedMode(false);
+			context->setPagedMode(PagedMode::Disabled);
 			break;
 		case 0x10:	// CLG
 			context->clg();
@@ -195,7 +195,8 @@ void VDUStreamProcessor::vdu_print(char c, bool usePeek) {
 	s += c;
 	// gather our string for printing
 	if (usePeek) {
-		auto limit = 15;
+		// For compatibility with newline things, we max out to the remaining chars in line
+		auto limit = fabgl::imin(15, getContext()->getCharsRemainingInLine());
 		while (--limit) {
 			if (!byteAvailable()) {
 				break;

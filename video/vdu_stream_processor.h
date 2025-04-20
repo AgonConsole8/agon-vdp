@@ -54,6 +54,8 @@ class VDUStreamProcessor {
 		inline void clearEcho();
 		void flushEcho();
 
+		void handleKeyboardAndMouse();
+
 		void vdu_print(char c, bool usePeek);
 		void vdu_colour();
 		void vdu_gcol();
@@ -542,6 +544,7 @@ void VDUStreamProcessor::sendMouseData(MouseDelta * delta = nullptr) {
 	};
 	send_packet(PACKET_MOUSE, sizeof packet, packet);
 }
+
 // Process all available commands from the stream
 //
 void VDUStreamProcessor::processAllAvailable() {
@@ -554,9 +557,43 @@ void VDUStreamProcessor::processAllAvailable() {
 // Process next command from the stream
 //
 void VDUStreamProcessor::processNext() {
-	if (byteAvailable()) {
-		flushEcho();
-		vdu(readByte());
+	if (getContext()->checkForVSYNC()) {
+		bufferCallCallbacks(CALLBACK_VSYNC);
+		if (!byteAvailable()) {
+			getContext()->clearTempPagedMode();
+		}
+	}
+
+	handleKeyboardAndMouse();
+	doCursorFlash();
+
+	switch (getContext()->getProcessorState()) {
+		case VDUProcessorState::Active:
+			// process next byte, if available
+			if (byteAvailable()) {
+				hideCursor();
+				flushEcho();
+				vdu(readByte());
+				if (!byteAvailable()) {
+					showCursor();
+				}
+			}
+			break;
+		case VDUProcessorState::WaitingForFrames:
+			// Do nothing - wait for frames to expire
+			break;
+		case VDUProcessorState::PagedModePaused:
+			if (shiftKeyPressed()) {
+				getContext()->setProcessorState(VDUProcessorState::Active);
+			}
+			break;
+		case VDUProcessorState::CtrlShiftPaused:
+			if (!shiftKeyPressed() || !ctrlKeyPressed()) {
+				getContext()->setProcessorState(VDUProcessorState::Active);
+			}
+			break;
+		default:
+			break;
 	}
 }
 
@@ -615,6 +652,53 @@ void VDUStreamProcessor::flushEcho() {
 	// debug_log("\n\r");
 	
 	echoBuffer.clear();
+}
+
+void VDUStreamProcessor::handleKeyboardAndMouse() {
+	uint8_t keycode;
+	uint8_t modifiers;
+	uint8_t vk;
+	uint8_t down;
+	MouseDelta delta;
+
+	// Send all pending keyboard events to MOS
+	while (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
+		// Handle some control keys
+		//
+		if (controlKeys && down) {
+			switch (keycode) {
+				case 2:		// printer on
+				case 3:		// printer off
+				case 6:		// VDU commands enable
+				case 7:		// Bell
+				case 12:	// CLS
+				case 14 ... 15:	// paged mode on/off
+					vdu(keycode, false);
+					break;
+				case 16:
+					// control-P toggles "printer" on R.T.Russell's BASIC
+					printerOn = !printerOn;
+			}
+		}
+		// Create and send the packet back to MOS
+		//
+		uint8_t packet[] = {
+			keycode,
+			modifiers,
+			vk,
+			down,
+		};
+		send_packet(PACKET_KEYCODE, sizeof packet, packet);
+	}
+
+	// get mouse delta, if the mouse is active
+	if (mouseMoved(&delta)) {
+		auto mouse = getMouse();
+		auto mStatus = mouse->status();
+		// update mouse cursor position if it's active
+		setMouseCursorPos(mStatus.X, mStatus.Y);
+		sendMouseData(&delta);
+	}	
 }
 
 #include "vdu.h"
