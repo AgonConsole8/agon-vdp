@@ -45,20 +45,22 @@ typedef union {
 //
 void VDUStreamProcessor::wait_eZ80() {
 	if (esp_reset_reason() == ESP_RST_SW) {
-		return;
-	}
-
-	debug_log("wait_eZ80: Start\n\r");
-	while (!initialised) {
-		if (byteAvailable()) {
-			auto c = readByte();	// Only handle VDU 23 packets
-			if (c == 23) {
-				vdu_sys();
+		// We only perform a s/w reset after flashing, so MOS will already be running
+		initialised = true;
+	} else {
+		debug_log("wait_eZ80: Start\n\r");
+		while (!initialised) {
+			if (byteAvailable()) {
+				auto c = readByte();	// Only handle VDU 23 packets
+				if (c == 23) {
+					vdu_sys();
+				}
 			}
 		}
+		debug_log("wait_eZ80: End\n\r");	
 	}
+
 	sendModeInformation();
-	debug_log("wait_eZ80: End\n\r");
 }
 
 // Handle SYS

@@ -36,6 +36,7 @@ void VDUStreamProcessor::vdu_sys_font() {
             auto field = readByte_t(); if (field == -1) return;
             auto value = readWord_t(); if (value == -1) return;
             setFontInfo(bufferId, field, value);
+            sendModeInformation();
         } break;
         case FONT_SET_NAME: {
             // either it will be: VDU 23, 0, &95, 3, bufferId; <ZeroTerminatedString>  - Set font name
@@ -53,6 +54,7 @@ void VDUStreamProcessor::vdu_sys_font() {
             } else {
                 clearFont(bufferId);
             }
+            sendModeInformation();
         } break;
         case FONT_COPY_SYSTEM: {
             // VDU 23, 0, &95, 5, bufferId;  - Copy system font
@@ -71,6 +73,7 @@ void VDUStreamProcessor::vdu_sys_font() {
                 return;
             }
             fontCopy->pointSize = FONT_AGON.pointSize;
+            sendModeInformation();
         } break;
         case FONT_SELECT_BY_NAME: {
             // VDU 23, 0, &95, &10, <ZeroTerminatedString>  - Select font by name
