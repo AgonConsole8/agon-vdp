@@ -57,7 +57,7 @@
 # define	DEBUG			1
 #else /* !USERSPACE */
 #undef DEBUG
-# define	DEBUG			0
+# define	DEBUG			1
 #endif /* USERSPACE */
 
 #define SERIALBAUDRATE	115200

@@ -235,8 +235,6 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 		}	break;
 		case BUFFERED_REDIRECT_DRAWING: {
 			// VDU 23, 0, &A0, bufferId; &31
-			auto bufferId = readWord_t();
-			if (bufferId == -1) return;
 			bufferRedirectDrawing(bufferId);
 		}   break;
 		case BUFFERED_COMPRESS: {
