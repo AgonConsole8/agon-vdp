@@ -276,6 +276,7 @@
 #define BUFFERED_TRANSFORM_BITMAP		0x28	// Create a new bitmap from an existing one by applying a 2d transform
 #define BUFFERED_TRANSFORM_DATA			0x29	// Transform data using a given matrix
 #define BUFFERED_READ_FLAG				0x30	// Read flag value into a buffer
+#define BUFFERED_REDIRECT_DRAWING       0x31    // Redirect drawing into a buffer (bitmap) or back to the screen
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer

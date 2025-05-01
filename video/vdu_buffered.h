@@ -233,6 +233,12 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			// VDU 23, 0, &A0, bufferId; &30, flags, offset; flagId; [default[;]]
 			bufferReadFlag(bufferId);
 		}	break;
+		case BUFFERED_REDIRECT_DRAWING: {
+			// VDU 23, 0, &A0, bufferId; &31
+			auto bufferId = readWord_t();
+			if (bufferId == -1) return;
+			bufferRedirectDrawing(bufferId);
+		}   break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
 			if (sourceBufferId == -1) return;
@@ -2754,5 +2760,17 @@ void VDUStreamProcessor::bufferCallCallbacks(uint16_t type) {
 	}
 }
 
+void VDUStreamProcessor::bufferRedirectDrawing(uint16_t bitmapId) {
+	if (bitmapId == 0xFFFF) {
+		canvas->redirectDrawing(nullptr);
+	} else {
+		auto bitmap = getBitmap(bitmapId);
+		if (!bitmap) {
+			debug_log("bufferRedirectDrawing: bitmap %d not found\n\r", bitmapId);
+		} else {
+			canvas->redirectDrawing(bitmap.get());
+		}
+	}
+}
 
 #endif // VDU_BUFFERED_H
