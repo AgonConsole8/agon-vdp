@@ -50,6 +50,11 @@
 #include <fabgl.h>
 #include <ESP32Time.h>
 
+extern bool cansavept;
+extern uint16_t ptcnt;
+extern uint16_t ptx[256];
+extern uint16_t pty[256];
+
 // Serial Debug Mode: 1 = enable
 // Always enabled on the emulator, to support --verbose mode
 #ifdef USERSPACE
@@ -125,6 +130,19 @@ void setup() {
 void loop() {
 	while (true) {
 		delay(1000);
+		debug_log(".");
+		if (!cansavept) {
+			debug_log("\n");
+			uint16_t priorx = 0;
+			uint16_t priory = 0;
+			for (int i = 0; i < 256; i++) {
+				if (ptx[i] < priorx || pty[i] != priory) debug_log("\n");
+				debug_log("(%hu,%hu) ", ptx[i], pty[i]);
+				priorx = ptx[i];
+				priory = pty[i];
+			}
+			debug_log("\n\n");
+		}
 	};
 }
 
