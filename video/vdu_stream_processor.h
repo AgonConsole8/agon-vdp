@@ -149,7 +149,7 @@ class VDUStreamProcessor {
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
 		void bufferAddCallback(uint16_t bufferId, uint16_t type);
 		void bufferRemoveCallback(uint16_t bufferId, uint16_t type);
-		void bufferRedirectDrawing(uint16_t bufferId);
+		void bufferRedirectDrawing(uint16_t bufferId, uint16_t width, uint16_t height, uint8_t colors);
 		void bufferReturnDrawing();
 
 		void vdu_sys_updater();

@@ -234,8 +234,18 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			bufferReadFlag(bufferId);
 		}	break;
 		case BUFFERED_REDIRECT_DRAWING: {
-			// VDU 23, 0, &A0, bufferId; &31
-			bufferRedirectDrawing(bufferId);
+			// VDU 23, 0, &A0, bufferId; &31 [, width; height; colors]
+			if (bufferId != 0xFFFF) {
+				auto width = readWord_t();
+				if (width == -1) return;
+				auto height = readWord_t();
+				if (height == -1) return;
+				auto colors = readByte_t();
+				if (colors == -1) return;
+				bufferRedirectDrawing(bufferId, width, height, colors);
+			} else {
+				bufferRedirectDrawing(bufferId, 0, 0, 0);
+			}
 		}   break;
 		case BUFFERED_COMPRESS: {
 			auto sourceBufferId = readWord_t();
@@ -2758,15 +2768,17 @@ void VDUStreamProcessor::bufferCallCallbacks(uint16_t type) {
 	}
 }
 
-void VDUStreamProcessor::bufferRedirectDrawing(uint16_t bitmapId) {
-	if (bitmapId == 0xFFFF) {
-		canvas->redirectDrawing(nullptr);
+void VDUStreamProcessor::bufferRedirectDrawing(uint16_t bufferId, uint16_t width, uint16_t height, uint8_t colors) {
+	if (bufferId == 0xFFFF) {
+		canvas->redirectDrawing(nullptr, 0, 0, 0);
 	} else {
-		auto bitmap = getBitmap(bitmapId);
-		if (!bitmap) {
-			debug_log("bufferRedirectDrawing: bitmap %d not found\n\r", bitmapId);
+		auto bufferIter = buffers.find(bufferId);
+		if (bufferIter != buffers.end()) {
+			// buffer ID exists
+			auto buffer = buffers[bufferId][0];
+			canvas->redirectDrawing(buffer->getBuffer(), width, height, colors);
 		} else {
-			canvas->redirectDrawing(bitmap.get());
+			debug_log("bufferRedirectDrawing: buffer %d not found\n\r", bufferId);
 		}
 	}
 }
