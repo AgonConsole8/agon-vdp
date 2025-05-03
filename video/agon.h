@@ -416,10 +416,17 @@
 #define COPPER_UPDATE_SIGNALLIST	3		// Update the signal list
 #define COPPER_RESET_SIGNALLIST		4		// Reset the signal list
 
-// Callback types
-#define CALLBACK_VSYNC				0		// VSync callback
-#define CALLBACK_MODE_CHANGE		1		// Mode callback
-// Future callback types may include timer, audio playback complete, etc.
+// Callback/event types
+#define CALLBACK_VSYNC				0		// VSync
+#define CALLBACK_MODE_CHANGE		1		// Mode changed
+// #define CALLBACK_KEYBOARD			2		// Keyboard event
+#define CALLBACK_MOUSE				3		// Mouse update
+// #define CALLBACK_PALETTE			4		// Palette entry changed
+// Future callback types may include...
+// * timer events (which may require metadata for timer duration, etc),
+// * audio events (a singular audio status event probably won't be enough)
+// * cursor events (movement, blink?, etc.  may need metadata to control debouncing on movement, and when events are sent)
+// * paged mode events (output paused, about to resume, setting changed)
 
 // Test/Feature flags
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag

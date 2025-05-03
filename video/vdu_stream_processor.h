@@ -529,7 +529,7 @@ void VDUStreamProcessor::sendMouseData(MouseDelta * delta = nullptr) {
 		buttons = mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2;
 		wheelDelta = mStatus.wheelDelta;
 	}
-	debug_log("sendMouseData: %d %d %d %d %d %d %d %d %d %d\n\r", mouseX, mouseY, buttons, wheelDelta, deltaX, deltaY);
+	debug_log("sendMouseData: %d %d %d %d %d %d\n\r", mouseX, mouseY, buttons, wheelDelta, deltaX, deltaY);
 	uint8_t packet[] = {
 		(uint8_t) (mouseX & 0xFF),
 		(uint8_t) ((mouseX >> 8) & 0xFF),
@@ -698,6 +698,7 @@ void VDUStreamProcessor::handleKeyboardAndMouse() {
 		// update mouse cursor position if it's active
 		setMouseCursorPos(mStatus.X, mStatus.Y);
 		sendMouseData(&delta);
+		bufferCallCallbacks(CALLBACK_MOUSE);
 	}	
 }
 

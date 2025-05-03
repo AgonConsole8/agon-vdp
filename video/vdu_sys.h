@@ -581,6 +581,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			}
 			// send mouse data (with no delta) to indicate command processed successfully
 			sendMouseData();
+			bufferCallCallbacks(CALLBACK_MOUSE);
 		}	break;
 
 		case MOUSE_DISABLE: {
@@ -624,6 +625,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			setMouseCursorPos(p.X, p.Y);
 
 			sendMouseData();
+			bufferCallCallbacks(CALLBACK_MOUSE);
 			debug_log("vdu_sys_mouse: set position\n\r");
 		}	break;
 

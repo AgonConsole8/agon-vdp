@@ -14,6 +14,7 @@
 #include "sprites.h"
 
 extern bool isFeatureFlagSet(uint16_t flag);
+extern void performMouseCallback();
 uint		lastFrameCounter = 0;			// Last frame counter for VSYNC callbacks
 
 // Support structures
@@ -1218,21 +1219,24 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 		case 0x441:	// Mouse cursor enabled
 			if (value) {
 				enableMouse();
+				performMouseCallback();
 			} else {
 				disableMouse();
 			}
 			break;
 		case 0x442:	// Mouse cursor X position (pixel coords)
 			uint16_t mouseY;
-			readVariable(0x423, &mouseY);
+			readVariable(0x443, &mouseY);
 			setMousePos(value, mouseY);
 			setMouseCursorPos(value, mouseY);
+			performMouseCallback();
 			break;
 		case 0x443:	// Mouse cursor Y position
 			uint16_t mouseX;
-			readVariable(0x422, &mouseX);
+			readVariable(0x442, &mouseX);
 			setMousePos(mouseX, value);
 			setMouseCursorPos(mouseX, value);
+			performMouseCallback();
 			break;
 		case 0x444:	// Mouse cursor button status
 			break;

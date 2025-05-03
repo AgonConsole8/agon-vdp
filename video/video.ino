@@ -343,6 +343,11 @@ bool processTerminal() {
 	return true;
 }
 
+void performMouseCallback() {
+	processor->sendMouseData();
+	processor->bufferCallCallbacks(CALLBACK_MOUSE);
+}
+
 void print(char const * text) {
 	for (auto i = 0; i < strlen(text); i++) {
 		processor->vdu(text[i], false);
