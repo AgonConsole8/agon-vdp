@@ -287,14 +287,14 @@ void VDUStreamProcessor::vdu_mode(uint8_t mode) {
 		switchBuffer();
 		context->cls();
 	}
-	// reset mouse
-	if (mouseEnabled) {
-		setMouseCursor();
+	// ensure mouse is shown if it was visible
+	if (mouseVisible) {
+		showMouseCursor();
 	}
 	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	// update MOS with new info
 	sendModeInformation();
-	if (mouseEnabled) {
+	if (mouseVisible) {
 		sendMouseData();
 	}
 	bufferCallCallbacks(CALLBACK_MODE_CHANGE);

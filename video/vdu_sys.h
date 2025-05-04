@@ -569,13 +569,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 
 	switch (command) {
 		case MOUSE_ENABLE: {
-			// ensure mouse is enabled, enabling its port if necessary
 			if (enableMouse()) {
-				// mouse can be enabled, so set cursor
-				if (!setMouseCursor()) {
-					// Set cursor with previous cursor failed, so pick default
-					setMouseCursor(MOUSE_DEFAULT_CURSOR);
-				}
 				debug_log("vdu_sys_mouse: mouse enabled\n\r");
 			} else {
 				debug_log("vdu_sys_mouse: mouse enable failed\n\r");
@@ -586,7 +580,6 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 		}	break;
 
 		case MOUSE_DISABLE: {
-			setMouseCursor(65535);	// hide the cursor
 			if (disableMouse()) {
 				debug_log("vdu_sys_mouse: mouse disabled\n\r");
 			} else {
@@ -597,12 +590,9 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 
 		case MOUSE_RESET: {
 			debug_log("vdu_sys_mouse: reset mouse\n\r");
-			// call the reset for the mouse
 			if (resetMouse()) {
-				// mouse successfully reset, so set cursor
-				if (!setMouseCursor()) {
-					setMouseCursor(MOUSE_DEFAULT_CURSOR);
-				}
+				// mouse successfully reset, so make sure the mouse cursor is visible
+				showMouseCursor();
 			}
 			sendMouseData();
 		}	break;

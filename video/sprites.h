@@ -10,7 +10,6 @@
 #include <fabgl.h>
 
 #include "agon.h"
-#include "agon_ps2.h"
 #include "agon_screen.h"
 #include "types.h"
 
@@ -24,9 +23,6 @@ Sprite			sprites[MAX_SPRITES];			// Sprite object storage
 // track which sprites may be using a bitmap
 std::unordered_map<uint16_t, std::vector<uint8_t, psram_allocator<uint8_t>>> bitmapUsers;
 
-std::unordered_map<uint16_t, fabgl::Cursor> mouseCursors;	// Storage for our mouse cursors
-uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Mouse cursor
-
 extern bool isFeatureFlagSet(uint16_t flag);
 
 std::shared_ptr<Bitmap> getBitmap(uint16_t id) {
@@ -36,76 +32,10 @@ std::shared_ptr<Bitmap> getBitmap(uint16_t id) {
 	return nullptr;
 }
 
-bool makeMouseCursor(uint16_t bitmapId, uint16_t hotX, uint16_t hotY) {
-	auto bitmap = getBitmap(bitmapId);
-	if (!bitmap) {
-		debug_log("addCursor: bitmap %d not found\n\r", bitmapId);
-		return false;
-	}
-	fabgl::Cursor c;
-	c.bitmap = *bitmap;
-	c.hotspotX = std::min(static_cast<uint16_t>(std::max(static_cast<int>(hotX), 0)), static_cast<uint16_t>(bitmap->width - 1));
-	c.hotspotY = std::min(static_cast<uint16_t>(std::max(static_cast<int>(hotY), 0)), static_cast<uint16_t>(bitmap->height - 1));
-	mouseCursors[bitmapId] = c;
-	return true;
-}
-
-// Sets the mouse cursor to the given ID
-// Works whether mouse is enabled or not
-// Cursor will be shown if it exists, otherwise it will be hidden
-// Calling with 65535 to hide the cursor (but remember old cursor ID)
-bool setMouseCursor(uint16_t cursor = mCursor) {
-	bool result = false;
-	auto minValue = static_cast<CursorName>(std::numeric_limits<std::underlying_type<CursorName>::type>::min());
-	auto maxValue = static_cast<CursorName>(std::numeric_limits<std::underlying_type<CursorName>::type>::max());
-	if (minValue <= cursor && cursor <= maxValue) {
-		_VGAController->setMouseCursor(static_cast<CursorName>(cursor));
-		result = true;
-	} else if (mouseCursors.find(cursor) != mouseCursors.end()) {
-		// otherwise, check whether it's a custom cursor
-		_VGAController->setMouseCursor(&mouseCursors[cursor]);
-		result = true;
-	}
-	if (!result) {
-		// Cursor was not found, so we remove/hide it
-		_VGAController->setMouseCursor(nullptr);
-		cursor = 65535;
-	}
-	if (cursor != 65535) {
-		mCursor = cursor;
-	}
-	return result;
-}
-
-void clearMouseCursor(uint16_t cursor) {
-	if (mouseCursors.find(cursor) != mouseCursors.end()) {
-		mouseCursors.erase(cursor);
-		if (cursor == mCursor) {
-			if (mouseEnabled) {
-				// TODO this needs to actually detect if the cursor is visible, which it can't do right now
-				setMouseCursor(MOUSE_DEFAULT_CURSOR);
-			} else {
-				mCursor = MOUSE_DEFAULT_CURSOR;
-			}
-		}
-	}
-}
-
 void resetBitmaps() {
 	bitmaps.clear();
 	// this will only be used after resetting sprites, so we can clear the bitmapUsers list
 	bitmapUsers.clear();
-	mouseCursors.clear();
-	if (mouseEnabled) {
-		if (!setMouseCursor()) {
-			setMouseCursor(MOUSE_DEFAULT_CURSOR);
-		}
-	} else {
-		auto maxValue = static_cast<CursorName>(std::numeric_limits<std::underlying_type<CursorName>::type>::max());
-		if (mCursor > maxValue) {
-			mCursor = MOUSE_DEFAULT_CURSOR;
-		}
-	}
 }
 
 Sprite * getSprite(uint8_t sprite = current_sprite) {

@@ -11,6 +11,7 @@
 #include <fabutils.h>
 
 #include "agon.h"
+#include "agon_ps2.h"
 #include "agon_fonts.h"
 #include "buffers.h"
 #include "buffer_stream.h"
@@ -392,6 +393,7 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 	if (bufferId == 65535) {
 		buffers.clear();
 		matrixMetadata.clear();
+		resetMouseCursors();
 		resetBitmaps();
 		// TODO reset current bitmaps in all processors
 		context->setCurrentBitmap(BUFFERED_BITMAP_BASEID);
@@ -405,9 +407,9 @@ void VDUStreamProcessor::bufferClear(uint16_t bufferId) {
 		debug_log("bufferClear: buffer %d not found\n\r", bufferId);
 		return;
 	}
+	bufferRemoveUsers(bufferId);
 	buffers.erase(bufferIter);
 	matrixMetadata.erase(bufferId);
-	bufferRemoveUsers(bufferId);
 	debug_log("bufferClear: cleared buffer %d\n\r", bufferId);
 }
 

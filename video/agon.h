@@ -464,7 +464,8 @@
 #define FEATUREFLAG_MOUSE_SCALING	0x0248	// Mouse scaling
 #define FEATUREFLAG_MOUSE_ACCELERATION	0x0249	// Mouse acceleration
 #define FEATUREFLAG_MOUSE_WHEELACC	0x024A	// Mouse wheel acceleration
-// Flags 0x024B-0x024E reserved for mouse area
+#define FEATUREFLAG_MOUSE_VISIBLE	0x024B	// Mouse cursor visible (1) or hidden (0)
+// Flags 0x024C-0x024F reserved for mouse area
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 #define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
 #define FEATUREFLAG_AUTO_HW_SPRITES	0x0400	// Auto hardware sprites flag

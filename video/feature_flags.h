@@ -6,6 +6,7 @@
 #include <ESP32Time.h>
 
 #include "agon.h"
+#include "agon_ps2.h"
 #include "vdu_stream_processor.h"
 #include "vdp_protocol.h"
 
@@ -107,7 +108,14 @@ void setFeatureFlag(uint16_t flag, uint16_t value) {
 			case FEATUREFLAG_MOUSE_WHEELACC:	// Mouse wheel acceleration
 				setMouseWheelAcceleration(value);
 				return;
-			// we have a range here (0x24B-0x24E) reserved for mouse area	
+			case FEATUREFLAG_MOUSE_VISIBLE:	// Mouse cursor visible (1) or hidden (0)
+				if (value) {
+					showMouseCursor();
+				} else {
+					hideMouseCursor();
+				}
+				return;
+			// we have a range here (0x24C-0x24F) reserved for mouse area	
 		}
 	}
 	switch (flag) {
@@ -142,7 +150,14 @@ void clearFeatureFlag(uint16_t flag) {
 			break;
 
 		case FEATUREFLAG_MOUSE_CURSOR:	// Mouse cursor ID
-			setMouseCursor(65535);
+			setMouseCursor(MOUSE_DEFAULT_CURSOR);
+			hideMouseCursor();
+			return;
+		case FEATUREFLAG_MOUSE_ENABLED:
+			disableMouse();
+			return;
+		case FEATUREFLAG_MOUSE_VISIBLE:
+			hideMouseCursor();
 			return;
 	}
 
@@ -183,6 +198,7 @@ bool isFeatureFlagSet(uint16_t flag) {
 			case FEATUREFLAG_MOUSE_SCALING:
 			case FEATUREFLAG_MOUSE_ACCELERATION:
 			case FEATUREFLAG_MOUSE_WHEELACC:
+			case FEATUREFLAG_MOUSE_VISIBLE:
 				return true;
 		}
 	}
@@ -283,6 +299,8 @@ uint16_t getFeatureFlag(uint16_t flag) {
 					return currentAcceleration;
 				}
 			};
+			case FEATUREFLAG_MOUSE_VISIBLE:
+				return mouseVisible ? 1 : 0;
 		}
 	}
 	return 0;

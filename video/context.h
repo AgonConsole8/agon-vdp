@@ -1172,7 +1172,7 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 		case 0x44A:	// Mouse wheel acceleration
 			setFeatureFlag((var - 0x440) + FEATUREFLAG_MOUSE_CURSOR, value);
 			break;
-		// Candidate variables for mouse area (0x44B-0x44E) won't be passed through
+		// Candidate variables for mouse area (0x44C-0x44F) won't be passed through
 	}
 }
 
