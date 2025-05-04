@@ -416,10 +416,17 @@
 #define COPPER_UPDATE_SIGNALLIST	3		// Update the signal list
 #define COPPER_RESET_SIGNALLIST		4		// Reset the signal list
 
-// Callback types
-#define CALLBACK_VSYNC				0		// VSync callback
-#define CALLBACK_MODE_CHANGE		1		// Mode callback
-// Future callback types may include timer, audio playback complete, etc.
+// Callback/event types
+#define CALLBACK_VSYNC				0		// VSync
+#define CALLBACK_MODE_CHANGE		1		// Mode changed
+// #define CALLBACK_KEYBOARD			2		// Keyboard event
+#define CALLBACK_MOUSE				3		// Mouse update
+// #define CALLBACK_PALETTE			4		// Palette entry changed
+// Future callback types may include...
+// * timer events (which may require metadata for timer duration, etc),
+// * audio events (a singular audio status event probably won't be enough)
+// * cursor events (movement, blink?, etc.  may need metadata to control debouncing on movement, and when events are sent)
+// * paged mode events (output paused, about to resume, setting changed)
 
 // Test/Feature flags
 #define TESTFLAG_AFFINE_TRANSFORM	1	// Affine transform test flag
@@ -446,9 +453,22 @@
 #define FEATUREFLAG_KEYBOARD_LAYOUT	0x0220	// Keyboard layout
 #define FEATUREFLAG_KEYBOARD_CTRL_KEYS	0x0221	// Control keys on/off
 #define FEATUREFLAG_CONTEXT_ID	0x0230	// Current active context ID
+#define FEATUREFLAG_MOUSE_CURSOR	0x0240	// Mouse cursor ID
+#define FEATUREFLAG_MOUSE_ENABLED	0x0241	// Mouse enabled/disabled
+#define FEATUREFLAG_MOUSE_XPOS	0x0242	// Mouse X position (pixel coords)
+#define FEATUREFLAG_MOUSE_YPOS	0x0243	// Mouse Y position (pixel coords)
+#define FEATUREFLAG_MOUSE_BUTTONS	0x0244	// Mouse button state (bitmask)
+#define FEATUREFLAG_MOUSE_WHEEL	0x0245	// Mouse wheel
+#define FEATUREFLAG_MOUSE_SAMPLERATE	0x0246	// Mouse sample rate
+#define FEATUREFLAG_MOUSE_RESOLUTION	0x0247	// Mouse resolution
+#define FEATUREFLAG_MOUSE_SCALING	0x0248	// Mouse scaling
+#define FEATUREFLAG_MOUSE_ACCELERATION	0x0249	// Mouse acceleration
+#define FEATUREFLAG_MOUSE_WHEELACC	0x024A	// Mouse wheel acceleration
+#define FEATUREFLAG_MOUSE_VISIBLE	0x024B	// Mouse cursor visible (1) or hidden (0)
+// Flags 0x024C-0x024F reserved for mouse area
 #define FEATUREFLAG_TILE_ENGINE	0x0300	// Tile engine flag (layers commands)
 #define FEATUREFLAG_COPPER		0x0310	// Copper feature flag
-#define FEATURE_FLAG_AUTO_HW_SPRITES	0x0400	// Auto hardware sprites flag
+#define FEATUREFLAG_AUTO_HW_SPRITES	0x0400	// Auto hardware sprites flag
 #define FEATUREFLAG_VDU_VARIABLES_START	0x1000	// VDU variables start at 0x1000
 #define FEATUREFLAG_VDU_VARIABLES_END	0x1FFF	// VDU variables end
 #define FEATUREFLAG_VDU_VARIABLES_MASK	0x0FFF	// VDU variables mask

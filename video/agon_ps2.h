@@ -17,11 +17,15 @@ uint8_t			kbRegion = 0;					// Keyboard region
 bool			kbEnabled = false;				// Keyboard enabled
 
 bool			mouseEnabled = false;			// Mouse enabled
+bool			mouseVisible = false;			// Mouse cursor visible
 uint8_t			mSampleRate = MOUSE_DEFAULT_SAMPLERATE;	// Mouse sample rate
 uint8_t			mResolution = MOUSE_DEFAULT_RESOLUTION;	// Mouse resolution
 uint8_t			mScaling = MOUSE_DEFAULT_SCALING;	// Mouse scaling
 uint16_t		mAcceleration = MOUSE_DEFAULT_ACCELERATION;	// Mouse acceleration
 uint32_t		mWheelAcc = MOUSE_DEFAULT_WHEELACC;	// Mouse wheel acceleration
+
+std::unordered_map<uint16_t, fabgl::Cursor> mouseCursors;	// Storage for custom mouse cursors
+uint16_t		mCursor = MOUSE_DEFAULT_CURSOR;	// Selected mouse cursor
 
 // Forward declarations
 //
@@ -171,51 +175,6 @@ bool getKeyboardKey(uint8_t *keycode, uint8_t *modifiers, uint8_t *vk, uint8_t *
 	return false;
 }
 
-// Simpler keyboard read for CP/M Terminal Mode
-//
-bool getKeyboardKey(uint8_t *ascii) {
-	auto kb = getKeyboard();
-	fabgl::VirtualKeyItem item;
-
-	// Read the keyboard and transmit to the Z80
-	//
-	if (kb->getNextVirtualKey(&item, 0)) {
-		if (item.down) {
-			*ascii = item.ASCII;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-// Wait for shift key to be released, then pressed (used for paged mode)
-// 
-bool wait_shiftkey(uint8_t *ascii, uint8_t* vk, uint8_t* down) {
-	auto kb = getKeyboard();
-	fabgl::VirtualKeyItem item;
-
-	// Wait for shift to be released
-	//
-	do {
-		kb->getNextVirtualKey(&item, 0);
-	} while (item.SHIFT);
-
-	// And pressed again
-	//
-	do {
-		kb->getNextVirtualKey(&item, 0);
-		*ascii = item.ASCII;
-		*vk = item.vk;
-		*down = item.down;
-		if (item.ASCII == 27) {	// Check for ESC
-			return false;
-		}
-	} while (!item.SHIFT);
-
-	return true;
-}
-
 bool shiftKeyPressed() {
 	auto kb = getKeyboard();
 	fabgl::VirtualKeyItem item;
@@ -251,28 +210,54 @@ void setKeyboardState(uint16_t delay, uint16_t rate, uint8_t ledState) {
     kb->setTypematicRateAndDelay(kbRepeatRate, kbRepeatDelay);
 }
 
-bool updateMouseEnabled() {
-	auto mouse = getMouse();
-	if (!mouse) {
-		return false;
+bool isSystemMouseCursor(uint16_t cursor) {
+	auto minValue = static_cast<CursorName>(std::numeric_limits<std::underlying_type<CursorName>::type>::min());
+	auto maxValue = static_cast<CursorName>(std::numeric_limits<std::underlying_type<CursorName>::type>::max());
+	return (minValue <= cursor && cursor <= maxValue);
+}
+
+void hideMouseCursor() {
+	_VGAController->setMouseCursor(nullptr);
+	mouseVisible = false;
+}
+
+void showMouseCursor() {
+	if (isSystemMouseCursor(mCursor)) {
+		_VGAController->setMouseCursor(static_cast<CursorName>(mCursor));
+	} else if (mouseCursors.find(mCursor) != mouseCursors.end()) {
+		_VGAController->setMouseCursor(&mouseCursors[mCursor]);
+	} else {
+		// Something went wrong, cursor not found
+		hideMouseCursor();
+		return;
 	}
-	mouseEnabled = mouse->isMouseAvailable();
-	return mouseEnabled;
+	mouseVisible = true;
 }
 
 bool enableMouse() {
 	if (mouseEnabled) {
+		if (!mouseVisible) {
+			showMouseCursor();
+		}
 		return true;
 	}
 	auto mouse = getMouse();
 	if (!mouse) {
-		return false;
+		mouseEnabled = false;
+	} else {
+		mouse->resumePort();
+		mouseEnabled = mouse->isMouseAvailable();
 	}
-	mouse->resumePort();
-	return updateMouseEnabled();
+	if (mouseEnabled) {
+		showMouseCursor();
+	} else {
+		hideMouseCursor();
+	}
+	return mouseEnabled;
 }
 
 bool disableMouse() {
+	hideMouseCursor();
 	if (!mouseEnabled) {
 		return true;
 	}
@@ -425,6 +410,64 @@ bool mouseMoved(MouseDelta * delta) {
 		return true;
 	}
 	return false;
+}
+
+void makeMouseCursor(uint16_t bitmapId, std::shared_ptr<Bitmap> bitmap, uint16_t hotX, uint16_t hotY) {
+	fabgl::Cursor c;
+	c.bitmap = *bitmap;
+	c.hotspotX = std::min(static_cast<uint16_t>(std::max(static_cast<int>(hotX), 0)), static_cast<uint16_t>(bitmap->width - 1));
+	c.hotspotY = std::min(static_cast<uint16_t>(std::max(static_cast<int>(hotY), 0)), static_cast<uint16_t>(bitmap->height - 1));
+	mouseCursors[bitmapId] = c;
+}
+
+// Sets the mouse cursor to the given ID
+// Works whether mouse is enabled or not
+// Cursor will be shown if it exists, otherwise it will be hidden
+// Calling with 65535 to hide the cursor (but remember old cursor ID)
+bool setMouseCursor(uint16_t cursor = mCursor) {
+	bool showing = false;
+	if (mouseVisible && cursor == mCursor) {
+		// Cursor is already set and visible
+		return true;
+	}
+	if (isSystemMouseCursor(cursor)) {
+		mCursor = cursor;
+		showing = true;
+	} else if (mouseCursors.find(cursor) != mouseCursors.end()) {
+		mCursor = cursor;
+		showing = true;
+	}
+	
+	if (showing) {
+		showMouseCursor();
+	} else {
+		hideMouseCursor();
+	}
+	return mouseVisible;
+}
+
+void clearMouseCursor(uint16_t cursor) {
+	if (cursor == mCursor) {
+		mCursor = MOUSE_DEFAULT_CURSOR;
+		if (mouseVisible) {
+			// Force the cursor to be updated
+			showMouseCursor();
+		}
+	}
+	if (mouseCursors.find(cursor) != mouseCursors.end()) {
+		mouseCursors.erase(cursor);
+	}
+}
+
+void resetMouseCursors() {
+	if (!isSystemMouseCursor(mCursor)) {
+		mCursor = MOUSE_DEFAULT_CURSOR;
+		if (mouseVisible) {
+			// Force the cursor to be updated
+			showMouseCursor();
+		}
+	}
+	mouseCursors.clear();
 }
 
 #endif // AGON_PS2_H

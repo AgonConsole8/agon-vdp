@@ -4,6 +4,7 @@
 #include <fabgl.h>
 #include <cmath>
 
+#include "agon_ps2.h"
 #include "buffers.h"
 #include "sprites.h"
 #include "types.h"
@@ -145,6 +146,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		}	break;
 
 		case 16: {	// Reset
+			resetMouseCursors();
 			resetSprites();
 			resetBitmaps();
 			// TODO reset current bitmaps in all processors
@@ -218,11 +220,14 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 0x40: {	// Setup mouse cursor from current bitmap
 			auto hotX = readByte_t(); if (hotX == -1) return;
 			auto hotY = readByte_t(); if (hotY == -1) return;
-			if (makeCursor(context->getCurrentBitmapId(), hotX, hotY)) {
-				debug_log("vdu_sys_sprites: cursor created from bitmap %d\n\r", context->getCurrentBitmapId());
-			} else {
-				debug_log("vdu_sys_sprites: cursor failed to create from bitmap %d\n\r", context->getCurrentBitmapId());
+			auto bitmapId = context->getCurrentBitmapId();
+			auto bitmap = getBitmap(bitmapId);
+			if (!bitmap) {
+				debug_log("vdu_sys_sprites: create mouse cursor failed, bitmap %d not found\n\r", bitmapId);
+				return;
 			}
+			makeMouseCursor(bitmapId, bitmap, hotX, hotY);
+			debug_log("vdu_sys_sprites: cursor created from bitmap %d\n\r", context->getCurrentBitmapId());
 		}	break;
 
 		default: {

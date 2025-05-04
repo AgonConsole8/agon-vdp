@@ -14,6 +14,9 @@
 #include "sprites.h"
 
 extern bool isFeatureFlagSet(uint16_t flag);
+extern uint16_t getFeatureFlag(uint16_t flag);
+extern void setFeatureFlag(uint16_t flag, uint16_t value);
+extern void performMouseCallback();
 uint		lastFrameCounter = 0;			// Last frame counter for VSYNC callbacks
 
 // Support structures
@@ -848,81 +851,25 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 		// case 0x412:	// Current sprite transform ID - not supported
 
 		case 0x440:	// Mouse cursor ID
-			if (value) {
-				*value = mCursor;
-			}
-			break;
 		case 0x441:	// Mouse cursor enabled
-			if (value) {
-				*value = mouseEnabled ? 1 : 0;
-			}
-			break;
-		case 0x442:	// Mouse cursor X position
-			if (value) {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto mStatus = mouse->status();
-					*value = mStatus.X;
-				}
-			}
-			break;
+		case 0x442:	// Mouse cursor X position (pixel coords)
 		case 0x443:	// Mouse cursor Y position
-			if (value) {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto mStatus = mouse->status();
-					*value = mStatus.Y;
-				}
-			}
-			break;
 		case 0x444:	// Mouse cursor button status
-			if (value) {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto mStatus = mouse->status();
-					*value = mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2;
-				}
-			}
-			break;
 		case 0x445:	// Mouse wheel delta
-			if (value) {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto mStatus = mouse->status();
-					*value = mStatus.wheelDelta;
-				}
-			}
-			break;
 		case 0x446:	// Mouse sample rate
-			if (value) {
-				*value = mSampleRate;
-			}
-			break;
 		case 0x447:	// Mouse resolution
-			if (value) {
-				*value = mResolution;
-			}
-			break;
 		case 0x448:	// Mouse scaling
-			if (value) {
-				*value = mScaling;
-			}
-			break;
 		case 0x449:	// Mouse acceleration
-			if (value) {
-				*value = mAcceleration;
+		case 0x44A: {	// Mouse wheel acceleration
+			auto flagId = (var - 0x440) + FEATUREFLAG_MOUSE_CURSOR;
+			auto flagExists = isFeatureFlagSet(flagId);
+			if (flagExists) {
+				*value = getFeatureFlag(flagId);
+			} else {
+				// This shouldn't happen, but just in case
+				return false;
 			}
-			break;
-		case 0x44A:	// Mouse wheel acceleration
-			if (value) {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto & currentAcceleration = mouse->wheelAcceleration();
-					*value = currentAcceleration;
-				}
-			}
-			break;
-		// 0x44B-0x44E reserved for mouse area
+		}	break;
 
 		default:
 			debug_log("readVariable: variable %d not found\n\r", var);
@@ -1213,47 +1160,19 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			break;
 
 		case 0x440:	// Mouse cursor ID
-			setMouseCursor(value);
-			break;
 		case 0x441:	// Mouse cursor enabled
-			if (value) {
-				enableMouse();
-			} else {
-				disableMouse();
-			}
-			break;
 		case 0x442:	// Mouse cursor X position (pixel coords)
-			uint16_t mouseY;
-			readVariable(0x423, &mouseY);
-			setMousePos(value, mouseY);
-			setMouseCursorPos(value, mouseY);
-			break;
 		case 0x443:	// Mouse cursor Y position
-			uint16_t mouseX;
-			readVariable(0x422, &mouseX);
-			setMousePos(mouseX, value);
-			setMouseCursorPos(mouseX, value);
-			break;
 		case 0x444:	// Mouse cursor button status
-			break;
-		// case 0x445:	// Mouse wheel delta
+		case 0x445:	// Mouse wheel delta
 		case 0x446:	// Mouse sample rate
-			setMouseSampleRate(value);
-			break;
 		case 0x447:	// Mouse resolution
-			setMouseResolution(value);
-			break;
 		case 0x448:	// Mouse scaling
-			setMouseScaling(value);
-			break;
 		case 0x449:	// Mouse acceleration
-			setMouseAcceleration(value);
-			break;
 		case 0x44A:	// Mouse wheel acceleration
-			setMouseWheelAcceleration(value);
+			setFeatureFlag((var - 0x440) + FEATUREFLAG_MOUSE_CURSOR, value);
 			break;
-		// 0x44B-0x44E reserved for mouse area
-
+		// Candidate variables for mouse area (0x44C-0x44F) won't be passed through
 	}
 }
 

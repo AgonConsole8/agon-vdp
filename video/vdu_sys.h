@@ -569,23 +569,18 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 
 	switch (command) {
 		case MOUSE_ENABLE: {
-			// ensure mouse is enabled, enabling its port if necessary
 			if (enableMouse()) {
-				// mouse can be enabled, so set cursor
-				if (!setMouseCursor()) {
-					setMouseCursor(MOUSE_DEFAULT_CURSOR);
-				}
 				debug_log("vdu_sys_mouse: mouse enabled\n\r");
 			} else {
 				debug_log("vdu_sys_mouse: mouse enable failed\n\r");
 			}
 			// send mouse data (with no delta) to indicate command processed successfully
 			sendMouseData();
+			bufferCallCallbacks(CALLBACK_MOUSE);
 		}	break;
 
 		case MOUSE_DISABLE: {
 			if (disableMouse()) {
-				setMouseCursor(65535);	// set cursor to be a non-existant cursor
 				debug_log("vdu_sys_mouse: mouse disabled\n\r");
 			} else {
 				debug_log("vdu_sys_mouse: mouse disable failed\n\r");
@@ -595,21 +590,19 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 
 		case MOUSE_RESET: {
 			debug_log("vdu_sys_mouse: reset mouse\n\r");
-			// call the reset for the mouse
 			if (resetMouse()) {
-				// mouse successfully reset, so set cursor
-				if (!setMouseCursor()) {
-					setMouseCursor(MOUSE_DEFAULT_CURSOR);
-				}
+				// mouse successfully reset, so make sure the mouse cursor is visible
+				showMouseCursor();
 			}
 			sendMouseData();
 		}	break;
 
 		case MOUSE_SET_CURSOR: {
 			auto cursor = readWord_t();	if (cursor == -1) return;
-			if (setMouseCursor(cursor)) {
-				sendMouseData();
+			if (mouseEnabled) {
+				setMouseCursor(cursor);
 			}
+			sendMouseData();
 			debug_log("vdu_sys_mouse: set cursor\n\r");
 		}	break;
 
@@ -624,6 +617,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			setMouseCursorPos(p.X, p.Y);
 
 			sendMouseData();
+			bufferCallCallbacks(CALLBACK_MOUSE);
 			debug_log("vdu_sys_mouse: set position\n\r");
 		}	break;
 
