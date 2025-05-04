@@ -561,6 +561,10 @@ void VDUStreamProcessor::processNext() {
 		bufferCallCallbacks(CALLBACK_VSYNC);
 		if (!byteAvailable()) {
 			getContext()->clearTempPagedMode();
+			// Ensure output stream changes on main VDU processor are temporary
+			if (outputStream != originalOutputStream) {
+				outputStream = originalOutputStream;
+			}
 		}
 	}
 

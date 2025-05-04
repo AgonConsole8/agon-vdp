@@ -361,13 +361,20 @@ void VDUStreamProcessor::bufferCall(uint16_t callBufferId, AdvancedOffset offset
 		auto multiBufferStream = (MultiBufferStream *)callInputStream.get();
 		multiBufferStream->seekTo(offset.blockOffset, offset.blockIndex);
 	}
-	// use the current VDUStreamProcessor, swapping out the stream
+	// Track our output streams so we can restore them after the call
+	auto currentOutputStream = outputStream;
+	auto currentOriginalOutputStream = originalOutputStream;
+	// update originalOutputStream so it is correct for the context of the call
+	originalOutputStream = outputStream;
+	// using the current VDUStreamProcessor, swap in our new input stream
 	std::swap(id, callBufferId);
 	std::swap(inputStream, callInputStream);
 	processAllAvailable();
-	// restore the original buffer id and stream
+	// restore the original buffer id and streams
 	id = callBufferId;
 	inputStream = std::move(callInputStream);
+	outputStream = std::move(currentOutputStream);
+	originalOutputStream = std::move(currentOriginalOutputStream);
 	if (id != 65535) {
 		// return to the appropriate offset
 		auto multiBufferStream = (MultiBufferStream *)inputStream.get();
