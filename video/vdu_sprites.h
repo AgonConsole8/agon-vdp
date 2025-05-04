@@ -218,7 +218,7 @@ void VDUStreamProcessor::vdu_sys_sprites() {
 		case 0x40: {	// Setup mouse cursor from current bitmap
 			auto hotX = readByte_t(); if (hotX == -1) return;
 			auto hotY = readByte_t(); if (hotY == -1) return;
-			if (makeCursor(context->getCurrentBitmapId(), hotX, hotY)) {
+			if (makeMouseCursor(context->getCurrentBitmapId(), hotX, hotY)) {
 				debug_log("vdu_sys_sprites: cursor created from bitmap %d\n\r", context->getCurrentBitmapId());
 			} else {
 				debug_log("vdu_sys_sprites: cursor failed to create from bitmap %d\n\r", context->getCurrentBitmapId());

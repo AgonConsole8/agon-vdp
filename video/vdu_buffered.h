@@ -380,6 +380,7 @@ void VDUStreamProcessor::bufferRemoveUsers(uint16_t bufferId) {
 	clearBitmap(bufferId);
 	clearFont(bufferId);
 	clearSample(bufferId);
+	clearMouseCursor(bufferId);
 }
 
 // VDU 23, 0, &A0, bufferId; 2: Clear buffer

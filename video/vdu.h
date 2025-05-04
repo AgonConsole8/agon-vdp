@@ -288,7 +288,9 @@ void VDUStreamProcessor::vdu_mode(uint8_t mode) {
 		context->cls();
 	}
 	// reset mouse
-	setMouseCursor();
+	if (mouseEnabled) {
+		setMouseCursor();
+	}
 	resetMousePositioner(canvasW, canvasH, _VGAController.get());
 	// update MOS with new info
 	sendModeInformation();
@@ -378,7 +380,7 @@ void VDUStreamProcessor::vdu_origin() {
 	}
 }
 
-// VDU 30 TAB(x,y)
+// VDU 31 TAB(x,y)
 //
 void VDUStreamProcessor::vdu_cursorTab() {
 	auto x = readByte_t();

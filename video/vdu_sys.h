@@ -573,6 +573,7 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			if (enableMouse()) {
 				// mouse can be enabled, so set cursor
 				if (!setMouseCursor()) {
+					// Set cursor with previous cursor failed, so pick default
 					setMouseCursor(MOUSE_DEFAULT_CURSOR);
 				}
 				debug_log("vdu_sys_mouse: mouse enabled\n\r");
@@ -585,8 +586,8 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 		}	break;
 
 		case MOUSE_DISABLE: {
+			setMouseCursor(65535);	// hide the cursor
 			if (disableMouse()) {
-				setMouseCursor(65535);	// set cursor to be a non-existant cursor
 				debug_log("vdu_sys_mouse: mouse disabled\n\r");
 			} else {
 				debug_log("vdu_sys_mouse: mouse disable failed\n\r");
@@ -608,9 +609,10 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 
 		case MOUSE_SET_CURSOR: {
 			auto cursor = readWord_t();	if (cursor == -1) return;
-			if (setMouseCursor(cursor)) {
-				sendMouseData();
+			if (mouseEnabled) {
+				setMouseCursor(cursor);
 			}
+			sendMouseData();
 			debug_log("vdu_sys_mouse: set cursor\n\r");
 		}	break;
 
