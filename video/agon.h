@@ -421,7 +421,7 @@
 #define CALLBACK_MODE_CHANGE		1		// Mode changed
 // #define CALLBACK_KEYBOARD			2		// Keyboard event
 #define CALLBACK_MOUSE				3		// Mouse update
-// #define CALLBACK_PALETTE			4		// Palette entry changed
+#define CALLBACK_PALETTE			4		// Palette entry changed
 // Future callback types may include...
 // * timer events (which may require metadata for timer duration, etc),
 // * audio events (a singular audio status event probably won't be enough)

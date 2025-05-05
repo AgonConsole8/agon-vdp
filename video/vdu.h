@@ -252,13 +252,22 @@ void VDUStreamProcessor::vdu_palette() {
 	auto g = readByte_t(); if (g == -1) return; // The green component
 	auto b = readByte_t(); if (b == -1) return; // The blue component
 
-	// keep logical colour index in bounds
-	l &= 63;
-	auto index = setLogicalPalette(l, p, r, g, b);
+	// keep logical colour index in bounds for current mode
+	l &= (getVGAColourDepth() - 1);
+	auto physical = setLogicalPalette(l, p, r, g, b);
 
-	if (index != -1) {
+	if (physical != -1) {
 		// TODO iterate over all stored contexts and update the palette
-		context->updateColours(l, index);
+		// this should include all context objects in stacks
+		Context::updateColoursInAllContexts(l, physical);
+
+		auto pixel = colourLookup[physical];
+		setVDPVariable(VDPVAR_LAST_COLOUR_RED, pixel.R);
+		setVDPVariable(VDPVAR_LAST_COLOUR_GREEN, pixel.G);
+		setVDPVariable(VDPVAR_LAST_COLOUR_BLUE, pixel.B);
+		setVDPVariable(VDPVAR_LAST_COLOUR_LOGICAL, l);
+		setVDPVariable(VDPVAR_LAST_COLOUR_PHYSICAL, physical);
+		bufferCallCallbacks(CALLBACK_PALETTE);
 	}
 }
 

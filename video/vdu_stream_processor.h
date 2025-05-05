@@ -15,12 +15,6 @@
 #include "span.h"
 #include "types.h"
 
-using ContextVector = std::vector<std::shared_ptr<Context>, psram_allocator<std::shared_ptr<Context>>>;
-using ContextVectorPtr = std::shared_ptr<ContextVector>;
-std::unordered_map<uint16_t, ContextVectorPtr,
-	std::hash<uint16_t>, std::equal_to<uint16_t>,
-	psram_allocator<std::pair<const uint16_t, ContextVectorPtr>>> contextStacks;
-
 extern uint16_t getVDPVariable(uint16_t flag);
 
 class VDUStreamProcessor {
