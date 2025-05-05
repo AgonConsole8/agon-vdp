@@ -54,6 +54,7 @@ class VDUStreamProcessor {
 		void vdu_colour();
 		void vdu_gcol();
 		void vdu_palette();
+		void vdu_restorePalette();
 		void vdu_graphicsViewport();
 		void vdu_plot();
 		void vdu_resetViewports();
