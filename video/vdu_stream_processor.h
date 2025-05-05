@@ -138,7 +138,7 @@ class VDUStreamProcessor {
 		void bufferMatrixManipulate(uint16_t bufferId, uint8_t command, MatrixSize size);
 		void bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
-		void bufferReadFlag(uint16_t bufferId);
+		void bufferReadVariable(uint16_t bufferId);
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
@@ -654,25 +654,22 @@ void VDUStreamProcessor::flushEcho() {
 }
 
 void VDUStreamProcessor::handleKeyboardAndMouse() {
-	uint8_t keycode;
-	uint8_t modifiers;
-	uint8_t vk;
-	uint8_t down;
 	MouseDelta delta;
 
 	// Send all pending keyboard events to MOS
-	while (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
+	// while (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
+	while (getKeyboardKey(&kbItem)) {
 		// Handle some control keys
 		//
-		if (controlKeys && down) {
-			switch (keycode) {
+		if (controlKeys && kbItem.down) {
+			switch (kbItem.ASCII) {
 				case 2:		// printer on
 				case 3:		// printer off
 				case 6:		// VDU commands enable
 				case 7:		// Bell
 				case 12:	// CLS
 				case 14 ... 15:	// paged mode on/off
-					vdu(keycode, false);
+					vdu(kbItem.ASCII, false);
 					break;
 				case 16:
 					// control-P toggles "printer" on R.T.Russell's BASIC
@@ -680,14 +677,14 @@ void VDUStreamProcessor::handleKeyboardAndMouse() {
 			}
 		}
 		// Create and send the packet back to MOS
-		//
 		uint8_t packet[] = {
-			keycode,
-			modifiers,
-			vk,
-			down,
+			_keycode,
+			packKeyboardModifiers(&kbItem),
+			static_cast<uint8_t>(kbItem.vk & 0xFF),
+			kbItem.down,
 		};
 		send_packet(PACKET_KEYCODE, sizeof packet, packet);
+		bufferCallCallbacks(CALLBACK_KEYBOARD);
 	}
 
 	// get mouse delta, if the mouse is active

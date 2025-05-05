@@ -56,7 +56,46 @@ void setVDPVariable(uint16_t flag, uint16_t value) {
 			case VDPVAR_KEYBOARD_CTRL_KEYS:
 				controlKeys = value != 0;
 				return;
-			
+			case VDPVAR_KEYBOARD_REP_DELAY:
+				setKeyboardState(value, kbRepeatRate, 255);
+				return;
+			case VDPVAR_KEYBOARD_REP_RATE:
+				setKeyboardState(kbRepeatDelay, value, 255);
+				return;
+			case VDPVAR_KEYBOARD_LED:
+				getKeyboard()->setLEDs(value & 4, value & 2, value & 1);
+				return;
+			case VDPVAR_KEYBOARD_LED_NUM: {
+				bool numLock;
+				bool capsLock;
+				bool scrollLock;
+				auto kb = getKeyboard();
+				kb->getLEDs(&numLock, &capsLock, &scrollLock);
+				numLock = value & 1;
+				kb->setLEDs(numLock, capsLock, scrollLock);
+				return;
+			}
+			case VDPVAR_KEYBOARD_LED_CAPS: {
+				bool numLock;
+				bool capsLock;
+				bool scrollLock;
+				auto kb = getKeyboard();
+				kb->getLEDs(&numLock, &capsLock, &scrollLock);
+				capsLock = value & 1;
+				kb->setLEDs(numLock, capsLock, scrollLock);
+				return;
+			}
+			case VDPVAR_KEYBOARD_LED_SCROLL: {
+				bool numLock;
+				bool capsLock;
+				bool scrollLock;
+				auto kb = getKeyboard();
+				kb->getLEDs(&numLock, &capsLock, &scrollLock);
+				scrollLock = value & 1;
+				kb->setLEDs(numLock, capsLock, scrollLock);
+				return;
+			}
+				
 			case VDPVAR_CONTEXT_ID:
 				processor->selectContext(value);
 				processor->sendModeInformation();
@@ -81,7 +120,7 @@ void setVDPVariable(uint16_t flag, uint16_t value) {
 				processor->sendMouseData();
 				processor->bufferCallCallbacks(CALLBACK_MOUSE);
 				return;
-			};
+			}
 			case VDPVAR_MOUSE_YPOS: {	// Mouse cursor Y position (pixel coords)
 				uint16_t mouseX = getVDPVariable(VDPVAR_MOUSE_XPOS);
 				setMousePos(mouseX, value);
@@ -89,7 +128,7 @@ void setVDPVariable(uint16_t flag, uint16_t value) {
 				processor->sendMouseData();
 				processor->bufferCallCallbacks(CALLBACK_MOUSE);
 				return;
-			};
+			}
 			case VDPVAR_MOUSE_BUTTONS:	// Mouse cursor button status
 			case VDPVAR_MOUSE_WHEEL:	// Mouse wheel
 				return;
@@ -186,6 +225,12 @@ bool isVDPVariableSet(uint16_t flag) {
 			case VDPVAR_BUFFERS_USED:
 			case VDPVAR_KEYBOARD_LAYOUT:
 			case VDPVAR_KEYBOARD_CTRL_KEYS:
+			case VDPVAR_KEYBOARD_REP_DELAY:
+			case VDPVAR_KEYBOARD_REP_RATE:
+			case VDPVAR_KEYBOARD_LED:
+			case VDPVAR_KEYBOARD_LED_NUM:
+			case VDPVAR_KEYBOARD_LED_CAPS:
+			case VDPVAR_KEYBOARD_LED_SCROLL:
 			case VDPVAR_CONTEXT_ID:
 			case VDPVAR_MOUSE_CURSOR:
 			case VDPVAR_MOUSE_ENABLED:
@@ -199,6 +244,22 @@ bool isVDPVariableSet(uint16_t flag) {
 			case VDPVAR_MOUSE_ACCELERATION:
 			case VDPVAR_MOUSE_WHEELACC:
 			case VDPVAR_MOUSE_VISIBLE:
+			case VDPVAR_KEYEVENT_KEYCODE:
+			case VDPVAR_KEYEVENT_VK:
+			case VDPVAR_KEYEVENT_DOWN:
+			case VDPVAR_KEYEVENT_MODIFIERS:
+			case VDPVAR_KEYEVENT_CTRL:
+			case VDPVAR_KEYEVENT_LALT:
+			case VDPVAR_KEYEVENT_RALT:
+			case VDPVAR_KEYEVENT_SHIFT:
+			case VDPVAR_KEYEVENT_GUI:
+			case VDPVAR_KEYEVENT_CAPSLOCK:
+			case VDPVAR_KEYEVENT_NUMLOCK:
+			case VDPVAR_KEYEVENT_SCROLLLOCK:
+			case VDPVAR_KEYEVENT_SCANCODE1:
+			case VDPVAR_KEYEVENT_SCANCODE2:
+			case VDPVAR_KEYEVENT_SCANCODE3:
+			case VDPVAR_KEYEVENT_SCANCODE4:
 				return true;
 		}
 	}
@@ -248,7 +309,39 @@ uint16_t getVDPVariable(uint16_t flag) {
 				return kbRegion;
 			case VDPVAR_KEYBOARD_CTRL_KEYS:
 				return controlKeys ? 1 : 0;
-			
+			case VDPVAR_KEYBOARD_REP_DELAY:
+				return kbRepeatDelay;
+			case VDPVAR_KEYBOARD_REP_RATE:
+				return kbRepeatRate;
+			case VDPVAR_KEYBOARD_LED: {
+				bool numLock;
+				bool capsLock;
+				bool scrollLock;
+				getKeyboard()->getLEDs(&numLock, &capsLock, &scrollLock);
+				return scrollLock | (capsLock << 1) | (numLock << 2);
+			}
+			case VDPVAR_KEYBOARD_LED_NUM: {
+				bool numLock;
+				bool capsLock;
+				bool scrollLock;
+				getKeyboard()->getLEDs(&numLock, &capsLock, &scrollLock);
+				return numLock ? 1 : 0;
+			}
+			case VDPVAR_KEYBOARD_LED_CAPS: {
+				bool numLock;
+				bool capsLock;
+				bool scrollLock;
+				getKeyboard()->getLEDs(&numLock, &capsLock, &scrollLock);
+				return capsLock ? 1 : 0;
+			}
+			case VDPVAR_KEYBOARD_LED_SCROLL: {
+				bool numLock;
+				bool capsLock;
+				bool scrollLock;
+				getKeyboard()->getLEDs(&numLock, &capsLock, &scrollLock);
+				return scrollLock ? 1 : 0;
+			}
+				
 			case VDPVAR_CONTEXT_ID:
 				return processor->contextId;
 
@@ -262,28 +355,28 @@ uint16_t getVDPVariable(uint16_t flag) {
 					auto mStatus = mouse->status();
 					return mStatus.X;
 				}
-			};
+			}
 			case VDPVAR_MOUSE_YPOS: {
 				auto mouse = getMouse();
 				if (mouse) {
 					auto mStatus = mouse->status();
 					return mStatus.Y;
 				}
-			};
+			}
 			case VDPVAR_MOUSE_BUTTONS: {
 				auto mouse = getMouse();
 				if (mouse) {
 					auto mStatus = mouse->status();
 					return mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2;
 				}
-			};
+			}
 			case VDPVAR_MOUSE_WHEEL: {
 				auto mouse = getMouse();
 				if (mouse) {
 					auto mStatus = mouse->status();
 					return mStatus.wheelDelta;
 				}
-			};
+			}
 			case VDPVAR_MOUSE_SAMPLERATE:
 				return mSampleRate;
 			case VDPVAR_MOUSE_RESOLUTION:
@@ -298,9 +391,42 @@ uint16_t getVDPVariable(uint16_t flag) {
 					auto & currentAcceleration = mouse->wheelAcceleration();
 					return currentAcceleration;
 				}
-			};
+			}
 			case VDPVAR_MOUSE_VISIBLE:
 				return mouseVisible ? 1 : 0;
+
+			case VDPVAR_KEYEVENT_KEYCODE:
+				return _keycode | kbItem.ASCII << 8;
+			case VDPVAR_KEYEVENT_VK:
+				return kbItem.vk;
+			case VDPVAR_KEYEVENT_DOWN:
+				return kbItem.down;
+			case VDPVAR_KEYEVENT_MODIFIERS:
+				return packKeyboardModifiers(&kbItem);
+			case VDPVAR_KEYEVENT_CTRL:
+				return kbItem.CTRL;
+			case VDPVAR_KEYEVENT_LALT:
+				return kbItem.LALT;
+			case VDPVAR_KEYEVENT_RALT:
+				return kbItem.RALT;
+			case VDPVAR_KEYEVENT_SHIFT:
+				return kbItem.SHIFT;
+			case VDPVAR_KEYEVENT_GUI:
+				return kbItem.GUI;
+			case VDPVAR_KEYEVENT_CAPSLOCK:
+				return kbItem.CAPSLOCK;
+			case VDPVAR_KEYEVENT_NUMLOCK:
+				return kbItem.NUMLOCK;
+			case VDPVAR_KEYEVENT_SCROLLLOCK:
+				return kbItem.SCROLLLOCK;
+			case VDPVAR_KEYEVENT_SCANCODE1:
+				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[0];
+			case VDPVAR_KEYEVENT_SCANCODE2:
+				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[1];
+			case VDPVAR_KEYEVENT_SCANCODE3:
+				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[2];
+			case VDPVAR_KEYEVENT_SCANCODE4:
+				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[3];
 		}
 	}
 	return 0;

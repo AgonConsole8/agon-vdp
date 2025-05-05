@@ -275,7 +275,7 @@
 #define BUFFERED_MATRIX					0x22	// Create or combine a matrix buffer of arbitrary dimensions
 #define BUFFERED_TRANSFORM_BITMAP		0x28	// Create a new bitmap from an existing one by applying a 2d transform
 #define BUFFERED_TRANSFORM_DATA			0x29	// Transform data using a given matrix
-#define BUFFERED_READ_FLAG				0x30	// Read flag value into a buffer
+#define BUFFERED_READ_VARIABLE			0x30	// Read a VDP variable value into a buffer
 #define BUFFERED_COMPRESS				0x40	// Compress blocks from multiple buffers into one buffer
 #define BUFFERED_DECOMPRESS				0x41	// Decompress blocks from multiple buffers into one buffer
 #define BUFFERED_EXPAND_BITMAP			0x48	// Expand a bitmap buffer
@@ -319,7 +319,7 @@
 #define COND_OP_MASK			0x0F	// conditional operation code mask
 #define COND_ADVANCED_OFFSETS	0x10	// advanced offset values
 #define COND_BUFFER_VALUE		0x20	// value to compare against is a buffer-fetched value
-#define COND_FLAG_VALUE			0x40	// condition source value is a flag
+#define COND_VAR_VALUE			0x40	// condition source value is a flag
 #define COND_16BIT				0x80	// values to compare are a 16-bit
 
 // Reverse operation flags
@@ -401,9 +401,10 @@
 #define TRANSFORM_DATA_PER_BLOCK	0x40	// Transform data per block
 
 // Read flag flags
-#define READ_FLAG_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
-#define READ_FLAG_USE_DEFAULT		0x40	// use default value if flag not set
-#define READ_FLAG_16BIT				0x80	// value to set is 16-bit
+#define READ_VAR_BIG_ENDIAN			0x01	// read variable value as big-endian (default is little-endian)
+#define READ_VAR_ADVANCED_OFFSETS	0x10	// advanced, 24-bit offsets (16-bit block offset follows if top bit set)
+#define READ_VAR_USE_DEFAULT		0x40	// use default value if flag not set
+#define READ_VAR_16BIT				0x80	// value to set is 16-bit
 
 // Buffered bitmap and sample info
 #define BUFFERED_BITMAP_BASEID		0xFA00	// Base ID for buffered bitmaps
@@ -419,7 +420,7 @@
 // Callback/event types
 #define CALLBACK_VSYNC				0		// VSync
 #define CALLBACK_MODE_CHANGE		1		// Mode changed
-// #define CALLBACK_KEYBOARD			2		// Keyboard event
+#define CALLBACK_KEYBOARD			2		// Keyboard event
 #define CALLBACK_MOUSE				3		// Mouse update
 #define CALLBACK_PALETTE			4		// Palette entry changed
 // Future callback types may include...
@@ -452,6 +453,12 @@
 #define VDPVAR_BUFFERS_USED			0x0212	// Number of buffers used
 #define VDPVAR_KEYBOARD_LAYOUT		0x0220	// Keyboard layout
 #define VDPVAR_KEYBOARD_CTRL_KEYS	0x0221	// Control keys on/off
+#define VDPVAR_KEYBOARD_REP_DELAY	0x0222	// Keyboard repeat delay (milliseconds)
+#define VDPVAR_KEYBOARD_REP_RATE	0x0223	// Keyboard repeat rate (characters per second)
+#define VDPVAR_KEYBOARD_LED			0x0224	// Keyboard LED status (bitmask, combined)
+#define VDPVAR_KEYBOARD_LED_NUM		0x0225	// Keyboard Num Lock LED status (1=on, 0=off)
+#define VDPVAR_KEYBOARD_LED_CAPS	0x0226	// Keyboard Caps Lock LED status (1=on, 0=off)
+#define VDPVAR_KEYBOARD_LED_SCROLL	0x0227	// Keyboard Scroll Lock LED status (1=on, 0=off)
 #define VDPVAR_CONTEXT_ID			0x0230	// Current active context ID
 #define VDPVAR_MOUSE_CURSOR			0x0240	// Mouse cursor ID
 #define VDPVAR_MOUSE_ENABLED		0x0241	// Mouse enabled/disabled
@@ -465,6 +472,23 @@
 #define VDPVAR_MOUSE_ACCELERATION	0x0249	// Mouse acceleration
 #define VDPVAR_MOUSE_WHEELACC		0x024A	// Mouse wheel acceleration
 #define VDPVAR_MOUSE_VISIBLE		0x024B	// Mouse cursor visible (1) or hidden (0)
+#define VDPVAR_KEYEVENT_KEYCODE		0x0250	// Keycode (includes modifications) (upper byte raw ASCII from VirtualKeyItem)
+#define VDPVAR_KEYEVENT_VK			0x0251	// FabGL Virtual keycode
+#define VDPVAR_KEYEVENT_DOWN		0x0252	// Key down flag (1) or up (0)
+#define VDPVAR_KEYEVENT_MODIFIERS	0x0253	// Key modifiers byte (Shift, Ctrl, Alt, etc)
+#define VDPVAR_KEYEVENT_CTRL		0x0254	// CTRL key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_LALT		0x0255	// LEFT ALT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_RALT		0x0256	// RIGHT ALT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_SHIFT		0x0257	// SHIFT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_GUI			0x0258	// GUI key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_CAPSLOCK	0x0259	// CAPSLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_NUMLOCK		0x025A	// NUMLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_SCROLLLOCK	0x025B	// SCROLLLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_SCANCODE1	0x025C	// Key scancode bytes 1 and 2
+#define VDPVAR_KEYEVENT_SCANCODE2	0x025D	// Key scancode bytes 3 and 4
+#define VDPVAR_KEYEVENT_SCANCODE3	0x025E	// Key scancode bytes 5 and 6
+#define VDPVAR_KEYEVENT_SCANCODE4	0x025F	// Key scancode bytes 7 and 8
+
 // Flags 0x024C-0x024F reserved for mouse area
 #define TESTFLAG_TILE_ENGINE		0x0300	// Tile engine flag (layers commands)
 #define VDPVAR_COPPER				0x0310	// Copper feature flag
