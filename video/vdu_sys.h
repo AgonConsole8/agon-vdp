@@ -9,7 +9,7 @@
 #include "agon.h"
 #include "agon_ps2.h"
 #include "agon_screen.h"
-#include "feature_flags.h"
+#include "vdp_variables.h"
 #include "vdu_audio.h"
 #include "vdu_buffered.h"
 #include "vdu_context.h"
@@ -245,7 +245,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 			vdu_sys_font();				// Font management
 		}	break;
 		case VDP_AFFINE_TRANSFORM: {	// VDU 23, 0, &96, flags, bufferId;
-			if (!isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+			if (!isVDPVariableSet(TESTFLAG_AFFINE_TRANSFORM)) {
 				return;
 			}
 			auto flags = readByte_t();	// Set affine transform flags
@@ -328,7 +328,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 			}
 		}	break;
 		case VDP_LAYERS: {				// VDU 23, 0, &C2, n
-			if (!isFeatureFlagSet(FEATUREFLAG_TILE_ENGINE)) {
+			if (!isVDPVariableSet(TESTFLAG_TILE_ENGINE)) {
 				return;
 			}
 			vdu_sys_layers();
@@ -337,7 +337,7 @@ void VDUStreamProcessor::vdu_sys_video() {
 			switchBuffer();
 		}	break;
 		case VDP_COPPER: {				// VDU 23, 0, &C4, command, [<args>]
-			if (!isFeatureFlagSet(FEATUREFLAG_COPPER)) {
+			if (!isVDPVariableSet(VDPVAR_COPPER)) {
 				return;
 			}
 			vdu_sys_copper();
@@ -354,14 +354,14 @@ void VDUStreamProcessor::vdu_sys_video() {
 				context->setDottedLinePatternLength(b);
 			}
 		}	break;
-		case VDP_FEATUREFLAG_SET: {		// VDU 23, 0, &F8, flag; value;
+		case VDP_VDPVAR_SET: {		// VDU 23, 0, &F8, flag; value;
 			auto flag = readWord_t();	// Set a test/feature flag
 			auto value = readWord_t();
-			setFeatureFlag(flag, value);
+			setVDPVariable(flag, value);
 		}	break;
-		case VDP_FEATUREFLAG_CLEAR: {	// VDU 23, 0, &F9, flag
+		case VDP_VDPVAR_CLEAR: {	// VDU 23, 0, &F9, flag
 			auto flag = readWord_t();	// Clear a test/feature flag
-			clearFeatureFlag(flag);
+			clearVDPVariable(flag);
 		}	break;
 		case VDP_CONSOLEMODE: {			// VDU 23, 0, &FE, n
 			auto b = readByte_t();
@@ -415,6 +415,7 @@ void VDUStreamProcessor::sendScreenChar(char c) {
 	uint8_t packet[] = {
 		(uint8_t)c,
 	};
+	setVDPVariable(VDPVAR_LAST_CHARACTER_READ, c);
 	send_packet(PACKET_SCRCHAR, sizeof packet, packet);
 }
 
@@ -430,6 +431,12 @@ void VDUStreamProcessor::sendScreenPixel(uint16_t x, uint16_t y) {
 		pixel.B,
 		pixelIndex,	// And the pixel index in the palette
 	};
+	setVDPVariable(VDPVAR_LAST_COLOUR_RED, pixel.R);
+	setVDPVariable(VDPVAR_LAST_COLOUR_GREEN, pixel.G);
+	setVDPVariable(VDPVAR_LAST_COLOUR_BLUE, pixel.B);
+	setVDPVariable(VDPVAR_LAST_COLOUR_LOGICAL, pixelIndex);
+	RGB222 physical = RGB222(pixel);
+	setVDPVariable(VDPVAR_LAST_COLOUR_PHYSICAL, physical.R << 4 | physical.G << 2 | physical.B);
 	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);
 }
 
@@ -456,6 +463,12 @@ void VDUStreamProcessor::sendColour(uint8_t colour) {
 		pixel.B,
 		colour,
 	};
+	setVDPVariable(VDPVAR_LAST_COLOUR_RED, pixel.R);
+	setVDPVariable(VDPVAR_LAST_COLOUR_GREEN, pixel.G);
+	setVDPVariable(VDPVAR_LAST_COLOUR_BLUE, pixel.B);
+	setVDPVariable(VDPVAR_LAST_COLOUR_LOGICAL, colour);
+	RGB222 physical = RGB222(pixel);
+	setVDPVariable(VDPVAR_LAST_COLOUR_PHYSICAL, physical.R << 4 | physical.G << 2 | physical.B);
 	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);
 }
 

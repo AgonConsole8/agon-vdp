@@ -13,9 +13,9 @@
 #include "agon.h"
 #include "sprites.h"
 
-extern bool isFeatureFlagSet(uint16_t flag);
-extern uint16_t getFeatureFlag(uint16_t flag);
-extern void setFeatureFlag(uint16_t flag, uint16_t value);
+extern bool isVDPVariableSet(uint16_t flag);
+extern uint16_t getVDPVariable(uint16_t flag);
+extern void setVDPVariable(uint16_t flag, uint16_t value);
 extern void performMouseCallback();
 uint		lastFrameCounter = 0;			// Last frame counter for VSYNC callbacks
 
@@ -861,10 +861,10 @@ bool Context::readVariable(uint16_t var, uint16_t * value) {
 		case 0x448:	// Mouse scaling
 		case 0x449:	// Mouse acceleration
 		case 0x44A: {	// Mouse wheel acceleration
-			auto flagId = (var - 0x440) + FEATUREFLAG_MOUSE_CURSOR;
-			auto flagExists = isFeatureFlagSet(flagId);
+			auto flagId = (var - 0x440) + VDPVAR_MOUSE_CURSOR;
+			auto flagExists = isVDPVariableSet(flagId);
 			if (flagExists) {
-				*value = getFeatureFlag(flagId);
+				*value = getVDPVariable(flagId);
 			} else {
 				// This shouldn't happen, but just in case
 				return false;
@@ -1150,7 +1150,7 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 			setCurrentBitmap(value);
 			break;
 		case 0x402:	// Current bitmap transform ID
-			if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+			if (isVDPVariableSet(TESTFLAG_AFFINE_TRANSFORM)) {
 				bitmapTransform = value;
 			}
 			break;
@@ -1170,7 +1170,7 @@ void Context::setVariable(uint16_t var, uint16_t value) {
 		case 0x448:	// Mouse scaling
 		case 0x449:	// Mouse acceleration
 		case 0x44A:	// Mouse wheel acceleration
-			setFeatureFlag((var - 0x440) + FEATUREFLAG_MOUSE_CURSOR, value);
+			setVDPVariable((var - 0x440) + VDPVAR_MOUSE_CURSOR, value);
 			break;
 		// Candidate variables for mouse area (0x44C-0x44F) won't be passed through
 	}

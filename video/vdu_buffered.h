@@ -19,7 +19,7 @@
 #include "mem_helpers.h"
 #include "multi_buffer_stream.h"
 #include "sprites.h"
-#include "feature_flags.h"
+#include "vdp_variables.h"
 #include "types.h"
 #include "vdu_stream_processor.h"
 
@@ -193,15 +193,15 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferCopyAndConsolidate(bufferId, sourceBufferIds);
 		}	break;
-		case BUFFERED_AFFINE_TRANSFORM: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_AFFINE_TRANSFORM: if (isVDPVariableSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			auto operation = readByte_t(); if (operation == -1) return;
 			bufferAffineTransform(bufferId, operation, false);
 		}	break;
-		case BUFFERED_AFFINE_TRANSFORM_3D: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_AFFINE_TRANSFORM_3D: if (isVDPVariableSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			auto operation = readByte_t(); if (operation == -1) return;
 			bufferAffineTransform(bufferId, operation, true);
 		}	break;
-		case BUFFERED_MATRIX: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_MATRIX: if (isVDPVariableSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			auto operation = readByte_t(); if (operation == -1) return;
 			auto rows = readByte_t(); if (rows == -1) return;
 			auto columns = readByte_t(); if (columns == -1) return;
@@ -210,7 +210,7 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			size.columns = columns;
 			bufferMatrixManipulate(bufferId, operation, size);
 		}	break;
-		case BUFFERED_TRANSFORM_BITMAP: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_TRANSFORM_BITMAP: if (isVDPVariableSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			auto options = readByte_t();
 			auto transformBufferId = readWord_t();
 			auto bitmapId = readWord_t();
@@ -219,7 +219,7 @@ void IRAM_ATTR VDUStreamProcessor::vdu_sys_buffered() {
 			}
 			bufferTransformBitmap(bufferId, options, transformBufferId, bitmapId);
 		}	break;
-		case BUFFERED_TRANSFORM_DATA: if (isFeatureFlagSet(TESTFLAG_AFFINE_TRANSFORM)) {
+		case BUFFERED_TRANSFORM_DATA: if (isVDPVariableSet(TESTFLAG_AFFINE_TRANSFORM)) {
 			// VDU 23, 0, &A0, bufferId; &29, options, format, transformBufferId; sourceBufferId; : Apply transform matrix to data in a buffer
 			auto options = readByte_t();
 			auto format = readByte_t();
@@ -1089,8 +1089,8 @@ bool VDUStreamProcessor::bufferConditional() {
 
 	int32_t sourceValue = -1;
 	if (useFlagValue) {
-		if (isFeatureFlagSet(checkBufferId)) {
-			sourceValue = getFeatureFlag(checkBufferId);
+		if (isVDPVariableSet(checkBufferId)) {
+			sourceValue = getVDPVariable(checkBufferId);
 			if (!use16BitValue) {
 				sourceValue &= 0xFF;
 			}
@@ -2399,9 +2399,9 @@ void VDUStreamProcessor::bufferReadFlag(uint16_t bufferId) {
 		return;
 	}
 
-	if (isFeatureFlagSet(flagId)) {
+	if (isVDPVariableSet(flagId)) {
 		// flag exists, so write it to the buffer
-		auto value = getFeatureFlag(flagId);
+		auto value = getVDPVariable(flagId);
 		target.front() = value & 0xFF;
 		if (use16Bit) {
 			target[1] = value >> 8;

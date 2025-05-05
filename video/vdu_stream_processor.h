@@ -21,7 +21,7 @@ std::unordered_map<uint16_t, ContextVectorPtr,
 	std::hash<uint16_t>, std::equal_to<uint16_t>,
 	psram_allocator<std::pair<const uint16_t, ContextVectorPtr>>> contextStacks;
 
-extern uint16_t getFeatureFlag(uint16_t flag);
+extern uint16_t getVDPVariable(uint16_t flag);
 
 class VDUStreamProcessor {
 	private:
@@ -294,7 +294,7 @@ class VDUStreamProcessor {
 			echoEnabled = enabled;
 			if (!enabled) {
 				// Send an echo end packet
-				auto handle = getFeatureFlag(FEATUREFLAG_ECHO);
+				auto handle = getVDPVariable(TESTFLAG_ECHO);
 				if (handle == 0) {
 					return;
 				}
@@ -627,7 +627,7 @@ void VDUStreamProcessor::flushEcho() {
 		return;
 	}
 
-	uint32_t bufferSize = getFeatureFlag(FEATUREFLAG_MOS_VDPP_BUFFERSIZE);
+	uint32_t bufferSize = getVDPVariable(TESTFLAG_VDPP_BUFFERSIZE);
 	if (bufferSize == 0) {
 		bufferSize = 16;
 	}
