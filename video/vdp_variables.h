@@ -436,10 +436,14 @@ uint16_t getVDPVariable(uint16_t flag) {
 		}
 		if (flag >= VDPVAR_KEYMAP_START && flag < (VDPVAR_KEYMAP_START + fabgl::VK_LAST)) {
 			// Return 1/0 for key down in lower byte, and ASCII code in upper byte
-			auto keyboard = getKeyboard();
 			uint16_t key = flag - VDPVAR_KEYMAP_START;
-			uint16_t value = keyboard->isVKDown((fabgl::VirtualKey)key) ? 1 : 0;
-			auto keyASCII = keyboard->virtualKeyToASCII((fabgl::VirtualKey)key);
+			uint16_t value = getKeyboard()->isVKDown((fabgl::VirtualKey)key) ? 1 : 0;
+			fabgl::VirtualKeyItem keyItem;
+			keyItem.vk = (fabgl::VirtualKey)key;
+			keyItem.CTRL = 0;
+			keyItem.SHIFT = 0;
+			keyItem.SCROLLLOCK = 0;
+			auto keyASCII = fabgl::virtualKeyToASCII(keyItem, fabgl::CodePages::get(1252));
 			if (keyASCII != -1) {
 				value = value | (keyASCII << 8);
 			}
