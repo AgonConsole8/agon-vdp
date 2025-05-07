@@ -472,6 +472,7 @@
 #define VDPVAR_MOUSE_ACCELERATION	0x0249	// Mouse acceleration
 #define VDPVAR_MOUSE_WHEELACC		0x024A	// Mouse wheel acceleration
 #define VDPVAR_MOUSE_VISIBLE		0x024B	// Mouse cursor visible (1) or hidden (0)
+// Flags 0x024C-0x024F reserved for mouse area
 #define VDPVAR_KEYEVENT_KEYCODE		0x0250	// Keycode (includes modifications) (upper byte raw ASCII from VirtualKeyItem)
 #define VDPVAR_KEYEVENT_VK			0x0251	// FabGL Virtual keycode
 #define VDPVAR_KEYEVENT_DOWN		0x0252	// Key down flag (1) or up (0)
@@ -488,8 +489,6 @@
 #define VDPVAR_KEYEVENT_SCANCODE2	0x025D	// Key scancode bytes 3 and 4
 #define VDPVAR_KEYEVENT_SCANCODE3	0x025E	// Key scancode bytes 5 and 6
 #define VDPVAR_KEYEVENT_SCANCODE4	0x025F	// Key scancode bytes 7 and 8
-
-// Flags 0x024C-0x024F reserved for mouse area
 #define TESTFLAG_TILE_ENGINE		0x0300	// Tile engine flag (layers commands)
 #define VDPVAR_COPPER				0x0310	// Copper feature flag
 #define VDPVAR_AUTO_HW_SPRITES		0x0400	// Auto hardware sprites flag
@@ -499,6 +498,7 @@
 #define VDPVAR_LAST_COLOUR_BLUE		0x0512	// Last colour read (blue component)
 #define VDPVAR_LAST_COLOUR_LOGICAL	0x0513	// Last colour read (logical colour / palette index)
 #define VDPVAR_LAST_COLOUR_PHYSICAL	0x0514	// Last colour read (physical colour / RGB222 value)
+#define VDPVAR_KEYMAP_START			0x0800	// Keymap start (block of 256)
 #define VDPVAR_VDU_VARIABLES_START	0x1000	// VDU variables start at 0x1000
 #define VDPVAR_VDU_VARIABLES_END	0x1FFF	// VDU variables end
 #define VDPVAR_VDU_VARIABLES_MASK	0x0FFF	// VDU variables mask

@@ -170,6 +170,9 @@ void setVDPVariable(uint16_t flag, uint16_t value) {
 			debug_log("Echo buffer size requested: %d\n\r", value);
 			break;
 	}
+	if (flag >= VDPVAR_KEYMAP_START && flag < (VDPVAR_KEYMAP_START + fabgl::VK_LAST)) {
+		return;
+	}
 
 	featureFlags[flag] = value;
 }
@@ -262,6 +265,9 @@ bool isVDPVariableSet(uint16_t flag) {
 			case VDPVAR_KEYEVENT_SCANCODE4:
 				return true;
 		}
+	}
+	if (flag >= VDPVAR_KEYMAP_START && flag < (VDPVAR_KEYMAP_START + fabgl::VK_LAST)) {
+		return true;
 	}
 	auto flagIter = featureFlags.find(flag);
 	return flagIter != featureFlags.end();
@@ -427,6 +433,17 @@ uint16_t getVDPVariable(uint16_t flag) {
 				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[2];
 			case VDPVAR_KEYEVENT_SCANCODE4:
 				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[3];
+		}
+		if (flag >= VDPVAR_KEYMAP_START && flag < (VDPVAR_KEYMAP_START + fabgl::VK_LAST)) {
+			// Return 1/0 for key down in lower byte, and ASCII code in upper byte
+			auto keyboard = getKeyboard();
+			uint16_t key = flag - VDPVAR_KEYMAP_START;
+			uint16_t value = keyboard->isVKDown((fabgl::VirtualKey)key) ? 1 : 0;
+			auto keyASCII = keyboard->virtualKeyToASCII((fabgl::VirtualKey)key);
+			if (keyASCII != -1) {
+				value = value | (keyASCII << 8);
+			}
+			return value;
 		}
 	}
 	return 0;
