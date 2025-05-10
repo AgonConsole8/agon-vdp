@@ -263,6 +263,8 @@ void VDUStreamProcessor::vdu_palette() {
 		setVDPVariable(VDPVAR_LAST_COLOUR_BLUE, pixel.B);
 		setVDPVariable(VDPVAR_LAST_COLOUR_LOGICAL, l);
 		setVDPVariable(VDPVAR_LAST_COLOUR_PHYSICAL, physical);
+		setVDPVariable(VDPVAR_LAST_COLOUR_X, 32768);
+		setVDPVariable(VDPVAR_LAST_COLOUR_Y, 32768);
 		bufferCallCallbacks(CALLBACK_PALETTE);
 	}
 }
@@ -283,6 +285,8 @@ void VDUStreamProcessor::vdu_restorePalette() {
 	setVDPVariable(VDPVAR_LAST_COLOUR_BLUE, 0);
 	setVDPVariable(VDPVAR_LAST_COLOUR_LOGICAL, 255);
 	setVDPVariable(VDPVAR_LAST_COLOUR_PHYSICAL, 255);
+	setVDPVariable(VDPVAR_LAST_COLOUR_X, 32768);
+	setVDPVariable(VDPVAR_LAST_COLOUR_Y, 32768);
 	bufferCallCallbacks(CALLBACK_PALETTE);
 }
 

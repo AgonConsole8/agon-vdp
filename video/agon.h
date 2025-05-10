@@ -423,6 +423,7 @@
 #define CALLBACK_KEYBOARD			2		// Keyboard event
 #define CALLBACK_MOUSE				3		// Mouse update
 #define CALLBACK_PALETTE			4		// Palette entry changed
+#define CALLBACK_READPIXEL			5		// Read pixel event
 // Future callback types may include...
 // * timer events (which may require metadata for timer duration, etc),
 // * audio events (a singular audio status event probably won't be enough)
@@ -498,6 +499,8 @@
 #define VDPVAR_LAST_COLOUR_BLUE		0x0512	// Last colour read (blue component)
 #define VDPVAR_LAST_COLOUR_LOGICAL	0x0513	// Last colour read (logical colour / palette index)
 #define VDPVAR_LAST_COLOUR_PHYSICAL	0x0514	// Last colour read (physical colour / RGB222 value)
+#define VDPVAR_LAST_COLOUR_X		0x0515	// Last colour read (X coordinate)
+#define VDPVAR_LAST_COLOUR_Y		0x0516	// Last colour read (Y coordinate)
 #define VDPVAR_KEYMAP_START			0x0800	// Keymap start (block of 256)
 #define VDPVAR_VDU_VARIABLES_START	0x1000	// VDU variables start at 0x1000
 #define VDPVAR_VDU_VARIABLES_END	0x1FFF	// VDU variables end

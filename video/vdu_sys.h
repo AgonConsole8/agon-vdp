@@ -425,19 +425,16 @@ void VDUStreamProcessor::sendScreenPixel(uint16_t x, uint16_t y) {
 	waitPlotCompletion();
 	RGB888 pixel = context->getPixel(x, y);
 	uint8_t pixelIndex = getPaletteIndex(pixel);
-	uint8_t packet[] = {
-		pixel.R,	// Send the colour components
-		pixel.G,
-		pixel.B,
-		pixelIndex,	// And the pixel index in the palette
-	};
 	setVDPVariable(VDPVAR_LAST_COLOUR_RED, pixel.R);
 	setVDPVariable(VDPVAR_LAST_COLOUR_GREEN, pixel.G);
 	setVDPVariable(VDPVAR_LAST_COLOUR_BLUE, pixel.B);
 	setVDPVariable(VDPVAR_LAST_COLOUR_LOGICAL, pixelIndex);
 	RGB222 physical = RGB222(pixel);
 	setVDPVariable(VDPVAR_LAST_COLOUR_PHYSICAL, physical.R << 4 | physical.G << 2 | physical.B);
-	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);
+	setVDPVariable(VDPVAR_LAST_COLOUR_X, x);
+	setVDPVariable(VDPVAR_LAST_COLOUR_Y, y);
+	bufferCallCallbacks(CALLBACK_READPIXEL);
+	sendScrPixelPacket();
 }
 
 // VDU 23, 0, &94, index: Send a colour back to MOS
@@ -457,18 +454,25 @@ void VDUStreamProcessor::sendColour(uint8_t colour) {
 		colour = getPaletteIndex(pixel);
 	}
 
-	uint8_t packet[] = {
-		pixel.R,	// Send the colour components
-		pixel.G,
-		pixel.B,
-		colour,
-	};
 	setVDPVariable(VDPVAR_LAST_COLOUR_RED, pixel.R);
 	setVDPVariable(VDPVAR_LAST_COLOUR_GREEN, pixel.G);
 	setVDPVariable(VDPVAR_LAST_COLOUR_BLUE, pixel.B);
 	setVDPVariable(VDPVAR_LAST_COLOUR_LOGICAL, colour);
 	RGB222 physical = RGB222(pixel);
 	setVDPVariable(VDPVAR_LAST_COLOUR_PHYSICAL, physical.R << 4 | physical.G << 2 | physical.B);
+	setVDPVariable(VDPVAR_LAST_COLOUR_X, 32768);
+	setVDPVariable(VDPVAR_LAST_COLOUR_Y, 32768);
+	sendScrPixelPacket();
+}
+
+void VDUStreamProcessor::sendScrPixelPacket() {
+	// Send the pixel packet
+	uint8_t packet[] = {
+		(uint8_t) getVDPVariable(VDPVAR_LAST_COLOUR_RED),
+		(uint8_t) getVDPVariable(VDPVAR_LAST_COLOUR_GREEN),
+		(uint8_t) getVDPVariable(VDPVAR_LAST_COLOUR_BLUE),
+		(uint8_t) getVDPVariable(VDPVAR_LAST_COLOUR_LOGICAL),
+	};
 	send_packet(PACKET_SCRPIXEL, sizeof packet, packet);
 }
 
