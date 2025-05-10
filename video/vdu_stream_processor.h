@@ -15,13 +15,7 @@
 #include "span.h"
 #include "types.h"
 
-using ContextVector = std::vector<std::shared_ptr<Context>, psram_allocator<std::shared_ptr<Context>>>;
-using ContextVectorPtr = std::shared_ptr<ContextVector>;
-std::unordered_map<uint16_t, ContextVectorPtr,
-	std::hash<uint16_t>, std::equal_to<uint16_t>,
-	psram_allocator<std::pair<const uint16_t, ContextVectorPtr>>> contextStacks;
-
-extern uint16_t getFeatureFlag(uint16_t flag);
+extern uint16_t getVDPVariable(uint16_t flag);
 
 class VDUStreamProcessor {
 	private:
@@ -60,6 +54,7 @@ class VDUStreamProcessor {
 		void vdu_colour();
 		void vdu_gcol();
 		void vdu_palette();
+		void vdu_restorePalette();
 		void vdu_graphicsViewport();
 		void vdu_plot();
 		void vdu_resetViewports();
@@ -75,6 +70,7 @@ class VDUStreamProcessor {
 		void sendScreenChar(char c);
 		void sendScreenPixel(uint16_t x, uint16_t y);
 		void sendColour(uint8_t colour);
+		void sendScrPixelPacket();
 		void printBuffer(uint16_t bufferId);
 		void sendTime();
 		void vdu_sys_video_time();
@@ -143,7 +139,7 @@ class VDUStreamProcessor {
 		void bufferMatrixManipulate(uint16_t bufferId, uint8_t command, MatrixSize size);
 		void bufferTransformBitmap(uint16_t bufferId, uint8_t options, uint16_t transformBufferId, uint16_t sourceBufferId);
 		void bufferTransformData(uint16_t bufferId, uint8_t options, uint8_t format, uint16_t transformBufferId, uint16_t sourceBufferId);
-		void bufferReadFlag(uint16_t bufferId);
+		void bufferReadVariable(uint16_t bufferId);
 		void bufferCompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferDecompress(uint16_t bufferId, uint16_t sourceBufferId);
 		void bufferExpandBitmap(uint16_t bufferId, uint8_t options, uint16_t sourceBufferId);
@@ -294,7 +290,7 @@ class VDUStreamProcessor {
 			echoEnabled = enabled;
 			if (!enabled) {
 				// Send an echo end packet
-				auto handle = getFeatureFlag(FEATUREFLAG_ECHO);
+				auto handle = getVDPVariable(TESTFLAG_ECHO);
 				if (handle == 0) {
 					return;
 				}
@@ -561,6 +557,10 @@ void VDUStreamProcessor::processNext() {
 		bufferCallCallbacks(CALLBACK_VSYNC);
 		if (!byteAvailable()) {
 			getContext()->clearTempPagedMode();
+			// Ensure output stream changes on main VDU processor are temporary
+			if (outputStream != originalOutputStream) {
+				outputStream = originalOutputStream;
+			}
 		}
 	}
 
@@ -623,7 +623,7 @@ void VDUStreamProcessor::flushEcho() {
 		return;
 	}
 
-	uint32_t bufferSize = getFeatureFlag(FEATUREFLAG_MOS_VDPP_BUFFERSIZE);
+	uint32_t bufferSize = getVDPVariable(TESTFLAG_VDPP_BUFFERSIZE);
 	if (bufferSize == 0) {
 		bufferSize = 16;
 	}
@@ -655,25 +655,39 @@ void VDUStreamProcessor::flushEcho() {
 }
 
 void VDUStreamProcessor::handleKeyboardAndMouse() {
-	uint8_t keycode;
-	uint8_t modifiers;
-	uint8_t vk;
-	uint8_t down;
 	MouseDelta delta;
+	fabgl::VirtualKeyItem kbItem;
 
 	// Send all pending keyboard events to MOS
-	while (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
+	while (getKeyboardKey(&kbItem)) {
+		// Set system variables corresponding to the keyboard event
+		setVDPVariable(VDPVAR_KEYEVENT_KEYCODE, _keycode | kbItem.ASCII << 8);
+		setVDPVariable(VDPVAR_KEYEVENT_VK, kbItem.vk);
+		setVDPVariable(VDPVAR_KEYEVENT_DOWN, kbItem.down);
+		setVDPVariable(VDPVAR_KEYEVENT_MODIFIERS, packKeyboardModifiers(&kbItem));
+		// Individual modifiers get automatically set
+		setVDPVariable(VDPVAR_KEYEVENT_SCANCODE1, reinterpret_cast<const uint16_t*>(kbItem.scancode)[0]);
+		setVDPVariable(VDPVAR_KEYEVENT_SCANCODE2, reinterpret_cast<const uint16_t*>(kbItem.scancode)[1]);
+		setVDPVariable(VDPVAR_KEYEVENT_SCANCODE3, reinterpret_cast<const uint16_t*>(kbItem.scancode)[2]);
+		setVDPVariable(VDPVAR_KEYEVENT_SCANCODE4, reinterpret_cast<const uint16_t*>(kbItem.scancode)[3]);
+
+		// Do callbacks - these _could_ adjust the key event data
+		bufferCallCallbacks(CALLBACK_KEYBOARD);
+
+		uint8_t down = getVDPVariable(VDPVAR_KEYEVENT_DOWN);
+		uint16_t keycode = getVDPVariable(VDPVAR_KEYEVENT_KEYCODE);
+
 		// Handle some control keys
-		//
 		if (controlKeys && down) {
-			switch (keycode) {
+			uint8_t ascii = keycode >> 8;
+			switch (ascii) {
 				case 2:		// printer on
 				case 3:		// printer off
 				case 6:		// VDU commands enable
 				case 7:		// Bell
 				case 12:	// CLS
 				case 14 ... 15:	// paged mode on/off
-					vdu(keycode, false);
+					vdu(ascii, false);
 					break;
 				case 16:
 					// control-P toggles "printer" on R.T.Russell's BASIC
@@ -681,11 +695,10 @@ void VDUStreamProcessor::handleKeyboardAndMouse() {
 			}
 		}
 		// Create and send the packet back to MOS
-		//
 		uint8_t packet[] = {
-			keycode,
-			modifiers,
-			vk,
+			uint8_t (keycode & 0xFF),
+			uint8_t (getVDPVariable(VDPVAR_KEYEVENT_MODIFIERS)),
+			uint8_t (getVDPVariable(VDPVAR_KEYEVENT_VK) & 0xFF),
 			down,
 		};
 		send_packet(PACKET_KEYCODE, sizeof packet, packet);
@@ -697,8 +710,8 @@ void VDUStreamProcessor::handleKeyboardAndMouse() {
 		auto mStatus = mouse->status();
 		// update mouse cursor position if it's active
 		setMouseCursorPos(mStatus.X, mStatus.Y);
-		sendMouseData(&delta);
 		bufferCallCallbacks(CALLBACK_MOUSE);
+		sendMouseData(&delta);
 	}	
 }
 
