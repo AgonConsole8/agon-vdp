@@ -14,7 +14,6 @@ uint16_t		kbRepeatDelay = 500;			// Keyboard repeat delay ms (250, 500, 750 or 1
 uint16_t		kbRepeatRate = 100;				// Keyboard repeat rate ms (between 33 and 500)
 uint8_t			kbRegion = 0;					// Keyboard region
 bool			kbEnabled = false;				// Keyboard enabled
-fabgl::VirtualKeyItem 	kbItem;
 
 bool			mouseEnabled = false;			// Mouse enabled
 bool			mouseVisible = false;			// Mouse cursor visible

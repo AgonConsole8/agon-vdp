@@ -478,13 +478,13 @@
 #define VDPVAR_KEYEVENT_DOWN		0x0252	// Key down flag (1) or up (0)
 #define VDPVAR_KEYEVENT_MODIFIERS	0x0253	// Key modifiers byte (Shift, Ctrl, Alt, etc)
 #define VDPVAR_KEYEVENT_CTRL		0x0254	// CTRL key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_LALT		0x0255	// LEFT ALT key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_RALT		0x0256	// RIGHT ALT key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_SHIFT		0x0257	// SHIFT key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_GUI			0x0258	// GUI key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_CAPSLOCK	0x0259	// CAPSLOCK key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_NUMLOCK		0x025A	// NUMLOCK key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_SCROLLLOCK	0x025B	// SCROLLLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_SHIFT		0x0255	// SHIFT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_LALT		0x0256	// LEFT ALT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_RALT		0x0257	// RIGHT ALT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_CAPSLOCK	0x0258	// CAPSLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_NUMLOCK		0x0259	// NUMLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_SCROLLLOCK	0x025A	// SCROLLLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_GUI			0x025B	// GUI key state (1=pressed, 0=not pressed)
 #define VDPVAR_KEYEVENT_SCANCODE1	0x025C	// Key scancode bytes 1 and 2
 #define VDPVAR_KEYEVENT_SCANCODE2	0x025D	// Key scancode bytes 3 and 4
 #define VDPVAR_KEYEVENT_SCANCODE3	0x025E	// Key scancode bytes 5 and 6

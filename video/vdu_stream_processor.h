@@ -655,21 +655,38 @@ void VDUStreamProcessor::flushEcho() {
 
 void VDUStreamProcessor::handleKeyboardAndMouse() {
 	MouseDelta delta;
+	fabgl::VirtualKeyItem kbItem;
 
 	// Send all pending keyboard events to MOS
-	// while (getKeyboardKey(&keycode, &modifiers, &vk, &down)) {
 	while (getKeyboardKey(&kbItem)) {
+		// Set system variables corresponding to the keyboard event
+		setVDPVariable(VDPVAR_KEYEVENT_KEYCODE, _keycode | kbItem.ASCII << 8);
+		setVDPVariable(VDPVAR_KEYEVENT_VK, kbItem.vk);
+		setVDPVariable(VDPVAR_KEYEVENT_DOWN, kbItem.down);
+		setVDPVariable(VDPVAR_KEYEVENT_MODIFIERS, packKeyboardModifiers(&kbItem));
+		// Individual modifiers get automatically set
+		setVDPVariable(VDPVAR_KEYEVENT_SCANCODE1, reinterpret_cast<const uint16_t*>(kbItem.scancode)[0]);
+		setVDPVariable(VDPVAR_KEYEVENT_SCANCODE2, reinterpret_cast<const uint16_t*>(kbItem.scancode)[1]);
+		setVDPVariable(VDPVAR_KEYEVENT_SCANCODE3, reinterpret_cast<const uint16_t*>(kbItem.scancode)[2]);
+		setVDPVariable(VDPVAR_KEYEVENT_SCANCODE4, reinterpret_cast<const uint16_t*>(kbItem.scancode)[3]);
+
+		// Do callbacks - these _could_ adjust the key event data
+		bufferCallCallbacks(CALLBACK_KEYBOARD);
+
+		uint8_t down = getVDPVariable(VDPVAR_KEYEVENT_DOWN);
+		uint16_t keycode = getVDPVariable(VDPVAR_KEYEVENT_KEYCODE);
+
 		// Handle some control keys
-		//
-		if (controlKeys && kbItem.down) {
-			switch (kbItem.ASCII) {
+		if (controlKeys && down) {
+			uint8_t ascii = keycode >> 8;
+			switch (ascii) {
 				case 2:		// printer on
 				case 3:		// printer off
 				case 6:		// VDU commands enable
 				case 7:		// Bell
 				case 12:	// CLS
 				case 14 ... 15:	// paged mode on/off
-					vdu(kbItem.ASCII, false);
+					vdu(ascii, false);
 					break;
 				case 16:
 					// control-P toggles "printer" on R.T.Russell's BASIC
@@ -678,13 +695,12 @@ void VDUStreamProcessor::handleKeyboardAndMouse() {
 		}
 		// Create and send the packet back to MOS
 		uint8_t packet[] = {
-			_keycode,
-			packKeyboardModifiers(&kbItem),
-			static_cast<uint8_t>(kbItem.vk & 0xFF),
-			kbItem.down,
+			uint8_t (keycode & 0xFF),
+			uint8_t (getVDPVariable(VDPVAR_KEYEVENT_MODIFIERS)),
+			uint8_t (getVDPVariable(VDPVAR_KEYEVENT_VK) & 0xFF),
+			down,
 		};
 		send_packet(PACKET_KEYCODE, sizeof packet, packet);
-		bufferCallCallbacks(CALLBACK_KEYBOARD);
 	}
 
 	// get mouse delta, if the mouse is active
@@ -693,8 +709,8 @@ void VDUStreamProcessor::handleKeyboardAndMouse() {
 		auto mStatus = mouse->status();
 		// update mouse cursor position if it's active
 		setMouseCursorPos(mStatus.X, mStatus.Y);
-		sendMouseData(&delta);
 		bufferCallCallbacks(CALLBACK_MOUSE);
+		sendMouseData(&delta);
 	}	
 }
 

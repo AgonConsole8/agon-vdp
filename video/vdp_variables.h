@@ -154,7 +154,32 @@ void setVDPVariable(uint16_t flag, uint16_t value) {
 					hideMouseCursor();
 				}
 				return;
-			// we have a range here (0x24C-0x24F) reserved for mouse area	
+			// we have a range here (0x24C-0x24F) reserved for mouse area
+
+			case VDPVAR_KEYEVENT_MODIFIERS: {
+				// Set individual modifier variables based on new value
+				for (uint8_t bit = 0; bit < 8; bit++) {
+					featureFlags[VDPVAR_KEYEVENT_CTRL + bit] = (value & (1 << bit)) ? 1 : 0;
+				}
+			}	break;
+			case VDPVAR_KEYEVENT_CTRL:
+			case VDPVAR_KEYEVENT_SHIFT:
+			case VDPVAR_KEYEVENT_LALT:
+			case VDPVAR_KEYEVENT_RALT:
+			case VDPVAR_KEYEVENT_CAPSLOCK:
+			case VDPVAR_KEYEVENT_NUMLOCK:
+			case VDPVAR_KEYEVENT_SCROLLLOCK:
+			case VDPVAR_KEYEVENT_GUI: {
+				// Update combined modifiers variable
+				uint16_t modifierBit = 1 << (flag - VDPVAR_KEYEVENT_CTRL);
+				if (value == 0) {
+					// clear modifier bit
+					featureFlags[VDPVAR_KEYEVENT_MODIFIERS] &= ~modifierBit;
+				} else {
+					// set modifier bit
+					featureFlags[VDPVAR_KEYEVENT_MODIFIERS] |= modifierBit;
+				}
+			}	break;
 		}
 	}
 	switch (flag) {
@@ -201,6 +226,18 @@ void clearVDPVariable(uint16_t flag) {
 		case VDPVAR_MOUSE_VISIBLE:
 			hideMouseCursor();
 			return;
+
+		case VDPVAR_KEYEVENT_MODIFIERS:
+		case VDPVAR_KEYEVENT_CTRL:
+		case VDPVAR_KEYEVENT_SHIFT:
+		case VDPVAR_KEYEVENT_LALT:
+		case VDPVAR_KEYEVENT_RALT:
+		case VDPVAR_KEYEVENT_CAPSLOCK:
+		case VDPVAR_KEYEVENT_NUMLOCK:
+		case VDPVAR_KEYEVENT_SCROLLLOCK:
+		case VDPVAR_KEYEVENT_GUI: {
+			setVDPVariable(flag, 0);
+		}	return;
 	}
 
 	if (flagIter != featureFlags.end()) {
@@ -247,22 +284,6 @@ bool isVDPVariableSet(uint16_t flag) {
 			case VDPVAR_MOUSE_ACCELERATION:
 			case VDPVAR_MOUSE_WHEELACC:
 			case VDPVAR_MOUSE_VISIBLE:
-			case VDPVAR_KEYEVENT_KEYCODE:
-			case VDPVAR_KEYEVENT_VK:
-			case VDPVAR_KEYEVENT_DOWN:
-			case VDPVAR_KEYEVENT_MODIFIERS:
-			case VDPVAR_KEYEVENT_CTRL:
-			case VDPVAR_KEYEVENT_LALT:
-			case VDPVAR_KEYEVENT_RALT:
-			case VDPVAR_KEYEVENT_SHIFT:
-			case VDPVAR_KEYEVENT_GUI:
-			case VDPVAR_KEYEVENT_CAPSLOCK:
-			case VDPVAR_KEYEVENT_NUMLOCK:
-			case VDPVAR_KEYEVENT_SCROLLLOCK:
-			case VDPVAR_KEYEVENT_SCANCODE1:
-			case VDPVAR_KEYEVENT_SCANCODE2:
-			case VDPVAR_KEYEVENT_SCANCODE3:
-			case VDPVAR_KEYEVENT_SCANCODE4:
 				return true;
 		}
 	}
@@ -400,39 +421,6 @@ uint16_t getVDPVariable(uint16_t flag) {
 			}
 			case VDPVAR_MOUSE_VISIBLE:
 				return mouseVisible ? 1 : 0;
-
-			case VDPVAR_KEYEVENT_KEYCODE:
-				return _keycode | kbItem.ASCII << 8;
-			case VDPVAR_KEYEVENT_VK:
-				return kbItem.vk;
-			case VDPVAR_KEYEVENT_DOWN:
-				return kbItem.down;
-			case VDPVAR_KEYEVENT_MODIFIERS:
-				return packKeyboardModifiers(&kbItem);
-			case VDPVAR_KEYEVENT_CTRL:
-				return kbItem.CTRL;
-			case VDPVAR_KEYEVENT_LALT:
-				return kbItem.LALT;
-			case VDPVAR_KEYEVENT_RALT:
-				return kbItem.RALT;
-			case VDPVAR_KEYEVENT_SHIFT:
-				return kbItem.SHIFT;
-			case VDPVAR_KEYEVENT_GUI:
-				return kbItem.GUI;
-			case VDPVAR_KEYEVENT_CAPSLOCK:
-				return kbItem.CAPSLOCK;
-			case VDPVAR_KEYEVENT_NUMLOCK:
-				return kbItem.NUMLOCK;
-			case VDPVAR_KEYEVENT_SCROLLLOCK:
-				return kbItem.SCROLLLOCK;
-			case VDPVAR_KEYEVENT_SCANCODE1:
-				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[0];
-			case VDPVAR_KEYEVENT_SCANCODE2:
-				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[1];
-			case VDPVAR_KEYEVENT_SCANCODE3:
-				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[2];
-			case VDPVAR_KEYEVENT_SCANCODE4:
-				return reinterpret_cast<const uint16_t*>(kbItem.scancode)[3];
 		}
 		if (flag >= VDPVAR_KEYMAP_START && flag < (VDPVAR_KEYMAP_START + fabgl::VK_LAST)) {
 			// Return 1/0 for key down in lower byte, and ASCII code in upper byte
