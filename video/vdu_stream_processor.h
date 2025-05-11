@@ -30,6 +30,7 @@ class VDUStreamProcessor {
 		bool commandsEnabled = true;
 		bool echoEnabled = false;
 		bool echoBuffering = false;
+		bool pendingMouseData = false;
 
 		std::vector<uint8_t> echoBuffer;
 
@@ -49,6 +50,8 @@ class VDUStreamProcessor {
 		void flushEcho();
 
 		void handleKeyboardAndMouse();
+		void updateMouseVars(MouseDelta *delta);
+		void sendPendingMouseData();
 
 		void vdu_print(char c, bool usePeek);
 		void vdu_colour();
@@ -266,7 +269,7 @@ class VDUStreamProcessor {
 		}
 		void send_packet(uint8_t code, uint16_t len, uint8_t data[]);
 
-		void sendMouseData(MouseDelta * delta);
+		inline void sendMouseData();
 
 		void processAllAvailable();
 		void processNext();
@@ -505,26 +508,22 @@ void VDUStreamProcessor::send_packet(uint8_t code, uint16_t len, uint8_t data[])
 	}
 }
 
-void VDUStreamProcessor::sendMouseData(MouseDelta * delta = nullptr) {
-	auto mouse = getMouse();
-	uint16_t mouseX = 0;
-	uint16_t mouseY = 0;
-	uint8_t buttons = 0;
-	uint8_t wheelDelta = 0;
-	uint16_t deltaX = 0;
-	uint16_t deltaY = 0;
-	if (delta) {
-		deltaX = delta->deltaX;
-		deltaY = delta->deltaY;
+inline void VDUStreamProcessor::sendMouseData() {
+	pendingMouseData = true;
+}
+
+void VDUStreamProcessor::sendPendingMouseData() {
+	if (!pendingMouseData) {
+		return;
 	}
-	if (mouse) {
-		auto mStatus = mouse->status();
-		auto mousePos = context->toCurrentCoordinates(mStatus.X, mStatus.Y);
-		mouseX = mousePos.X;
-		mouseY = mousePos.Y;
-		buttons = mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2;
-		wheelDelta = mStatus.wheelDelta;
-	}
+	bufferCallCallbacks(CALLBACK_MOUSE);
+	pendingMouseData = false;
+	uint16_t mouseX = getVDPVariable(VDPVAR_MOUSE_XPOS_OS);
+	uint16_t mouseY = getVDPVariable(VDPVAR_MOUSE_YPOS_OS);
+	uint8_t buttons = getVDPVariable(VDPVAR_MOUSE_BUTTONS);
+	uint8_t wheelDelta = getVDPVariable(VDPVAR_MOUSE_WHEEL);
+	uint16_t deltaX = getVDPVariable(VDPVAR_MOUSE_DELTAX_OS);
+	uint16_t deltaY = getVDPVariable(VDPVAR_MOUSE_DELTAY_OS);
 	debug_log("sendMouseData: %d %d %d %d %d %d\n\r", mouseX, mouseY, buttons, wheelDelta, deltaX, deltaY);
 	uint8_t packet[] = {
 		(uint8_t) (mouseX & 0xFF),
@@ -595,6 +594,8 @@ void VDUStreamProcessor::processNext() {
 		default:
 			break;
 	}
+
+	sendPendingMouseData();
 }
 
 inline void VDUStreamProcessor::pushEcho(uint8_t c) {
@@ -704,15 +705,28 @@ void VDUStreamProcessor::handleKeyboardAndMouse() {
 		send_packet(PACKET_KEYCODE, sizeof packet, packet);
 	}
 
-	// get mouse delta, if the mouse is active
+	// has the mouse moved?
 	if (mouseMoved(&delta)) {
-		auto mouse = getMouse();
-		auto mStatus = mouse->status();
-		// update mouse cursor position if it's active
-		setMouseCursorPos(mStatus.X, mStatus.Y);
-		bufferCallCallbacks(CALLBACK_MOUSE);
-		sendMouseData(&delta);
+		// Absolute position of mouse will have been updated from the mouse delta
+		// Update all of our mouse variables, which will trigger a mouse event to be sent
+		// when the current processNext() call completes
+		updateMouseVars(&delta);
 	}	
+}
+
+void VDUStreamProcessor::updateMouseVars(MouseDelta *delta) {
+	auto mStatus = getMouse()->status();
+	setVDPVariable(VDPVAR_MOUSE_XPOS, mStatus.X);
+	setVDPVariable(VDPVAR_MOUSE_YPOS, mStatus.Y);
+	setVDPVariable(VDPVAR_MOUSE_BUTTONS, mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2);
+	setVDPVariable(VDPVAR_MOUSE_WHEEL, mStatus.wheelDelta);
+	if (delta == nullptr) {
+		setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+		setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
+	} else {
+		setVDPVariable(VDPVAR_MOUSE_DELTAX, delta->deltaX);
+		setVDPVariable(VDPVAR_MOUSE_DELTAY, delta->deltaY);
+	}
 }
 
 #include "vdu.h"

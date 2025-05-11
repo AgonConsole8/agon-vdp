@@ -323,7 +323,8 @@ void VDUStreamProcessor::vdu_mode(uint8_t mode) {
 	// update MOS with new info
 	sendModeInformation();
 	if (mouseVisible) {
-		sendMouseData();
+		// update mouse variables from potentially revised mouse position
+		updateMouseVars(nullptr);
 	}
 	bufferCallCallbacks(CALLBACK_MODE_CHANGE);
 }

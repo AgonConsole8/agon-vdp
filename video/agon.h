@@ -474,22 +474,28 @@
 #define VDPVAR_MOUSE_WHEELACC		0x024A	// Mouse wheel acceleration
 #define VDPVAR_MOUSE_VISIBLE		0x024B	// Mouse cursor visible (1) or hidden (0)
 // Flags 0x024C-0x024F reserved for mouse area
-#define VDPVAR_KEYEVENT_KEYCODE		0x0250	// Keycode (includes modifications) (upper byte raw ASCII from VirtualKeyItem)
-#define VDPVAR_KEYEVENT_VK			0x0251	// FabGL Virtual keycode
-#define VDPVAR_KEYEVENT_DOWN		0x0252	// Key down flag (1) or up (0)
-#define VDPVAR_KEYEVENT_MODIFIERS	0x0253	// Key modifiers byte (Shift, Ctrl, Alt, etc)
-#define VDPVAR_KEYEVENT_CTRL		0x0254	// CTRL key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_SHIFT		0x0255	// SHIFT key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_LALT		0x0256	// LEFT ALT key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_RALT		0x0257	// RIGHT ALT key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_CAPSLOCK	0x0258	// CAPSLOCK key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_NUMLOCK		0x0259	// NUMLOCK key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_SCROLLLOCK	0x025A	// SCROLLLOCK key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_GUI			0x025B	// GUI key state (1=pressed, 0=not pressed)
-#define VDPVAR_KEYEVENT_SCANCODE1	0x025C	// Key scancode bytes 1 and 2
-#define VDPVAR_KEYEVENT_SCANCODE2	0x025D	// Key scancode bytes 3 and 4
-#define VDPVAR_KEYEVENT_SCANCODE3	0x025E	// Key scancode bytes 5 and 6
-#define VDPVAR_KEYEVENT_SCANCODE4	0x025F	// Key scancode bytes 7 and 8
+#define VDPVAR_MOUSE_XPOS_OS		0x0250	// Mouse X position (OS coords)
+#define VDPVAR_MOUSE_YPOS_OS		0x0251	// Mouse Y position (OS coords)
+#define VDPVAR_MOUSE_DELTAX			0x0252	// Mouse delta X (pixel coords)
+#define VDPVAR_MOUSE_DELTAY			0x0253	// Mouse delta Y (pixel coords)
+#define VDPVAR_MOUSE_DELTAX_OS		0x0254	// Mouse delta X (OS coords)
+#define VDPVAR_MOUSE_DELTAY_OS		0x0255	// Mouse delta Y (OS coords)
+#define VDPVAR_KEYEVENT_KEYCODE		0x0260	// Keycode (includes modifications) (upper byte raw ASCII from VirtualKeyItem)
+#define VDPVAR_KEYEVENT_VK			0x0261	// FabGL Virtual keycode
+#define VDPVAR_KEYEVENT_DOWN		0x0262	// Key down flag (1) or up (0)
+#define VDPVAR_KEYEVENT_MODIFIERS	0x0263	// Key modifiers byte (Shift, Ctrl, Alt, etc)
+#define VDPVAR_KEYEVENT_CTRL		0x0264	// CTRL key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_SHIFT		0x0265	// SHIFT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_LALT		0x0266	// LEFT ALT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_RALT		0x0267	// RIGHT ALT key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_CAPSLOCK	0x0268	// CAPSLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_NUMLOCK		0x0269	// NUMLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_SCROLLLOCK	0x026A	// SCROLLLOCK key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_GUI			0x026B	// GUI key state (1=pressed, 0=not pressed)
+#define VDPVAR_KEYEVENT_SCANCODE1	0x026C	// Key scancode bytes 1 and 2
+#define VDPVAR_KEYEVENT_SCANCODE2	0x026D	// Key scancode bytes 3 and 4
+#define VDPVAR_KEYEVENT_SCANCODE3	0x026E	// Key scancode bytes 5 and 6
+#define VDPVAR_KEYEVENT_SCANCODE4	0x026F	// Key scancode bytes 7 and 8
 #define TESTFLAG_TILE_ENGINE		0x0300	// Tile engine flag (layers commands)
 #define VDPVAR_COPPER				0x0310	// Copper feature flag
 #define VDPVAR_AUTO_HW_SPRITES		0x0400	// Auto hardware sprites flag

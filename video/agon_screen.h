@@ -490,7 +490,7 @@ void switchBuffer() {
 	}
 }
 
-void setMouseCursorPos(uint16_t x, uint16_t y) {
+inline void setMouseCursorPos(uint16_t x, uint16_t y) {
 	_VGAController->setMouseCursorPos(x, y);
 }
 

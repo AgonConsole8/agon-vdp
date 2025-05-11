@@ -592,8 +592,8 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 				debug_log("vdu_sys_mouse: mouse enable failed\n\r");
 			}
 			// send mouse data (with no delta) to indicate command processed successfully
-			sendMouseData();
-			bufferCallCallbacks(CALLBACK_MOUSE);
+			setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+			setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
 		}	break;
 
 		case MOUSE_DISABLE: {
@@ -602,7 +602,8 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			} else {
 				debug_log("vdu_sys_mouse: mouse disable failed\n\r");
 			}
-			sendMouseData();
+			setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+			setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
 		}	break;
 
 		case MOUSE_RESET: {
@@ -611,7 +612,8 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 				// mouse successfully reset, so make sure the mouse cursor is visible
 				showMouseCursor();
 			}
-			sendMouseData();
+			setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+			setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
 		}	break;
 
 		case MOUSE_SET_CURSOR: {
@@ -619,22 +621,18 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			if (mouseEnabled) {
 				setMouseCursor(cursor);
 			}
-			sendMouseData();
+			setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+			setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
 			debug_log("vdu_sys_mouse: set cursor\n\r");
 		}	break;
 
 		case MOUSE_SET_POSITION: {
 			auto x = readWord_t();	if (x == -1) return;
 			auto y = readWord_t();	if (y == -1) return;
-			// normalise coordinates
-			auto p = context->toScreenCoordinates(x, y);
-
-			// need to update position in mouse status
-			setMousePos(p.X, p.Y);
-			setMouseCursorPos(p.X, p.Y);
-
-			sendMouseData();
-			bufferCallCallbacks(CALLBACK_MOUSE);
+			setVDPVariable(VDPVAR_MOUSE_XPOS_OS, x);
+			setVDPVariable(VDPVAR_MOUSE_YPOS_OS, y);
+			setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+			setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
 			debug_log("vdu_sys_mouse: set position\n\r");
 		}	break;
 
@@ -643,7 +641,6 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			auto y = readWord_t();	if (y == -1) return;
 			auto x2 = readWord_t();	if (x2 == -1) return;
 			auto y2 = readWord_t();	if (y2 == -1) return;
-
 			debug_log("vdu_sys_mouse: set area can't be properly supported with current fab-gl\n\r");
 			// TODO set area to width/height using bottom/right only
 		}	break;
@@ -652,50 +649,53 @@ void VDUStreamProcessor::vdu_sys_mouse() {
 			auto rate = readByte_t();	if (rate == -1) return;
 			if (setMouseSampleRate(rate)) {
 				debug_log("vdu_sys_mouse: set sample rate %d\n\r", rate);
-				// success so send new data packet (triggering VDP flag)
-				sendMouseData();
+				// Clear deltas, which will trigger a mouse packet send
+				setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+				setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
+			} else {
+				debug_log("vdu_sys_mouse: set sample rate %d failed\n\r", rate);
 			}
-			debug_log("vdu_sys_mouse: set sample rate %d failed\n\r", rate);
 		}	break;
 
 		case MOUSE_SET_RESOLUTION: {
 			auto resolution = readByte_t();	if (resolution == -1) return;
 			if (setMouseResolution(resolution)) {
-				// success so send new data packet (triggering VDP flag)
-				sendMouseData();
 				debug_log("vdu_sys_mouse: set resolution %d\n\r", resolution);
-				return;
+				// Clear deltas, which will trigger a mouse packet send
+				setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+				setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
+			} else {
+				debug_log("vdu_sys_mouse: set resolution %d failed\n\r", resolution);
 			}
-			debug_log("vdu_sys_mouse: set resolution %d failed\n\r", resolution);
 		}	break;
 
 		case MOUSE_SET_SCALING: {
 			auto scaling = readByte_t();	if (scaling == -1) return;
 			if (setMouseScaling(scaling)) {
-				// success so send new data packet (triggering VDP flag)
-				sendMouseData();
 				debug_log("vdu_sys_mouse: set scaling %d\n\r", scaling);
-				return;
+				// Clear deltas, which will trigger a mouse packet send
+				setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+				setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
 			}
 		}	break;
 
 		case MOUSE_SET_ACCERATION: {
 			auto acceleration = readWord_t();	if (acceleration == -1) return;
 			if (setMouseAcceleration(acceleration)) {
-				// success so send new data packet (triggering VDP flag)
-				sendMouseData();
 				debug_log("vdu_sys_mouse: set acceleration %d\n\r", acceleration);
-				return;
+				// Clear deltas, which will trigger a mouse packet send
+				setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+				setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
 			}
 		}	break;
 
 		case MOUSE_SET_WHEELACC: {
 			auto wheelAcc = read24_t();	if (wheelAcc == -1) return;
 			if (setMouseWheelAcceleration(wheelAcc)) {
-				// success so send new data packet (triggering VDP flag)
-				sendMouseData();
 				debug_log("vdu_sys_mouse: set wheel acceleration %d\n\r", wheelAcc);
-				return;
+				// Clear deltas, which will trigger a mouse packet send
+				setVDPVariable(VDPVAR_MOUSE_DELTAX, 0);
+				setVDPVariable(VDPVAR_MOUSE_DELTAY, 0);
 			}
 		}	break;
 	}

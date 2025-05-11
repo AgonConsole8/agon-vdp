@@ -366,20 +366,20 @@ bool resetMousePositioner(uint16_t width, uint16_t height, fabgl::VGABaseControl
 	}
 	// setup and then terminate absolute positioner
 	// this will set width/height of mouse area for updateAbsolutePosition calls
-	mouse->setupAbsolutePositioner(width, height, true, display);
+	mouse->setupAbsolutePositioner(width, height, false, display);
 	mouse->terminateAbsolutePositioner();
 	return true;
 }
 
-bool setMousePos(uint16_t x, uint16_t y) {
+fabgl::MouseStatus * setMousePos(uint16_t x, uint16_t y) {
 	auto mouse = getMouse();
 	if (!mouse) {
-		return false;
+		return nullptr;
 	}
-	auto & status = mouse->status();
-	status.X = x;
-	status.Y = y;
-	return true;
+	auto & m_status = mouse->status();
+	m_status.X = fabgl::tclamp((int)x, 0, canvasW - 1);
+	m_status.Y = fabgl::tclamp((int)y, 0, canvasH - 1);
+	return & m_status;
 }
 
 bool resetMouse() {

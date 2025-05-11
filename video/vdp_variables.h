@@ -108,30 +108,32 @@ void setVDPVariable(uint16_t flag, uint16_t value) {
 				if (value) {
 					enableMouse();
 					processor->sendMouseData();
-					processor->bufferCallCallbacks(CALLBACK_MOUSE);
 				} else {
 					disableMouse();
 				}
 				return;
 			case VDPVAR_MOUSE_XPOS: {	// Mouse cursor X position (pixel coords)
 				uint16_t mouseY = getVDPVariable(VDPVAR_MOUSE_YPOS);
-				setMousePos(value, mouseY);
-				setMouseCursorPos(value, mouseY);
+				auto status = setMousePos(value, mouseY);
+				value = status->X;
+				setMouseCursorPos(status->X, status->Y);
+				auto osPos = processor->getContext()->toCurrentCoordinates(status->X, status->Y);
+				featureFlags[VDPVAR_MOUSE_XPOS_OS] = osPos.X;
 				processor->sendMouseData();
-				processor->bufferCallCallbacks(CALLBACK_MOUSE);
-				return;
-			}
+			}	break;
 			case VDPVAR_MOUSE_YPOS: {	// Mouse cursor Y position (pixel coords)
 				uint16_t mouseX = getVDPVariable(VDPVAR_MOUSE_XPOS);
-				setMousePos(mouseX, value);
-				setMouseCursorPos(mouseX, value);
+				auto status = setMousePos(mouseX, value);
+				value = status->Y;
+				setMouseCursorPos(status->X, status->Y);
+				auto osPos = processor->getContext()->toCurrentCoordinates(status->X, status->Y);
+				featureFlags[VDPVAR_MOUSE_YPOS_OS] = osPos.Y;
 				processor->sendMouseData();
-				processor->bufferCallCallbacks(CALLBACK_MOUSE);
-				return;
-			}
+			}	break;
 			case VDPVAR_MOUSE_BUTTONS:	// Mouse cursor button status
-			case VDPVAR_MOUSE_WHEEL:	// Mouse wheel
-				return;
+			case VDPVAR_MOUSE_WHEEL: 	// Mouse wheel
+				processor->sendMouseData();
+				break;
 			case VDPVAR_MOUSE_SAMPLERATE:	// Mouse sample rate
 				setMouseSampleRate(value);
 				return;
@@ -155,6 +157,56 @@ void setVDPVariable(uint16_t flag, uint16_t value) {
 				}
 				return;
 			// we have a range here (0x24C-0x24F) reserved for mouse area
+			case VDPVAR_MOUSE_XPOS_OS: {	// Mouse X position (OS coords)
+				uint16_t mouseY = getVDPVariable(VDPVAR_MOUSE_YPOS_OS);
+				auto screenPos = processor->getContext()->toScreenCoordinates(value, mouseY);
+				auto status = setMousePos(screenPos.X, screenPos.Y);
+				setMouseCursorPos(status->X, status->Y);
+				featureFlags[VDPVAR_MOUSE_XPOS] = status->X;
+				if (screenPos.X != status->X) {
+					// position adjusted, so update variable
+					auto newPos = processor->getContext()->toCurrentCoordinates(status->X, status->Y);
+					value = newPos.X;
+				}
+				processor->sendMouseData();
+			}	break;
+			case VDPVAR_MOUSE_YPOS_OS: {	// Mouse Y position (OS coords)
+				uint16_t mouseX = getVDPVariable(VDPVAR_MOUSE_XPOS_OS);
+				auto screenPos = processor->getContext()->toScreenCoordinates(mouseX, value);
+				auto status = setMousePos(screenPos.X, screenPos.Y);
+				setMouseCursorPos(status->X, status->Y);
+				featureFlags[VDPVAR_MOUSE_YPOS] = status->Y;
+				if (screenPos.Y != status->Y) {
+					// position adjusted, so update variable
+					auto newPos = processor->getContext()->toCurrentCoordinates(status->X, status->Y);
+					value = newPos.Y;
+				}
+				processor->sendMouseData();
+			}	break;
+			case VDPVAR_MOUSE_DELTAX: {		// Mouse delta X (pixel coords)
+				uint16_t deltaY = getVDPVariable(VDPVAR_MOUSE_DELTAY);
+				auto osPos = processor->getContext()->toCurrentCoordinates(value, deltaY);
+				featureFlags[VDPVAR_MOUSE_DELTAX_OS] = osPos.X;
+				processor->sendMouseData();
+			}	break;
+			case VDPVAR_MOUSE_DELTAY: {		// Mouse delta Y (pixel coords)
+				uint16_t deltaX = getVDPVariable(VDPVAR_MOUSE_DELTAX);
+				auto osDelta = processor->getContext()->toCurrentCoordinates(deltaX, value);
+				featureFlags[VDPVAR_MOUSE_DELTAY_OS] = osDelta.Y;
+				processor->sendMouseData();
+			}	break;
+			case VDPVAR_MOUSE_DELTAX_OS: {	// Mouse delta X (OS coords)
+				uint16_t deltaY = getVDPVariable(VDPVAR_MOUSE_DELTAY_OS);
+				auto screenDelta = processor->getContext()->toScreenCoordinates(value, deltaY);
+				featureFlags[VDPVAR_MOUSE_DELTAX] = screenDelta.X;
+				processor->sendMouseData();
+			}	break;
+			case VDPVAR_MOUSE_DELTAY_OS: {	// Mouse delta Y (OS coords)
+				uint16_t deltaX = getVDPVariable(VDPVAR_MOUSE_DELTAX_OS);
+				auto screenDelta = processor->getContext()->toScreenCoordinates(deltaX, value);
+				featureFlags[VDPVAR_MOUSE_DELTAY] = screenDelta.Y;
+				processor->sendMouseData();
+			}	break;
 
 			case VDPVAR_KEYEVENT_MODIFIERS: {
 				// Set individual modifier variables based on new value
@@ -274,10 +326,6 @@ bool isVDPVariableSet(uint16_t flag) {
 			case VDPVAR_CONTEXT_ID:
 			case VDPVAR_MOUSE_CURSOR:
 			case VDPVAR_MOUSE_ENABLED:
-			case VDPVAR_MOUSE_XPOS:
-			case VDPVAR_MOUSE_YPOS:
-			case VDPVAR_MOUSE_BUTTONS:
-			case VDPVAR_MOUSE_WHEEL:
 			case VDPVAR_MOUSE_SAMPLERATE:
 			case VDPVAR_MOUSE_RESOLUTION:
 			case VDPVAR_MOUSE_SCALING:
@@ -376,34 +424,6 @@ uint16_t getVDPVariable(uint16_t flag) {
 				return mCursor;
 			case VDPVAR_MOUSE_ENABLED:
 				return mouseEnabled ? 1 : 0;
-			case VDPVAR_MOUSE_XPOS: {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto mStatus = mouse->status();
-					return mStatus.X;
-				}
-			}
-			case VDPVAR_MOUSE_YPOS: {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto mStatus = mouse->status();
-					return mStatus.Y;
-				}
-			}
-			case VDPVAR_MOUSE_BUTTONS: {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto mStatus = mouse->status();
-					return mStatus.buttons.left << 0 | mStatus.buttons.right << 1 | mStatus.buttons.middle << 2;
-				}
-			}
-			case VDPVAR_MOUSE_WHEEL: {
-				auto mouse = getMouse();
-				if (mouse) {
-					auto mStatus = mouse->status();
-					return mStatus.wheelDelta;
-				}
-			}
 			case VDPVAR_MOUSE_SAMPLERATE:
 				return mSampleRate;
 			case VDPVAR_MOUSE_RESOLUTION:
@@ -418,7 +438,7 @@ uint16_t getVDPVariable(uint16_t flag) {
 					auto & currentAcceleration = mouse->wheelAcceleration();
 					return currentAcceleration;
 				}
-			}
+			}	break;
 			case VDPVAR_MOUSE_VISIBLE:
 				return mouseVisible ? 1 : 0;
 		}
