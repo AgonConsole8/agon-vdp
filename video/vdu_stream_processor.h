@@ -262,6 +262,7 @@ class VDUStreamProcessor {
 		}
 		inline uint8_t readByte() {
 			auto read = inputStream->read();
+	DBGSerial.printf(" %02hX ", read);
 			pushEcho(read);
 			return read;
 		}
@@ -327,6 +328,7 @@ class VDUStreamProcessor {
 int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto read = inputStream->read();
 	if (read != -1) {
+	DBGSerial.printf(" %02hX ", read);
 		pushEcho(read);
 		return read;
 	}
@@ -337,6 +339,7 @@ int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) 
 	do {
 		read = inputStream->read();
 	} while (read == -1 && (xTaskGetTickCountFromISR() - start < timeCheck));
+	DBGSerial.printf(" %02hX ", read);
 	pushEcho(read);
 	return read;
 }
@@ -348,8 +351,10 @@ int16_t inline VDUStreamProcessor::readByte_t(uint16_t timeout = COMMS_TIMEOUT) 
 int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto l = readByte_t(timeout);
 	if (l != -1) {
+	DBGSerial.printf(" %02hX ", l);
 		auto h = readByte_t(timeout);
 		if (h != -1) {
+	DBGSerial.printf(" %02hX ", h);
 			return (h << 8) | l;
 		}
 	}
@@ -363,10 +368,13 @@ int32_t VDUStreamProcessor::readWord_t(uint16_t timeout = COMMS_TIMEOUT) {
 int32_t VDUStreamProcessor::read24_t(uint16_t timeout = COMMS_TIMEOUT) {
 	auto l = readByte_t(timeout);
 	if (l != -1) {
+	DBGSerial.printf(" %02hX ", l);
 		auto m = readByte_t(timeout);
 		if (m != -1) {
+	DBGSerial.printf(" %02hX ", m);
 			auto h = readByte_t(timeout);
 			if (h != -1) {
+	DBGSerial.printf(" %02hX ", h);
 				return (h << 16) | (m << 8) | l;
 			}
 		}
@@ -403,6 +411,7 @@ uint32_t VDUStreamProcessor::readIntoBuffer(uint8_t * buffer, uint32_t length, u
 				return remaining;
 			}
 		}
+	DBGSerial.printf(" %02hX ", read);
 		pushEcho(buffer, read);
 		buffer += read;
 		remaining -= read;

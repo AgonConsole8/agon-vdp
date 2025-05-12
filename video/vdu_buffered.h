@@ -2776,6 +2776,20 @@ void VDUStreamProcessor::bufferRedirectDrawing(uint16_t bufferId, uint16_t width
 		if (bufferIter != buffers.end()) {
 			// buffer ID exists
 			auto buffer = buffers[bufferId][0];
+			uint8_t * p = buffer->getBuffer();
+			for (int i = 0; i < 160; i++) {
+				uint8_t * row = p + i * 320;
+				row[159-i] = 0x16;
+				row[160+i] = 0x75;
+				row = p + (479-i) * 320;
+				row[159-i] = 0x23;
+				row[160+i] = 0xAC;
+			}
+			uint8_t * row = p + 240 * 320;
+			for (int i = 0; i < 10; i++) {
+				row[i] = 0xB6;
+				row[319-i] = 0x88;
+			}
 			canvas->redirectDrawing(buffer->getBuffer(), width, height, colors);
 		} else {
 			debug_log("bufferRedirectDrawing: buffer %d not found\n\r", bufferId);

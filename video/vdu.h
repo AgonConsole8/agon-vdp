@@ -22,6 +22,8 @@ void VDUStreamProcessor::vdu(uint8_t c, bool usePeek) {
 		DBGSerial.write(c);
 	}
 
+	DBGSerial.printf(" %02hX ", c);
+
 	if (printerOn) {
 		switch(c) {
 			case 0x03:
