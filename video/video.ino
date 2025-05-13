@@ -123,7 +123,9 @@ void setup() {
 // The main loop
 //
 void loop() {
-	delay(1000);
+	while (true) {
+		delay(1000);
+	}
 }
 
 void processLoop(void * parameter) {
